@@ -16,6 +16,11 @@ export default function ProfilePage() {
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
+  const [notifications, setNotifications] = useState({
+    commentsOnSongs: false,
+    salesAndRoyalties: true,
+    platformAlerts: true,
+  });
 
   const handleFieldChange = (field: keyof typeof form) => (
     e: React.ChangeEvent<HTMLInputElement>
@@ -73,54 +78,86 @@ export default function ProfilePage() {
 
           {/* Main Content - Two Columns */}
           {activeTab === 'profile' && (
-            <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-6 mt-6">
               {/* Left Column - Form Fields */}
               <div className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+              <div className="flex flex-col" style={{ marginTop: '30px' }}>
+                <label className="text-sm font-medium text-white mb-2">
                   Display name
                 </label>
                 <input
                   value={form.displayName}
                   onChange={handleFieldChange('displayName')}
                   placeholder="Add Display name"
-                  className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                  className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
+                  style={{
+                    width: '660px',
+                    height: '48px',
+                    borderRadius: '16px',
+                    background: '#FFFFFF0A',
+                    backdropFilter: 'blur(40px)',
+                    border: 'none',
+                  }}
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+              <div className="flex flex-col" style={{ marginTop: '30px' }}>
+                <label className="text-sm font-medium text-white mb-2">
                   Short bio
                 </label>
                 <input
                   value={form.shortBio}
                   onChange={handleFieldChange('shortBio')}
                   placeholder="Tell about yourself in a few words"
-                  className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                  className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
+                  style={{
+                    width: '660px',
+                    height: '48px',
+                    borderRadius: '16px',
+                    background: '#FFFFFF0A',
+                    backdropFilter: 'blur(40px)',
+                    border: 'none',
+                  }}
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+              <div className="flex flex-col" style={{ marginTop: '30px' }}>
+                <label className="text-sm font-medium text-white mb-2">
                   Website URL
                 </label>
                 <input
                   value={form.websiteUrl}
                   onChange={handleFieldChange('websiteUrl')}
                   placeholder="https://"
-                  className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                  className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
+                  style={{
+                    width: '660px',
+                    height: '48px',
+                    borderRadius: '16px',
+                    background: '#FFFFFF0A',
+                    backdropFilter: 'blur(40px)',
+                    border: 'none',
+                  }}
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white">
+              <div className="flex flex-col" style={{ marginTop: '30px' }}>
+                <label className="text-sm font-medium text-white mb-2">
                   X (Twitter)
                 </label>
                 <input
                   value={form.twitter}
                   onChange={handleFieldChange('twitter')}
                   placeholder="Enter your X username"
-                  className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                  className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
+                  style={{
+                    width: '660px',
+                    height: '48px',
+                    borderRadius: '16px',
+                    background: '#FFFFFF0A',
+                    backdropFilter: 'blur(40px)',
+                    border: 'none',
+                  }}
                 />
               </div>
 
@@ -133,7 +170,14 @@ export default function ProfilePage() {
             </div>
 
             {/* Right Column - Profile Image */}
-            <div className="rounded-2xl border border-[#2A2A2A] bg-[#161616] p-6 w-full flex flex-col">
+            <div 
+              className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col"
+              style={{ 
+                width: '244px', 
+                height: '321px', 
+                borderRadius: '16px' 
+              }}
+            >
               {profileImage ? (
                 <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
                   <Image
@@ -148,7 +192,7 @@ export default function ProfilePage() {
                 <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-gray-600 to-gray-800 mb-4 flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <svg
-                      className="w-32 h-32 text-gray-400"
+                      className="w-24 h-24 text-gray-400"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
@@ -158,8 +202,8 @@ export default function ProfilePage() {
                 </div>
               )}
               
-              <h3 className="text-white font-semibold mb-2">Profile</h3>
-              <p className="text-sm text-[#A3A3A3] mb-4 flex-1">
+              <h3 className="text-white font-semibold mb-2 text-sm">Profile</h3>
+              <p className="text-xs text-[#A3A3A3] mb-4 flex-1">
                 Make your artist profile stand out with a striking cover image
               </p>
               
@@ -172,7 +216,7 @@ export default function ProfilePage() {
               />
               <button
                 onClick={() => profileInputRef.current?.click()}
-                className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors"
+                className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors text-sm"
               >
                 Add Cover
               </button>
@@ -181,8 +225,72 @@ export default function ProfilePage() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="py-8">
-              <p className="text-white">Settings content coming soon...</p>
+            <div className="mt-6 space-y-6">
+              {/* Comments on songs */}
+              <div className="flex items-start justify-between p-6 rounded-lg  ">
+                <div className="flex-1 pr-6">
+                  <h3 className="text-white font-semibold mb-2">Comments on songs</h3>
+                  <p className="text-sm text-[#A3A3A3]">
+                    Stay updated on feedback, reactions, and conversations around your tracks
+                  </p>
+                </div>
+                <button
+                  onClick={() => setNotifications(prev => ({ ...prev, commentsOnSongs: !prev.commentsOnSongs }))}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    notifications.commentsOnSongs ? 'bg-[#D2045B]' : 'bg-[#2A2A2A]'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                      notifications.commentsOnSongs ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Sales and Royalties updates */}
+              <div className="flex items-start justify-between p-6 rounded-lg ">
+                <div className="flex-1 pr-6">
+                  <h3 className="text-white font-semibold mb-2">Sales and Royalties updates</h3>
+                  <p className="text-sm text-[#A3A3A3]">
+                    Track your earnings and get notified about new sales and royalty payouts.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setNotifications(prev => ({ ...prev, salesAndRoyalties: !prev.salesAndRoyalties }))}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    notifications.salesAndRoyalties ? 'bg-[#D2045B]' : 'bg-[#2A2A2A]'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                      notifications.salesAndRoyalties ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Platform Alerts */}
+              <div className="flex items-start justify-between p-6 rounded-lg ">
+                <div className="flex-1 pr-6">
+                  <h3 className="text-white font-semibold mb-2">Platform Alerts</h3>
+                  <p className="text-sm text-[#A3A3A3]">
+                    Receive important updates about your account, platform changes, and security notices.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setNotifications(prev => ({ ...prev, platformAlerts: !prev.platformAlerts }))}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    notifications.platformAlerts ? 'bg-[#D2045B]' : 'bg-[#2A2A2A]'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                      notifications.platformAlerts ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           )}
         </main>
