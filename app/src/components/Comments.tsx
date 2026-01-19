@@ -50,7 +50,7 @@ export default function Comments() {
           placeholder="Type here"
           className="flex-1 bg-[#161616] border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm"
         />
-        <button className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 transition-colors">
+        <button className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-3 py-2 transition-colors">
           <Send size={20} />
         </button>
       </div>

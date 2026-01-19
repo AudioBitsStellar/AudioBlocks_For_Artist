@@ -15,12 +15,32 @@ export interface updateProfilePayload {
 	twitter: string;
 }
 
-export interface uploadSong {
+export interface UploadSong {
 	fileId: string;
 	totalChunks: number;
 	title: string;
 	coverArtPath: string;
 	description: string;
 	genre: string;
-	composers: string;
+	composer: string;
+	// marketPrice: string;
+}
+export interface UploadCoverResponse {
+	cover: File | string;
+	fileId: string;
+}
+
+export interface UploadChunkResponse {
+	chunkIndex: number;
+	fileId: string;
+	chunk: number | string;
+}
+
+export interface MusicFormValues {
+	songTitle: string;
+	albumTitle: string;
+	genre: string;
+	releaseDate: string;
+	marketPrice: string;
+	purchasePrice: string;
 }
