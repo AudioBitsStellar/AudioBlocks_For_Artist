@@ -8,8 +8,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
 
   const apiClient = axios.create({
     baseURL:
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "http://localhost:3000/api",
+      "https://audioblock-backend-v2.onrender.com/api",
     timeout: 15000,
     headers: {
       "Content-Type": "application/json",
@@ -19,9 +18,17 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
 
   // Request interceptor
   apiClient.interceptors.request.use((config) => {
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Read token dynamically from localStorage on every request
+    const currentToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (currentToken) {
+      config.headers.Authorization = `Bearer ${currentToken}`;
     }
+    
+    // Explicitly remove Authorization header for auth endpoints to avoid issues
+    if (config.url?.includes('/auth/login') || config.url?.includes('/auth/register')) {
+      delete config.headers.Authorization;
+    }
+    
     return config;
   });
 

@@ -7,15 +7,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import Cookies from 'js-cookie';
-import { Auth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import FullScreenLoader from './FullScreenLoader';
 
 const Hero = () => {
-  const { setShowAuthFlow } = useDynamicContext();
+  const { user, setShowAuthFlow } = useDynamicContext();
   const route = useRouter();
   const { isConnected } = useAccount();
   const token = Cookies.get('audioblocks_jwt');
-  const { setShouldTriggerSignature, loading } = Auth();
+  const { setShouldTriggerSignature, loading } = useAuth();
 
   const handleStream = () => {
     if (!isConnected) {

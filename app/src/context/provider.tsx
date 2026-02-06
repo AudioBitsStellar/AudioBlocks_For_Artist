@@ -45,7 +45,7 @@ const Provider = ({ children }: { children: ReactNode }) => {
 	return (
 		<DynamicContextProvider
 			settings={{
-				environmentId: "c686da1e-ac86-4bd4-a2f4-5fe6ff42ed85",
+				environmentId: "955b597d-d2a6-4b8c-8246-9c551ee73ee5",
 				walletConnectors: [EthereumWalletConnectors],
 				overrides: {
 					views: [

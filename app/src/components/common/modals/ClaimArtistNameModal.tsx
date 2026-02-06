@@ -4,6 +4,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Search, Check } from 'lucide-react';
 import { useState, useEffect, memo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { useAccount } from 'wagmi';
+import Cookies from 'js-cookie';
+import { useAuth } from '@/hooks/useAuth';
+import { createApiClient } from '@/api/axios';
+import { toast } from 'sonner';
 
 interface ClaimArtistNameModalProps {
   open: boolean;
@@ -15,22 +21,37 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
   const [artistName, setArtistName] = useState('');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [connectedServices, setConnectedServices] = useState({
     twitter: false,
     facebook: false,
     distrokid: false,
     wallet: false,
   });
+  
   const router = useRouter();
+  const { setShowAuthFlow } = useDynamicContext();
+  const { isConnected } = useAccount();
+  const token = Cookies.get('audioblocks_jwt');
+  const { setShouldTriggerSignature, loading: authLoading } = useAuth();
 
+  // Sync wallet connection state
+  useEffect(() => {
+    if (isConnected && token) {
+      setConnectedServices(prev => ({ ...prev, wallet: true }));
+    } else {
+      setConnectedServices(prev => ({ ...prev, wallet: false }));
+    }
+  }, [isConnected, token]);
 
   // Check username availability with debounce
   useEffect(() => {
     if (artistName.length > 0) {
       setIsChecking(true);
-      // Simulate API call to check availability with debounce
+      // TODO: Replace with real API call when endpoint is available
+      // For now, we simulate availability
       const timeoutId = setTimeout(() => {
-        setIsAvailable(true); // For demo, always available
+        setIsAvailable(true); 
         setIsChecking(false);
       }, 500);
       
@@ -49,29 +70,59 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
     }
   };
 
-  const handleComplete = () => {
-    // Handle completion logic here - UI only
-    setStep(4);
-    setTimeout(() => {
-      onOpenChange(false);
-      // Reset modal state
-      setStep(1);
-      setArtistName('');
-      setIsAvailable(null);
-      setConnectedServices({
-        twitter: false,
-        facebook: false,
-        distrokid: false,
-        wallet: false,
+  const handleComplete = async () => {
+    if (!token) {
+      toast.error('Please connect your wallet first');
+      handleConnect('wallet');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const apiClient = await createApiClient();
+      
+      // Call create-profile endpoint
+      await apiClient.post('/artist/create-profile', {
+        name: artistName,
+        // Add other fields if necessary, e.g. connected services info
       });
-      // Redirect to dashboard after completion
-      router.push('/dashboard/overview');
-    }, 2000);
+
+      setStep(4);
+      setTimeout(() => {
+        onOpenChange(false);
+        // Reset modal state
+        setStep(1);
+        setArtistName('');
+        setIsAvailable(null);
+        setConnectedServices({
+          twitter: false,
+          facebook: false,
+          distrokid: false,
+          wallet: false,
+        });
+        // Redirect to dashboard after completion
+        router.push('/dashboard/overview');
+      }, 2000);
+    } catch (error: any) {
+      console.error('Error creating profile:', error);
+      toast.error(error.response?.data?.message || 'Failed to create profile');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleConnect = (service: 'twitter' | 'facebook' | 'distrokid' | 'wallet') => {
-    // UI only - just toggle the connection state
-    setConnectedServices((prev) => ({ ...prev, [service]: !prev[service] }));
+    if (service === 'wallet') {
+      if (!isConnected) {
+        setShowAuthFlow(true);
+        setShouldTriggerSignature(true);
+      } else if (!token) {
+        setShouldTriggerSignature(true);
+      }
+    } else {
+      // UI only - just toggle the connection state for others
+      setConnectedServices((prev) => ({ ...prev, [service]: !prev[service] }));
+    }
   };
 
   const handleCancel = () => {
@@ -268,13 +319,14 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
                   <span className="text-white">Wallet Address</span>
                   <button
                     onClick={() => handleConnect('wallet')}
+                    disabled={authLoading}
                     className={`px-4 py-2 rounded-lg text-sm ${
                       connectedServices.wallet
                         ? 'bg-green-600 text-white'
                         : 'bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]'
                     }`}
                   >
-                    {connectedServices.wallet ? 'Connected' : 'Connect'}
+                    {authLoading ? 'Connecting...' : connectedServices.wallet ? 'Connected' : 'Connect'}
                   </button>
                 </div>
               </div>
@@ -282,15 +334,21 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
               <div className="flex gap-4">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 px-6 py-3 rounded-lg bg-transparent border border-[#2E2E2E] text-white hover:bg-[#1E1E1E] transition"
+                  disabled={isSubmitting}
+                  className="flex-1 px-6 py-3 rounded-lg bg-transparent border border-[#2E2E2E] text-white hover:bg-[#1E1E1E] transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleComplete}
-                  className="flex-1 px-6 py-3 rounded-lg bg-[#D2045B] text-white hover:bg-[#B8043F] transition"
+                  disabled={isSubmitting}
+                  className="flex-1 px-6 py-3 rounded-lg bg-[#D2045B] text-white hover:bg-[#B8043F] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                  Complete
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    'Complete'
+                  )}
                 </button>
               </div>
             </>

@@ -4,14 +4,40 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import { Variants, motion, AnimatePresence } from 'framer-motion';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { useAccount } from 'wagmi';
+import Cookies from 'js-cookie';
+import { useAuth } from '@/hooks/useAuth';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  
+  const { user, setShowAuthFlow } = useDynamicContext();
+  const { isConnected } = useAccount();
+  const token = Cookies.get('audioblocks_jwt');
+  const { setShouldTriggerSignature, loading } = useAuth();
 
   const handleAuthentication = () => {
-    // UI only - no authentication
-    alert('Sign in - UI only');
+    console.log('handleAuthentication triggered', {
+      user: !!user,
+      isConnected,
+      hasToken: !!token,
+      loading
+    });
+
+    // Check if user is fully authenticated with Dynamic
+    if (!user || !isConnected) {
+      console.log('User not connected, showing auth flow');
+      setShowAuthFlow(true);
+      setShouldTriggerSignature(true);
+    } else {
+      // If connected (even if token exists, we might want to re-verify or just ensure signature flow runs if needed)
+      // If token exists, usually we are good, but if user clicked Sign in, maybe they want to sync?
+      // For now, let's force signature flow if they click it, to ensure we get a token if missing or invalid.
+      console.log('User connected, triggering signature flow');
+      setShouldTriggerSignature(true);
+    }
   };
 
   
@@ -63,12 +89,18 @@ const Navbar = () => {
           {/* Desktop Nav - Removed nav items */}
 
           {/* Sign In */}
-          <div className="hidden md:flex">
+          <div className="hidden md:flex relative z-50">
             <button
-              onClick={handleAuthentication}
-              className="px-4 cursor-pointer py-2 gap-3 rounded-full bg-[#D2045B] hover:bg-[#B8043F] flex justify-between items-center text-white font-bold transition-all duration-200 whitespace-nowrap text-sm hover:scale-105 shadow-lg hover:shadow-xl"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Sign in clicked');
+                handleAuthentication();
+              }}
+              disabled={loading}
+              className="px-4 cursor-pointer py-2 gap-3 rounded-full bg-[#D2045B] hover:bg-[#B8043F] flex justify-between items-center text-white font-bold transition-all duration-200 whitespace-nowrap text-sm hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed relative z-50 pointer-events-auto"
             >
-              Sign in
+              {loading ? 'Signing in...' : 'Sign in'}
               <div className="bg-black rounded-full p-1">
                 <ArrowRight className="h-4 w-4 rotate-[300deg]" />
               </div>
