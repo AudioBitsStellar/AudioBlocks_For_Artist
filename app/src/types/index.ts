@@ -44,3 +44,29 @@ export interface MusicFormValues {
 	marketPrice: string;
 	purchasePrice: string;
 }
+
+export interface RegisterEmailPayload {
+	email: string;
+	password: string;
+	role: "artist" | "listener" | "admin";
+	username?: string;
+	name?: string;
+}
+
+export interface LoginEmailPayload {
+	email: string;
+	password: string;
+}
+
+export interface AuthUser {
+	id: string;
+	email?: string;
+	role: string;
+	username?: string;
+	name?: string;
+}
+
+export interface AuthResponse {
+	user: AuthUser;
+	token: string;
+}

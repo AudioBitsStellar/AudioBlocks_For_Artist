@@ -8,6 +8,7 @@ import useUploadServices from '@/services/uploadSerive';
 import { splitFile, generateFileId } from "@/utils/chunkUploader";
 import MusicLoader from '../MusicLoader';
 import { toast } from 'sonner';
+import MintSongButton from '@/components/common/wallet/MintSongButton';
 
 const Song = () => {
     const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -15,6 +16,7 @@ const Song = () => {
     const [fileId, setFileId] = useState<string | null>(null);
     const [coverFile, setCoverFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [mintableSongId, setMintableSongId] = useState<string | null>(null);
 
 
     const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -170,7 +172,7 @@ const Song = () => {
             const coverArtPath = coverRes.data.cover;
 
             // 3. Finalize
-            await finalizeUpload.mutateAsync({
+            const finalizeResult: any = await finalizeUpload.mutateAsync({
                 fileId: fileId,
                 totalChunks: totalChunks,
                 title: data.title,
@@ -180,6 +182,11 @@ const Song = () => {
                 coverArtPath: coverArtPath,
                 // marketPrice: data.marketPrice,
             });
+
+            // The song still needs to finish transcoding + IPFS pinning in the
+            // background before it's mintable; the Mint button below will show
+            // a clear backend error if clicked too early.
+            setMintableSongId(finalizeResult?.data?.id ?? null);
 
             setUploadedFile((prev) =>
                 prev ? { ...prev, status: "success" } : prev
@@ -427,6 +434,15 @@ const Song = () => {
                             <p className="text-[10px] text-[#A3A3A3]">No uploads added to the queue</p>
                         )}
                     </div>
+
+                    {mintableSongId && (
+                        <div className="mt-3 bg-[#1a1a1a] rounded-lg p-3 flex items-center justify-between gap-2">
+                            <p className="text-xs text-[#A3A3A3]">
+                                Song uploaded. Once it&apos;s finished processing, mint it on-chain:
+                            </p>
+                            <MintSongButton songId={mintableSongId} />
+                        </div>
+                    )}
                 </div>
 
             </div>

@@ -9,9 +9,10 @@ import { updateProfilePayload } from "@/types";
 import { useForm } from "react-hook-form";
 import MusicLoader from "@/components/MusicLoader";
 import useArtistServices from "@/services/artistServices";
+import SetupArtistOnChainProfile from "@/components/common/wallet/SetupArtistOnChainProfile";
 
 export default function ProfilePage() {
-	const [activeTab, setActiveTab] = useState<"profile" | "settings">("profile");
+	const [activeTab, setActiveTab] = useState<"profile" | "settings" | "onchain">("profile");
 	const { useUpdateArtistProfile } = useArtistServices();
 	const updateProfileMutation = useUpdateArtistProfile();
 
@@ -87,6 +88,15 @@ export default function ProfilePage() {
 						}`}
 				>
 					Settings
+				</button>
+				<button
+					onClick={() => setActiveTab("onchain")}
+					className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${activeTab === "onchain"
+							? "bg-[#D2045B] text-white"
+							: "bg-transparent text-gray-400 hover:text-white"
+						}`}
+				>
+					On-chain
 				</button>
 			</div>
 
@@ -337,6 +347,12 @@ export default function ProfilePage() {
 							/>
 						</button>
 					</div>
+				</div>
+			)}
+
+			{activeTab === "onchain" && (
+				<div className="mt-6">
+					<SetupArtistOnChainProfile />
 				</div>
 			)}
 		</>
