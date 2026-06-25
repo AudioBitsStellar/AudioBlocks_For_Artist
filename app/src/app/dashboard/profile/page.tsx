@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import MusicLoader from "@/components/MusicLoader";
 import useArtistServices from "@/services/artistServices";
 import SetupArtistOnChainProfile from "@/components/common/wallet/SetupArtistOnChainProfile";
+import { analytics } from "@/lib/analytics";
 
 export default function ProfilePage() {
 	const [activeTab, setActiveTab] = useState<"profile" | "settings" | "onchain">("profile");
@@ -59,6 +60,11 @@ export default function ProfilePage() {
 
 		updateProfileMutation.mutate(formData, {
 			onSuccess: () => {
+				analytics.profileSaved({
+					hasImage: data.profileImage instanceof File,
+					hasWebsite: Boolean(data.website?.trim()),
+					hasTwitter: Boolean(data.twitter?.trim()),
+				});
 				console.log("Profile updated successfully");
 			},
 		});
