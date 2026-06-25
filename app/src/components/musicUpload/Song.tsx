@@ -9,6 +9,7 @@ import { splitFile, generateFileId } from "@/utils/chunkUploader";
 import MusicLoader from '../MusicLoader';
 import { toast } from 'sonner';
 import MintSongButton from '@/components/common/wallet/MintSongButton';
+import { analytics } from '@/lib/analytics';
 
 const Song = () => {
     const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -17,6 +18,7 @@ const Song = () => {
     const [coverFile, setCoverFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [mintableSongId, setMintableSongId] = useState<string | null>(null);
+    const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
 
 
     const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -154,6 +156,15 @@ const Song = () => {
             return;
         }
 
+        const startedAt = Date.now();
+        setUploadStartedAt(startedAt);
+
+        analytics.uploadStarted({
+            fileId,
+            fileName: audioFile.name,
+            fileSizeBytes: audioFile.size,
+        });
+
         try {
             setIsUploading(true);
             setUploadedFile((prev) =>
@@ -183,10 +194,18 @@ const Song = () => {
                 // marketPrice: data.marketPrice,
             });
 
+            const songId: string = finalizeResult?.data?.id ?? '';
+
+            analytics.uploadCompleted({
+                fileId,
+                songId,
+                durationMs: Date.now() - startedAt,
+            });
+
             // The song still needs to finish transcoding + IPFS pinning in the
             // background before it's mintable; the Mint button below will show
             // a clear backend error if clicked too early.
-            setMintableSongId(finalizeResult?.data?.id ?? null);
+            setMintableSongId(songId || null);
 
             setUploadedFile((prev) =>
                 prev ? { ...prev, status: "success" } : prev
@@ -198,8 +217,12 @@ const Song = () => {
             setUploadedFile(null);
             setAudioFile(null);
             setFileId(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            analytics.uploadFailed({
+                fileId,
+                reason: err?.message ?? 'unknown',
+            });
             setUploadedFile((prev) =>
                 prev ? { ...prev, status: "failed" } : prev
             );
