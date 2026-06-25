@@ -3,6 +3,7 @@
 import { useStellarWallet } from "./useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
+import { analytics } from "@/lib/analytics";
 
 interface MintSongButtonProps {
   songId: string;
@@ -24,8 +25,22 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
   const isBusy = prepareMutation.isPending || submitMutation.isPending;
 
   const handleMint = async () => {
-    const prepared = await prepareMutation.mutateAsync({ albumId });
-    await signAndSubmit(prepared.data, (vars) => submitMutation.mutateAsync(vars));
+    if (!address) return;
+    analytics.mintStarted({ songId, walletAddress: address });
+    try {
+      const prepared = await prepareMutation.mutateAsync({ albumId });
+      const result: any = await signAndSubmit(prepared.data, (vars) =>
+        submitMutation.mutateAsync(vars)
+      );
+      analytics.mintSucceeded({
+        songId,
+        txHash: result?.data?.txHash ?? '',
+        tokenId: result?.data?.tokenId ?? '',
+      });
+    } catch (err: any) {
+      analytics.mintFailed({ songId, reason: err?.message ?? 'unknown' });
+      throw err;
+    }
   };
 
   if (!address) {
