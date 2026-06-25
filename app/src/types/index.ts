@@ -70,3 +70,20 @@ export interface AuthResponse {
 	user: AuthUser;
 	token: string;
 }
+
+export interface EarningsDataPoint {
+  month: string;
+  earnings: number;
+  royalties: number;
+}
+
+export interface EarningsSummary {
+  totalEarnings: number;
+  comparedToLastMonth: number; // negative = less, positive = more
+  data: EarningsDataPoint[];
+}
+
+export interface EarningsResponse {
+  success: boolean;
+  data: EarningsSummary;
+}
