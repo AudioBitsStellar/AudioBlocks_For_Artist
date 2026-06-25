@@ -29,3 +29,7 @@ export const SONG_ONCHAIN_ENDPOINTS = {
 };
 
 
+
+export const EARNINGS_ENDPOINTS = {
+  GET_EARNINGS: "/artist/earnings",
+};
