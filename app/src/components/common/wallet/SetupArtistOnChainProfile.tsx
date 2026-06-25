@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useStellarWallet } from "./useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
+import { analytics } from "@/lib/analytics";
 
 /**
  * One-time action: mints the artist's on-chain profile NFT via the
@@ -20,9 +21,22 @@ export default function SetupArtistOnChainProfile() {
   const isBusy = prepareMutation.isPending || submitMutation.isPending;
 
   const handleSetup = async () => {
-    if (!cid.trim()) return;
-    const prepared = await prepareMutation.mutateAsync({ cid: cid.trim() });
-    await signAndSubmit(prepared.data, (vars) => submitMutation.mutateAsync(vars));
+    if (!cid.trim() || !address) return;
+    analytics.mintStarted({ songId: 'artist-profile', walletAddress: address });
+    try {
+      const prepared = await prepareMutation.mutateAsync({ cid: cid.trim() });
+      const result: any = await signAndSubmit(prepared.data, (vars) =>
+        submitMutation.mutateAsync(vars)
+      );
+      analytics.mintSucceeded({
+        songId: 'artist-profile',
+        txHash: result?.data?.txHash ?? '',
+        tokenId: result?.data?.tokenId ?? '',
+      });
+    } catch (err: any) {
+      analytics.mintFailed({ songId: 'artist-profile', reason: err?.message ?? 'unknown' });
+      throw err;
+    }
   };
 
   return (
