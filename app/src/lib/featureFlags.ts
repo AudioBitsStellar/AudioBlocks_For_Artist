@@ -16,6 +16,8 @@ export const featureFlags = {
   useMockEvents: globalMock,
   /** Merch list and metrics */
   useMockMerches: globalMock,
+  /** Albums carousel on dashboard/overview — wired to real API when false */
+  useMockAlbums: globalMock,
   /**
    * EarningsRoyalties is already wired to a real endpoint (#47),
    * so its flag is always false regardless of the global toggle.

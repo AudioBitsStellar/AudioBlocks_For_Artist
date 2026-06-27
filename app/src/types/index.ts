@@ -87,3 +87,26 @@ export interface EarningsResponse {
   success: boolean;
   data: EarningsSummary;
 }
+
+export interface OverviewKpi {
+  songsPublished: number;
+  totalEarnings: number;
+  listenersCount: number;
+  mostStreamedRegion: string;
+}
+
+export interface OverviewResponse {
+  success: boolean;
+  data: OverviewKpi;
+}
+
+export interface Album {
+  id: string;
+  title: string;
+  coverArtUrl?: string;
+}
+
+export interface AlbumsResponse {
+  success: boolean;
+  data: Album[];
+}

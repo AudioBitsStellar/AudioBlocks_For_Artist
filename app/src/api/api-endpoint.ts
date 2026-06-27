@@ -37,3 +37,12 @@ export const MERCH_ENDPOINTS = {
 export const EARNINGS_ENDPOINTS = {
   GET_EARNINGS: "/artist/earnings",
 };
+
+export const OVERVIEW_ENDPOINTS = {
+  GET_OVERVIEW: "/artist/overview",
+};
+
+export const ALBUM_ENDPOINTS = {
+  LIST: "/artist/albums",
+  CREATE: "/artist/albums",
+};
