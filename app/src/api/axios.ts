@@ -1,12 +1,41 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance } from "axios";
 import Cookies from "js-cookie";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  // useAuth.tsx stores the JWT in the `audioblocks_jwt` cookie; localStorage
-  // "token" is kept as a fallback for any other login path that uses it.
   return Cookies.get("audioblocks_jwt") || localStorage.getItem("token") || null;
 }
+
+function clearSession(): void {
+  Cookies.remove("audioblocks_jwt");
+  localStorage.removeItem("token");
+}
+
+// Normalized error shape exposed to callers / React Query
+export interface ApiError {
+  status: number;
+  message: string;
+  code?: string;
+}
+
+export function extractApiError(error: unknown): ApiError {
+  if (axios.isAxiosError(error)) {
+    const axErr = error as AxiosError<{ message?: string; error?: string; code?: string }>;
+    const data = axErr.response?.data;
+    return {
+      status: axErr.response?.status ?? 0,
+      message: data?.message ?? data?.error ?? axErr.message,
+      code: data?.code,
+    };
+  }
+  if (error instanceof Error) {
+    return { status: 0, message: error.message };
+  }
+  return { status: 0, message: "Unknown error" };
+}
+
+// Guard against firing concurrent redirects / clears for 401
+let redirecting = false;
 
 export const createApiClient = async (): Promise<AxiosInstance> => {
   const apiClient = axios.create({
@@ -29,18 +58,17 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
     return config;
   });
 
-  // Response interceptor
   apiClient.interceptors.response.use(
     (response) => response,
-    (error) => {
-      if (error.response?.status === 401) {
-        if (typeof window !== "undefined") {
-          Cookies.remove("audioblocks_jwt");
-          localStorage.removeItem("token");
-          // window.location.href = "/login";
+    (error: AxiosError) => {
+      if (error.response?.status === 401 && typeof window !== "undefined") {
+        if (!redirecting) {
+          redirecting = true;
+          clearSession();
+          window.location.href = "/login";
         }
       }
-      return Promise.reject(error);
+      return Promise.reject(extractApiError(error));
     }
   );
 

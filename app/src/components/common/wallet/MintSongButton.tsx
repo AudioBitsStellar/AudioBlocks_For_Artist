@@ -4,6 +4,8 @@ import { useStellarWallet } from "./useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
+import { toast } from "sonner";
+import { isRetryableError } from "@/utils/errorRecovery";
 
 interface MintSongButtonProps {
   songId: string;
@@ -38,8 +40,13 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
         tokenId: result?.data?.tokenId ?? '',
       });
     } catch (err: any) {
-      analytics.mintFailed({ songId, reason: err?.message ?? 'unknown' });
-      throw err;
+      const reason = err?.message ?? "unknown";
+      analytics.mintFailed({ songId, reason });
+      if (isRetryableError(err)) {
+        toast.error(`Mint failed — please try again. (${reason})`);
+      } else {
+        toast.error(`Mint failed: ${reason}`);
+      }
     }
   };
 

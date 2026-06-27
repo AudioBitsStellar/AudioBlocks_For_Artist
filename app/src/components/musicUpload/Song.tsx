@@ -10,6 +10,7 @@ import MusicLoader from '../MusicLoader';
 import { toast } from 'sonner';
 import MintSongButton from '@/components/common/wallet/MintSongButton';
 import { analytics } from '@/lib/analytics';
+import { isRetryableError, getErrorMessage } from '@/utils/errorRecovery';
 
 const Song = () => {
     const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -134,6 +135,7 @@ const Song = () => {
             setUploadedFile(prev =>
                 prev ? { ...prev, status: "failed" } : prev
             );
+            toast.error(`Retry failed: ${getErrorMessage(err)}`);
         }
     };
 
@@ -219,13 +221,16 @@ const Song = () => {
             setFileId(null);
         } catch (err: any) {
             console.error(err);
-            analytics.uploadFailed({
-                fileId,
-                reason: err?.message ?? 'unknown',
-            });
+            const reason = getErrorMessage(err);
+            analytics.uploadFailed({ fileId, reason });
             setUploadedFile((prev) =>
                 prev ? { ...prev, status: "failed" } : prev
             );
+            if (isRetryableError(err)) {
+                toast.error(`Upload failed — tap retry to try again. (${reason})`);
+            } else {
+                toast.error(`Upload failed: ${reason}`);
+            }
         } finally {
             setIsUploading(false);
         }

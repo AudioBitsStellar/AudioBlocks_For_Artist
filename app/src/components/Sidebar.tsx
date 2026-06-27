@@ -4,6 +4,7 @@ import { Music, Calendar, Tag, Star, Home, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
 const navItems = [
   { name: 'Overview', icon: Home, href: '/dashboard/overview' },
@@ -28,18 +29,32 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
 
+  // Prevent body scroll while mobile drawer is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
   return (
     <>
       {/* Mobile Dark Overlay */}
       {open && (
         <div
           onClick={onClose}
+          aria-hidden="true"
           className="fixed inset-0 bg-black/60 z-40 md:hidden"
         />
       )}
 
       {/* Sidebar */}
       <div
+        role={open ? 'dialog' : undefined}
+        aria-modal={open ? true : undefined}
+        aria-label="Navigation"
         className={`
           fixed top-0 left-0 h-full w-64 bg-[#161616] flex flex-col
           transform transition-transform duration-300 ease-in-out
