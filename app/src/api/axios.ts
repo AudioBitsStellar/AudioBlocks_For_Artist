@@ -37,6 +37,11 @@ export function extractApiError(error: unknown): ApiError {
 // Guard against firing concurrent redirects / clears for 401
 let redirecting = false;
 
+/** Reset the in-flight redirect flag — call this in test teardown. */
+export function resetRedirectState(): void {
+  redirecting = false;
+}
+
 export const createApiClient = async (): Promise<AxiosInstance> => {
   const apiClient = axios.create({
     baseURL:
