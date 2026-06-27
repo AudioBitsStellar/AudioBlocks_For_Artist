@@ -22,7 +22,7 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <div className="md:ml-64 min-w-0 w-full flex flex-col">
-        <TopHeader onMenuClick={() => setSidebarOpen(true)} />
+        <TopHeader onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} />
 
         <main className="flex-1 w-11/12 m-auto overflow-y-auto overflow-x-hidden py-8 space-y-8">
           {children}
