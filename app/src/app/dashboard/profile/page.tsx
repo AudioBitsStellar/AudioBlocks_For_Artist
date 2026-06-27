@@ -11,6 +11,8 @@ import MusicLoader from "@/components/MusicLoader";
 import useArtistServices from "@/services/artistServices";
 import SetupArtistOnChainProfile from "@/components/common/wallet/SetupArtistOnChainProfile";
 import { analytics } from "@/lib/analytics";
+import { toast } from "sonner";
+import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 
 export default function ProfilePage() {
 	const [activeTab, setActiveTab] = useState<"profile" | "settings" | "onchain">("profile");
@@ -65,7 +67,15 @@ export default function ProfilePage() {
 					hasWebsite: Boolean(data.website?.trim()),
 					hasTwitter: Boolean(data.twitter?.trim()),
 				});
-				console.log("Profile updated successfully");
+				toast.success("Profile saved successfully");
+			},
+			onError: (err: unknown) => {
+				const msg = getErrorMessage(err);
+				if (isRetryableError(err)) {
+					toast.error(`Could not save profile — please try again. (${msg})`);
+				} else {
+					toast.error(`Profile save failed: ${msg}`);
+				}
 			},
 		});
 	};
