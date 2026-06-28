@@ -46,3 +46,10 @@ export const ALBUM_ENDPOINTS = {
   LIST: "/artist/albums",
   CREATE: "/artist/albums",
 };
+
+export const EVENTS_ENDPOINTS = {
+  LIST: "/artist/events",
+  CREATE: "/artist/events",
+  UPDATE: (id: string | number) => `/artist/events/${id}`,
+  DELETE: (id: string | number) => `/artist/events/${id}`,
+};

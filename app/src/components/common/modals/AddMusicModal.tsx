@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import Image from 'next/image';
 import { X, Upload, Music } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface AddMusicModalProps {
   open: boolean;
@@ -21,8 +22,10 @@ const DEFAULT_FORM = {
 };
 
 export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>('song');
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,9 +66,42 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
   };
 
   const handleSubmit = () => {
-    // Handle form submission
+    const newErrors: Record<string, string> = {};
+    if (mode === 'song' && !form.songTitle.trim()) {
+      newErrors.songTitle = 'Song title is required';
+    }
+    if (mode === 'album' && !form.albumTitle.trim()) {
+      newErrors.albumTitle = 'Album title is required';
+    }
+    if (!form.genre.trim()) {
+      newErrors.genre = 'Genre is required';
+    }
+    if (!form.releaseDate.trim()) {
+      newErrors.releaseDate = 'Release date is required';
+    } else if (!/^\d{2}-\d{2}-\d{4}$/.test(form.releaseDate.trim())) {
+      newErrors.releaseDate = 'Release date must be in DD-MM-YYYY format';
+    }
+    if (!form.marketPrice.trim()) {
+      newErrors.marketPrice = 'Market price is required';
+    } else if (isNaN(Number(form.marketPrice.trim()))) {
+      newErrors.marketPrice = 'Market price must be a valid number';
+    }
+    if (mode === 'song' && !uploadedFile) {
+      newErrors.uploadedFile = 'Audio file is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     console.log('Form submitted:', { mode, form, coverImage, uploadedFile });
     onOpenChange(false);
+    
+    // Redirect to the Song.tsx or Album.tsx flow based on selection (which are rendered inside /dashboard/upload-music)
+    router.push(`/dashboard/upload-music?mode=${mode}`);
+
     // Reset form
     setForm(DEFAULT_FORM);
     setCoverImage(null);
@@ -116,7 +152,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column - Form Fields */}
               <div className="space-y-5">
-                <div className="space-y-2">
+                 <div className="space-y-2">
                   <label className="text-sm font-medium text-white">
                     Song Title <span className="text-[#D2045B]">*</span>
                   </label>
@@ -126,6 +162,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     placeholder="Add Song Title"
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
+                  {errors.songTitle && <p className="text-red-500 text-xs">{errors.songTitle}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -138,6 +175,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     placeholder="Enter Album Title"
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
+                  {errors.albumTitle && <p className="text-red-500 text-xs">{errors.albumTitle}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -150,6 +188,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     placeholder="Add Genre of song"
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
+                  {errors.genre && <p className="text-red-500 text-xs">{errors.genre}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -162,6 +201,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     placeholder="DD-MM-YYYY"
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
+                  {errors.releaseDate && <p className="text-red-500 text-xs">{errors.releaseDate}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -174,6 +214,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     placeholder="Add Price of Song"
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
+                  {errors.marketPrice && <p className="text-red-500 text-xs">{errors.marketPrice}</p>}
                 </div>
 
                 <button
@@ -260,6 +301,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                   {!uploadedFile && (
                     <p className="text-xs text-[#A3A3A3]">No uploads added to the queue</p>
                   )}
+                  {errors.uploadedFile && <p className="text-red-500 text-xs mt-2">{errors.uploadedFile}</p>}
                 </div>
               </div>
             </div>
