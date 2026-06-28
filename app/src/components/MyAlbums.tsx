@@ -1,10 +1,11 @@
 'use client';
 
-import { ChevronRight, ChevronLeft, ArrowUpRight } from 'lucide-react';
-import { useRef } from 'react';
+import { ChevronRight, ChevronLeft, ArrowUpRight, Trash2 } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
 import useAlbumServices from '@/services/albumService';
 import { featureFlags } from '@/lib/featureFlags';
 import { Album } from '@/types';
+import ConfirmationDialog from './shared/ConfirmationDialog';
 
 const MOCK_ALBUMS: Album[] = [
   { id: '1', title: 'Echoes of the Soul', coverArtUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
@@ -14,8 +15,17 @@ const MOCK_ALBUMS: Album[] = [
   { id: '5', title: 'Cosmic Journey', coverArtUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
 ];
 
-function AlbumCarousel({ albums }: { albums: Album[] }) {
+function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
+  const [albums, setAlbums] = useState<Album[]>(initialAlbums);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; albumId: string | null }>({
+    isOpen: false,
+    albumId: null
+  });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setAlbums(initialAlbums);
+  }, [initialAlbums]);
 
   const scrollLeft = () => {
     scrollContainerRef.current?.scrollBy({ left: -200, behavior: 'smooth' });
@@ -23,6 +33,12 @@ function AlbumCarousel({ albums }: { albums: Album[] }) {
 
   const scrollRight = () => {
     scrollContainerRef.current?.scrollBy({ left: 200, behavior: 'smooth' });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirmation.albumId !== null) {
+      setAlbums(prev => prev.filter(a => a.id !== deleteConfirmation.albumId));
+    }
   };
 
   if (albums.length === 0) {
@@ -65,19 +81,33 @@ function AlbumCarousel({ albums }: { albums: Album[] }) {
           style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
         >
           {albums.map((album) => (
-            <div key={album.id} className="flex-shrink-0 w-48">
+            <div key={album.id} className="flex-shrink-0 w-48 group relative">
               <div className="w-48 h-48 rounded-lg mb-2 relative overflow-hidden bg-gray-800">
                 {album.coverArtUrl ? (
                   <img src={album.coverArtUrl} alt={album.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No Cover</div>
                 )}
+                <button
+                  onClick={() => setDeleteConfirmation({ isOpen: true, albumId: album.id })}
+                  className="absolute top-2 right-2 bg-red-600/85 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  title="Delete Album"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
               <p className="text-white text-sm text-center">{album.title}</p>
             </div>
           ))}
         </div>
       </div>
+      <ConfirmationDialog
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, albumId: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Album"
+        message="Are you sure you want to delete this album? This action is permanent and cannot be undone."
+      />
     </div>
   );
 }

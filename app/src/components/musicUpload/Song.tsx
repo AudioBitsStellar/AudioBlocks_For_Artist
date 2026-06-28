@@ -435,6 +435,14 @@ const Song = () => {
                                             )}
 
                                         </div>
+                                        {uploadedFile.status === 'uploading' && (
+                                            <div className="w-full bg-zinc-800 rounded-full h-1 mt-1.5 overflow-hidden">
+                                                <div
+                                                    className="bg-pink-500 h-1 rounded-full transition-all duration-200"
+                                                    style={{ width: `${uploadProgress}%` }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
