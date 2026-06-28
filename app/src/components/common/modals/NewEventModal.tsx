@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import Image from 'next/image';
 import { X, Loader2, Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import useEventsService from '@/services/eventsService';
 
 interface NewEventModalProps {
   open: boolean;
@@ -21,6 +22,8 @@ const DEFAULT_FORM = {
 };
 
 export default function NewEventModal({ open, onOpenChange }: NewEventModalProps) {
+  const { useCreateEvent } = useEventsService();
+  const createMutation = useCreateEvent();
   const [step, setStep] = useState<Step>('form');
   const [form, setForm] = useState(DEFAULT_FORM);
   const progressTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,15 +46,25 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
     }
   }, [open]);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     setStep('progress');
-
-    progressTimeout.current = setTimeout(() => {
+    try {
+      await createMutation.mutateAsync({
+        title: form.name,
+        price: form.price,
+        tickets: '100 Tickets Available',
+        date: form.date,
+        time: form.time,
+        image: '/artist_hub/HeroImage.png',
+      });
       setStep('completed');
       closeTimeout.current = setTimeout(() => {
         onOpenChange(false);
       }, 1800);
-    }, 2000);
+    } catch (err) {
+      console.error(err);
+      setStep('form');
+    }
   };
 
   const handleCancel = () => {

@@ -1,25 +1,26 @@
 'use client';
 
-import { Filter, Search, CalendarDays, Clock3, Trash2 } from 'lucide-react';
+import { Filter, Search, CalendarDays, Clock3, Trash2, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { featureFlags } from '@/lib/featureFlags';
 import { MOCK_EVENTS, MOCK_EVENT_METRICS } from '@/lib/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
 import ConfirmationDialog from './shared/ConfirmationDialog';
 
-// TODO: replace with useGet hooks once /artist/events endpoint is ready
-const getRealEventMetrics = () => [] as typeof MOCK_EVENT_METRICS;
-const getRealEvents = () => [] as typeof MOCK_EVENTS;
+import useEventsService from '@/services/eventsService';
 
 interface EventsContentProps {
   onNewEvent: () => void;
 }
 
 export default function EventsContent({ onNewEvent }: EventsContentProps) {
-  const metrics = featureFlags.useMockEvents ? MOCK_EVENT_METRICS : getRealEventMetrics();
-  const events = featureFlags.useMockEvents ? MOCK_EVENTS : getRealEvents();
+  const { useGetEvents, useDeleteEvent } = useEventsService();
+  const { data, isLoading } = useGetEvents();
 
-  const [eventsList, setEventsList] = useState(events);
+  const metrics = featureFlags.useMockEvents ? MOCK_EVENT_METRICS : (data?.metrics ?? []);
+  const events = featureFlags.useMockEvents ? MOCK_EVENTS : (data?.items ?? []);
+
+  const [eventsList, setEventsList] = useState<any[]>([]);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; eventId: string | null }>({
     isOpen: false,
     eventId: null
@@ -29,11 +30,28 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
     setEventsList(events);
   }, [events]);
 
-  const handleDeleteConfirm = () => {
+  const deleteMutation = useDeleteEvent(deleteConfirmation.eventId || '');
+
+  const handleDeleteConfirm = async () => {
     if (deleteConfirmation.eventId !== null) {
-      setEventsList(prev => prev.filter(e => e.id !== deleteConfirmation.eventId));
+      try {
+        if (!featureFlags.useMockEvents) {
+          await deleteMutation.mutateAsync();
+        }
+        setEventsList(prev => prev.filter(e => e.id !== deleteConfirmation.eventId));
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
+
+  if (isLoading && !featureFlags.useMockEvents) {
+    return (
+      <div className="flex items-center justify-center py-24 text-gray-500">
+        <Loader2 className="h-8 w-8 animate-spin text-[#D2045B]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">

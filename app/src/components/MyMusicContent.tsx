@@ -39,6 +39,8 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; songId: number | null }>({
     isOpen: false,
     songId: null
@@ -123,6 +125,13 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
       type: albumTypes[i % albumTypes.length],
       image: `https://images.unsplash.com/photo-${imageId}?w=400&h=400&fit=crop&auto=format&q=80`,
     };
+  });
+
+  const filteredAlbums = albums.filter(album => {
+    const matchesSearch = album.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          album.artist.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filterType === 'all' || album.type.toLowerCase() === filterType.toLowerCase();
+    return matchesSearch && matchesFilter;
   });
 
   const scrollLeft = () => {
@@ -303,15 +312,28 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search my music"
               className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-64"
             />
           </div>
-          {/* Filter Button */}
-          <button className="bg-[#161616] border border-gray-700 rounded-lg px-4 py-2 text-white hover:border-purple-600 transition-colors flex items-center gap-2">
-            <Filter size={20} />
-            <span className="text-sm">Filter</span>
-          </button>
+          {/* Filter Dropdown */}
+          <div className="relative">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="bg-[#161616] border border-gray-700 rounded-lg pl-4 pr-10 py-2 text-white hover:border-purple-600 transition-colors text-sm focus:outline-none cursor-pointer appearance-none"
+            >
+              <option value="all">All Types</option>
+              <option value="new album">Albums</option>
+              <option value="ep">EPs</option>
+              <option value="single">Singles</option>
+              <option value="remix">Remixes</option>
+              <option value="live">Live</option>
+            </select>
+            <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+          </div>
         </div>
       </div>
 
@@ -342,7 +364,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             WebkitOverflowScrolling: 'touch'
           }}
         >
-          {albums.map((album) => (
+          {filteredAlbums.map((album) => (
             <div
               key={album.id}
               className="shrink-0 w-64 cursor-pointer group"
