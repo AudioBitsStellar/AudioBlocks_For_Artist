@@ -4,6 +4,9 @@ import { useAccount } from 'wagmi';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { clearSession } from '@/api/axios';
 
 
 export const Auth = () => {
@@ -12,6 +15,25 @@ export const Auth = () => {
   const { address } = useAccount();
   const [shouldTriggerSignature, setShouldTriggerSignature] = useState(false);
   const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  const logout = async () => {
+    clearSession();
+    queryClient.clear();
+    await handleLogOut();
+    router.push('/login');
+  };
+
+  useEffect(() => {
+    if (!user && !loading) {
+      clearSession();
+      queryClient.clear();
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+        router.push('/login');
+      }
+    }
+  }, [user, loading, router, queryClient]);
 
   useEffect(() => {
     const runSignatureFlow = async () => {
@@ -88,6 +110,6 @@ export const Auth = () => {
     }
   };
 
-  return { setShouldTriggerSignature, handleLogOut, loading };
+  return { setShouldTriggerSignature, handleLogOut, loading, logout };
 };
 

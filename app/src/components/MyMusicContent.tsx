@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { MUSIC_GENRES } from './shared/music_genre';
 import { MusicFormValues } from '@/types';
 import { useForm } from 'react-hook-form';
+import ConfirmationDialog from './shared/ConfirmationDialog';
 
 interface Album {
   id: number;
@@ -38,6 +39,16 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; songId: number | null }>({
+    isOpen: false,
+    songId: null
+  });
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirmation.songId !== null) {
+      setSongs(prev => prev.filter(s => s.id !== deleteConfirmation.songId));
+    }
+  };
 
 
   const albumTitles = [
@@ -257,15 +268,26 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                     </div>
                   </div>
 
-                  {/* More Options */}
-                  <button className="text-gray-400 hover:text-white transition-colors p-2">
-                    <MoreVertical size={20} />
+                  {/* Delete Song */}
+                  <button 
+                    onClick={() => setDeleteConfirmation({ isOpen: true, songId: song.id })}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                    title="Delete song"
+                  >
+                    <Trash2 size={20} />
                   </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
+        <ConfirmationDialog
+          isOpen={deleteConfirmation.isOpen}
+          onClose={() => setDeleteConfirmation({ isOpen: false, songId: null })}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Song"
+          message="Are you sure you want to delete this song? This action is permanent and cannot be undone."
+        />
       </div>
     );
   }

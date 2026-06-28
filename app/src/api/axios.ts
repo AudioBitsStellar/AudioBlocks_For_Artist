@@ -6,7 +6,7 @@ function getToken(): string | null {
   return Cookies.get("audioblocks_jwt") || localStorage.getItem("token") || null;
 }
 
-function clearSession(): void {
+export function clearSession(): void {
   Cookies.remove("audioblocks_jwt");
   localStorage.removeItem("token");
 }

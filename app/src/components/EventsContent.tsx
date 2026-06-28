@@ -1,9 +1,11 @@
 'use client';
 
-import { Filter, Search, CalendarDays, Clock3 } from 'lucide-react';
+import { Filter, Search, CalendarDays, Clock3, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { featureFlags } from '@/lib/featureFlags';
 import { MOCK_EVENTS, MOCK_EVENT_METRICS } from '@/lib/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
+import ConfirmationDialog from './shared/ConfirmationDialog';
 
 // TODO: replace with useGet hooks once /artist/events endpoint is ready
 const getRealEventMetrics = () => [] as typeof MOCK_EVENT_METRICS;
@@ -16,6 +18,22 @@ interface EventsContentProps {
 export default function EventsContent({ onNewEvent }: EventsContentProps) {
   const metrics = featureFlags.useMockEvents ? MOCK_EVENT_METRICS : getRealEventMetrics();
   const events = featureFlags.useMockEvents ? MOCK_EVENTS : getRealEvents();
+
+  const [eventsList, setEventsList] = useState(events);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; eventId: string | null }>({
+    isOpen: false,
+    eventId: null
+  });
+
+  useEffect(() => {
+    setEventsList(events);
+  }, [events]);
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirmation.eventId !== null) {
+      setEventsList(prev => prev.filter(e => e.id !== deleteConfirmation.eventId));
+    }
+  };
 
   return (
     <div className="space-y-10">
@@ -61,14 +79,14 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
         </div>
       </div>
 
-      {events.length === 0 ? (
+      {eventsList.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-gray-500 gap-2">
           <p className="text-lg font-semibold">No events yet</p>
           <p className="text-sm">Create your first event to get started.</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {events.map((event) => (
+          {eventsList.map((event) => (
             <div key={event.id} className="group overflow-hidden rounded-3xl border border-[#1F1F1F] bg-[#151818] shadow-lg transition-transform duration-200 hover:-translate-y-1">
               <div className="relative h-48 overflow-hidden">
                 <img src={event.image} alt={event.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -81,7 +99,15 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
                   <span className="inline-flex items-center gap-1"><Clock3 className="h-4 w-4" />{event.time}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <button className="rounded-full border border-[#2E2E2E] px-5 py-1.5 text-xs font-medium text-white transition-colors hover:border-[#885FA8]">Edit</button>
+                  <div className="flex items-center gap-2">
+                    <button className="rounded-full border border-[#2E2E2E] px-4 py-1.5 text-xs font-medium text-white transition-colors hover:border-[#885FA8]">Edit</button>
+                    <button 
+                      onClick={() => setDeleteConfirmation({ isOpen: true, eventId: event.id })}
+                      className="rounded-full border border-red-900 bg-red-950/20 px-4 py-1.5 text-xs font-medium text-red-400 hover:text-red-200 hover:bg-red-900 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
                   <span className="text-sm font-semibold text-white/90">{event.price}</span>
                 </div>
               </div>
@@ -89,6 +115,13 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
           ))}
         </div>
       )}
+      <ConfirmationDialog
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, eventId: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Event"
+        message="Are you sure you want to delete this event? This action is permanent and cannot be undone."
+      />
     </div>
   );
 }
