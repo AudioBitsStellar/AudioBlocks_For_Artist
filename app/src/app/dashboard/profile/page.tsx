@@ -12,13 +12,15 @@ import useArtistServices from "@/services/artistServices";
 import SetupArtistOnChainProfile from "@/components/common/wallet/SetupArtistOnChainProfile";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { analytics } from "@/lib/analytics";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/useToastHandler";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
+import ImageCropper from "@/components/ImageCropper";
 
 export default function ProfilePage() {
 	const [activeTab, setActiveTab] = useState<"profile" | "settings" | "onchain">("profile");
 	const { useUpdateArtistProfile } = useArtistServices();
 	const updateProfileMutation = useUpdateArtistProfile();
+	const toast = useToast();
 
 	const {
 		register,
@@ -31,6 +33,7 @@ export default function ProfilePage() {
 	});
 
 	const [profileImage, setProfileImage] = useState<string | null>(null);
+	const [cropSrc, setCropSrc] = useState<string | null>(null);
 	const profileInputRef = useRef<HTMLInputElement>(null);
 	const [notifications, setNotifications] = useState({
 		commentsOnSongs: false,
@@ -40,16 +43,27 @@ export default function ProfilePage() {
 
 	const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
-		if (file) {
-			setValue("profileImage", file);
+		if (!file) return;
 
-			// Preview only
-			const reader = new FileReader();
-			reader.onloadend = () => {
-				setProfileImage(reader.result as string);
-			};
-			reader.readAsDataURL(file);
-		}
+		const reader = new FileReader();
+		reader.onloadend = () => {
+			setCropSrc(reader.result as string);
+		};
+		reader.readAsDataURL(file);
+
+		// Reset input so the same file can be reselected after cancel
+		e.target.value = '';
+	};
+
+	const handleCropComplete = (blob: Blob) => {
+		const croppedFile = new File([blob], 'profile-avatar.jpg', { type: 'image/jpeg' });
+		setValue('profileImage', croppedFile);
+		setProfileImage(URL.createObjectURL(blob));
+		setCropSrc(null);
+	};
+
+	const handleCropCancel = () => {
+		setCropSrc(null);
 	};
 
 	const onSubmit = async (data: updateProfilePayload) => {
@@ -417,6 +431,15 @@ export default function ProfilePage() {
 						<SetupArtistOnChainProfile />
 					</ErrorBoundary>
 				</div>
+			)}
+
+			{cropSrc && (
+				<ImageCropper
+					imageSrc={cropSrc}
+					aspect={1}
+					onCropComplete={handleCropComplete}
+					onCancel={handleCropCancel}
+				/>
 			)}
 		</>
 	);

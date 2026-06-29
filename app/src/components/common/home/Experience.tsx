@@ -3,31 +3,12 @@
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
-import Cookies from 'js-cookie';
-import { Auth } from '@/hooks/useAuth';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 const Experience = () => {
-  const { setShowAuthFlow } = useDynamicContext();
   const route = useRouter();
-  const { isConnected } = useAccount();
-  const token = Cookies.get('audioblocks_jwt');
-  const { setShouldTriggerSignature } = Auth();
-
-  const handleAuthentication = async () => {
-    setShouldTriggerSignature(true);
-  };
 
   const handleStream = () => {
-    if (!isConnected) {
-      setShouldTriggerSignature(true);
-      setShowAuthFlow(true);
-    } else if (!token) {
-      setShouldTriggerSignature(true);
-    } else {
-      route.push('/dashboard/profile/edit');
-    }
+    route.push('/login');
   };
 
   return (

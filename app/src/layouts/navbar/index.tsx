@@ -4,17 +4,12 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import { Variants, motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const handleAuthentication = () => {
-    // UI only - no authentication
-    alert('Sign in - UI only');
-  };
-
-  
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -64,15 +59,15 @@ const Navbar = () => {
 
           {/* Sign In */}
           <div className="hidden md:flex">
-            <button
-              onClick={handleAuthentication}
+            <Link
+              href="/login"
               className="px-4 cursor-pointer py-2 gap-3 rounded-full bg-[#D2045B] hover:bg-[#B8043F] flex justify-between items-center text-white font-bold transition-all duration-200 whitespace-nowrap text-sm hover:scale-105 shadow-lg hover:shadow-xl"
             >
               Sign in
               <div className="bg-black rounded-full p-1">
                 <ArrowRight className="h-4 w-4 rotate-[300deg]" />
               </div>
-            </button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -109,15 +104,16 @@ const Navbar = () => {
 
               <div className="flex flex-col gap-4 px-6 py-6">
                 <motion.div variants={itemVariants}>
-                  <button
-                    onClick={handleAuthentication}
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMenuOpen(false)}
                     className="mt-6 w-full px-4 py-2 rounded-full bg-[#D2045B] hover:bg-[#B8043F] text-white font-medium text-sm flex justify-center items-center gap-2"
                   >
                     Sign in
                     <div className="bg-black rounded-full p-1">
                       <ArrowRight className="h-4 w-4 rotate-[300deg]" />
                     </div>
-                  </button>
+                  </Link>
                 </motion.div>
               </div>
             </motion.div>

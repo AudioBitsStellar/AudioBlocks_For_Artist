@@ -9,7 +9,7 @@ import { MUSIC_GENRES } from '../shared/music_genre';
 import useUploadServices from '@/services/uploadSerive';
 import { splitFile, generateFileId } from "@/utils/chunkUploader";
 import MusicLoader from '../MusicLoader';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/useToastHandler';
 import MintSongButton from '@/components/common/wallet/MintSongButton';
 import { analytics } from '@/lib/analytics';
 import { isRetryableError, getErrorMessage } from '@/utils/errorRecovery';
@@ -32,6 +32,7 @@ const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB
 const MAX_RETRY_ATTEMPTS = 3;
 
 const Song = () => {
+    const toast = useToast();
     const [audioFile, setAudioFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [fileId, setFileId] = useState<string | null>(null);
@@ -192,7 +193,7 @@ const Song = () => {
             setUploadedFile(prev =>
                 prev ? { ...prev, status: "failed" } : prev
             );
-            toast.error(`Retry failed: ${getErrorMessage(err)}`);
+            toast.error(`Retry failed: ${getErrorMessage(err as Error)}`);
         }
     };
 
@@ -211,7 +212,7 @@ const Song = () => {
 
     const onSubmit = async (data: UploadSong) => {
         if (!audioFile || !fileId || !coverFile) {
-            toast.error("Please upload song and cover");
+            toast.error('Please upload song and cover');
             return;
         }
 
@@ -280,6 +281,8 @@ const Song = () => {
             setUploadedFile((prev) =>
                 prev ? { ...prev, status: "success" } : prev
             );
+
+            toast.success('Song uploaded successfully!');
 
             reset();
             setCoverImage(null);
