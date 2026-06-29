@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import MusicLoader from "@/components/MusicLoader";
 import useArtistServices from "@/services/artistServices";
 import SetupArtistOnChainProfile from "@/components/common/wallet/SetupArtistOnChainProfile";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
@@ -368,7 +369,9 @@ export default function ProfilePage() {
 
 			{activeTab === "onchain" && (
 				<div className="mt-6">
-					<SetupArtistOnChainProfile />
+					<ErrorBoundary fallbackTitle="Failed to load on-chain profile">
+						<SetupArtistOnChainProfile />
+					</ErrorBoundary>
 				</div>
 			)}
 		</>
