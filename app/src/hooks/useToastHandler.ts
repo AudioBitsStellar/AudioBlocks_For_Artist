@@ -1,42 +1,29 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 
-// Types for API responses
-interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-}
-
 interface ApiError {
   message: string;
   status?: number;
   code?: string;
 }
 
-// Success handler hook
 export const useHandleSuccess = () => {
   return useCallback((message?: string) => {
-    const successMessage = message || 'Operation completed successfully';
-    
-    toast.success(successMessage, {
+    toast.success(message || 'Operation completed successfully', {
       duration: 4000,
-      position: 'top-right',
     });
   }, []);
 };
 
-// Error handler hook
 export const useHandleError = () => {
   return useCallback((error: ApiError | string, customMessage?: string) => {
     let message: string;
-    
+
     if (typeof error === 'string') {
       message = customMessage || error;
     } else {
       message = customMessage || error.message || 'An error occurred';
-      
-      // Handle different error types if no custom message provided
+
       if (!customMessage && error.status) {
         switch (error.status) {
           case 400:
@@ -46,7 +33,7 @@ export const useHandleError = () => {
             message = 'Authentication required. Please log in.';
             break;
           case 403:
-            message = 'Access denied. You don\'t have permission.';
+            message = "Access denied. You don't have permission.";
             break;
           case 404:
             message = 'Resource not found.';
@@ -62,10 +49,34 @@ export const useHandleError = () => {
         }
       }
     }
-    
+
     toast.error(message, {
       duration: 5000,
-      position: 'top-right',
     });
   }, []);
+};
+
+export const useToast = () => {
+  const handleSuccess = useHandleSuccess();
+  const handleError = useHandleError();
+
+  const showInfo = useCallback((message: string) => {
+    toast(message, { duration: 4000 });
+  }, []);
+
+  const showLoading = useCallback((message: string) => {
+    return toast.loading(message);
+  }, []);
+
+  const dismiss = useCallback((toastId?: string | number) => {
+    toast.dismiss(toastId);
+  }, []);
+
+  return {
+    success: handleSuccess,
+    error: handleError,
+    info: showInfo,
+    loading: showLoading,
+    dismiss,
+  };
 };
