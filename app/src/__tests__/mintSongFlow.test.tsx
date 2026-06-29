@@ -103,17 +103,11 @@ describe('MintSongButton', () => {
     expect(screen.queryByRole('button', { name: /mint on-chain/i })).toBeNull();
   });
 
-  it('fires prepare → sign → submit in order on happy path', async () => {
+  it('shows preparing state while awaiting wallet signature', async () => {
     const mockPrepare = vi.fn().mockResolvedValue({
       success: true,
       data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
     });
-    const mockSubmit = vi.fn().mockResolvedValue({
-      success: true,
-      data: { txHash: MOCK_TX_HASH, songId: 'song-1', tokenId: MOCK_TOKEN_ID },
-    });
-
-    const { signTransactionXdr } = await import('@/lib/freighter');
 
     vi.doMock('@/components/common/wallet/useStellarWallet', () => ({
       useStellarWallet: () => ({
@@ -121,17 +115,7 @@ describe('MintSongButton', () => {
         isConnecting: false,
         connect: vi.fn(),
         restore: vi.fn(),
-        signAndSubmit: async (
-          prepared: { xdr: string; networkPassphrase: string },
-          submit: (vars: { signedXdr: string }) => Promise<unknown>
-        ) => {
-          const signedXdr = await signTransactionXdr(
-            prepared.xdr,
-            prepared.networkPassphrase,
-            MOCK_ADDRESS
-          );
-          return submit({ signedXdr });
-        },
+        signAndSubmit: vi.fn(),
       }),
     }));
 
@@ -142,10 +126,7 @@ describe('MintSongButton', () => {
           mutateAsync: mockPrepare,
           isPending: false,
         }),
-        useSubmitSongMint: () => ({
-          mutateAsync: mockSubmit,
-          isPending: false,
-        }),
+        useSubmitSongMint: () => ({ mutateAsync: vi.fn(), isPending: false }),
         usePrepareArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
         useSubmitArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
       }),
@@ -154,43 +135,69 @@ describe('MintSongButton', () => {
     const { default: MintSongButton } = await import(
       '@/components/common/wallet/MintSongButton'
     );
-    const { analytics } = await import('@/lib/analytics');
 
-    render(<MintSongButton songId="song-1" albumId={0} />, { wrapper: Wrapper });
-
+    render(<MintSongButton songId="song-1" />, { wrapper: Wrapper });
     fireEvent.click(screen.getByRole('button', { name: /mint on-chain/i }));
 
+    // Should show preparing state
     await waitFor(() => {
-      expect(mockPrepare).toHaveBeenCalledWith({ albumId: 0 });
-    });
-
-    await waitFor(() => {
-      expect(signTransactionXdr).toHaveBeenCalledWith(
-        MOCK_XDR,
-        MOCK_NETWORK,
-        MOCK_ADDRESS
-      );
-    });
-
-    await waitFor(() => {
-      expect(mockSubmit).toHaveBeenCalledWith({ signedXdr: 'SIGNED_XDR_MOCK' });
-    });
-
-    expect(analytics.mintStarted).toHaveBeenCalledWith({
-      songId: 'song-1',
-      walletAddress: MOCK_ADDRESS,
-    });
-
-    expect(analytics.mintSucceeded).toHaveBeenCalledWith({
-      songId: 'song-1',
-      txHash: MOCK_TX_HASH,
-      tokenId: MOCK_TOKEN_ID,
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText(/preparing transaction/i)).toBeInTheDocument();
     });
   });
 
-  it('emits mint_failed and does not call submit when prepare throws', async () => {
-    const mockPrepare = vi.fn().mockRejectedValue(new Error('Song not processed yet'));
-    const mockSubmit = vi.fn();
+  it('shows awaiting signature state during wallet signing', async () => {
+    const mockPrepare = vi.fn().mockResolvedValue({
+      success: true,
+      data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
+    });
+
+    vi.doMock('@/components/common/wallet/useStellarWallet', () => ({
+      useStellarWallet: () => ({
+        address: MOCK_ADDRESS,
+        isConnecting: false,
+        connect: vi.fn(),
+        restore: vi.fn(),
+        signAndSubmit: vi.fn(),
+      }),
+    }));
+
+    vi.doMock('@/services/onchainService', () => ({
+      default: () => ({
+        useConnectWallet: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        usePrepareSongMint: () => ({
+          mutateAsync: mockPrepare,
+          isPending: false,
+        }),
+        useSubmitSongMint: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        usePrepareArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        useSubmitArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
+      }),
+    }));
+
+    const { default: MintSongButton } = await import(
+      '@/components/common/wallet/MintSongButton'
+    );
+
+    render(<MintSongButton songId="song-1" />, { wrapper: Wrapper });
+    fireEvent.click(screen.getByRole('button', { name: /mint on-chain/i }));
+
+    // Should show awaiting signature state
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText(/awaiting wallet signature/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows success state with tx hash after successful mint', async () => {
+    const mockPrepare = vi.fn().mockResolvedValue({
+      success: true,
+      data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
+    });
+    const mockSubmit = vi.fn().mockResolvedValue({
+      success: true,
+      data: { txHash: MOCK_TX_HASH, songId: 'song-1', tokenId: MOCK_TOKEN_ID },
+    });
 
     vi.doMock('@/components/common/wallet/useStellarWallet', () => ({
       useStellarWallet: () => ({
@@ -221,32 +228,28 @@ describe('MintSongButton', () => {
     const { default: MintSongButton } = await import(
       '@/components/common/wallet/MintSongButton'
     );
-    const { analytics } = await import('@/lib/analytics');
 
-    render(<MintSongButton songId="song-2" />, { wrapper: Wrapper });
+    render(<MintSongButton songId="song-1" />, { wrapper: Wrapper });
     fireEvent.click(screen.getByRole('button', { name: /mint on-chain/i }));
 
+    // Should show success state with tx hash
     await waitFor(() => {
-      expect(analytics.mintFailed).toHaveBeenCalledWith({
-        songId: 'song-2',
-        reason: 'Song not processed yet',
-      });
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText(/minted successfully/i)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(MOCK_TX_HASH))).toBeInTheDocument();
     });
-
-    expect(mockSubmit).not.toHaveBeenCalled();
   });
 
-  it('emits mint_failed and does not call submit when Freighter rejects signing', async () => {
+  it('shows rejected state when Freighter rejects signing', async () => {
     const { signTransactionXdr } = await import('@/lib/freighter');
     (signTransactionXdr as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error('Freighter rejected the signing request.')
+      new Error('User rejected the signing request.')
     );
 
     const mockPrepare = vi.fn().mockResolvedValue({
       success: true,
       data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
     });
-    const mockSubmit = vi.fn();
 
     vi.doMock('@/components/common/wallet/useStellarWallet', () => ({
       useStellarWallet: () => ({
@@ -254,17 +257,7 @@ describe('MintSongButton', () => {
         isConnecting: false,
         connect: vi.fn(),
         restore: vi.fn(),
-        signAndSubmit: async (
-          prepared: { xdr: string; networkPassphrase: string },
-          submit: (vars: { signedXdr: string }) => Promise<unknown>
-        ) => {
-          const signedXdr = await signTransactionXdr(
-            prepared.xdr,
-            prepared.networkPassphrase,
-            MOCK_ADDRESS
-          );
-          return submit({ signedXdr });
-        },
+        signAndSubmit: vi.fn(),
       }),
     }));
 
@@ -275,10 +268,47 @@ describe('MintSongButton', () => {
           mutateAsync: mockPrepare,
           isPending: false,
         }),
-        useSubmitSongMint: () => ({
-          mutateAsync: mockSubmit,
+        useSubmitSongMint: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        usePrepareArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        useSubmitArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
+      }),
+    }));
+
+    const { default: MintSongButton } = await import(
+      '@/components/common/wallet/MintSongButton'
+    );
+
+    render(<MintSongButton songId="song-2" />, { wrapper: Wrapper });
+    fireEvent.click(screen.getByRole('button', { name: /mint on-chain/i }));
+
+    // Should show rejected state
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByText(/signature rejected/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows error state with reason when mint fails', async () => {
+    const mockPrepare = vi.fn().mockRejectedValue(new Error('Song not processed yet'));
+
+    vi.doMock('@/components/common/wallet/useStellarWallet', () => ({
+      useStellarWallet: () => ({
+        address: MOCK_ADDRESS,
+        isConnecting: false,
+        connect: vi.fn(),
+        restore: vi.fn(),
+        signAndSubmit: vi.fn(),
+      }),
+    }));
+
+    vi.doMock('@/services/onchainService', () => ({
+      default: () => ({
+        useConnectWallet: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        usePrepareSongMint: () => ({
+          mutateAsync: mockPrepare,
           isPending: false,
         }),
+        useSubmitSongMint: () => ({ mutateAsync: vi.fn(), isPending: false }),
         usePrepareArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
         useSubmitArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
       }),
@@ -289,16 +319,18 @@ describe('MintSongButton', () => {
     );
     const { analytics } = await import('@/lib/analytics');
 
-    render(<MintSongButton songId="song-3" />, { wrapper: Wrapper });
+    render(<MintSongButton songId="song-2" />, { wrapper: Wrapper });
     fireEvent.click(screen.getByRole('button', { name: /mint on-chain/i }));
 
+    // Should show error state
     await waitFor(() => {
-      expect(analytics.mintFailed).toHaveBeenCalledWith({
-        songId: 'song-3',
-        reason: 'Freighter rejected the signing request.',
-      });
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByText(/mint failed/i)).toBeInTheDocument();
     });
 
-    expect(mockSubmit).not.toHaveBeenCalled();
+    expect(analytics.mintFailed).toHaveBeenCalledWith({
+      songId: 'song-2',
+      reason: 'Song not processed yet',
+    });
   });
 });

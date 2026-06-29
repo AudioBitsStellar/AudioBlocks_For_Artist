@@ -112,7 +112,6 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
     '1470229722913-7c0e2dbbafbd',
     '1493225457124-a3eb161ffa5f',
     '1511671782779-c97d3d27a1d4',
-    '1516280440619-37996c4e5b4e',
   ];
 
   // Create 15 albums for scrolling
@@ -191,7 +190,6 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
     onAlbumSelect?.(album);
   };
 
- 
   // If an album is selected, show the song list
   if (selectedAlbum) {
     return (
@@ -201,15 +199,16 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
           <h1 className="text-white text-3xl font-bold shrink-0">{selectedAlbum.title}</h1>
           <div className="flex items-center gap-3 flex-nowrap min-w-0">
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Search Songs"
+                aria-label="Search songs"
                 className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-full"
               />
             </div>
             <button className="bg-[#161616] border border-gray-700 rounded-lg px-4 py-2 text-white hover:border-purple-600 transition-colors flex items-center gap-2 shrink-0">
-              <Filter size={20} />
+              <Filter size={20} aria-hidden="true" />
               <span className="text-sm">Filter</span>
             </button>
           </div>
@@ -226,7 +225,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
               >
                 <div className="flex items-center gap-4">
                   {/* Number */}
-                  <div className="w-8 text-center text-gray-400 group-hover:text-white transition-colors text-sm">
+                  <div className="w-8 text-center text-gray-400 group-hover:text-white transition-colors text-sm" aria-label={`Song number ${index + 1}`}>
                     {index + 1}
                   </div>
 
@@ -234,7 +233,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                   <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-800 shrink-0 relative">
                     <Image
                       src={song.thumbnail}
-                      alt={song.title}
+                      alt={`${song.title} cover art`}
                       width={48}
                       height={48}
                       className="w-full h-full object-cover"
@@ -252,27 +251,27 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                   </div>
 
                   {/* Duration */}
-                  <div className="text-gray-400 text-sm w-16 text-right">
+                  <div className="text-gray-400 text-sm w-16 text-right" aria-label={`Duration: ${song.duration}`}>
                     {song.duration}
                   </div>
 
                   {/* Value */}
-                  <div className="text-gray-400 text-sm w-20 text-right">
+                  <div className="text-gray-400 text-sm w-20 text-right" aria-label={`Value: ${song.value}`}>
                     {song.value}
                   </div>
 
                   {/* Engagement Metrics */}
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4" aria-label={`Likes: ${(song.likes / 1000).toFixed(1)}K, Comments: ${(song.comments / 1000).toFixed(1)}K, Downloads: ${(song.downloads / 1000).toFixed(1)}K`}>
                     <div className="flex items-center gap-1 text-gray-400 text-sm">
-                      <Heart size={16} />
+                      <Heart size={16} aria-hidden="true" />
                       <span>{(song.likes / 1000).toFixed(1)}K</span>
                     </div>
                     <div className="flex items-center gap-1 text-gray-400 text-sm">
-                      <MessageCircle size={16} />
+                      <MessageCircle size={16} aria-hidden="true" />
                       <span>{(song.comments / 1000).toFixed(1)}K</span>
                     </div>
                     <div className="flex items-center gap-1 text-gray-400 text-sm">
-                      <FolderDown size={16} />
+                      <FolderDown size={16} aria-hidden="true" />
                       <span>{(song.downloads / 1000).toFixed(1)}K</span>
                     </div>
                   </div>
@@ -281,9 +280,9 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                   <button 
                     onClick={() => setDeleteConfirmation({ isOpen: true, songId: song.id })}
                     className="text-gray-400 hover:text-red-500 transition-colors p-2"
-                    title="Delete song"
+                    aria-label={`Delete ${song.title}`}
                   >
-                    <Trash2 size={20} />
+                    <Trash2 size={20} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -309,12 +308,13 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
         <div className="flex items-center gap-3">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} aria-hidden="true" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search my music"
+              aria-label="Search my music"
               className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-64"
             />
           </div>
@@ -323,6 +323,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
+              aria-label="Filter albums by type"
               className="bg-[#161616] border border-gray-700 rounded-lg pl-4 pr-10 py-2 text-white hover:border-purple-600 transition-colors text-sm focus:outline-none cursor-pointer appearance-none"
             >
               <option value="all">All Types</option>
@@ -332,7 +333,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
               <option value="remix">Remixes</option>
               <option value="live">Live</option>
             </select>
-            <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+            <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} aria-hidden="true" />
           </div>
         </div>
       </div>
@@ -342,17 +343,19 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
         {/* Left navigation arrow */}
         <button
           onClick={scrollLeft}
+          aria-label="Scroll albums left"
           className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#885FA8] bg-opacity-80 flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg pointer-events-auto"
         >
-          <ChevronLeft size={20} className="text-white" />
+          <ChevronLeft size={20} className="text-white" aria-hidden="true" />
         </button>
 
         {/* Right navigation arrow */}
         <button
           onClick={scrollRight}
+          aria-label="Scroll albums right"
           className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#885FA8] bg-opacity-80 flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg pointer-events-auto"
         >
-          <ChevronRight size={20} className="text-white" />
+          <ChevronRight size={20} className="text-white" aria-hidden="true" />
         </button>
 
         {/* Scrollable album cards */}
@@ -363,27 +366,32 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             scrollBehavior: 'smooth',
             WebkitOverflowScrolling: 'touch'
           }}
+          aria-label="Albums carousel"
+          role="region"
         >
           {filteredAlbums.map((album) => (
             <div
               key={album.id}
               className="shrink-0 w-64 cursor-pointer group"
               onClick={() => handleAlbumClick(album)}
+              role="button"
+              tabIndex={0}
+              aria-label={`View album: ${album.title} by ${album.artist}`}
             >
               <div className="relative mb-3">
                 <div className="w-64 h-64 rounded-lg relative overflow-hidden bg-gray-800 group-hover:scale-105 transition-transform duration-300">
                   <Image
                     src={album.image}
-                    alt={album.title}
+                    alt={`${album.title} cover art`}
                     width={256}
                     height={256}
                     className="w-full h-full object-cover"
                     unoptimized
                   />
-                  <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center z-10 pointer-events-none">
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center z-10 pointer-events-none">
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
                       <div className="w-16 h-16 rounded-full bg-purple-600 flex items-center justify-center shadow-lg">
-                        <Play size={24} className="text-white ml-1" fill="white" />
+                        <Play size={24} className="text-white ml-1" fill="white" aria-hidden="true" />
                       </div>
                     </div>
                   </div>
@@ -392,7 +400,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
               <div className="text-center">
                 <h3 className="text-white font-semibold text-lg mb-1 group-hover:text-purple-400 transition-colors">{album.title}</h3>
                 <p className="text-gray-400 text-sm mb-1">{album.artist}</p>
-                <span className="inline-block bg-purple-600 bg-opacity-20 text-purple-400 text-xs px-2 py-1 rounded">
+                <span className="inline-block bg-purple-600/20 text-purple-400 text-xs px-2 py-1 rounded">
                   {album.type}
                 </span>
               </div>
@@ -403,4 +411,3 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
     </div>
   );
 }
-

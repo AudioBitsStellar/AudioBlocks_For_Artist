@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { isRetryableError } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { useState } from "react";
+import { Loader2, Check, AlertCircle } from 'lucide-react';
 
 interface MintSongButtonProps {
   songId: string;
@@ -15,6 +16,11 @@ interface MintSongButtonProps {
 }
 
 type MintStatus = 'idle' | 'not_installed' | 'preparing' | 'awaiting_signature' | 'submitting' | 'success' | 'rejected' | 'timeout' | 'failed';
+
+interface MintTransactionDetails {
+  txHash?: string;
+  tokenId?: string;
+}
 
 export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonProps) {
   const { address } = useStellarWallet();
@@ -24,6 +30,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   const [status, setStatus] = useState<MintStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [txDetails, setTxDetails] = useState<MintTransactionDetails>({});
 
   const isBusy = prepareMutation.isPending || submitMutation.isPending || ['preparing', 'awaiting_signature', 'submitting'].includes(status);
 
@@ -38,6 +45,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
     setStatus('preparing');
     setErrorMsg('');
+    setTxDetails({});
     analytics.mintStarted({ songId, walletAddress: address });
 
     try {
@@ -60,6 +68,10 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
       const result: any = await submitMutation.mutateAsync({ signedXdr });
 
       setStatus('success');
+      setTxDetails({
+        txHash: result?.data?.txHash ?? '',
+        tokenId: result?.data?.tokenId ?? '',
+      });
       analytics.mintSucceeded({
         songId,
         txHash: result?.data?.txHash ?? '',
@@ -83,6 +95,33 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     return <ConnectStellarWalletButton />;
   }
 
+  if (status === 'preparing') {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-blue-600/30 rounded-lg" role="status" aria-live="polite">
+        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+        <span className="text-xs text-blue-400 font-medium">Preparing transaction...</span>
+      </div>
+    );
+  }
+
+  if (status === 'awaiting_signature') {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-yellow-600/30 rounded-lg" role="status" aria-live="polite">
+        <Loader2 className="h-4 w-4 animate-spin text-yellow-500" />
+        <span className="text-xs text-yellow-400 font-medium">Awaiting wallet signature...</span>
+      </div>
+    );
+  }
+
+  if (status === 'submitting') {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-purple-600/30 rounded-lg" role="status" aria-live="polite">
+        <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
+        <span className="text-xs text-purple-400 font-medium">Broadcasting to network...</span>
+      </div>
+    );
+  }
+
   if (status === 'not_installed') {
     return (
       <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-yellow-600/30 rounded-lg">
@@ -101,8 +140,11 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   if (status === 'rejected') {
     return (
-      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg">
-        <p className="text-xs text-red-500 font-medium">Signature rejected by user.</p>
+      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg" role="alert" aria-live="polite">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <p className="text-xs text-red-500 font-medium">Signature rejected by user.</p>
+        </div>
         <button
           onClick={handleMint}
           className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
@@ -115,8 +157,11 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   if (status === 'timeout') {
     return (
-      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg">
-        <p className="text-xs text-red-500 font-medium">Request timed out or network error.</p>
+      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg" role="alert" aria-live="polite">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <p className="text-xs text-red-500 font-medium">Request timed out or network error.</p>
+        </div>
         <button
           onClick={handleMint}
           className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
@@ -129,8 +174,11 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   if (status === 'failed') {
     return (
-      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg">
-        <p className="text-xs text-red-500 font-medium truncate">Mint failed: {errorMsg}</p>
+      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg" role="alert" aria-live="polite">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <p className="text-xs text-red-500 font-medium">Mint failed: {errorMsg}</p>
+        </div>
         <button
           onClick={handleMint}
           className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
@@ -143,8 +191,21 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   if (status === 'success') {
     return (
-      <div className="rounded-lg bg-green-950/20 border border-green-600/30 text-green-400 font-medium px-4 py-2 text-xs">
-        Minted successfully!
+      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-green-600/30 rounded-lg" role="status" aria-live="polite">
+        <div className="flex items-center gap-2">
+          <Check className="h-4 w-4 text-green-500" />
+          <p className="text-xs text-green-400 font-medium">Minted successfully!</p>
+        </div>
+        {txDetails.txHash && (
+          <p className="text-[10px] text-gray-400 font-mono truncate">
+            Tx: {txDetails.txHash}
+          </p>
+        )}
+        {txDetails.tokenId && (
+          <p className="text-[10px] text-gray-400">
+            Token ID: {txDetails.tokenId}
+          </p>
+        )}
       </div>
     );
   }
@@ -155,10 +216,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
       disabled={isBusy}
       className={`${isBusy ? "opacity-70 cursor-not-allowed" : ""} rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
     >
-      {status === 'preparing' && "Preparing Mint..."}
-      {status === 'awaiting_signature' && "Awaiting Signature..."}
-      {status === 'submitting' && "Submitting On-chain..."}
-      {status === 'idle' && "Mint on-chain"}
+      Mint on-chain
     </button>
   );
 }

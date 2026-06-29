@@ -1,9 +1,10 @@
-
 import { Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, Play, MoreVertical, Clock, Heart, MessageCircle, FolderDown, X, Upload, Music, Trash2, RotateCw, Plus } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { MusicFormValues } from '@/types';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { albumFormSchema } from '@/types/formValidation';
 import { MUSIC_GENRES } from '../shared/music_genre';
 
 const Album = () => {
@@ -20,8 +21,11 @@ const Album = () => {
     handleSubmit,
     reset,
     watch,
-    formState: { errors, isSubmitting },
-  } = useForm<MusicFormValues>();
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<MusicFormValues>({
+    resolver: zodResolver(albumFormSchema),
+    mode: 'onChange',
+  });
 
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,23 +156,30 @@ const Album = () => {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="space-y-5  col-span-2">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-white">
+          <label htmlFor="album-title" className="text-sm font-medium text-white">
             Album Title <span className="text-[#D2045B]">*</span>
           </label>
           <input
-            {...register('albumTitle', { required: true })}
+            id="album-title"
+            {...register('albumTitle')}
             placeholder="Enter Album Title"
-            className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+            aria-invalid={errors.albumTitle ? 'true' : 'false'}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.albumTitle ? 'border-red-500' : 'border-[#2A2A2A]'}`}
           />
+          {errors.albumTitle && (
+            <p className="text-[10px] text-red-500" role="alert">{errors.albumTitle.message}</p>
+          )}
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-white">
+          <label htmlFor="album-genre" className="text-sm font-medium text-white">
             Genre <span className="text-[#D2045B]">*</span>
           </label>
           <select
-            {...register('genre', { required: true })}
-            className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none"
+            id="album-genre"
+            {...register('genre')}
+            aria-invalid={errors.genre ? 'true' : 'false'}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.genre ? 'border-red-500' : 'border-[#2A2A2A]'}`}
           >
             <option value="" disabled>
               Select genre
@@ -180,30 +191,42 @@ const Album = () => {
               </option>
             ))}
           </select>
-
+          {errors.genre && (
+            <p className="text-[10px] text-red-500" role="alert">{errors.genre.message}</p>
+          )}
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-white">
+          <label htmlFor="album-song-title" className="text-sm font-medium text-white">
             Song Title <span className="text-[#D2045B]">*</span>
           </label>
           <input
-            {...register('songTitle', { required: true })}
+            id="album-song-title"
+            {...register('songTitle')}
             placeholder="Add Song Title"
-            className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+            aria-invalid={errors.songTitle ? 'true' : 'false'}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.songTitle ? 'border-red-500' : 'border-[#2A2A2A]'}`}
           />
+          {errors.songTitle && (
+            <p className="text-[10px] text-red-500" role="alert">{errors.songTitle.message}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">
+            <label htmlFor="album-purchase-price" className="text-sm font-medium text-white">
               Purchase Price <span className="text-[#D2045B]">*</span>
             </label>
             <input
-              {...register('purchasePrice', { required: true })}
-              placeholder="Add Song Title"
-              className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+              id="album-purchase-price"
+              {...register('purchasePrice')}
+              placeholder="Add Price of Song"
+              aria-invalid={errors.purchasePrice ? 'true' : 'false'}
+              className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.purchasePrice ? 'border-red-500' : 'border-[#2A2A2A]'}`}
             />
+            {errors.purchasePrice && (
+              <p className="text-[10px] text-red-500" role="alert">{errors.purchasePrice.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -225,10 +248,12 @@ const Album = () => {
                     }
                   }}
                   className="hidden"
+                  aria-label="Upload album music file"
                 />
                 <button
                   onClick={() => albumFileInputRefs.current.get(0)?.click()}
                   className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white hover:bg-[#1a1a1a] transition-colors text-left text-sm"
+                  disabled={isSubmitting}
                 >
                   Choose file
                 </button>
@@ -292,10 +317,12 @@ const Album = () => {
                           accept="audio/*"
                           onChange={(e) => handleAlbumFileUpload(file.id, e)}
                           className="hidden"
+                          aria-label="Upload album music file"
                         />
                         <button
                           onClick={() => albumFileInputRefs.current.get(file.id)?.click()}
                           className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-2 text-white hover:bg-[#1a1a1a] transition-colors text-left text-xs mt-2"
+                          disabled={isSubmitting}
                         >
                           Choose file
                         </button>
@@ -312,6 +339,8 @@ const Album = () => {
           <button
             onClick={handleAddAnotherMusic}
             className="w-8 h-8 rounded-full bg-[#2A2A2A] flex items-center justify-center hover:bg-[#3A3A3A] transition-colors"
+            aria-label="Add another music track"
+            disabled={isSubmitting}
           >
             <Plus size={16} className="text-white" />
           </button>
@@ -319,6 +348,7 @@ const Album = () => {
           <button
             onClick={handleAddAnotherMusic}
             className="px-4 py-1.5 rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white text-sm font-medium transition-colors"
+            disabled={isSubmitting}
           >
             Add
           </button>
@@ -326,12 +356,11 @@ const Album = () => {
 
         <button
           onClick={handleSubmit(onSubmit)}
-          className="w-[131px] rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white text-[14px] font-semibold px-6 py-3 transition-colors mt-6"
+          disabled={isSubmitting || !isValid}
+          className={`w-[131px] rounded-lg font-semibold px-6 py-3 transition-colors mt-6 ${isSubmitting || !isValid ? 'opacity-70 cursor-not-allowed bg-[#8a8a8a]' : 'bg-[#D2045B] hover:bg-[#B8043F]'} text-white`}
         >
           Add Album
         </button>
-      </div>
-
 
 
 
@@ -368,10 +397,12 @@ const Album = () => {
             accept="image/*"
             onChange={handleCoverUpload}
             className="hidden"
+            aria-label="Upload cover image"
           />
           <button
             onClick={() => coverInputRef.current?.click()}
-            className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors"
+            disabled={isSubmitting}
+            className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add Cover
           </button>
