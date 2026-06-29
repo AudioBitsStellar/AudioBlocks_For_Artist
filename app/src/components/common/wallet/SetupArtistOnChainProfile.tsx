@@ -19,6 +19,7 @@ export default function SetupArtistOnChainProfile() {
 
   const [status, setStatus] = useState<SetupStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [txHash, setTxHash] = useState('');
 
   const isBusy = prepareMutation.isPending || submitMutation.isPending || ['preparing', 'awaiting_signature', 'submitting'].includes(status);
 
@@ -54,10 +55,12 @@ export default function SetupArtistOnChainProfile() {
       setStatus('submitting');
       const result: any = await submitMutation.mutateAsync({ signedXdr });
 
+      const hash = result?.data?.txHash ?? '';
+      setTxHash(hash);
       setStatus('success');
       analytics.mintSucceeded({
         songId: 'artist-profile',
-        txHash: result?.data?.txHash ?? '',
+        txHash: hash,
         tokenId: result?.data?.tokenId ?? '',
       });
       toast.success("Profile setup succeeded on-chain!");
@@ -137,8 +140,18 @@ export default function SetupArtistOnChainProfile() {
       )}
 
       {status === 'success' && (
-        <div className="rounded-lg bg-green-950/20 border border-green-600/30 text-green-400 font-medium px-4 py-2 text-xs w-fit">
-          Profile setup completed on-chain successfully!
+        <div className="flex flex-col gap-2 p-3 bg-green-950/20 border border-green-600/30 rounded-lg">
+          <p className="text-xs text-green-400 font-medium">Profile setup completed on-chain successfully!</p>
+          {txHash && (
+            <a
+              href={`https://stellar.expert/explorer/public/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-green-400 underline hover:text-green-300 w-fit"
+            >
+              View transaction
+            </a>
+          )}
         </div>
       )}
 
