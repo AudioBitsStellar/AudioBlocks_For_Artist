@@ -1,15 +1,14 @@
 import { USER_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet, usePut } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
-import { updateProfilePayload } from "@/types";
-import { User } from "@dynamic-labs/sdk-api/models/index";
+import { updateProfilePayload, AuthUser } from "@/types";
 
 const useArtistServices = () => {
 	const handleSuccess = useHandleSuccess();
 	const handleError = useHandleError();
 
 	const useGetArtistProfile = (enabled: boolean) => {
-		return useGet<{ user: User }>(
+		return useGet<{ user: AuthUser }>(
 			["get-artist-profile"],
 			`${USER_ENDPOINTS.PROFILE}`,
 			{
