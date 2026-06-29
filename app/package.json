@@ -12,10 +12,6 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@dynamic-labs/ethereum": "^4.41.1",
-    "@dynamic-labs/sdk-api": "^0.0.818",
-    "@dynamic-labs/sdk-react-core": "^4.41.1",
-    "@dynamic-labs/wagmi-connector": "^4.41.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-tabs": "^1.1.13",
     "@stellar/freighter-api": "^6.0.1",

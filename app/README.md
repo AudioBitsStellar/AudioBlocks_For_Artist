@@ -59,7 +59,6 @@ everything — auth, profile, uploads — and to the
 | Carousels | `react-slick` |
 | Toasts | `sonner` |
 | Stellar / Soroban wallet | `@stellar/freighter-api` |
-| EVM wallet (legacy/unused on the live routes) | Dynamic Labs SDK, `wagmi`, `viem` |
 
 ## Routes
 
@@ -78,16 +77,11 @@ everything — auth, profile, uploads — and to the
 
 ## Authentication
 
-Email + password is the primary, fully-wired auth path: `/signup` and
+Email + password is the sole auth method: `/signup` and
 `/login` call the backend's `register-email`/`login-email` endpoints and
 store the returned JWT in an `audioblocks_jwt` cookie, which the shared
 axios client (`src/api/axios.ts`) attaches to every subsequent request as a
 `Bearer` token.
-
-A second, wallet-signature auth flow (`src/hooks/useAuth.tsx`, via Dynamic
-Labs) also exists in the codebase and produces the same kind of JWT, but it
-is not currently wired into any route in this app — it's used by the sibling
-`AudioBlocks_Frontend_v1` listener app.
 
 ## On-Chain Integration: Freighter + Soroban
 
@@ -153,8 +147,8 @@ src/
 │   └── ...dashboard widgets (charts, tables, sidebar, top header)
 ├── services/                   # authService, artistServices, uploadSerive, onchainService
 ├── lib/freighter.ts             # thin wrapper over @stellar/freighter-api
-├── hooks/useAuth.tsx              # Dynamic Labs wallet-signature flow (currently unrouted)
-├── context/provider.tsx           # Dynamic Labs + Wagmi + React Query providers
+├── hooks/                       # toast handler hooks
+├── context/provider.tsx         # React Query provider
 └── types/                       # shared request/response types
 ```
 
@@ -196,6 +190,3 @@ and on-chain actions all require it.
   chunked-upload services `Song.tsx` already uses.
 - Several dashboard widgets (overview KPIs, events, merches, "My Music")
   currently render static/mock data rather than live data from the backend.
-- The Dynamic Labs wallet-signature auth path exists in the codebase but
-  isn't reachable from any current route — email/password is the live auth
-  method.

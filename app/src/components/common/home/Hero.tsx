@@ -1,31 +1,15 @@
 'use client';
 
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
-import Cookies from 'js-cookie';
-import { Auth } from '@/hooks/useAuth';
-import FullScreenLoader from './FullScreenLoader';
 
 const Hero = () => {
-  const { setShowAuthFlow } = useDynamicContext();
-  const route = useRouter();
-  const { isConnected } = useAccount();
-  const token = Cookies.get('audioblocks_jwt');
-  const { setShouldTriggerSignature, loading } = Auth();
+  const router = useRouter();
 
   const handleStream = () => {
-    if (!isConnected) {
-      setShowAuthFlow(true);
-      setShouldTriggerSignature(true);
-    } else if (!token) {
-      setShouldTriggerSignature(true);
-    } else {
-      route.push('/dashboard/profile/edit');
-    }
+    router.push('/login');
   };
   return (
     <section className="relative h-screen text-white py-35 overflow-hidden">
@@ -91,11 +75,7 @@ const Hero = () => {
           className="w-full h-auto"
         />
       </div>
-
-      {loading && <FullScreenLoader />}
     </section>
-
-
   );
 };
 
