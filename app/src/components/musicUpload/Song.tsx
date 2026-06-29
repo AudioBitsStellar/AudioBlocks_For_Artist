@@ -12,6 +12,23 @@ import MintSongButton from '@/components/common/wallet/MintSongButton';
 import { analytics } from '@/lib/analytics';
 import { isRetryableError, getErrorMessage } from '@/utils/errorRecovery';
 
+const ALLOWED_AUDIO_TYPES = new Set([
+    'audio/mpeg',
+    'audio/wav',
+    'audio/wave',
+    'audio/x-wav',
+    'audio/mp4',
+    'audio/m4a',
+    'audio/aac',
+    'audio/ogg',
+    'audio/flac',
+    'audio/x-flac',
+    'audio/webm',
+]);
+
+const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB
+const MAX_RETRY_ATTEMPTS = 3;
+
 const Song = () => {
     const [audioFile, setAudioFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -20,10 +37,12 @@ const Song = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [mintableSongId, setMintableSongId] = useState<string | null>(null);
     const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
-
+    const [retryCount, setRetryCount] = useState(0);
+    const [failedChunkIndex, setFailedChunkIndex] = useState<number>(0);
 
     const [coverImage, setCoverImage] = useState<string | null>(null);
     const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; status: 'uploading' | 'success' | 'failed' } | null>(null);
+    const [validationError, setValidationError] = useState<string | null>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,12 +86,32 @@ const Song = () => {
         return (bytes / (1024 * 1024)).toFixed(1) + ' mb';
     };
 
+    const validateAudioFile = (file: File): string | null => {
+        if (!ALLOWED_AUDIO_TYPES.has(file.type) && !file.name.match(/\.(mp3|wav|m4a|aac|ogg|flac|webm)$/i)) {
+            return `Unsupported file type. Please upload an audio file (MP3, WAV, M4A, AAC, OGG, FLAC, WebM).`;
+        }
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            return `File too large. Maximum size is 200 MB, but your file is ${formatFileSize(file.size)}.`;
+        }
+        return null;
+    };
+
     const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // setAudioFile(file);
-        // setFileId(generateFileId());
+        const error = validateAudioFile(file);
+        if (error) {
+            setValidationError(error);
+            setUploadedFile(null);
+            return;
+        }
+
+        setValidationError(null);
+        setAudioFile(file);
+        setFileId(generateFileId());
+        setRetryCount(0);
+        setFailedChunkIndex(0);
 
         setUploadedFile({
             name: file.name,
@@ -81,10 +120,10 @@ const Song = () => {
         });
     };
 
-    const uploadSongInChunks = async (file: File, fileId: string) => {
+    const uploadSongInChunks = async (file: File, fileId: string, startChunk = 0) => {
         const chunks = splitFile(file);
 
-        for (let i = 0; i < chunks.length; i++) {
+        for (let i = startChunk; i < chunks.length; i++) {
             const form = new FormData();
             form.append("fileId", fileId);
             form.append("chunkIndex", String(i));
@@ -104,27 +143,42 @@ const Song = () => {
         e.preventDefault();
         const file = e.dataTransfer.files[0];
         if (file) {
+            const error = validateAudioFile(file);
+            if (error) {
+                setValidationError(error);
+                setUploadedFile(null);
+                return;
+            }
+
+            setValidationError(null);
+            setAudioFile(file);
+            setFileId(generateFileId());
+            setRetryCount(0);
+            setFailedChunkIndex(0);
+
             const fileSize = formatFileSize(file.size);
-            // const newFileId = generateFileId();
-            //  setAudioFile(file);
-            // setFileId(newFileId);
-
-
             setUploadedFile({ name: file.name, size: fileSize, status: 'uploading' });
-
         }
     };
 
     const handleRetry = async () => {
         if (!audioFile || !fileId) return;
 
+        if (retryCount >= MAX_RETRY_ATTEMPTS) {
+            setUploadedFile(prev =>
+                prev ? { ...prev, status: "failed" } : prev
+            );
+            toast.error(`Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) reached. Please delete and start over.`);
+            return;
+        }
+
         try {
-            setUploadProgress(0);
+            setRetryCount(prev => prev + 1);
             setUploadedFile(prev =>
                 prev ? { ...prev, status: "uploading" } : prev
             );
 
-            const totalChunks = await uploadSongInChunks(audioFile, fileId);
+            await uploadSongInChunks(audioFile, fileId, failedChunkIndex);
 
             setUploadedFile(prev =>
                 prev ? { ...prev, status: "success" } : prev
@@ -173,8 +227,19 @@ const Song = () => {
                 prev ? { ...prev, status: "uploading" } : prev
             );
 
-            // 1. Upload chunks
-            const totalChunks = await uploadSongInChunks(audioFile, fileId);
+            const chunks = splitFile(audioFile);
+            for (let i = 0; i < chunks.length; i++) {
+                const form = new FormData();
+                form.append("fileId", fileId);
+                form.append("chunkIndex", String(i));
+                form.append("chunk", chunks[i]);
+
+                await uploadChunk.mutateAsync(form);
+
+                const percent = Math.round(((i + 1) / chunks.length) * 100);
+                setUploadProgress(percent);
+            }
+            const totalChunks = chunks.length;
 
             // 2. Upload cover
             const coverForm = new FormData();
@@ -402,6 +467,10 @@ const Song = () => {
                         </div>
                     )}
 
+                    {validationError && (
+                        <p className="text-[10px] text-red-500 mb-2">{validationError}</p>
+                    )}
+
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -423,7 +492,9 @@ const Song = () => {
                                         <div className="flex items-center gap-2">
                                             <p className="text-[10px] text-[#A3A3A3]">{uploadedFile.size}</p>
                                             {uploadedFile.status === 'failed' && (
-                                                <span className="text-[10px] text-red-500 font-medium">Upload failed</span>
+                                                <span className="text-[10px] text-red-500 font-medium">
+                                                    {retryCount >= MAX_RETRY_ATTEMPTS ? 'Max retries reached' : 'Upload failed'}
+                                                </span>
                                             )}
                                             {uploadedFile.status === 'success' && (
                                                 <span className="text-[10px] text-green-500 font-medium">Upload finished</span>
@@ -446,7 +517,7 @@ const Song = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
-                                    {uploadedFile.status === 'failed' && (
+                                    {uploadedFile.status === 'failed' && retryCount < MAX_RETRY_ATTEMPTS && (
                                         <button
                                             onClick={handleRetry}
                                             className="p-1 text-[#A3A3A3] hover:text-white transition-colors"
