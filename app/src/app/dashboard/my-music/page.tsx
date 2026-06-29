@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Breadcrumb from '@/components/Breadcrumb';
 import MyMusicContent from '@/components/MyMusicContent';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -48,7 +49,9 @@ export default function MyMusicPage() {
 
         }
       />
-      <MyMusicContent onAlbumSelect={setSelectedAlbum} />
+      <ErrorBoundary fallbackTitle="Failed to load your music library">
+        <MyMusicContent onAlbumSelect={setSelectedAlbum} />
+      </ErrorBoundary>
 
     </>
   );
