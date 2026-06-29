@@ -81,8 +81,18 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Provider>
-        {children}
-          <Toaster />
+          {children}
+          <Toaster
+            position="top-right"
+            expand
+            richColors
+            closeButton
+            toastOptions={{
+              classNames: {
+                toast: 'font-sans',
+              },
+            }}
+          />
         </Provider>
       </body>
     </html>
