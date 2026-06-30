@@ -1,8 +1,10 @@
 import { Trash2, RotateCw, Play } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Image from 'next/image';
-import { MusicFormValues, UploadSong } from '@/types';
+import { UploadSong } from '@/types';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { songFormSchema } from '@/types/formValidation';
 import { MUSIC_GENRES } from '../shared/music_genre';
 import useUploadServices from '@/services/uploadSerive';
 import { splitFile, generateFileId } from "@/utils/chunkUploader";
@@ -53,13 +55,15 @@ const Song = () => {
     const finalizeUpload = useFinalizeUpload();
 
 
-
     const {
         register,
         handleSubmit,
         reset,
-        formState: { errors, isSubmitting },
-    } = useForm<UploadSong>();
+        formState: { errors, isSubmitting, isValid },
+    } = useForm<UploadSong>({
+        resolver: zodResolver(songFormSchema),
+        mode: 'onChange',
+    });
 
 
     const isBusy =
@@ -68,7 +72,6 @@ const Song = () => {
         uploadChunk.isPending ||
         uploadCover.isPending ||
         finalizeUpload.isPending;
-
 
     const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -309,34 +312,46 @@ const Song = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-5 col-span-2">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label htmlFor="song-title" className="text-sm font-medium text-white">
                         Song Title <span className="text-[#D2045B]">*</span>
                     </label>
                     <input
-                        {...register('title', { required: true })}
+                        id="song-title"
+                        {...register('title')}
                         placeholder="Add Song Title"
-                        className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                        aria-invalid={errors.title ? 'true' : 'false'}
+                        className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.title ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
+                    {errors.title && (
+                        <p className="text-[10px] text-red-500" role="alert">{errors.title.message}</p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label htmlFor="song-description" className="text-sm font-medium text-white">
                         Song Description <span className="text-[#D2045B]">*</span>
                     </label>
                     <input
-                        {...register('description', { required: true })}
+                        id="song-description"
+                        {...register('description')}
                         placeholder="Enter Song Description"
-                        className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                        aria-invalid={errors.description ? 'true' : 'false'}
+                        className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.description ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
+                    {errors.description && (
+                        <p className="text-[10px] text-red-500" role="alert">{errors.description.message}</p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label htmlFor="song-genre" className="text-sm font-medium text-white">
                         Genre <span className="text-[#D2045B]">*</span>
                     </label>
                     <select
-                        {...register('genre', { required: true })}
-                        className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none"
+                        id="song-genre"
+                        {...register('genre')}
+                        aria-invalid={errors.genre ? 'true' : 'false'}
+                        className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.genre ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     >
                         <option value="" disabled>
                             Select genre
@@ -348,18 +363,25 @@ const Song = () => {
                             </option>
                         ))}
                     </select>
-
+                    {errors.genre && (
+                        <p className="text-[10px] text-red-500" role="alert">{errors.genre.message}</p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">
+                    <label htmlFor="song-composer" className="text-sm font-medium text-white">
                         Composer <span className="text-[#D2045B]">*</span>
                     </label>
                     <input
-                        {...register('composer', { required: true })}
+                        id="song-composer"
+                        {...register('composer')}
                         placeholder="Enter Composer Name"
-                        className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                        aria-invalid={errors.composer ? 'true' : 'false'}
+                        className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.composer ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
+                    {errors.composer && (
+                        <p className="text-[10px] text-red-500" role="alert">{errors.composer.message}</p>
+                    )}
                 </div>
 
                 {/* <div className="space-y-2">
@@ -375,9 +397,9 @@ const Song = () => {
 
                 <button
                     onClick={handleSubmit(onSubmit)}
-                    disabled={isBusy}
+                    disabled={isBusy || !isValid || !audioFile || !coverFile}
                     className={`w-[131px] rounded-lg font-semibold px-6 py-3 mt-6 transition-all flex items-center justify-center gap-2
-                    ${isUploading || isSubmitting
+                    ${isBusy || !isValid || !audioFile || !coverFile
                             ? "bg-[#8a8a8a] cursor-not-allowed"
                             : "bg-[#D2045B] hover:bg-[#B8043F]"
                         } text-white`}
@@ -419,11 +441,13 @@ const Song = () => {
                         accept="image/*"
                         onChange={handleCoverUpload}
                         className="hidden"
+                        aria-label="Upload cover image"
                     />
 
                     <button
                         onClick={() => !isBusy && coverInputRef.current?.click()}
-                        className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors"
+                        disabled={isBusy}
+                        className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Add Cover
                     </button>
@@ -439,6 +463,9 @@ const Song = () => {
                             onDrop={handleDrop}
                             onDragOver={handleDragOver}
                             className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0"
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Upload music file - drag and drop or click to select"
                         >
                             <p className="text-xs text-[#A3A3A3]">
                                 Drag & drop your files here or{' '}
@@ -455,6 +482,9 @@ const Song = () => {
                             onDrop={handleDrop}
                             onDragOver={handleDragOver}
                             className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0"
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Replace uploaded file"
                         >
                             <p className="text-xs text-[#A3A3A3]">
                                 {uploadedFile.status === 'uploading' ? 'Uploading...' : 'Drag & drop your files here or'}{' '}
@@ -471,7 +501,7 @@ const Song = () => {
                     )}
 
                     {validationError && (
-                        <p className="text-[10px] text-red-500 mb-2">{validationError}</p>
+                        <p className="text-[10px] text-red-500 mb-2" role="alert">{validationError}</p>
                     )}
 
                     <input
@@ -480,6 +510,7 @@ const Song = () => {
                         accept="audio/*"
                         onChange={handleMusicUpload}
                         className="hidden"
+                        aria-label="Upload audio file"
                     />
 
                     <div className="shrink-0">
@@ -495,18 +526,18 @@ const Song = () => {
                                         <div className="flex items-center gap-2">
                                             <p className="text-[10px] text-[#A3A3A3]">{uploadedFile.size}</p>
                                             {uploadedFile.status === 'failed' && (
-                                                <span className="text-[10px] text-red-500 font-medium">
-                                                    {retryCount >= MAX_RETRY_ATTEMPTS ? 'Max retries reached' : 'Upload failed'}
-                                                </span>
-                                            )}
+                                                    <span className="text-[10px] text-red-500 font-medium">
+                                                        {retryCount >= MAX_RETRY_ATTEMPTS ? 'Max retries reached' : 'Upload failed'}
+                                                    </span>
+                                                )}
                                             {uploadedFile.status === 'success' && (
-                                                <span className="text-[10px] text-green-500 font-medium">Upload finished</span>
-                                            )}
+                                                    <span className="text-[10px] text-green-500 font-medium">Upload finished</span>
+                                                )}
                                             {uploadedFile.status === 'uploading' && (
-                                                <span className="text-[10px] text-yellow-500 font-medium">
-                                                    Uploading... {uploadProgress}%
-                                                </span>
-                                            )}
+                                                    <span className="text-[10px] text-yellow-500 font-medium">
+                                                        Uploading... {uploadProgress}%
+                                                    </span>
+                                                )}
 
                                         </div>
                                         {uploadedFile.status === 'uploading' && (

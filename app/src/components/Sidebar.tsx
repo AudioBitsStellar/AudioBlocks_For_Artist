@@ -72,8 +72,8 @@ export default function Sidebar({
             width={90}
             height={50}
           />
-          <button className='cursor-pointer' onClick={onClose}>
-            <X className="text-white" />
+          <button className='cursor-pointer' onClick={onClose} aria-label="Close navigation menu">
+            <X className="text-white" aria-hidden="true" />
           </button>
         </div>
 
@@ -90,7 +90,7 @@ export default function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1" aria-label="Main navigation">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -101,15 +101,16 @@ export default function Sidebar({
               <Link
                 key={item.name}
                 href={item.href}
-                onClick={onClose} // 👈 closes sidebar on mobile
+                onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
                   ${
                     isActive
                       ? 'text-pink-500'
                       : 'text-gray-300 hover:text-white'
                   }`}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <Icon size={20} />
+                <Icon size={20} aria-hidden="true" />
                 <span className={isActive ? 'font-medium' : ''}>
                   {item.name}
                 </span>
