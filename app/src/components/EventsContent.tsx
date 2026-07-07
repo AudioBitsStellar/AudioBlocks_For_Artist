@@ -1,6 +1,6 @@
 'use client';
 
-import { Filter, Search, CalendarDays, Clock3, Trash2, Loader2 } from 'lucide-react';
+import { Filter, Search, CalendarDays, CalendarPlus, Clock3, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { featureFlags } from '@/lib/featureFlags';
 import { MOCK_EVENTS, MOCK_EVENT_METRICS } from '@/lib/mockData';
@@ -98,9 +98,22 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
       </div>
 
       {eventsList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-gray-500 gap-2">
-          <p className="text-lg font-semibold">No events yet</p>
-          <p className="text-sm">Create your first event to get started.</p>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-[#1F1F1F] bg-[#151818] px-6 py-20 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D2045B]/10 text-[#D2045B]">
+            <CalendarPlus className="h-7 w-7" aria-hidden="true" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-lg font-semibold text-white">No events yet</p>
+            <p className="max-w-md text-sm text-[#A3A3A3]">
+              Create your first event to share show dates, ticket details, and live appearances with your fans.
+            </p>
+          </div>
+          <button
+            onClick={onNewEvent}
+            className="rounded-full bg-[#D2045B] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(210,4,91,0.35)] transition-colors hover:bg-[#B8043F]"
+          >
+            Create your first event
+          </button>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
