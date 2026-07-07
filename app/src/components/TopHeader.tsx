@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Bell, Menu } from 'lucide-react';
+import { Search, Bell, Menu, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
@@ -13,6 +13,7 @@ export default function TopHeader({
 }) {
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -40,6 +41,26 @@ export default function TopHeader({
     const interval = setInterval(updateDateTime, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem('audioblocks-theme');
+    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
+    const shouldUseDark = storedTheme ? storedTheme === 'dark' : prefersDark;
+
+    document.documentElement.classList.toggle('dark', shouldUseDark);
+    document.body.classList.toggle('dark', shouldUseDark);
+    setDarkMode(shouldUseDark);
+  }, []);
+
+  const toggleDarkMode = () => {
+    setDarkMode((current) => {
+      const next = !current;
+      document.documentElement.classList.toggle('dark', next);
+      document.body.classList.toggle('dark', next);
+      window.localStorage.setItem('audioblocks-theme', next ? 'dark' : 'light');
+      return next;
+    });
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-[#161616] flex-shrink-0 border-b border-white/10">
@@ -89,6 +110,20 @@ export default function TopHeader({
 
         {/* RIGHT */}
         <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            type="button"
+            onClick={toggleDarkMode}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-pressed={darkMode}
+            className="text-white hover:text-gray-300 transition-colors rounded-lg p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+          >
+            {darkMode ? (
+              <Sun size={22} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <Moon size={22} strokeWidth={2} aria-hidden="true" />
+            )}
+          </button>
+
           <button
             aria-label="Notifications"
             className="relative text-white hover:text-gray-300 transition-colors"
