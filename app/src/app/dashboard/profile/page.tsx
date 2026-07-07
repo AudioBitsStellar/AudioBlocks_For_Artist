@@ -25,12 +25,24 @@ export default function ProfilePage() {
 	const {
 		register,
 		setValue,
+		watch,
 		handleSubmit,
 		formState: { errors, isSubmitting, isValid },
 	} = useForm<updateProfilePayload>({
 		resolver: zodResolver(profileFormSchema),
 		mode: 'onChange',
 	});
+
+	const BIO_MAX_LENGTH = 500;
+	const BIO_WARNING_LENGTH = 450;
+	const bioValue = watch("bio") || "";
+	const bioLength = bioValue.length;
+	const bioCounterTone =
+		bioLength > BIO_MAX_LENGTH
+			? "text-red-500"
+			: bioLength >= BIO_WARNING_LENGTH
+				? "text-yellow-400"
+				: "text-[#A3A3A3]";
 
 	const [profileImage, setProfileImage] = useState<string | null>(null);
 	const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -182,7 +194,7 @@ export default function ProfilePage() {
 								{...register("bio")}
 								placeholder="Tell about yourself in a few words"
 								aria-invalid={errors.bio ? 'true' : 'false'}
-								aria-describedby={errors.bio ? 'bio-error' : undefined}
+								aria-describedby={errors.bio ? 'bio-error bio-counter' : 'bio-counter'}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 py-3 resize-none"
 								style={{
 									width: "660px",
@@ -193,6 +205,16 @@ export default function ProfilePage() {
 									border: errors.bio ? "1px solid #ef4444" : "none",
 								}}
 							/>
+							<div className="mt-1 flex w-[660px] items-center justify-between gap-3 text-[10px]">
+								<p className={bioCounterTone} aria-live="polite" id="bio-counter">
+									{bioLength}/{BIO_MAX_LENGTH}
+								</p>
+								{bioLength >= BIO_WARNING_LENGTH && !errors.bio && (
+									<p className="text-yellow-400">
+										Approaching bio character limit
+									</p>
+								)}
+							</div>
 							{errors.bio && (
 								<p id="bio-error" className="text-[10px] text-red-500 mt-1" role="alert">{errors.bio.message}</p>
 							)}
