@@ -84,7 +84,7 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
             <div key={album.id} className="flex-shrink-0 w-48 group relative">
               <div className="w-48 h-48 rounded-lg mb-2 relative overflow-hidden bg-gray-800">
                 {album.coverArtUrl ? (
-                  <img src={album.coverArtUrl} alt={album.title} className="w-full h-full object-cover" />
+                  <img src={album.coverArtUrl} alt={`Cover art for ${album.title}`} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No Cover</div>
                 )}

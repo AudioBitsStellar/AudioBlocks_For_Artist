@@ -25,6 +25,7 @@ export default function ProfilePage() {
 	const {
 		register,
 		setValue,
+		watch,
 		handleSubmit,
 		formState: { errors, isSubmitting, isValid },
 	} = useForm<updateProfilePayload>({
@@ -35,6 +36,7 @@ export default function ProfilePage() {
 	const [profileImage, setProfileImage] = useState<string | null>(null);
 	const [cropSrc, setCropSrc] = useState<string | null>(null);
 	const profileInputRef = useRef<HTMLInputElement>(null);
+	const displayName = watch("username")?.trim() || "artist";
 	const [notifications, setNotifications] = useState({
 		commentsOnSongs: false,
 		salesAndRoyalties: true,
@@ -90,7 +92,7 @@ export default function ProfilePage() {
 			onError: (err: unknown) => {
 				const msg = getErrorMessage(err);
 				if (isRetryableError(err)) {
-					toast.error(`Could not save profile — please try again. (${msg})`);
+					toast.error(`Could not save profile ? please try again. (${msg})`);
 				} else {
 					toast.error(`Profile save failed: ${msg}`);
 				}
@@ -271,7 +273,7 @@ export default function ProfilePage() {
 							<div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
 								<Image
 									src={profileImage}
-									alt="Profile"
+									alt={`Profile image for ${displayName}`}
 									fill
 									className="object-cover"
 									unoptimized
