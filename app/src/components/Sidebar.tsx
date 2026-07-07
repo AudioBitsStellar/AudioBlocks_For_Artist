@@ -56,7 +56,7 @@ export default function Sidebar({
         aria-modal={open ? true : undefined}
         aria-label="Navigation"
         className={`
-          fixed top-0 left-0 h-full w-64 bg-[#161616] flex flex-col
+          fixed top-0 left-0 h-full w-64 bg-[#161616] dark:bg-[#0B0B0F] dark:border-r dark:border-white/10 flex flex-col
           transform transition-transform duration-300 ease-in-out
           z-50
 
@@ -73,7 +73,7 @@ export default function Sidebar({
             height={50}
           />
           <button className='cursor-pointer' onClick={onClose} aria-label="Close navigation menu">
-            <X className="text-white" aria-hidden="true" />
+            <X className="text-white dark:text-gray-100" aria-hidden="true" />
           </button>
         </div>
 
@@ -105,8 +105,8 @@ export default function Sidebar({
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
                   ${
                     isActive
-                      ? 'text-pink-500'
-                      : 'text-gray-300 hover:text-white'
+                      ? 'text-pink-500 dark:text-pink-400'
+                      : 'text-gray-300 hover:text-white dark:text-gray-300 dark:hover:text-white'
                   }`}
                 aria-current={isActive ? 'page' : undefined}
               >
@@ -121,7 +121,7 @@ export default function Sidebar({
 
         {/* Legal */}
         <div className="p-4">
-          <h3 className="text-gray-400 text-sm font-semibold mb-2">
+          <h3 className="text-gray-400 dark:text-gray-300 text-sm font-semibold mb-2">
             Legal
           </h3>
           {legalLinks.map((link) => (
@@ -129,7 +129,7 @@ export default function Sidebar({
               key={link.name}
               href={link.href}
               onClick={onClose}
-              className="block text-gray-400 text-sm hover:text-white py-1"
+              className="block text-gray-400 dark:text-gray-400 text-sm hover:text-white dark:hover:text-white py-1"
             >
               {link.name}
             </Link>
