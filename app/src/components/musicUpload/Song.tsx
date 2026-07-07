@@ -44,7 +44,7 @@ const Song = () => {
     const [failedChunkIndex, setFailedChunkIndex] = useState<number>(0);
 
     const [coverImage, setCoverImage] = useState<string | null>(null);
-    const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; status: 'uploading' | 'success' | 'failed' } | null>(null);
+    const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; type: string; status: 'uploading' | 'success' | 'failed' } | null>(null);
     const [validationError, setValidationError] = useState<string | null>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,6 +90,10 @@ const Song = () => {
         return (bytes / (1024 * 1024)).toFixed(1) + ' mb';
     };
 
+    const formatFileType = (file: File): string => {
+        return file.type || 'Unknown MIME type';
+    };
+
     const validateAudioFile = (file: File): string | null => {
         if (!ALLOWED_AUDIO_TYPES.has(file.type) && !file.name.match(/\.(mp3|wav|m4a|aac|ogg|flac|webm)$/i)) {
             return `Unsupported file type. Please upload an audio file (MP3, WAV, M4A, AAC, OGG, FLAC, WebM).`;
@@ -120,6 +124,7 @@ const Song = () => {
         setUploadedFile({
             name: file.name,
             size: formatFileSize(file.size),
+            type: formatFileType(file),
             status: "uploading",
         });
     };
@@ -161,7 +166,12 @@ const Song = () => {
             setFailedChunkIndex(0);
 
             const fileSize = formatFileSize(file.size);
-            setUploadedFile({ name: file.name, size: fileSize, status: 'uploading' });
+            setUploadedFile({
+                name: file.name,
+                size: fileSize,
+                type: formatFileType(file),
+                status: 'uploading',
+            });
         }
     };
 
@@ -523,8 +533,12 @@ const Song = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs text-white truncate">{uploadedFile.name}</p>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
                                             <p className="text-[10px] text-[#A3A3A3]">{uploadedFile.size}</p>
+                                            <span className="text-[10px] text-[#4A4A4A]">•</span>
+                                            <p className="text-[10px] text-[#A3A3A3] truncate" title={uploadedFile.type}>
+                                                {uploadedFile.type}
+                                            </p>
                                             {uploadedFile.status === 'failed' && (
                                                     <span className="text-[10px] text-red-500 font-medium">
                                                         {retryCount >= MAX_RETRY_ATTEMPTS ? 'Max retries reached' : 'Upload failed'}
