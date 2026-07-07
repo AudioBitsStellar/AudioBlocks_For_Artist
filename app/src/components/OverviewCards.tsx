@@ -27,7 +27,7 @@ function kpiToCards(data: { songsPublished: number; totalEarnings: number; liste
 function CardGrid({ cards, isMock }: { cards: KpiCard[]; isMock: boolean }) {
   return (
     <div>
-      <h2 className="text-white text-lg font-semibold mb-4 flex items-center">
+      <h2 className="text-white dark:text-gray-50 text-lg font-semibold mb-4 flex items-center">
         Overview
         {isMock && <MockDataBadge label="overview" />}
       </h2>
@@ -36,17 +36,17 @@ function CardGrid({ cards, isMock }: { cards: KpiCard[]; isMock: boolean }) {
           <div key={index}>
             {card.isFirst ? (
               <div className="relative rounded-lg p-[1px] bg-gradient-to-br from-purple-500 via-pink-500 to-gray-900">
-                <div className="bg-[#0F0F0F] rounded-lg">
+                <div className="bg-[#0F0F0F] dark:bg-[#0B0B0F] rounded-lg">
                   <div className="p-6">
-                    <p className="text-gray-400 text-sm font-normal mb-2">{card.title}</p>
-                    <p className="text-white text-2xl font-bold">{card.value}</p>
+                    <p className="text-gray-400 dark:text-gray-300 text-sm font-normal mb-2">{card.title}</p>
+                    <p className="text-white dark:text-gray-50 text-2xl font-bold">{card.value}</p>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="bg-[#0F0F0F] border border-gray-800 rounded-lg p-6">
-                <p className="text-gray-400 text-sm font-normal mb-2">{card.title}</p>
-                <p className="text-white text-2xl font-bold">{card.value}</p>
+              <div className="bg-[#0F0F0F] dark:bg-[#0B0B0F] border border-gray-800 dark:border-gray-700 rounded-lg p-6">
+                <p className="text-gray-400 dark:text-gray-300 text-sm font-normal mb-2">{card.title}</p>
+                <p className="text-white dark:text-gray-50 text-2xl font-bold">{card.value}</p>
               </div>
             )}
           </div>
@@ -59,12 +59,12 @@ function CardGrid({ cards, isMock }: { cards: KpiCard[]; isMock: boolean }) {
 function OverviewCardsSkeleton() {
   return (
     <div>
-      <h2 className="text-white text-lg font-semibold mb-4">Overview</h2>
+      <h2 className="text-white dark:text-gray-50 text-lg font-semibold mb-4">Overview</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-[#0F0F0F] border border-gray-800 rounded-lg p-6 animate-pulse">
-            <div className="h-3 bg-gray-700 rounded w-2/3 mb-3" />
-            <div className="h-6 bg-gray-700 rounded w-1/2" />
+          <div key={i} className="bg-[#0F0F0F] dark:bg-[#0B0B0F] border border-gray-800 dark:border-gray-700 rounded-lg p-6 animate-pulse">
+            <div className="h-3 bg-gray-700 dark:bg-gray-600 rounded w-2/3 mb-3" />
+            <div className="h-6 bg-gray-700 dark:bg-gray-600 rounded w-1/2" />
           </div>
         ))}
       </div>
@@ -81,7 +81,7 @@ function LiveOverviewCards() {
   if (isError || !data?.data) {
     return (
       <div>
-        <h2 className="text-white text-lg font-semibold mb-4">Overview</h2>
+        <h2 className="text-white dark:text-gray-50 text-lg font-semibold mb-4">Overview</h2>
         <p className="text-red-400 text-sm">Failed to load overview data. Please try again later.</p>
       </div>
     );
