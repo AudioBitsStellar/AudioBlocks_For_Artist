@@ -233,7 +233,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                   <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-800 shrink-0 relative">
                     <Image
                       src={song.thumbnail}
-                      alt={`${song.title} cover art`}
+                      alt={`${song.title} by ${song.artist}`}
                       width={48}
                       height={48}
                       className="w-full h-full object-cover"
@@ -382,7 +382,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                 <div className="w-64 h-64 rounded-lg relative overflow-hidden bg-gray-800 group-hover:scale-105 transition-transform duration-300">
                   <Image
                     src={album.image}
-                    alt={`${album.title} cover art`}
+                    alt={`${album.title} by ${album.artist}`}
                     width={256}
                     height={256}
                     className="w-full h-full object-cover"
