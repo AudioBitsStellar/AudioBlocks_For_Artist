@@ -103,6 +103,7 @@ export default function Sidebar({
                 href={item.href}
                 onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161616]
                   ${
                     isActive
                       ? 'text-pink-500'
@@ -129,7 +130,7 @@ export default function Sidebar({
               key={link.name}
               href={link.href}
               onClick={onClose}
-              className="block text-gray-400 text-sm hover:text-white py-1"
+              className="block text-gray-400 text-sm hover:text-white py-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161616]"
             >
               {link.name}
             </Link>
