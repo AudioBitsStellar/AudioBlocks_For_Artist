@@ -98,9 +98,20 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
       </div>
 
       {eventsList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-gray-500 gap-2">
-          <p className="text-lg font-semibold">No events yet</p>
-          <p className="text-sm">Create your first event to get started.</p>
+        <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1F1F1F]">
+            <CalendarDays className="h-8 w-8 text-[#A3A3A3]" aria-hidden="true" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-lg font-semibold text-white">No events yet</p>
+            <p className="text-sm text-[#A3A3A3]">Create your first event to start engaging with your fans.</p>
+          </div>
+          <button
+            onClick={onNewEvent}
+            className="mt-2 rounded-full bg-[#D2045B] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(210,4,91,0.35)] transition-colors hover:bg-[#B8043F]"
+          >
+            Create Your First Event
+          </button>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
