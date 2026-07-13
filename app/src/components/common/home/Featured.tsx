@@ -45,7 +45,7 @@ const Featured = () => {
                 className="object-cover w-full h-full rounded-t-2xl"
                 loading="lazy"
                 src={feature.image}
-                alt="image"
+                alt={feature.title}
               />
             </div>
             <div className="px-6 py-8">

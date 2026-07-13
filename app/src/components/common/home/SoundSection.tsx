@@ -62,7 +62,7 @@ export default function SoundsSection() {
                 <div key={index} className="hover:bg-[#121212] p-4 rounded-lg overflow-hidden shadow-md">
                   <Image
                     src={item.image}
-                    alt={item.title}
+                    alt={`${item.title} - AudioBlocks feature`}
                     width={300}
                     height={300}
                     className="w-full rounded-2xl h-48 object-cover"

@@ -102,7 +102,7 @@ const Discover = () => {
                 <div className="bg-[#111] hover:bg-[#181818] rounded-lg overflow-hidden p-4 transition">
                   <Image
                     src={track.image}
-                    alt={track.title}
+                    alt={`${track.title} by ${track.artist}`}
                     width={300}
                     height={200}
                     className="h-48 w-full object-cover mb-4 rounded"
