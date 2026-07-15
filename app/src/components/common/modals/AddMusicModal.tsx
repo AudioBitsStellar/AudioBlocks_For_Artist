@@ -236,7 +236,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
                       <Image
                         src={coverImage}
-                        alt="Music cover"
+                        alt="Music cover art"
                         fill
                         className="object-cover"
                       />

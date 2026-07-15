@@ -416,7 +416,7 @@ const Song = () => {
                         <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
                             <Image
                                 src={coverImage}
-                                alt="Music cover"
+                                alt="Song cover art"
                                 fill
                                 className="object-cover"
                                 unoptimized
