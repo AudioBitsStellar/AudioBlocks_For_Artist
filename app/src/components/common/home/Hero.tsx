@@ -69,7 +69,7 @@ const Hero = () => {
       <div className="bottom-0 left-0 w-full">
         <Image
           src="/home/hero2.svg"
-          alt="Waveform"
+          alt=""
           width={1600}
           height={100}
           className="w-full h-auto"
