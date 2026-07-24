@@ -271,7 +271,7 @@ export default function ProfilePage() {
 							<div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
 								<Image
 									src={profileImage}
-									alt="Profile"
+									alt="Artist profile image"
 									fill
 									className="object-cover"
 									unoptimized
