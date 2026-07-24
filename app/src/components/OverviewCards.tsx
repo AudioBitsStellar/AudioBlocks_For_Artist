@@ -36,16 +36,16 @@ function CardGrid({ cards, isMock }: { cards: KpiCard[]; isMock: boolean }) {
           <div key={index}>
             {card.isFirst ? (
               <div className="relative rounded-lg p-[1px] bg-gradient-to-br from-purple-500 via-pink-500 to-gray-900">
-                <div className="bg-[#0F0F0F] rounded-lg">
+                <div className="bg-[#0F0F0F] dark:bg-black rounded-lg">
                   <div className="p-6">
-                    <p className="text-gray-400 text-sm font-normal mb-2">{card.title}</p>
+                    <p className="text-gray-400 dark:text-gray-300 text-sm font-normal mb-2">{card.title}</p>
                     <p className="text-white text-2xl font-bold">{card.value}</p>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="bg-[#0F0F0F] border border-gray-800 rounded-lg p-6">
-                <p className="text-gray-400 text-sm font-normal mb-2">{card.title}</p>
+              <div className="bg-[#0F0F0F] dark:bg-black border border-gray-800 dark:border-white/10 rounded-lg p-6">
+                <p className="text-gray-400 dark:text-gray-300 text-sm font-normal mb-2">{card.title}</p>
                 <p className="text-white text-2xl font-bold">{card.value}</p>
               </div>
             )}

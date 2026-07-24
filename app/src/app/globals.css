@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (Tailwind v4 CSS-first config): dark: variants apply
+   when the `dark` class is present on <html> or an ancestor, toggled by
+   TopHeader.tsx's theme toggle and persisted to localStorage. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #000000;
   --foreground: #ffffff;

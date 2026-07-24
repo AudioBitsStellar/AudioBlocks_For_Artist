@@ -56,7 +56,8 @@ export default function Sidebar({
         aria-modal={open ? true : undefined}
         aria-label="Navigation"
         className={`
-          fixed top-0 left-0 h-full w-64 bg-[#161616] flex flex-col
+          fixed top-0 left-0 h-full w-64 bg-[#161616] dark:bg-black flex flex-col
+          border-r border-transparent dark:border-white/10
           transform transition-transform duration-300 ease-in-out
           z-50
 
@@ -106,7 +107,7 @@ export default function Sidebar({
                   ${
                     isActive
                       ? 'text-pink-500'
-                      : 'text-gray-300 hover:text-white'
+                      : 'text-gray-300 dark:text-gray-400 hover:text-white'
                   }`}
                 aria-current={isActive ? 'page' : undefined}
               >
@@ -121,7 +122,7 @@ export default function Sidebar({
 
         {/* Legal */}
         <div className="p-4">
-          <h3 className="text-gray-400 text-sm font-semibold mb-2">
+          <h3 className="text-gray-400 dark:text-gray-500 text-sm font-semibold mb-2">
             Legal
           </h3>
           {legalLinks.map((link) => (
@@ -129,7 +130,7 @@ export default function Sidebar({
               key={link.name}
               href={link.href}
               onClick={onClose}
-              className="block text-gray-400 text-sm hover:text-white py-1"
+              className="block text-gray-400 dark:text-gray-500 text-sm hover:text-white py-1"
             >
               {link.name}
             </Link>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Bell, Menu } from 'lucide-react';
+import { Search, Bell, Menu, Sun, Moon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
@@ -13,6 +13,19 @@ export default function TopHeader({
 }) {
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
+  const [isDark, setIsDark] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('theme') === 'dark'
+  );
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+  };
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -42,7 +55,7 @@ export default function TopHeader({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-[#161616] flex-shrink-0 border-b border-white/10">
+    <header className="sticky top-0 z-30 bg-[#161616] dark:bg-black flex-shrink-0 border-b border-white/10 dark:border-white/20">
       {/* Main row */}
       <div className="h-16 sm:h-20 flex items-center justify-between px-4 md:px-8">
 
@@ -65,7 +78,7 @@ export default function TopHeader({
             <h2 className="text-white text-base sm:text-lg md:text-xl font-bold leading-tight">
               Welcome, Pete Lisk
             </h2>
-            <p className="text-gray-400 text-xs sm:text-sm mt-0.5">
+            <p className="text-gray-400 dark:text-gray-300 text-xs sm:text-sm mt-0.5">
               {currentDate} | {currentTime}
             </p>
           </div>
@@ -82,7 +95,7 @@ export default function TopHeader({
               type="search"
               placeholder="Search by artists, songs or albums"
               aria-label="Search"
-              className="w-full bg-[#2A2A2A] rounded-lg pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
+              className="w-full bg-[#2A2A2A] dark:bg-black dark:border dark:border-white/20 rounded-lg pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
             />
           </div>
         </div>
@@ -90,11 +103,20 @@ export default function TopHeader({
         {/* RIGHT */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-pressed={isDark}
+            className="text-white hover:text-gray-300 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+          >
+            {isDark ? <Sun size={22} /> : <Moon size={22} />}
+          </button>
+
+          <button
             aria-label="Notifications"
             className="relative text-white hover:text-gray-300 transition-colors"
           >
             <Bell size={24} strokeWidth={2} />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#161616]" />
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#161616] dark:border-black" />
           </button>
 
           <Link
@@ -127,7 +149,7 @@ export default function TopHeader({
             type="search"
             placeholder="Search artists, songs or albums"
             aria-label="Search"
-            className="w-full bg-[#2A2A2A] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
+            className="w-full bg-[#2A2A2A] dark:bg-black dark:border dark:border-white/20 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
           />
         </div>
       </div>
