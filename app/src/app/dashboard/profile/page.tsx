@@ -16,10 +16,36 @@ import { useToast } from "@/hooks/useToastHandler";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import ImageCropper from "@/components/ImageCropper";
 
+function ProfileFormSkeleton() {
+	return (
+		<div className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-16 mt-6" aria-hidden="true" data-testid="profile-skeleton">
+			<div className="space-y-5">
+				{[48, 120, 48, 48].map((height, i) => (
+					<div key={i} className="flex flex-col mt-7">
+						<div className="h-4 w-32 rounded bg-[#2A2A2A] animate-pulse mb-2" />
+						<div className="rounded-2xl bg-[#FFFFFF0A] animate-pulse" style={{ width: "660px", height: `${height}px`, maxWidth: "100%" }} />
+					</div>
+				))}
+				<div className="h-11 w-[131px] rounded-lg bg-[#2A2A2A] animate-pulse mt-6" />
+			</div>
+			<div
+				className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col"
+				style={{ width: "244px", height: "321px", borderRadius: "16px" }}
+			>
+				<div className="w-full aspect-square rounded-lg bg-[#2A2A2A] animate-pulse mb-4" />
+				<div className="h-4 w-20 rounded bg-[#2A2A2A] animate-pulse mb-2" />
+				<div className="h-3 w-full rounded bg-[#2A2A2A] animate-pulse mb-4 flex-1" />
+				<div className="h-9 w-full rounded-lg bg-[#2A2A2A] animate-pulse" />
+			</div>
+		</div>
+	);
+}
+
 export default function ProfilePage() {
 	const [activeTab, setActiveTab] = useState<"profile" | "settings" | "onchain">("profile");
-	const { useUpdateArtistProfile } = useArtistServices();
+	const { useUpdateArtistProfile, useGetArtistProfile } = useArtistServices();
 	const updateProfileMutation = useUpdateArtistProfile();
+	const { isLoading: isProfileLoading } = useGetArtistProfile(true);
 	const toast = useToast();
 
 	const {
@@ -144,7 +170,8 @@ export default function ProfilePage() {
 			</div>
 
 			{/* Main Content - Two Columns */}
-			{activeTab === "profile" && (
+			{activeTab === "profile" && isProfileLoading && <ProfileFormSkeleton />}
+			{activeTab === "profile" && !isProfileLoading && (
 				<div id="profile-panel" className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-16 mt-6">
 					{/* Left Column - Form Fields */}
 					<div className="space-y-5">
