@@ -1,7 +1,7 @@
 'use client';
 
 import { Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, Play, MoreVertical, Clock, Heart, MessageCircle, FolderDown, X, Upload, Music, Trash2, RotateCw, Plus } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { MUSIC_GENRES } from './shared/music_genre';
 import { MusicFormValues } from '@/types';
@@ -35,16 +35,40 @@ interface MyMusicContentProps {
 
 
 
+function AlbumSkeletonRow() {
+  return (
+    <div className="flex gap-6 overflow-hidden pl-12 pr-12" aria-hidden="true" data-testid="my-music-skeleton">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="shrink-0 w-64">
+          <div className="w-64 h-64 rounded-lg bg-gray-800 animate-pulse mb-3" />
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-4 w-32 rounded bg-gray-800 animate-pulse" />
+            <div className="h-3 w-20 rounded bg-gray-800 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [isLoading, setIsLoading] = useState(true);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; songId: number | null }>({
     isOpen: false,
     songId: null
   });
+
+  // Simulates the initial library fetch. Once this is wired to a real
+  // backend endpoint, replace with that request's own loading state.
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleDeleteConfirm = () => {
     if (deleteConfirmation.songId !== null) {
@@ -339,6 +363,9 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
       </div>
 
       {/* Albums Grid */}
+      {isLoading ? (
+        <AlbumSkeletonRow />
+      ) : (
       <div className="relative overflow-hidden">
         {/* Left navigation arrow */}
         <button
@@ -408,6 +435,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }
