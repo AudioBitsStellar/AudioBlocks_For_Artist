@@ -14,6 +14,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { analytics } from "@/lib/analytics";
 import { useToast } from "@/hooks/useToastHandler";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
+import { encodeHtmlEntities } from "@/utils/textEncoder";
 import ImageCropper from "@/components/ImageCropper";
 
 function ProfileFormSkeleton() {
@@ -96,7 +97,7 @@ export default function ProfilePage() {
 		const formData = new FormData();
 
 		formData.append("username", data.username);
-		formData.append("bio", data.bio || '');
+		formData.append("bio", encodeHtmlEntities(data.bio || ''));
 		formData.append("website", data.website || '');
 		formData.append("twitter", data.twitter || '');
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { Send, Paperclip, User } from 'lucide-react';
+import { encodeHtmlEntities } from '@/utils/textEncoder';
 
 const comments = [
   {
@@ -35,7 +36,7 @@ export default function Comments() {
                 <span className="text-white font-semibold text-sm">{comment.name}</span>
                 <span className="text-gray-400 text-sm">{comment.time}</span>
               </div>
-              <p className="text-gray-300 text-sm">{comment.comment}</p>
+              <p className="text-gray-300 text-sm">{encodeHtmlEntities(comment.comment)}</p>
             </div>
           </div>
         ))}
