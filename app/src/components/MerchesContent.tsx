@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Filter, Search, ShoppingBag, X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { featureFlags } from '@/lib/featureFlags';
 import { MOCK_MERCH_ITEMS, MOCK_MERCH_METRICS } from '@/lib/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import useMerchService, { MerchItem, CreateMerchPayload } from '@/services/merchService';
 
 interface MerchFormProps {
@@ -28,8 +30,20 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
     (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
+  const { restore, clearSavedData } = useAutoSave('create-merch', form as unknown as Record<string, unknown>, isBusy);
+
+  useEffect(() => {
+    if (initial) return;
+    const saved = restore();
+    if (saved) {
+      setForm(saved as CreateMerchPayload);
+      toast.success('Draft restored');
+    }
+  }, []);
+
   const handleSave = () => {
     if (!form.title.trim() || !form.price.trim()) return;
+    clearSavedData();
     onSave(form);
   };
 

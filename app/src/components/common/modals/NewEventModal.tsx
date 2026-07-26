@@ -4,6 +4,8 @@ import * as Dialog from '@radix-ui/react-dialog';
 import Image from 'next/image';
 import { X, Loader2, Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import useEventsService from '@/services/eventsService';
 
 interface NewEventModalProps {
@@ -28,10 +30,14 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
   const [form, setForm] = useState(DEFAULT_FORM);
   const progressTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasRestored = useRef(false);
+
+  const { restore: restoreDraft, clearSavedData } = useAutoSave('create-event', form, step === 'progress' || createMutation.isPending);
 
   const resetState = () => {
     setStep('form');
     setForm(DEFAULT_FORM);
+    hasRestored.current = false;
     if (progressTimeout.current) {
       clearTimeout(progressTimeout.current);
     }
@@ -46,6 +52,17 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
     }
   }, [open]);
 
+  useEffect(() => {
+    if (open && step === 'form' && !hasRestored.current) {
+      const saved = restoreDraft();
+      if (saved) {
+        setForm({ ...DEFAULT_FORM, ...saved });
+        toast.success('Draft restored');
+      }
+      hasRestored.current = true;
+    }
+  }, [open, step]);
+
   const handleCreate = async () => {
     setStep('progress');
     try {
@@ -57,6 +74,7 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
         time: form.time,
         image: '/artist_hub/HeroImage.png',
       });
+      clearSavedData();
       setStep('completed');
       closeTimeout.current = setTimeout(() => {
         onOpenChange(false);

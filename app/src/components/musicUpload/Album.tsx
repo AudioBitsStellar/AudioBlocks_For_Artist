@@ -1,11 +1,13 @@
 import { Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, Play, MoreVertical, Clock, Heart, MessageCircle, FolderDown, X, Upload, Music, Trash2, RotateCw, Plus } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { MusicFormValues } from '@/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { albumFormSchema } from '@/types/formValidation';
 import { MUSIC_GENRES } from '../shared/music_genre';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { toast } from 'sonner';
 
 const Album = () => {
 
@@ -26,6 +28,17 @@ const Album = () => {
     resolver: zodResolver(albumFormSchema),
     mode: 'onChange',
   });
+
+  const watchedValues = watch();
+  const { restore, clearSavedData } = useAutoSave('upload-album', watchedValues as Record<string, unknown>, isSubmitting);
+
+  useEffect(() => {
+    const saved = restore();
+    if (saved) {
+      reset(saved as MusicFormValues);
+      toast.success('Draft restored');
+    }
+  }, []);
 
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,6 +160,7 @@ const Album = () => {
       uploadedFile,
     });
 
+    clearSavedData();
     reset();
     setCoverImage(null);
     setUploadedFile(null);
