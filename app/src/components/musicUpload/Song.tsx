@@ -1,5 +1,5 @@
 import { Trash2, RotateCw, Play } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { UploadSong } from '@/types';
 import { useForm } from 'react-hook-form';
@@ -10,6 +10,7 @@ import useUploadServices from '@/services/uploadSerive';
 import { splitFile, generateFileId } from "@/utils/chunkUploader";
 import MusicLoader from '../MusicLoader';
 import { useToast } from '@/hooks/useToastHandler';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import MintSongButton from '@/components/common/wallet/MintSongButton';
 import { analytics } from '@/lib/analytics';
 import { isRetryableError, getErrorMessage } from '@/utils/errorRecovery';
@@ -59,11 +60,23 @@ const Song = () => {
         register,
         handleSubmit,
         reset,
+        watch,
         formState: { errors, isSubmitting, isValid },
     } = useForm<UploadSong>({
         resolver: zodResolver(songFormSchema),
         mode: 'onChange',
     });
+
+    const watchedValues = watch();
+    const { restore, clearSavedData } = useAutoSave('upload-song', watchedValues as Record<string, unknown>, isUploading || isSubmitting);
+
+    useEffect(() => {
+        const saved = restore();
+        if (saved) {
+            reset(saved as UploadSong);
+            toast.success('Draft restored');
+        }
+    }, []);
 
 
     const isBusy =
@@ -292,6 +305,7 @@ const Song = () => {
                 prev ? { ...prev, status: "success" } : prev
             );
 
+            clearSavedData();
             toast.success('Song uploaded successfully!');
 
             reset();
