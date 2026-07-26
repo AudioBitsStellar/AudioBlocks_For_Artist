@@ -300,6 +300,7 @@ export default function ProfilePage() {
 									src={profileImage}
 									alt="Artist profile image"
 									fill
+									sizes="(max-width: 640px) 80px, (max-width: 1024px) 160px, 160px"
 									className="object-cover"
 									unoptimized
 								/>

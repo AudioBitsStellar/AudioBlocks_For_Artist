@@ -189,7 +189,13 @@ export default function MerchesContent() {
               {items.map((item) => (
                 <div key={item.id} className="group overflow-hidden rounded-3xl border border-[#1F1F1F] bg-[#151818] shadow-lg transition-transform duration-200 hover:-translate-y-1">
                   <div className="relative h-48 overflow-hidden">
-                    <img src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <img
+                      src={item.image}
+                      srcSet={`${item.image.replace(/w=\d+&h=\d+/, 'w=300&h=300')} 300w, ${item.image.replace(/w=\d+&h=\d+/, 'w=600&h=600')} 600w, ${item.image.replace(/w=\d+&h=\d+/, 'w=900&h=900')} 900w`}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      alt={item.title}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
                   </div>
                   <div className="space-y-3 px-6 py-5">
                     <h3 className="text-lg font-semibold text-white">{item.title}</h3>

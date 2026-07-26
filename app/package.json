@@ -9,7 +9,10 @@
     "lint": "eslint",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build",
+    "chromatic": "chromatic --project-id audio-blocks"
   },
   "dependencies": {
     "@dynamic-labs/ethereum": "^4.41.1",
@@ -52,9 +55,15 @@
     "@vitejs/plugin-react": "^4.4.1",
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.9.18",
+    "@storybook/nextjs-vite": "^8.0.0",
+    "@storybook/addon-essentials": "^8.0.0",
+    "@storybook/addon-interactions": "^8.0.0",
+    "@storybook/react": "^8.0.0",
+    "chromatic": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "jsdom": "^25.0.1",
+    "storybook": "^8.0.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.0.0"
