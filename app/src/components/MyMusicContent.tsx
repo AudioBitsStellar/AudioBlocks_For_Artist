@@ -8,6 +8,18 @@ import { MusicFormValues } from '@/types';
 import { useForm } from 'react-hook-form';
 import ConfirmationDialog from './shared/ConfirmationDialog';
 
+function getImageSrcSet(baseUrl: string): string {
+  const sizes = [200, 400, 800];
+  return sizes
+    .map((size) => {
+      const url = new URL(baseUrl);
+      url.searchParams.set('w', String(size));
+      url.searchParams.set('h', String(size));
+      return `${url.toString()} ${size}w`;
+    })
+    .join(', ');
+}
+
 interface Album {
   id: number;
   title: string;
@@ -260,6 +272,8 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                       alt={`${song.title} cover art`}
                       width={48}
                       height={48}
+                      srcSet={getImageSrcSet(song.thumbnail)}
+                      sizes="(max-width: 640px) 48px, 48px"
                       className="w-full h-full object-cover"
                       unoptimized
                     />
@@ -412,6 +426,8 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                     alt={`${album.title} cover art`}
                     width={256}
                     height={256}
+                    srcSet={getImageSrcSet(album.image)}
+                    sizes="(max-width: 640px) 120px, (max-width: 1024px) 256px, 256px"
                     className="w-full h-full object-cover"
                     unoptimized
                   />
