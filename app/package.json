@@ -2,17 +2,26 @@
   "name": "app",
   "version": "0.1.0",
   "private": true,
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": "prettier --write"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "format": "prettier --write .",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
-    "chromatic": "chromatic --project-id audio-blocks"
+    "chromatic": "chromatic --project-id audio-blocks",
+    "prepare": "cd .. && husky install app/.husky"
   },
   "dependencies": {
     "@dynamic-labs/ethereum": "^4.41.1",
@@ -66,7 +75,10 @@
     "chromatic": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.1",
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.4.2",
     "storybook": "^8.0.0",
     "tailwindcss": "^4",
     "typescript": "^5",
