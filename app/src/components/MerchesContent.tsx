@@ -10,6 +10,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import useMerchService, { MerchItem, CreateMerchPayload } from '@/services/merchService';
 import { useRole } from '@/hooks/useRole';
 import ConfirmationDialog from './shared/ConfirmationDialog';
+import EmptyState from './shared/EmptyState';
 
 interface MerchFormProps {
   initial?: Partial<MerchItem>;
@@ -237,17 +238,13 @@ export default function MerchesContent() {
           </div>
 
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-gray-500 gap-3">
-              <ShoppingBag className="h-10 w-10 text-[#A3A3A3]" />
-              <p className="text-lg font-semibold text-white">No merch yet</p>
-              <p className="text-sm">Add your first merch drop to get started.</p>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="mt-2 rounded-full bg-[#D2045B] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(210,4,91,0.35)] transition-colors hover:bg-[#B8043F]"
-              >
-                Add your first merch
-              </button>
-            </div>
+            <EmptyState
+              icon={ShoppingBag}
+              title="No merch yet"
+              description="Add your first merch drop to start selling to your fans."
+              ctaLabel="Add your first merch"
+              onCta={() => setShowCreate(true)}
+            />
           ) : (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {items.map((item) => (
