@@ -1,6 +1,6 @@
 'use client';
 
-import { Music, Calendar, Tag, Star, Home, X } from 'lucide-react';
+import { Music, Calendar, Tag, Settings as SettingsIcon, Star, Home, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -12,6 +12,7 @@ const navItems = [
   { name: 'Events', icon: Calendar, href: '/dashboard/events' },
   { name: 'Merches', icon: Tag, href: '/dashboard/merches' },
   { name: 'Premium', icon: Star, href: '/dashboard/premium' },
+  { name: 'Settings', icon: SettingsIcon, href: '/dashboard/settings/notifications' },
 ];
 
 const legalLinks = [
@@ -56,8 +57,8 @@ export default function Sidebar({
         aria-modal={open ? true : undefined}
         aria-label="Navigation"
         className={`
-          fixed top-0 left-0 h-full w-64 bg-[#161616] dark:bg-black flex flex-col
-          border-r border-transparent dark:border-white/10
+          fixed top-0 left-0 h-full w-64 bg-surface dark:bg-background flex flex-col
+          border-r border-transparent dark:border-border-subtle
           transform transition-transform duration-300 ease-in-out
           z-50
 
