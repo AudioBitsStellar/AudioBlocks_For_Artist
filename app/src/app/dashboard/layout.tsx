@@ -2,6 +2,8 @@
 
 import Sidebar from '@/components/Sidebar';
 import TopHeader from '@/components/TopHeader';
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+import RoleProvider from '@/context/RoleContext';
 import { useState } from 'react';
 
 export default function DashboardLayout({
@@ -14,20 +16,23 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   return (
-    <div className="flex min-h-screen bg-[#151918]">
-      {/* Sidebar */}
-      <Sidebar open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)} />
+    <RoleProvider>
+      <div className="flex min-h-screen bg-[#151918]">
+        {/* Sidebar */}
+        <Sidebar open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)} />
 
 
-      {/* Main content */}
-      <div className="md:ml-64 min-w-0 w-full flex flex-col">
-        <TopHeader onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} />
+        {/* Main content */}
+        <div className="md:ml-64 min-w-0 w-full flex flex-col">
+          <TopHeader onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} />
 
-        <main className="flex-1 w-11/12 m-auto overflow-y-auto overflow-x-hidden py-8 space-y-8">
-          {children}
-        </main>
+          <main className="flex-1 w-11/12 m-auto overflow-y-auto overflow-x-hidden py-8 space-y-8">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+      <ServiceWorkerRegister />
+    </RoleProvider>
   );
 }
