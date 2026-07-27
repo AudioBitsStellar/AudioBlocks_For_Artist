@@ -9,6 +9,7 @@ import MockDataBadge from '@/components/MockDataBadge';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import useMerchService, { MerchItem, CreateMerchPayload } from '@/services/merchService';
 import { useRole } from '@/hooks/useRole';
+import ConfirmationDialog from './shared/ConfirmationDialog';
 
 interface MerchFormProps {
   initial?: Partial<MerchItem>;
@@ -139,6 +140,10 @@ export default function MerchesContent() {
   const [editTarget, setEditTarget] = useState<MerchItem | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; item: MerchItem | null }>({
+    isOpen: false,
+    item: null,
+  });
 
   const updateMutation = useUpdateMerch(editTarget?.id ?? 0);
   const deleteMutation = useDeleteMerch(deleteId ?? 0);
@@ -159,8 +164,14 @@ export default function MerchesContent() {
     updateMutation.mutate(payload, { onSuccess: () => setEditTarget(null) });
   };
 
-  const handleDelete = (id: number) => {
-    setDeleteId(id);
+  const handleDeleteRequest = (item: MerchItem) => {
+    setDeleteConfirmation({ isOpen: true, item });
+  };
+
+  const handleDeleteConfirm = () => {
+    const item = deleteConfirmation.item;
+    if (!item) return;
+    setDeleteId(item.id);
     deleteMutation.mutate(undefined as any, { onSuccess: () => setDeleteId(null) });
   };
 
@@ -272,7 +283,7 @@ export default function MerchesContent() {
                             )}
                             {canDelete && (
                               <button
-                                onClick={() => handleDelete(item.id)}
+                                onClick={() => handleDeleteRequest(item)}
                                 data-testid="delete-merch-btn"
                                 disabled={deleteId === item.id && deleteMutation.isPending}
                                 className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:border-red-500 disabled:opacity-50"
@@ -314,6 +325,14 @@ export default function MerchesContent() {
           isBusy={updateMutation.isPending}
         />
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, item: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Merch Item"
+        message={`Are you sure you want to delete "${deleteConfirmation.item?.title ?? 'this item'}"? This action is permanent and cannot be undone.`}
+      />
     </div>
   );
 }
