@@ -262,11 +262,13 @@ export default function ProfilePage() {
 							{errors.bio && (
 								<p id="bio-error" className="text-[10px] text-red-500 mt-1" role="alert">{errors.bio.message}</p>
 							)}
-							{bioLength >= 450 && (
-								<p className={`text-[10px] mt-1 text-right ${bioLength >= 500 ? 'text-red-500' : 'text-yellow-500'}`}>
-									{bioLength}/500
-								</p>
-							)}
+							<p
+								className={`text-[10px] mt-1 text-right ${
+									bioLength >= 500 ? 'text-red-500' : bioLength >= 450 ? 'text-yellow-500' : 'text-[#6F6F6F]'
+								}`}
+							>
+								{bioLength}/500
+							</p>
 						</div>
 
 						<div className="flex flex-col mt-7">
