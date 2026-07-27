@@ -4,6 +4,7 @@ import "./globals.css";
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import Provider from '@/context/provider';
+import OfflineIndicator from '@/components/OfflineIndicator';
 import { Toaster } from 'sonner';
 
 const geistSans = Geist({
@@ -81,6 +82,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Provider>
+          <OfflineIndicator />
           {children}
           <Toaster
             position="top-right"

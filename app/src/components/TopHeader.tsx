@@ -4,19 +4,42 @@ import { Search, Bell, Menu, Sun, Moon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatDate } from '@/utils/date';
+import { useRole } from '@/hooks/useRole';
+import { ROLE_BADGE_STYLES, type Role } from '@/types/role';
+
+interface TopHeaderProps {
+  onMenuClick: () => void;
+  sidebarOpen?: boolean;
+  /** Optional override for the displayed user name (#172 test surface). */
+  userName?: string;
+  /** Optional override for the displayed role. Falls back to useRole().role. */
+  userRole?: Role;
+  /**
+   * Optional notification count (#172).
+   *  - `0`            : red dot rendered next to the bell
+   *  - `number > 0`   : count badge (capped at `99+`)
+   *  - `null`         : no badge at all
+   *  - `undefined`    : red dot (default)
+   */
+  notificationCount?: number | null;
+}
 
 export default function TopHeader({
   onMenuClick,
   sidebarOpen = false,
-}: {
-  onMenuClick: () => void;
-  sidebarOpen?: boolean;
-}) {
+  userName,
+  userRole,
+  notificationCount,
+}: TopHeaderProps) {
+  const { info: roleInfo, role: contextRole } = useRole();
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
   const [isDark, setIsDark] = useState(
     () => typeof window !== 'undefined' && localStorage.getItem('theme') === 'dark'
   );
+
+  // Decide which role to render: explicit prop wins, otherwise context.
+  const activeRole: Role = userRole ?? contextRole ?? roleInfo.role;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
@@ -47,6 +70,11 @@ export default function TopHeader({
     return () => clearInterval(interval);
   }, []);
 
+  const notifLabel =
+    typeof notificationCount === 'number' && notificationCount > 0
+      ? `Notifications and settings (${notificationCount} new)`
+      : 'Notifications and settings';
+
   return (
     <header className="sticky top-0 z-30 bg-surface dark:bg-background flex-shrink-0 border-b border-border-subtle dark:border-border">
       {/* Main row */}
@@ -69,7 +97,7 @@ export default function TopHeader({
           {/* Welcome */}
           <div>
             <h2 className="text-text text-base sm:text-lg md:text-xl font-bold leading-tight">
-              Welcome, Pete Lisk
+              {userName ? `Welcome, ${userName}` : 'Welcome, Pete Lisk'}
             </h2>
             <p className="text-text-muted text-xs sm:text-sm mt-0.5">
               {currentDate} | {currentTime}
@@ -95,6 +123,16 @@ export default function TopHeader({
 
         {/* RIGHT */}
         <div className="flex items-center gap-3 sm:gap-4">
+          {/* Role badge – issue #173 */}
+          <span
+            data-testid="role-badge"
+            data-role={activeRole}
+            aria-label={`Role: ${activeRole}`}
+            className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide uppercase ${ROLE_BADGE_STYLES[activeRole]}`}
+          >
+            {activeRole}
+          </span>
+
           <button
             onClick={toggleTheme}
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -106,11 +144,24 @@ export default function TopHeader({
 
           <Link
             href="/dashboard/settings/notifications"
-            aria-label="Notifications and settings"
+            aria-label={notifLabel}
             className="relative text-text hover:text-text-muted transition-colors"
           >
             <Bell size={24} strokeWidth={2} />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-surface dark:border-background" />
+            {notificationCount !== null &&
+              (typeof notificationCount === 'number' && notificationCount > 0 ? (
+                <span
+                  data-testid="notification-count"
+                  className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 bg-primary rounded-full border-2 border-surface dark:border-background text-[10px] font-bold text-text-inverted flex items-center justify-center"
+                >
+                  {notificationCount > 99 ? '99+' : notificationCount}
+                </span>
+              ) : (
+                <span
+                  data-testid="notification-dot"
+                  className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-surface dark:border-background"
+                />
+              ))}
           </Link>
 
           <Link

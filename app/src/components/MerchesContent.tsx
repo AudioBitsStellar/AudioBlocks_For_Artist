@@ -8,6 +8,7 @@ import { MOCK_MERCH_ITEMS, MOCK_MERCH_METRICS } from '@/lib/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import useMerchService, { MerchItem, CreateMerchPayload } from '@/services/merchService';
+import { useRole } from '@/hooks/useRole';
 
 interface MerchFormProps {
   initial?: Partial<MerchItem>;
@@ -95,6 +96,11 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
 export default function MerchesContent() {
   const { useGetMerches, useCreateMerch, useUpdateMerch, useDeleteMerch } = useMerchService();
   const { data, isLoading } = useGetMerches();
+  // RBAC – issue #173: gate destructive actions by role.
+  const { can } = useRole();
+  const canCreate = can('content:create');
+  const canEdit = can('content:edit');
+  const canDelete = can('content:delete');
 
   const createMutation = useCreateMerch();
 
@@ -136,9 +142,10 @@ export default function MerchesContent() {
             {featureFlags.useMockMerches && <MockDataBadge label="merches" />}
           </h1>
         </div>
-        {!featureFlags.useMockMerches && (
+        {!featureFlags.useMockMerches && canCreate && (
           <button
             onClick={() => setShowCreate(true)}
+            data-testid="create-merch-btn"
             className="self-start rounded-full bg-[#D2045B] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(210,4,91,0.35)] transition-colors hover:bg-[#B8043F]"
           >
             New Merch
@@ -220,21 +227,27 @@ export default function MerchesContent() {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        {!featureFlags.useMockMerches && (
+                        {!featureFlags.useMockMerches && (canEdit || canDelete) && (
                           <>
-                            <button
-                              onClick={() => setEditTarget(item)}
-                              className="rounded-full border border-[#2E2E2E] px-5 py-1.5 text-xs font-medium text-white transition-colors hover:border-[#885FA8]"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              disabled={deleteId === item.id && deleteMutation.isPending}
-                              className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:border-red-500 disabled:opacity-50"
-                            >
-                              {deleteId === item.id && deleteMutation.isPending ? '…' : 'Delete'}
-                            </button>
+                            {canEdit && (
+                              <button
+                                onClick={() => setEditTarget(item)}
+                                data-testid="edit-merch-btn"
+                                className="rounded-full border border-[#2E2E2E] px-5 py-1.5 text-xs font-medium text-white transition-colors hover:border-[#885FA8]"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDelete(item.id)}
+                                data-testid="delete-merch-btn"
+                                disabled={deleteId === item.id && deleteMutation.isPending}
+                                className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:border-red-500 disabled:opacity-50"
+                              >
+                                {deleteId === item.id && deleteMutation.isPending ? '…' : 'Delete'}
+                              </button>
+                            )}
                           </>
                         )}
                         {featureFlags.useMockMerches && (
