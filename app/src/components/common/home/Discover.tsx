@@ -81,13 +81,15 @@ const Discover = () => {
           <div className="flex gap-6 mt-8">
             <button
               onClick={() => sliderRef.current?.slickPrev()}
-              className="p-2 rounded-full cursor-pointer bg-[#1E181D] text-[#F2AFC9] hover:bg-white/20"
+              aria-label="Previous slide"
+              className="flex items-center justify-center min-w-11 min-h-11 rounded-full cursor-pointer bg-[#1E181D] text-[#F2AFC9] hover:bg-white/20"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <button
               onClick={() => sliderRef.current?.slickNext()}
-              className="p-2 rounded-full cursor-pointer bg-[#1E181D] text-[#F2AFC9] hover:bg-white/20"
+              aria-label="Next slide"
+              className="flex items-center justify-center min-w-11 min-h-11 rounded-full cursor-pointer bg-[#1E181D] text-[#F2AFC9] hover:bg-white/20"
             >
               <ArrowRight className="w-5 h-5" />
             </button>

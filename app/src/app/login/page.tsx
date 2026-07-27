@@ -52,6 +52,7 @@ export default function LoginPage() {
               type="email"
               {...register("email", { required: "Email is required" })}
               placeholder="you@example.com"
+              maxLength={254}
               aria-invalid={errors.email ? 'true' : 'false'}
               aria-describedby={errors.email ? 'login-email-error' : undefined}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"

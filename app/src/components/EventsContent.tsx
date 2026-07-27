@@ -90,7 +90,7 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full sm:w-72">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-            <input type="text" placeholder="Search Events" className="w-full rounded-full border border-border bg-surface-sunken py-3 pl-12 pr-5 text-sm text-text placeholder:text-text-subtle focus:border-secondary focus:outline-none" />
+            <input type="text" placeholder="Search Events" maxLength={100} className="w-full rounded-full border border-border bg-surface-sunken py-3 pl-12 pr-5 text-sm text-text placeholder:text-text-subtle focus:border-secondary focus:outline-none" />
           </div>
           <button className="flex items-center justify-center gap-2 rounded-full border border-border bg-surface-sunken px-5 py-3 text-sm font-medium text-text transition-colors hover:border-secondary">
             <Filter className="h-4 w-4" /> Filter

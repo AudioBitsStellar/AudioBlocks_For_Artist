@@ -177,11 +177,17 @@ const Album = () => {
             id="album-title"
             {...register('albumTitle')}
             placeholder="Enter Album Title"
+            maxLength={100}
             aria-invalid={errors.albumTitle ? 'true' : 'false'}
             className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.albumTitle ? 'border-red-500' : 'border-[#2A2A2A]'}`}
           />
           {errors.albumTitle && (
             <p className="text-[10px] text-red-500" role="alert">{errors.albumTitle.message}</p>
+          )}
+          {(watchedValues.albumTitle?.length ?? 0) >= 90 && (
+            <p className={`text-[10px] text-right ${(watchedValues.albumTitle?.length ?? 0) >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+              {watchedValues.albumTitle?.length ?? 0}/100
+            </p>
           )}
         </div>
 
@@ -218,11 +224,17 @@ const Album = () => {
             id="album-song-title"
             {...register('songTitle')}
             placeholder="Add Song Title"
+            maxLength={100}
             aria-invalid={errors.songTitle ? 'true' : 'false'}
             className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.songTitle ? 'border-red-500' : 'border-[#2A2A2A]'}`}
           />
           {errors.songTitle && (
             <p className="text-[10px] text-red-500" role="alert">{errors.songTitle.message}</p>
+          )}
+          {(watchedValues.songTitle?.length ?? 0) >= 90 && (
+            <p className={`text-[10px] text-right ${(watchedValues.songTitle?.length ?? 0) >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+              {watchedValues.songTitle?.length ?? 0}/100
+            </p>
           )}
         </div>
 
@@ -235,6 +247,7 @@ const Album = () => {
               id="album-purchase-price"
               {...register('purchasePrice')}
               placeholder="Add Price of Song"
+              maxLength={20}
               aria-invalid={errors.purchasePrice ? 'true' : 'false'}
               className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.purchasePrice ? 'border-red-500' : 'border-[#2A2A2A]'}`}
             />
@@ -306,6 +319,7 @@ const Album = () => {
                           onClick={() => handleDeleteAlbumFile(file.id)}
                           className="p-1 text-[#A3A3A3] hover:text-white transition-colors shrink-0"
                           title="Delete file"
+                          aria-label="Delete file"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -375,8 +389,7 @@ const Album = () => {
         >
           Add Album
         </button>
-
-
+      </div>
 
       {/* Right Column - Media Uploads */}
       <div className="space-y-6  col-span-1">

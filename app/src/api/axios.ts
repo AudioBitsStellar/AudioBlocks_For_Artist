@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import Cookies from "js-cookie";
 
-function getToken(): string | null {
+export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return Cookies.get("audioblocks_jwt") || localStorage.getItem("token") || null;
 }

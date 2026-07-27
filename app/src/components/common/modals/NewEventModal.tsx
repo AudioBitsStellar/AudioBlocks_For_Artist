@@ -109,7 +109,11 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
                   <Dialog.Title className="mt-2 text-2xl font-semibold text-white">Add New Event</Dialog.Title>
                 </div>
                 <Dialog.Close asChild>
-                  <button onClick={handleCancel} className="rounded-full p-2 text-gray-400 transition hover:bg-white/5 hover:text-white">
+                  <button
+                    onClick={handleCancel}
+                    aria-label="Close new event dialog"
+                    className="flex items-center justify-center min-w-11 min-h-11 rounded-full text-gray-400 transition hover:bg-white/5 hover:text-white"
+                  >
                     <X className="h-5 w-5" />
                   </button>
                 </Dialog.Close>
@@ -127,6 +131,7 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
                       value={form.name}
                       onChange={handleFieldChange('name')}
                       placeholder="Please add the title of the event"
+                      maxLength={100}
                       className="w-full rounded-xl border border-[#2A2A2A] bg-[#111111] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                     />
                   </div>
@@ -136,6 +141,7 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
                       value={form.price}
                       onChange={handleFieldChange('price')}
                       placeholder="Please select price"
+                      maxLength={20}
                       className="w-full rounded-xl border border-[#2A2A2A] bg-[#111111] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                     />
                   </div>
@@ -148,8 +154,14 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
                     onChange={handleFieldChange('description')}
                     placeholder="Please describe the experience"
                     rows={4}
+                    maxLength={2000}
                     className="w-full resize-none rounded-xl border border-[#2A2A2A] bg-[#111111] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
+                  {form.description.length >= 1800 && (
+                    <p className={`text-xs text-right ${form.description.length >= 2000 ? 'text-red-500' : 'text-yellow-500'}`}>
+                      {form.description.length}/2000
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -159,6 +171,7 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
                       value={form.time}
                       onChange={handleFieldChange('time')}
                       placeholder="Please select time"
+                      maxLength={20}
                       className="w-full rounded-xl border border-[#2A2A2A] bg-[#111111] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                     />
                   </div>
@@ -168,6 +181,7 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
                       value={form.date}
                       onChange={handleFieldChange('date')}
                       placeholder="Please select date"
+                      maxLength={20}
                       className="w-full rounded-xl border border-[#2A2A2A] bg-[#111111] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                     />
                   </div>

@@ -74,7 +74,9 @@ const Navbar = () => {
           <div className="flex md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D2045B]"
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMenuOpen}
+              className="flex items-center justify-center min-w-11 min-h-11 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D2045B]"
             >
               {isMenuOpen ? (
                 <X className="h-6 w-6 text-white" />
@@ -97,7 +99,11 @@ const Navbar = () => {
             >
               <div className="flex justify-between items-center p-4 border-b border-gray-700">
                 <Image src="/logo2.png" height={40} width={40} alt="AudioBlocks Logo" />
-                <button onClick={() => setIsMenuOpen(false)}>
+                <button
+                  onClick={() => setIsMenuOpen(false)}
+                  aria-label="Close menu"
+                  className="flex items-center justify-center min-w-11 min-h-11"
+                >
                   <X className="h-6 w-6 text-white" />
                 </button>
               </div>
