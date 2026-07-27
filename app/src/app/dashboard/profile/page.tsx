@@ -59,11 +59,14 @@ export default function ProfilePage() {
 		register,
 		setValue,
 		handleSubmit,
+		watch,
 		formState: { errors, isSubmitting, isValid },
 	} = useForm<updateProfilePayload>({
 		resolver: zodResolver(profileFormSchema),
 		mode: 'onChange',
 	});
+
+	const bioLength = watch('bio')?.length ?? 0;
 
 	const [profileImage, setProfileImage] = useState<string | null>(null);
 	const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -217,6 +220,7 @@ export default function ProfilePage() {
 								id="display-name"
 								{...register("username")}
 								placeholder="Add Display name"
+								maxLength={50}
 								aria-invalid={errors.username ? 'true' : 'false'}
 								aria-describedby={errors.username ? 'username-error' : undefined}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
@@ -242,6 +246,7 @@ export default function ProfilePage() {
 								id="short-bio"
 								{...register("bio")}
 								placeholder="Tell about yourself in a few words"
+								maxLength={500}
 								aria-invalid={errors.bio ? 'true' : 'false'}
 								aria-describedby={errors.bio ? 'bio-error' : undefined}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 py-3 resize-none"
@@ -257,6 +262,11 @@ export default function ProfilePage() {
 							{errors.bio && (
 								<p id="bio-error" className="text-[10px] text-red-500 mt-1" role="alert">{errors.bio.message}</p>
 							)}
+							{bioLength >= 450 && (
+								<p className={`text-[10px] mt-1 text-right ${bioLength >= 500 ? 'text-red-500' : 'text-yellow-500'}`}>
+									{bioLength}/500
+								</p>
+							)}
 						</div>
 
 						<div className="flex flex-col mt-7">
@@ -267,6 +277,7 @@ export default function ProfilePage() {
 								id="website-url"
 								{...register("website")}
 								placeholder="https://"
+								maxLength={500}
 								aria-invalid={errors.website ? 'true' : 'false'}
 								aria-describedby={errors.website ? 'website-error' : undefined}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
@@ -292,6 +303,7 @@ export default function ProfilePage() {
 								id="twitter-username"
 								{...register("twitter")}
 								placeholder="Enter your X username"
+								maxLength={50}
 								aria-invalid={errors.twitter ? 'true' : 'false'}
 								aria-describedby={errors.twitter ? 'twitter-error' : undefined}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"

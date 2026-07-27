@@ -54,6 +54,7 @@ export default function SignupPage() {
               id="signup-name"
               {...register("name")}
               placeholder="Add Display name"
+              maxLength={100}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}
             />
@@ -65,6 +66,7 @@ export default function SignupPage() {
               id="signup-username"
               {...register("username")}
               placeholder="Add a username"
+              maxLength={50}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}
             />
@@ -77,6 +79,7 @@ export default function SignupPage() {
               type="email"
               {...register("email", { required: "Email is required" })}
               placeholder="you@example.com"
+              maxLength={254}
               aria-invalid={errors.email ? 'true' : 'false'}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}

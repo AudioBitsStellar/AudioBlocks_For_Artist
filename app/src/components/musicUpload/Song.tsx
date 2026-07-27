@@ -343,12 +343,18 @@ const Song = () => {
                         id="song-title"
                         {...register('title')}
                         placeholder="Add Song Title"
+                        maxLength={100}
                         aria-invalid={errors.title ? 'true' : 'false'}
                         aria-describedby={errors.title ? 'song-title-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.title ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.title && (
                         <p id="song-title-error" className="text-[10px] text-red-500" role="alert">{errors.title.message}</p>
+                    )}
+                    {(watchedValues.title?.length ?? 0) >= 90 && (
+                        <p className={`text-[10px] text-right ${(watchedValues.title?.length ?? 0) >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+                            {watchedValues.title?.length ?? 0}/100
+                        </p>
                     )}
                 </div>
 
@@ -360,12 +366,18 @@ const Song = () => {
                         id="song-description"
                         {...register('description')}
                         placeholder="Enter Song Description"
+                        maxLength={500}
                         aria-invalid={errors.description ? 'true' : 'false'}
                         aria-describedby={errors.description ? 'song-description-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.description ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.description && (
                         <p id="song-description-error" className="text-[10px] text-red-500" role="alert">{errors.description.message}</p>
+                    )}
+                    {(watchedValues.description?.length ?? 0) >= 450 && (
+                        <p className={`text-[10px] text-right ${(watchedValues.description?.length ?? 0) >= 500 ? 'text-red-500' : 'text-yellow-500'}`}>
+                            {watchedValues.description?.length ?? 0}/500
+                        </p>
                     )}
                 </div>
 
@@ -403,12 +415,18 @@ const Song = () => {
                         id="song-composer"
                         {...register('composer')}
                         placeholder="Enter Composer Name"
+                        maxLength={100}
                         aria-invalid={errors.composer ? 'true' : 'false'}
                         aria-describedby={errors.composer ? 'song-composer-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.composer ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.composer && (
                         <p id="song-composer-error" className="text-[10px] text-red-500" role="alert">{errors.composer.message}</p>
+                    )}
+                    {(watchedValues.composer?.length ?? 0) >= 90 && (
+                        <p className={`text-[10px] text-right ${(watchedValues.composer?.length ?? 0) >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+                            {watchedValues.composer?.length ?? 0}/100
+                        </p>
                     )}
                 </div>
 
@@ -593,6 +611,7 @@ const Song = () => {
                                             className="p-1 text-[#A3A3A3] hover:text-white transition-colors"
                                             disabled={isBusy}
                                             title="Retry upload"
+                                            aria-label="Retry upload"
                                         >
                                             <RotateCw size={14} />
                                         </button>
@@ -602,6 +621,7 @@ const Song = () => {
                                         className="p-1 text-[#A3A3A3] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                         onClick={handleDelete}
                                         title="Delete file"
+                                        aria-label="Delete file"
                                     >
                                         <Trash2 size={14} />
                                     </button>

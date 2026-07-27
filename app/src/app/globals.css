@@ -159,3 +159,65 @@ body {
     animation: music 1.4s ease-in-out infinite;
   }
 }
+
+/* ─── Print stylesheet: Earnings & Royalties report (issue #144) ─────────
+   EarningsRoyalties.tsx toggles `body.printing-earnings-report` around
+   window.print(). While that class is present, everything on the page is
+   hidden except the #earnings-report-print subtree, so the report prints on
+   its own regardless of what dashboard page it's embedded in. */
+@media print {
+  body.printing-earnings-report * {
+    visibility: hidden;
+  }
+
+  body.printing-earnings-report #earnings-report-print,
+  body.printing-earnings-report #earnings-report-print * {
+    visibility: visible;
+  }
+
+  body.printing-earnings-report #earnings-report-print {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    background: #ffffff;
+    color: #111111;
+  }
+
+  body.printing-earnings-report .earnings-print-hide {
+    display: none !important;
+  }
+
+  body.printing-earnings-report .earnings-print-only {
+    display: block !important;
+    margin-bottom: 1rem;
+  }
+
+  #earnings-report-print table.earnings-print-only {
+    display: table !important;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  #earnings-report-print th,
+  #earnings-report-print td {
+    border: 1px solid #cccccc;
+    padding: 6px 8px;
+    text-align: left;
+  }
+
+  #earnings-report-print thead {
+    display: table-header-group;
+  }
+
+  #earnings-report-print tr {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 1.5cm;
+  }
+}

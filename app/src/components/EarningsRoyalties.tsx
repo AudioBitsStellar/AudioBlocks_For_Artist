@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import {
   Area,
   AreaChart,
@@ -11,10 +12,15 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, Printer } from 'lucide-react';
 import useEarningsServices from '@/services/earningsService';
 import { EarningsDataPoint } from '@/types';
 import { colorTokens } from '@/theme/colors';
+import { getDisplayNameFromToken } from '@/utils/jwt';
+
+const PRINT_TARGET_ID = 'earnings-report-print';
+const PRINT_BODY_CLASS = 'printing-earnings-report';
+const DATE_RANGE_LABEL = 'Last 12 months';
 
 // Tooltip fill / text colors come from the token system so the chart follows
 // the active theme automatically (issue #180).
@@ -120,8 +126,29 @@ export default function EarningsRoyalties() {
       ? `$${diff.toLocaleString()} more than last month`
       : `$${Math.abs(diff).toLocaleString()} less than last month`;
 
+  const handlePrint = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    const cleanup = () => {
+      document.body.classList.remove(PRINT_BODY_CLASS);
+      window.removeEventListener('afterprint', cleanup);
+    };
+
+    document.body.classList.add(PRINT_BODY_CLASS);
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+  }, []);
+
   return (
-    <div className="bg-surface-raised rounded-lg p-6">
+    <div id={PRINT_TARGET_ID} className="bg-surface-raised rounded-lg p-6">
+      {/* Print-only report header: hidden on screen, shown via @media print */}
+      <div className="earnings-print-only hidden">
+        <h1 className="text-lg font-bold">Earnings & Royalties Report</h1>
+        <p className="text-sm">Artist: {getDisplayNameFromToken()}</p>
+        <p className="text-sm">Date range: {DATE_RANGE_LABEL}</p>
+        <p className="text-sm">Generated: {new Date().toLocaleDateString()}</p>
+      </div>
+
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex-1">
@@ -140,7 +167,7 @@ export default function EarningsRoyalties() {
             </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="earnings-print-hide flex gap-2">
           <div className="relative">
             <select className="bg-surface-sunken border border-border rounded-lg px-4 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors">
               <option>Royalties</option>
@@ -156,13 +183,22 @@ export default function EarningsRoyalties() {
               size={16}
             />
             <select className="bg-surface-sunken border border-border rounded-lg pl-10 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors">
-              <option>Last 12 months</option>
+              <option>{DATE_RANGE_LABEL}</option>
             </select>
             <ChevronDown
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none"
               size={16}
             />
           </div>
+          <button
+            type="button"
+            onClick={handlePrint}
+            aria-label="Print earnings report"
+            title="Print earnings report"
+            className="flex items-center justify-center w-11 h-11 bg-surface-sunken border border-border rounded-lg text-text-muted hover:border-border-subtle hover:text-text transition-colors cursor-pointer"
+          >
+            <Printer size={16} />
+          </button>
         </div>
       </div>
 
@@ -176,7 +212,7 @@ export default function EarningsRoyalties() {
       ) : chartData.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="h-64">
+        <div className="earnings-print-hide h-64">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
@@ -234,6 +270,29 @@ export default function EarningsRoyalties() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+      )}
+
+      {/* Print-only data table: charts don't render reliably on paper, so the
+          print report shows the same monthly figures as a plain table. */}
+      {chartData.length > 0 && (
+        <table className="earnings-print-only hidden">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Earnings</th>
+              <th>Royalties</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((point) => (
+              <tr key={point.month}>
+                <td>{point.month}</td>
+                <td>${point.earnings.toLocaleString()}</td>
+                <td>${point.royalties.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

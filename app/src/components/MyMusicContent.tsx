@@ -240,6 +240,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                 type="text"
                 placeholder="Search Songs"
                 aria-label="Search songs"
+                maxLength={100}
                 className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-full"
               />
             </div>
@@ -353,6 +354,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search my music"
               aria-label="Search my music"
+              maxLength={100}
               className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-64"
             />
           </div>

@@ -17,6 +17,23 @@ interface MerchFormProps {
   isBusy: boolean;
 }
 
+const MERCH_FIELD_MAX_LENGTHS: Record<keyof CreateMerchPayload, number> = {
+  title: 100,
+  detail: 300,
+  date: 50,
+  time: 50,
+  price: 20,
+  image: 500,
+};
+
+// Only show a running character count for fields long enough that users
+// might reasonably run into the limit.
+const MERCH_FIELD_SHOW_COUNT: Partial<Record<keyof CreateMerchPayload, boolean>> = {
+  title: true,
+  detail: true,
+  image: true,
+};
+
 function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
   const [form, setForm] = useState<CreateMerchPayload>({
     title: initial?.title ?? '',
@@ -55,22 +72,37 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
           <h2 className="text-white font-semibold text-lg">
             {initial ? 'Edit Merch' : 'New Merch'}
           </h2>
-          <button onClick={onClose} className="text-[#A3A3A3] hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            aria-label="Close merch form"
+            className="flex items-center justify-center min-w-11 min-h-11 text-[#A3A3A3] hover:text-white transition-colors"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {(['title', 'detail', 'date', 'time', 'price', 'image'] as (keyof CreateMerchPayload)[]).map((field) => (
-          <div key={field} className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-[#A3A3A3] capitalize">{field}</label>
-            <input
-              value={form[field] ?? ''}
-              onChange={set(field)}
-              placeholder={field === 'image' ? 'Image URL' : field}
-              className="rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-2 text-sm text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
-            />
-          </div>
-        ))}
+        {(['title', 'detail', 'date', 'time', 'price', 'image'] as (keyof CreateMerchPayload)[]).map((field) => {
+          const maxLength = MERCH_FIELD_MAX_LENGTHS[field];
+          const value = form[field] ?? '';
+          const isNearLimit = value.length >= maxLength * 0.9;
+          return (
+            <div key={field} className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-[#A3A3A3] capitalize">{field}</label>
+              <input
+                value={value}
+                onChange={set(field)}
+                placeholder={field === 'image' ? 'Image URL' : field}
+                maxLength={maxLength}
+                className="rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-2 text-sm text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+              />
+              {MERCH_FIELD_SHOW_COUNT[field] && isNearLimit && (
+                <span className={`self-end text-xs ${value.length >= maxLength ? 'text-red-500' : 'text-yellow-500'}`}>
+                  {value.length}/{maxLength}
+                </span>
+              )}
+            </div>
+          );
+        })}
 
         <div className="flex gap-3 pt-2">
           <button
@@ -185,7 +217,7 @@ export default function MerchesContent() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative w-full sm:w-72">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input type="text" placeholder="Search Merch" className="w-full rounded-full border border-[#2E2E2E] bg-[#111111] py-3 pl-12 pr-5 text-sm text-white placeholder:text-gray-500 focus:border-[#885FA8] focus:outline-none" />
+                <input type="text" placeholder="Search Merch" maxLength={100} className="w-full rounded-full border border-[#2E2E2E] bg-[#111111] py-3 pl-12 pr-5 text-sm text-white placeholder:text-gray-500 focus:border-[#885FA8] focus:outline-none" />
               </div>
               <button className="flex items-center justify-center gap-2 rounded-full border border-[#2E2E2E] bg-[#111111] px-5 py-3 text-sm font-medium text-white transition-colors hover:border-[#885FA8]">
                 <Filter className="h-4 w-4" /> Filter
