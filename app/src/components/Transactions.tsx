@@ -1,7 +1,8 @@
 'use client';
 
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { formatDate } from '@/utils/date';
+import EmptyState from './shared/EmptyState';
 
 export default function Transactions() {
   // Dates are real Date objects so we exercise Intl.DateTimeFormat end-to-end.
@@ -40,6 +41,13 @@ export default function Transactions() {
         </div>
       </div>
 
+      {transactions.length === 0 ? (
+        <EmptyState
+          icon={ArrowUpDown}
+          title="No transactions yet"
+          description="Your royalty payments and earnings will appear here once your music starts generating revenue."
+        />
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full" role="table" aria-label="Transactions list">
           <thead>
@@ -71,6 +79,7 @@ export default function Transactions() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

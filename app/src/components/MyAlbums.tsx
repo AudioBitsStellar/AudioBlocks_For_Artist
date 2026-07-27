@@ -1,11 +1,12 @@
 'use client';
 
-import { ChevronRight, ChevronLeft, ArrowUpRight, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ArrowUpRight, Trash2, Disc3 } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 import useAlbumServices from '@/services/albumService';
 import { featureFlags } from '@/lib/featureFlags';
 import { Album } from '@/types';
 import ConfirmationDialog from './shared/ConfirmationDialog';
+import EmptyState from './shared/EmptyState';
 
 const MOCK_ALBUMS: Album[] = [
   { id: '1', title: 'Echoes of the Soul', coverArtUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
@@ -45,9 +46,13 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
     return (
       <div className="w-full">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white text-xl font-semibold">My Albums</h2>
+          <h2 className="text-text text-xl font-semibold">My Albums</h2>
         </div>
-        <p className="text-gray-400 text-sm">No albums yet. Create your first album to see it here.</p>
+        <EmptyState
+          icon={Disc3}
+          title="No albums yet"
+          description="Create your first album to organize and showcase your music collection."
+        />
       </div>
     );
   }
