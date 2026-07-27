@@ -344,10 +344,11 @@ const Song = () => {
                         {...register('title')}
                         placeholder="Add Song Title"
                         aria-invalid={errors.title ? 'true' : 'false'}
+                        aria-describedby={errors.title ? 'song-title-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.title ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.title && (
-                        <p className="text-[10px] text-red-500" role="alert">{errors.title.message}</p>
+                        <p id="song-title-error" className="text-[10px] text-red-500" role="alert">{errors.title.message}</p>
                     )}
                 </div>
 
@@ -360,10 +361,11 @@ const Song = () => {
                         {...register('description')}
                         placeholder="Enter Song Description"
                         aria-invalid={errors.description ? 'true' : 'false'}
+                        aria-describedby={errors.description ? 'song-description-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.description ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.description && (
-                        <p className="text-[10px] text-red-500" role="alert">{errors.description.message}</p>
+                        <p id="song-description-error" className="text-[10px] text-red-500" role="alert">{errors.description.message}</p>
                     )}
                 </div>
 
@@ -375,6 +377,7 @@ const Song = () => {
                         id="song-genre"
                         {...register('genre')}
                         aria-invalid={errors.genre ? 'true' : 'false'}
+                        aria-describedby={errors.genre ? 'song-genre-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.genre ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     >
                         <option value="" disabled>
@@ -388,7 +391,7 @@ const Song = () => {
                         ))}
                     </select>
                     {errors.genre && (
-                        <p className="text-[10px] text-red-500" role="alert">{errors.genre.message}</p>
+                        <p id="song-genre-error" className="text-[10px] text-red-500" role="alert">{errors.genre.message}</p>
                     )}
                 </div>
 
@@ -401,10 +404,11 @@ const Song = () => {
                         {...register('composer')}
                         placeholder="Enter Composer Name"
                         aria-invalid={errors.composer ? 'true' : 'false'}
+                        aria-describedby={errors.composer ? 'song-composer-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.composer ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.composer && (
-                        <p className="text-[10px] text-red-500" role="alert">{errors.composer.message}</p>
+                        <p id="song-composer-error" className="text-[10px] text-red-500" role="alert">{errors.composer.message}</p>
                     )}
                 </div>
 
@@ -420,8 +424,16 @@ const Song = () => {
                 </div> */}
 
                 <button
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isBusy || !isValid || !audioFile || !coverFile}
+                    type="button"
+                    onClick={(e) => {
+                        // Only short-circuit while an upload is in flight; for
+                        // invalid form state, react-hook-form's handleSubmit
+                        // already skips onSubmit but still surfaces validation
+                        // errors via formState, which is what callers expect.
+                        if (isBusy) return;
+                        handleSubmit(onSubmit)(e);
+                    }}
+                    aria-disabled={isBusy || !isValid || !audioFile || !coverFile}
                     className={`w-[131px] rounded-lg font-semibold px-6 py-3 mt-6 transition-all flex items-center justify-center gap-2
                     ${isBusy || !isValid || !audioFile || !coverFile
                             ? "bg-[#8a8a8a] cursor-not-allowed"
@@ -487,13 +499,13 @@ const Song = () => {
                             onDrop={handleDrop}
                             onDragOver={handleDragOver}
                             className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0"
-                            role="button"
-                            tabIndex={0}
-                            aria-label="Upload music file - drag and drop or click to select"
+                            role="group"
+                            aria-label="Upload music file - drag and drop here, or use the button to select"
                         >
                             <p className="text-xs text-[#A3A3A3]">
                                 Drag & drop your files here or{' '}
                                 <button
+                                    type="button"
                                     onClick={() => fileInputRef.current?.click()}
                                     className="text-white underline hover:text-[#D2045B]"
                                 >
