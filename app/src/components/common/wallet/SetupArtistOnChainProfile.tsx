@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStellarWallet } from "./useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
@@ -9,6 +9,9 @@ import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { toast } from "sonner";
 
 type SetupStatus = 'idle' | 'not_installed' | 'preparing' | 'awaiting_signature' | 'submitting' | 'success' | 'rejected' | 'timeout' | 'failed';
+
+const COOLDOWN_DURATION = 5;
+const GAS_COST_ESTIMATE = "~0.001 XLM";
 
 export default function SetupArtistOnChainProfile() {
   const [cid, setCid] = useState("");
@@ -20,8 +23,25 @@ export default function SetupArtistOnChainProfile() {
   const [status, setStatus] = useState<SetupStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [txHash, setTxHash] = useState('');
+  const [cooldownActive, setCooldownActive] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
 
-  const isBusy = prepareMutation.isPending || submitMutation.isPending || ['preparing', 'awaiting_signature', 'submitting'].includes(status);
+  const isBusy = prepareMutation.isPending || submitMutation.isPending || ['preparing', 'awaiting_signature', 'submitting'].includes(status) || cooldownActive;
+
+  useEffect(() => {
+    if (!cooldownActive) return;
+    if (cooldownRemaining <= 0) {
+      setCooldownActive(false);
+      setStatus('idle');
+      setTxHash('');
+      setErrorMsg('');
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCooldownRemaining((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [cooldownActive, cooldownRemaining]);
 
   const handleSetup = async () => {
     if (!cid.trim() || !address) return;
@@ -58,6 +78,8 @@ export default function SetupArtistOnChainProfile() {
       const hash = result?.data?.txHash ?? '';
       setTxHash(hash);
       setStatus('success');
+      setCooldownActive(true);
+      setCooldownRemaining(COOLDOWN_DURATION);
       analytics.mintSucceeded({
         songId: 'artist-profile',
         txHash: hash,
@@ -152,6 +174,11 @@ export default function SetupArtistOnChainProfile() {
               View transaction
             </a>
           )}
+          {cooldownActive && (
+            <p className="text-[10px] text-gray-400">
+              Cooldown: {cooldownRemaining}s — new setup available shortly
+            </p>
+          )}
         </div>
       )}
 
@@ -174,6 +201,7 @@ export default function SetupArtistOnChainProfile() {
             {status === 'submitting' && "Setting up Profile..."}
             {status === 'idle' && "Set up on-chain profile"}
           </button>
+          <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
         </div>
       )}
     </div>

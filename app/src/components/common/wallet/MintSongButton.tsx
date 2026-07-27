@@ -7,7 +7,7 @@ import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
 import { isRetryableError } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Check, AlertCircle } from 'lucide-react';
 
 interface MintSongButtonProps {
@@ -22,6 +22,9 @@ interface MintTransactionDetails {
   tokenId?: string;
 }
 
+const COOLDOWN_DURATION = 5;
+const GAS_COST_ESTIMATE = "~0.001 XLM";
+
 export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonProps) {
   const { address } = useStellarWallet();
   const { usePrepareSongMint, useSubmitSongMint } = useOnchainServices();
@@ -31,8 +34,25 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
   const [status, setStatus] = useState<MintStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [txDetails, setTxDetails] = useState<MintTransactionDetails>({});
+  const [cooldownActive, setCooldownActive] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
 
-  const isBusy = prepareMutation.isPending || submitMutation.isPending || ['preparing', 'awaiting_signature', 'submitting'].includes(status);
+  const isBusy = prepareMutation.isPending || submitMutation.isPending || ['preparing', 'awaiting_signature', 'submitting'].includes(status) || cooldownActive;
+
+  useEffect(() => {
+    if (!cooldownActive) return;
+    if (cooldownRemaining <= 0) {
+      setCooldownActive(false);
+      setStatus('idle');
+      setTxDetails({});
+      setErrorMsg('');
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCooldownRemaining((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [cooldownActive, cooldownRemaining]);
 
   const handleMint = async () => {
     if (!address) return;
@@ -72,6 +92,8 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
         txHash: result?.data?.txHash ?? '',
         tokenId: result?.data?.tokenId ?? '',
       });
+      setCooldownActive(true);
+      setCooldownRemaining(COOLDOWN_DURATION);
       analytics.mintSucceeded({
         songId,
         txHash: result?.data?.txHash ?? '',
@@ -97,27 +119,36 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   if (status === 'preparing') {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-blue-600/30 rounded-lg" role="status" aria-live="polite">
-        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-        <span className="text-xs text-blue-400 font-medium">Preparing transaction...</span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-blue-600/30 rounded-lg" role="status" aria-live="polite">
+          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+          <span className="text-xs text-blue-400 font-medium">Preparing transaction...</span>
+        </div>
+        <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
       </div>
     );
   }
 
   if (status === 'awaiting_signature') {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-yellow-600/30 rounded-lg" role="status" aria-live="polite">
-        <Loader2 className="h-4 w-4 animate-spin text-yellow-500" />
-        <span className="text-xs text-yellow-400 font-medium">Awaiting wallet signature...</span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-yellow-600/30 rounded-lg" role="status" aria-live="polite">
+          <Loader2 className="h-4 w-4 animate-spin text-yellow-500" />
+          <span className="text-xs text-yellow-400 font-medium">Awaiting wallet signature...</span>
+        </div>
+        <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
       </div>
     );
   }
 
   if (status === 'submitting') {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-purple-600/30 rounded-lg" role="status" aria-live="polite">
-        <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
-        <span className="text-xs text-purple-400 font-medium">Broadcasting to network...</span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-purple-600/30 rounded-lg" role="status" aria-live="polite">
+          <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
+          <span className="text-xs text-purple-400 font-medium">Broadcasting to network...</span>
+        </div>
+        <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
       </div>
     );
   }
@@ -206,17 +237,25 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
             Token ID: {txDetails.tokenId}
           </p>
         )}
+        {cooldownActive && (
+          <p className="text-[10px] text-gray-400">
+            Cooldown: {cooldownRemaining}s — new mint available shortly
+          </p>
+        )}
       </div>
     );
   }
 
   return (
-    <button
-      onClick={handleMint}
-      disabled={isBusy}
-      className={`${isBusy ? "opacity-70 cursor-not-allowed" : ""} rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
-    >
-      Mint on-chain
-    </button>
+    <div className="flex flex-col gap-1">
+      <button
+        onClick={handleMint}
+        disabled={isBusy}
+        className={`${isBusy ? "opacity-70 cursor-not-allowed" : ""} rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
+      >
+        Mint on-chain
+      </button>
+      <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
+    </div>
   );
 }
