@@ -70,45 +70,54 @@ describe('TopHeader – notification badge', () => {
   it('renders a dot (no count) when notificationCount is 0', () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={0} />);
 
-    const button = screen.getByRole('button', { name: /notifications/i });
-    expect(within(button).getByTestId('notification-dot')).toBeInTheDocument();
-    expect(within(button).queryByTestId('notification-count')).not.toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /notifications/i });
+    expect(within(link).getByTestId('notification-dot')).toBeInTheDocument();
+    expect(within(link).queryByTestId('notification-count')).not.toBeInTheDocument();
   });
 
   it('renders the correct number when notificationCount is positive', () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={3} />);
 
-    const button = screen.getByRole('button', { name: /notifications/i });
-    const count = within(button).getByTestId('notification-count');
+    const link = screen.getByRole('link', { name: /notifications/i });
+    const count = within(link).getByTestId('notification-count');
     expect(count).toHaveTextContent('3');
   });
 
   it('caps the badge display at 99+ for large counts', () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={150} />);
 
-    const button = screen.getByRole('button', { name: /notifications/i });
-    const count = within(button).getByTestId('notification-count');
+    const link = screen.getByRole('link', { name: /notifications/i });
+    const count = within(link).getByTestId('notification-count');
     expect(count).toHaveTextContent('99+');
   });
 
   it('hides the badge entirely when notificationCount is null', () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={null} />);
 
-    const button = screen.getByRole('button', { name: /notifications/i });
-    expect(within(button).queryByTestId('notification-dot')).not.toBeInTheDocument();
-    expect(within(button).queryByTestId('notification-count')).not.toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /notifications/i });
+    expect(within(link).queryByTestId('notification-dot')).not.toBeInTheDocument();
+    expect(within(link).queryByTestId('notification-count')).not.toBeInTheDocument();
   });
 
   it('renders a dot when notificationCount is omitted (undefined)', () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} />);
 
-    const button = screen.getByRole('button', { name: /notifications/i });
-    expect(within(button).getByTestId('notification-dot')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /notifications/i });
+    expect(within(link).getByTestId('notification-dot')).toBeInTheDocument();
   });
 
-  it('updates aria-label with the count when present', () => {
+  it('navigates to /dashboard/settings/notifications when clicked', () => {
+    renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={4} />);
+
+    const link = screen.getByRole('link', { name: /notifications/i });
+    expect(link).toHaveAttribute('href', '/dashboard/settings/notifications');
+  });
+
+  it('updates the aria-label with the count when present', () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={7} />);
-    expect(screen.getByRole('button', { name: /Notifications \(7 new\)/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Notifications and settings \(7 new\)/i }),
+    ).toBeInTheDocument();
   });
 });
 
