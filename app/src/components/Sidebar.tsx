@@ -1,6 +1,6 @@
 'use client';
 
-import { Music, Calendar, Tag, Settings as SettingsIcon, Star, Home, X } from 'lucide-react';
+import { Music, Calendar, Tag, Settings as SettingsIcon, Star, Home, X, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 const navItems = [
   { name: 'Overview', icon: Home, href: '/dashboard/overview' },
   { name: 'My Music', icon: Music, href: '/dashboard/my-music' },
+  { name: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
   { name: 'Events', icon: Calendar, href: '/dashboard/events' },
   { name: 'Merches', icon: Tag, href: '/dashboard/merches' },
   { name: 'Premium', icon: Star, href: '/dashboard/premium' },
