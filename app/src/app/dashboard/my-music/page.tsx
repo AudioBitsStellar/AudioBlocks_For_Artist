@@ -6,14 +6,7 @@ import MyMusicContent from '@/components/MyMusicContent';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
-interface Album {
-  id: number;
-  title: string;
-  artist: string;
-  type: string;
-  image: string;
-}
+import { Album } from '@/types';
 
 export default function MyMusicPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);

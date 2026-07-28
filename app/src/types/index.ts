@@ -23,7 +23,6 @@ export interface UploadSong {
 	description: string;
 	genre: string;
 	composer: string;
-	// marketPrice: string;
 }
 export interface UploadCoverResponse {
 	cover: File | string;
