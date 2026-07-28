@@ -7,6 +7,7 @@ import { featureFlags } from '@/lib/featureFlags';
 import { Album } from '@/types';
 import ConfirmationDialog from './shared/ConfirmationDialog';
 import EmptyState from './shared/EmptyState';
+import SafeImage from './SafeImage';
 
 const MOCK_ALBUMS: Album[] = [
   { id: '1', title: 'Echoes of the Soul', coverArtUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
@@ -93,17 +94,13 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
           {albums.map((album) => (
             <div key={album.id} className="flex-shrink-0 w-48 group relative">
               <div className="w-48 h-48 rounded-lg mb-2 relative overflow-hidden bg-gray-800">
-                {album.coverArtUrl ? (
-                  <img
-                    src={album.coverArtUrl}
-                    srcSet={`${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=200&h=200')} 200w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=400&h=400')} 400w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=800&h=800')} 800w`}
-                    sizes="(max-width: 640px) 120px, (max-width: 1024px) 192px, 192px"
-                    alt={album.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No Cover</div>
-                )}
+                <SafeImage
+                  src={album.coverArtUrl ?? ''}
+                  alt={album.title}
+                  className="w-full h-full object-cover"
+                  srcSet={album.coverArtUrl ? `${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=200&h=200')} 200w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=400&h=400')} 400w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=800&h=800')} 800w` : undefined}
+                  sizes="(max-width: 640px) 120px, (max-width: 1024px) 192px, 192px"
+                />
                 <button
                   onClick={() => setDeleteConfirmation({ isOpen: true, albumId: album.id })}
                   aria-label={`Delete album ${album.title}`}
