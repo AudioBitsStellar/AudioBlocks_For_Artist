@@ -121,15 +121,9 @@ export default function ProfilePage() {
 					hasWebsite: Boolean(data.website?.trim()),
 					hasTwitter: Boolean(data.twitter?.trim()),
 				});
-				toast.success("Profile saved successfully");
 			},
 			onError: (err: unknown) => {
-				const msg = getErrorMessage(err);
-				if (isRetryableError(err)) {
-					toast.error(`Could not save profile — please try again. (${msg})`);
-				} else {
-					toast.error(`Profile save failed: ${msg}`);
-				}
+				// Handled by service
 			},
 		});
 	};

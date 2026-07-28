@@ -117,6 +117,7 @@ const useOnchainServices = () => {
     usePost<ApiEnvelope<ConnectWalletResponse>, ConnectWalletRequest>(
       ARTIST_ONCHAIN_ENDPOINTS.CONNECT_WALLET,
       {
+        onSuccess: () => handleSuccess("Wallet connected!"),
         onError: (error) => handleError(error.message || "Failed to connect Stellar wallet."),
       }
     );

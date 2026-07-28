@@ -1,7 +1,7 @@
 import { AUTH_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
-import { useHandleError } from "@/hooks/useToastHandler";
-import { getToken, clearSession } from "@/api/axios";
+import { useHandleError, useHandleSuccess } from '@/hooks/useToastHandler';
+import { getToken, clearSession } from '@/api/axios';
 import { AuthResponse, LoginEmailPayload, RegisterEmailPayload } from "@/types";
 
 interface ApiEnvelope<T> {
@@ -103,6 +103,7 @@ export async function refreshAccessToken(
 
 const useAuthServices = () => {
   const handleError = useHandleError();
+  const handleSuccess = useHandleSuccess();
 
   /**
    * Registers a new artist account by email.
@@ -114,6 +115,7 @@ const useAuthServices = () => {
     usePost<ApiEnvelope<never> & AuthResponse, RegisterEmailPayload>(
       AUTH_ENDPOINTS.REGISTER_EMAIL,
       {
+        onSuccess: () => handleSuccess("Registered successfully!"),
         onError: (error) => handleError(error.message || "Failed to register."),
       }
     );
@@ -128,6 +130,7 @@ const useAuthServices = () => {
     usePost<ApiEnvelope<never> & AuthResponse, LoginEmailPayload>(
       AUTH_ENDPOINTS.LOGIN_EMAIL,
       {
+        onSuccess: () => handleSuccess("Logged in successfully!"),
         onError: (error) => handleError(error.message || "Failed to log in."),
       }
     );

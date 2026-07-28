@@ -8,6 +8,7 @@ import { Album } from '@/types';
 import ConfirmationDialog from './shared/ConfirmationDialog';
 import EmptyState from './shared/EmptyState';
 import SafeImage from './SafeImage';
+import { useToast } from '@/hooks/useToastHandler';
 
 const MOCK_ALBUMS: Album[] = [
   { id: '1', title: 'Echoes of the Soul', coverArtUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
@@ -23,6 +24,7 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
     isOpen: false,
     albumId: null
   });
+  const toast = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,7 +42,9 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
   const handleDeleteConfirm = () => {
     if (deleteConfirmation.albumId !== null) {
       setAlbums(prev => prev.filter(a => a.id !== deleteConfirmation.albumId));
+      toast.success('Album deleted successfully');
     }
+    setDeleteConfirmation({ isOpen: false, albumId: null });
   };
 
   if (albums.length === 0) {
