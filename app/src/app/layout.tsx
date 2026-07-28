@@ -20,6 +20,27 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AudioBlocks - Artist Dashboard",
   description: "AudioBlocks artist dashboard for managing music, earnings, and fan engagement",
+  openGraph: {
+    title: "AudioBlocks - Artist Dashboard",
+    description: "AudioBlocks artist dashboard for managing music, earnings, and fan engagement",
+    url: "https://audioblocks.io",
+    siteName: "AudioBlocks",
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "AudioBlocks – Artist Dashboard",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AudioBlocks - Artist Dashboard",
+    description: "AudioBlocks artist dashboard for managing music, earnings, and fan engagement",
+    images: ["/og-default.png"],
+  },
 };
 
 const REQUIRED_ENV_VARS = [
