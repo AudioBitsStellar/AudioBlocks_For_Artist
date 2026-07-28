@@ -14,6 +14,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import MintSongButton from '@/components/common/wallet/MintSongButton';
 import { analytics } from '@/lib/analytics';
 import { isRetryableError, getErrorMessage } from '@/utils/errorRecovery';
+import { sanitize } from '@/utils/sanitize';
 
 const ALLOWED_AUDIO_TYPES = new Set([
     'audio/mpeg',
@@ -45,10 +46,17 @@ const Song = () => {
     const [failedChunkIndex, setFailedChunkIndex] = useState<number>(0);
 
     const [coverImage, setCoverImage] = useState<string | null>(null);
-    const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; type: string; status: 'uploading' | 'success' | 'failed' } | null>(null);
+    const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; type: string; status: 'uploading' | 'success' | 'failed' | 'cancelled' } | null>(null);
     const [validationError, setValidationError] = useState<string | null>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    // #128 — the shared usePost/axios client has no AbortSignal support, so
+    // cancellation is cooperative: the chunk loop below checks this ref
+    // between chunks and stops sending further chunks once it's set. The
+    // one already-in-flight request (if any) still completes server-side,
+    // but no further chunk requests are made and the UI reflects "cancelled"
+    // immediately.
+    const cancelRequestedRef = useRef(false);
 
     const { useFinalizeUpload, useUploadChunk, useUploadCover } = useUploadServices();
     const uploadChunk = useUploadChunk();
@@ -138,6 +146,7 @@ const Song = () => {
         setFileId(generateFileId());
         setRetryCount(0);
         setFailedChunkIndex(0);
+        cancelRequestedRef.current = false;
 
         setUploadedFile({
             name: file.name,
@@ -151,6 +160,11 @@ const Song = () => {
         const chunks = splitFile(file);
 
         for (let i = startChunk; i < chunks.length; i++) {
+            if (cancelRequestedRef.current) {
+                setFailedChunkIndex(i);
+                throw new Error('UPLOAD_CANCELLED');
+            }
+
             const form = new FormData();
             form.append("fileId", fileId);
             form.append("chunkIndex", String(i));
@@ -182,6 +196,7 @@ const Song = () => {
             setFileId(generateFileId());
             setRetryCount(0);
             setFailedChunkIndex(0);
+            cancelRequestedRef.current = false;
 
             const fileSize = formatFileSize(file.size);
             setUploadedFile({ name: file.name, size: fileSize, type: formatFileType(file), status: 'uploading' });
@@ -200,6 +215,7 @@ const Song = () => {
         }
 
         try {
+            cancelRequestedRef.current = false;
             setRetryCount(prev => prev + 1);
             setUploadedFile(prev =>
                 prev ? { ...prev, status: "uploading" } : prev
@@ -212,6 +228,13 @@ const Song = () => {
             );
 
         } catch (err) {
+            if (err instanceof Error && err.message === 'UPLOAD_CANCELLED') {
+                setUploadedFile(prev =>
+                    prev ? { ...prev, status: "cancelled" } : prev
+                );
+                toast.success('Upload cancelled');
+                return;
+            }
             console.error(err);
             setUploadedFile(prev =>
                 prev ? { ...prev, status: "failed" } : prev
@@ -222,6 +245,7 @@ const Song = () => {
 
 
     const handleDelete = () => {
+        cancelRequestedRef.current = false;
         setUploadedFile(null);
         setAudioFile(null);
         setFileId(null);
@@ -256,6 +280,11 @@ const Song = () => {
 
             const chunks = splitFile(audioFile);
             for (let i = 0; i < chunks.length; i++) {
+                if (cancelRequestedRef.current) {
+                    setFailedChunkIndex(i);
+                    throw new Error('UPLOAD_CANCELLED');
+                }
+
                 const form = new FormData();
                 form.append("fileId", fileId);
                 form.append("chunkIndex", String(i));
@@ -280,10 +309,10 @@ const Song = () => {
             const finalizeResult: any = await finalizeUpload.mutateAsync({
                 fileId: fileId,
                 totalChunks: totalChunks,
-                title: data.title,
-                description: data.description,
+                title: sanitize(data.title),
+                description: sanitize(data.description),
                 genre: data.genre,
-                composers: data.composer,
+                composers: sanitize(data.composer),
                 coverArtPath: coverArtPath,
                 // marketPrice: data.marketPrice,
             });
@@ -315,6 +344,14 @@ const Song = () => {
             setAudioFile(null);
             setFileId(null);
         } catch (err: any) {
+            if (err instanceof Error && err.message === 'UPLOAD_CANCELLED') {
+                setUploadedFile((prev) =>
+                    prev ? { ...prev, status: "cancelled" } : prev
+                );
+                toast.success('Upload cancelled');
+                setIsUploading(false);
+                return;
+            }
             console.error(err);
             const reason = getErrorMessage(err);
             analytics.uploadFailed({ fileId, reason });
@@ -331,6 +368,10 @@ const Song = () => {
         }
     };
 
+    const handleCancel = () => {
+        cancelRequestedRef.current = true;
+    };
+
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -343,11 +384,18 @@ const Song = () => {
                         id="song-title"
                         {...register('title')}
                         placeholder="Add Song Title"
+                        maxLength={100}
                         aria-invalid={errors.title ? 'true' : 'false'}
+                        aria-describedby={errors.title ? 'song-title-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.title ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.title && (
-                        <p className="text-[10px] text-red-500" role="alert">{errors.title.message}</p>
+                        <p id="song-title-error" className="text-[10px] text-red-500" role="alert">{errors.title.message}</p>
+                    )}
+                    {(watchedValues.title?.length ?? 0) >= 90 && (
+                        <p className={`text-[10px] text-right ${(watchedValues.title?.length ?? 0) >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+                            {watchedValues.title?.length ?? 0}/100
+                        </p>
                     )}
                 </div>
 
@@ -359,11 +407,18 @@ const Song = () => {
                         id="song-description"
                         {...register('description')}
                         placeholder="Enter Song Description"
+                        maxLength={500}
                         aria-invalid={errors.description ? 'true' : 'false'}
+                        aria-describedby={errors.description ? 'song-description-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.description ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.description && (
-                        <p className="text-[10px] text-red-500" role="alert">{errors.description.message}</p>
+                        <p id="song-description-error" className="text-[10px] text-red-500" role="alert">{errors.description.message}</p>
+                    )}
+                    {(watchedValues.description?.length ?? 0) >= 450 && (
+                        <p className={`text-[10px] text-right ${(watchedValues.description?.length ?? 0) >= 500 ? 'text-red-500' : 'text-yellow-500'}`}>
+                            {watchedValues.description?.length ?? 0}/500
+                        </p>
                     )}
                 </div>
 
@@ -375,6 +430,7 @@ const Song = () => {
                         id="song-genre"
                         {...register('genre')}
                         aria-invalid={errors.genre ? 'true' : 'false'}
+                        aria-describedby={errors.genre ? 'song-genre-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.genre ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     >
                         <option value="" disabled>
@@ -388,7 +444,7 @@ const Song = () => {
                         ))}
                     </select>
                     {errors.genre && (
-                        <p className="text-[10px] text-red-500" role="alert">{errors.genre.message}</p>
+                        <p id="song-genre-error" className="text-[10px] text-red-500" role="alert">{errors.genre.message}</p>
                     )}
                 </div>
 
@@ -400,11 +456,18 @@ const Song = () => {
                         id="song-composer"
                         {...register('composer')}
                         placeholder="Enter Composer Name"
+                        maxLength={100}
                         aria-invalid={errors.composer ? 'true' : 'false'}
+                        aria-describedby={errors.composer ? 'song-composer-error' : undefined}
                         className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.composer ? 'border-red-500' : 'border-[#2A2A2A]'}`}
                     />
                     {errors.composer && (
-                        <p className="text-[10px] text-red-500" role="alert">{errors.composer.message}</p>
+                        <p id="song-composer-error" className="text-[10px] text-red-500" role="alert">{errors.composer.message}</p>
+                    )}
+                    {(watchedValues.composer?.length ?? 0) >= 90 && (
+                        <p className={`text-[10px] text-right ${(watchedValues.composer?.length ?? 0) >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+                            {watchedValues.composer?.length ?? 0}/100
+                        </p>
                     )}
                 </div>
 
@@ -420,8 +483,16 @@ const Song = () => {
                 </div> */}
 
                 <button
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isBusy || !isValid || !audioFile || !coverFile}
+                    type="button"
+                    onClick={(e) => {
+                        // Only short-circuit while an upload is in flight; for
+                        // invalid form state, react-hook-form's handleSubmit
+                        // already skips onSubmit but still surfaces validation
+                        // errors via formState, which is what callers expect.
+                        if (isBusy) return;
+                        handleSubmit(onSubmit)(e);
+                    }}
+                    aria-disabled={isBusy || !isValid || !audioFile || !coverFile}
                     className={`w-[131px] rounded-lg font-semibold px-6 py-3 mt-6 transition-all flex items-center justify-center gap-2
                     ${isBusy || !isValid || !audioFile || !coverFile
                             ? "bg-[#8a8a8a] cursor-not-allowed"
@@ -487,13 +558,13 @@ const Song = () => {
                             onDrop={handleDrop}
                             onDragOver={handleDragOver}
                             className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0"
-                            role="button"
-                            tabIndex={0}
-                            aria-label="Upload music file - drag and drop or click to select"
+                            role="group"
+                            aria-label="Upload music file - drag and drop here, or use the button to select"
                         >
                             <p className="text-xs text-[#A3A3A3]">
                                 Drag & drop your files here or{' '}
                                 <button
+                                    type="button"
                                     onClick={() => fileInputRef.current?.click()}
                                     className="text-white underline hover:text-[#D2045B]"
                                 >
@@ -557,6 +628,9 @@ const Song = () => {
                                             {uploadedFile.status === 'success' && (
                                                     <span className="text-[10px] text-green-500 font-medium">Upload finished</span>
                                                 )}
+                                            {uploadedFile.status === 'cancelled' && (
+                                                    <span className="text-[10px] text-[#A3A3A3] font-medium">Upload cancelled</span>
+                                                )}
                                             {uploadedFile.status === 'uploading' && (
                                                     <span className="text-[10px] text-yellow-500 font-medium">
                                                         Uploading... {uploadProgress}%
@@ -575,12 +649,23 @@ const Song = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
+                                    {uploadedFile.status === 'uploading' && (
+                                        <button
+                                            onClick={handleCancel}
+                                            className="px-2 py-1 text-[10px] font-medium text-[#A3A3A3] hover:text-white transition-colors"
+                                            title="Cancel upload"
+                                            aria-label="Cancel upload"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
                                     {uploadedFile.status === 'failed' && retryCount < MAX_RETRY_ATTEMPTS && (
                                         <button
                                             onClick={handleRetry}
                                             className="p-1 text-[#A3A3A3] hover:text-white transition-colors"
                                             disabled={isBusy}
                                             title="Retry upload"
+                                            aria-label="Retry upload"
                                         >
                                             <RotateCw size={14} />
                                         </button>
@@ -590,6 +675,7 @@ const Song = () => {
                                         className="p-1 text-[#A3A3A3] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                         onClick={handleDelete}
                                         title="Delete file"
+                                        aria-label="Delete file"
                                     >
                                         <Trash2 size={14} />
                                     </button>

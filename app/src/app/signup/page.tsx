@@ -49,53 +49,63 @@ export default function SignupPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-white mb-2">Display name</label>
+            <label htmlFor="signup-name" className="text-sm font-medium text-white mb-2">Display name</label>
             <input
+              id="signup-name"
               {...register("name")}
               placeholder="Add Display name"
+              maxLength={100}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}
             />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-white mb-2">Username</label>
+            <label htmlFor="signup-username" className="text-sm font-medium text-white mb-2">Username</label>
             <input
+              id="signup-username"
               {...register("username")}
               placeholder="Add a username"
+              maxLength={50}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}
             />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-white mb-2">Email</label>
+            <label htmlFor="signup-email" className="text-sm font-medium text-white mb-2">Email</label>
             <input
+              id="signup-email"
               type="email"
               {...register("email", { required: "Email is required" })}
               placeholder="you@example.com"
+              maxLength={254}
+              aria-invalid={errors.email ? 'true' : 'false'}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}
             />
             {errors.email && (
-              <span className="text-xs text-red-500 mt-1">{errors.email.message}</span>
+              <span id="signup-email-error" role="alert" className="text-xs text-red-500 mt-1">{errors.email.message}</span>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-white mb-2">Password</label>
+            <label htmlFor="signup-password" className="text-sm font-medium text-white mb-2">Password</label>
             <input
+              id="signup-password"
               type="password"
               {...register("password", {
                 required: "Password is required",
                 minLength: { value: 8, message: "Password must be at least 8 characters" },
               })}
               placeholder="At least 8 characters"
+              aria-invalid={errors.password ? 'true' : 'false'}
+              aria-describedby={errors.password ? 'signup-password-error' : undefined}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}
             />
             {errors.password && (
-              <span className="text-xs text-red-500 mt-1">{errors.password.message}</span>
+              <span id="signup-password-error" role="alert" className="text-xs text-red-500 mt-1">{errors.password.message}</span>
             )}
           </div>
 

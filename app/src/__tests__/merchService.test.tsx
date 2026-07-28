@@ -350,4 +350,32 @@ describe('reserveStock', () => {
     reserveStock(baseItems, 2, 1);
     expect(baseItems[1].reserved).toBe(0);
   });
+
+  it('reserves stock exactly matching available quantity', () => {
+    const { items, success } = reserveStock(baseItems, 1, 45);
+    expect(success).toBe(true);
+    expect(items.find((i) => i.id === 1)?.reserved).toBe(50);
+  });
+
+  it('fails when reserve quantity exceeds available stock', () => {
+    const { success } = reserveStock(baseItems, 1, 46);
+    expect(success).toBe(false);
+  });
+
+  it('handles zero reserve quantity', () => {
+    const { items, success } = reserveStock(baseItems, 1, 0);
+    expect(success).toBe(true);
+    expect(items.find((i) => i.id === 1)?.reserved).toBe(5);
+  });
+
+  it('handles negative reserve quantity gracefully', () => {
+    const { success } = reserveStock(baseItems, 1, -1);
+    expect(success).toBe(false);
+  });
+
+  it('returns new array without mutating original on success', () => {
+    const { items } = reserveStock(baseItems, 1, 5);
+    expect(items).not.toBe(baseItems);
+    expect(baseItems[0].reserved).toBe(5);
+  });
 });

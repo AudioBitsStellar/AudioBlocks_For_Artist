@@ -1,6 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { Send, Paperclip, User } from 'lucide-react';
+import { sanitize } from '@/utils/sanitize';
+
+const COMMENT_MAX_LENGTH = 500;
+const COMMENT_WARN_THRESHOLD = COMMENT_MAX_LENGTH * 0.9;
 
 const comments = [
   {
@@ -20,6 +25,9 @@ const comments = [
 ];
 
 export default function Comments() {
+  const [draft, setDraft] = useState('');
+  const isNearLimit = draft.length >= COMMENT_WARN_THRESHOLD;
+
   return (
     <div className="bg-[#1E1E1E] rounded-lg p-6">
       <h2 className="text-white text-xl font-semibold mb-6">Comments</h2>
@@ -32,25 +40,43 @@ export default function Comments() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-white font-semibold text-sm">{comment.name}</span>
+                <span className="text-white font-semibold text-sm">{sanitize(comment.name)}</span>
                 <span className="text-gray-400 text-sm">{comment.time}</span>
               </div>
-              <p className="text-gray-300 text-sm">{comment.comment}</p>
+              <p className="text-gray-300 text-sm">{sanitize(comment.comment)}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="flex gap-2">
-        <button className="text-gray-400 hover:text-white transition-colors p-2">
+      <div className="flex gap-2 items-center">
+        <button
+          type="button"
+          aria-label="Attach file to comment"
+          className="flex items-center justify-center min-w-11 min-h-11 text-gray-400 hover:text-white transition-colors"
+        >
           <Paperclip size={20} />
         </button>
-        <input
-          type="text"
-          placeholder="Type here"
-          className="flex-1 bg-[#161616] border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm"
-        />
-        <button className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-3 py-2 transition-colors">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Type here"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value.slice(0, COMMENT_MAX_LENGTH))}
+            maxLength={COMMENT_MAX_LENGTH}
+            className="w-full bg-[#161616] border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm"
+          />
+          {isNearLimit && (
+            <p className={`mt-1 text-xs text-right ${draft.length >= COMMENT_MAX_LENGTH ? 'text-red-500' : 'text-yellow-500'}`}>
+              {draft.length}/{COMMENT_MAX_LENGTH}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          aria-label="Post comment"
+          className="flex items-center justify-center min-w-11 min-h-11 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+        >
           <Send size={20} />
         </button>
       </div>

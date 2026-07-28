@@ -1,11 +1,13 @@
 'use client';
 
-import { ChevronRight, ChevronLeft, ArrowUpRight, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ArrowUpRight, Trash2, Disc3 } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 import useAlbumServices from '@/services/albumService';
 import { featureFlags } from '@/lib/featureFlags';
 import { Album } from '@/types';
 import ConfirmationDialog from './shared/ConfirmationDialog';
+import EmptyState from './shared/EmptyState';
+import SafeImage from './SafeImage';
 
 const MOCK_ALBUMS: Album[] = [
   { id: '1', title: 'Echoes of the Soul', coverArtUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
@@ -45,9 +47,13 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
     return (
       <div className="w-full">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white text-xl font-semibold">My Albums</h2>
+          <h2 className="text-text text-xl font-semibold">My Albums</h2>
         </div>
-        <p className="text-gray-400 text-sm">No albums yet. Create your first album to see it here.</p>
+        <EmptyState
+          icon={Disc3}
+          title="No albums yet"
+          description="Create your first album to organize and showcase your music collection."
+        />
       </div>
     );
   }
@@ -56,21 +62,26 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
     <div className="w-full">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white text-xl font-semibold">My Albums</h2>
-        <button className="w-8 h-8 rounded-full bg-[#885FA8] flex items-center justify-center hover:bg-[#7A4F98] transition-colors">
+        <button
+          aria-label="View all albums"
+          className="w-11 h-11 rounded-full bg-[#885FA8] flex items-center justify-center hover:bg-[#7A4F98] transition-colors"
+        >
           <ArrowUpRight size={16} className="text-white" />
         </button>
       </div>
       <div className="relative w-full overflow-hidden">
         <button
           onClick={scrollLeft}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#885FA8] bg-opacity-80 flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg pointer-events-auto"
+          aria-label="Scroll albums left"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#885FA8] bg-opacity-80 flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg pointer-events-auto"
         >
           <ChevronLeft size={20} className="text-white" />
         </button>
 
         <button
           onClick={scrollRight}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#885FA8] bg-opacity-80 flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg pointer-events-auto"
+          aria-label="Scroll albums right"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#885FA8] bg-opacity-80 flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg pointer-events-auto"
         >
           <ChevronRight size={20} className="text-white" />
         </button>
@@ -83,19 +94,16 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
           {albums.map((album) => (
             <div key={album.id} className="flex-shrink-0 w-48 group relative">
               <div className="w-48 h-48 rounded-lg mb-2 relative overflow-hidden bg-gray-800">
-                {album.coverArtUrl ? (
-                  <img
-                    src={album.coverArtUrl}
-                    srcSet={`${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=200&h=200')} 200w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=400&h=400')} 400w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=800&h=800')} 800w`}
-                    sizes="(max-width: 640px) 120px, (max-width: 1024px) 192px, 192px"
-                    alt={album.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No Cover</div>
-                )}
+                <SafeImage
+                  src={album.coverArtUrl ?? ''}
+                  alt={album.title}
+                  className="w-full h-full object-cover"
+                  srcSet={album.coverArtUrl ? `${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=200&h=200')} 200w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=400&h=400')} 400w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=800&h=800')} 800w` : undefined}
+                  sizes="(max-width: 640px) 120px, (max-width: 1024px) 192px, 192px"
+                />
                 <button
                   onClick={() => setDeleteConfirmation({ isOpen: true, albumId: album.id })}
+                  aria-label={`Delete album ${album.title}`}
                   className="absolute top-2 right-2 bg-red-600/85 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   title="Delete Album"
                 >

@@ -142,7 +142,10 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                 </button>
               </div>
               <Dialog.Close asChild>
-                <button className="rounded-full p-2 text-gray-400 transition hover:bg-white/5 hover:text-white">
+                <button
+                  aria-label="Close add music dialog"
+                  className="flex items-center justify-center min-w-11 min-h-11 rounded-full text-gray-400 transition hover:bg-white/5 hover:text-white"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </Dialog.Close>
@@ -160,9 +163,15 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     value={form.songTitle}
                     onChange={handleFieldChange('songTitle')}
                     placeholder="Add Song Title"
+                    maxLength={100}
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
                   {errors.songTitle && <p className="text-red-500 text-xs">{errors.songTitle}</p>}
+                  {form.songTitle.length >= 90 && (
+                    <p className={`text-xs text-right ${form.songTitle.length >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+                      {form.songTitle.length}/100
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -173,9 +182,15 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     value={form.albumTitle}
                     onChange={handleFieldChange('albumTitle')}
                     placeholder="Enter Album Title"
+                    maxLength={100}
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
                   {errors.albumTitle && <p className="text-red-500 text-xs">{errors.albumTitle}</p>}
+                  {form.albumTitle.length >= 90 && (
+                    <p className={`text-xs text-right ${form.albumTitle.length >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+                      {form.albumTitle.length}/100
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -186,6 +201,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     value={form.genre}
                     onChange={handleFieldChange('genre')}
                     placeholder="Add Genre of song"
+                    maxLength={50}
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
                   {errors.genre && <p className="text-red-500 text-xs">{errors.genre}</p>}
@@ -199,6 +215,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     value={form.releaseDate}
                     onChange={handleFieldChange('releaseDate')}
                     placeholder="DD-MM-YYYY"
+                    maxLength={10}
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
                   {errors.releaseDate && <p className="text-red-500 text-xs">{errors.releaseDate}</p>}
@@ -212,6 +229,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                     value={form.marketPrice}
                     onChange={handleFieldChange('marketPrice')}
                     placeholder="Add Price of Song"
+                    maxLength={20}
                     className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                   />
                   {errors.marketPrice && <p className="text-red-500 text-xs">{errors.marketPrice}</p>}

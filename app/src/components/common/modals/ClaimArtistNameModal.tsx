@@ -124,7 +124,8 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
                 <Dialog.Close asChild>
                   <button
                     onClick={handleCancel}
-                    className="hover:text-gray-400 transition p-1"
+                    aria-label="Close dialog"
+                    className="flex items-center justify-center min-w-11 min-h-11 hover:text-gray-400 transition"
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -144,6 +145,7 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
                     value={artistName}
                     onChange={(e) => setArtistName(e.target.value)}
                     placeholder="Search artist name"
+                    maxLength={100}
                     className="w-full pl-12 pr-4 py-3 rounded-lg bg-[#1E1E1E] border border-[#2E2E2E] text-white placeholder-[#A3A3A3] focus:outline-none focus:border-[#D2045B]"
                   />
                 </div>
@@ -200,7 +202,8 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
                 <Dialog.Close asChild>
                   <button
                     onClick={handleCancel}
-                    className="hover:text-gray-400 transition p-1"
+                    aria-label="Close dialog"
+                    className="flex items-center justify-center min-w-11 min-h-11 hover:text-gray-400 transition"
                   >
                     <X className="w-6 h-6" />
                   </button>

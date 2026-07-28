@@ -1,12 +1,13 @@
 'use client';
 
-import { Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, Play, MoreVertical, Clock, Heart, MessageCircle, FolderDown, X, Upload, Music, Trash2, RotateCw, Plus } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, Play, MoreVertical, Clock, Heart, MessageCircle, FolderDown, X, Upload, Music, Trash2, RotateCw, Plus, FolderSearch } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { MUSIC_GENRES } from './shared/music_genre';
 import { MusicFormValues } from '@/types';
 import { useForm } from 'react-hook-form';
 import ConfirmationDialog from './shared/ConfirmationDialog';
+import EmptyState from './shared/EmptyState';
 
 function getImageSrcSet(baseUrl: string): string {
   const sizes = [200, 400, 800];
@@ -240,6 +241,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                 type="text"
                 placeholder="Search Songs"
                 aria-label="Search songs"
+                maxLength={100}
                 className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-full"
               />
             </div>
@@ -253,7 +255,15 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
         {/* Songs List */}
         <div className="bg-[#161616] border border-gray-800 rounded-lg overflow-hidden">
           <div className="divide-y divide-gray-800">
-            {songs.map((song, index) => (
+            {songs.length === 0 ? (
+              <EmptyState
+                icon={Music}
+                title="No songs in this album"
+                description="Upload your first track to start building your music library."
+                ctaLabel="Upload Music"
+                onCta={() => {}}
+              />
+            ) : songs.map((song, index) => (
               <div
                 key={song.id}
                 className={`px-6 py-4 hover:bg-[#1a1a1a] transition-colors cursor-pointer group ${index === 0 ? 'bg-[#1a1a1a]' : ''
@@ -324,7 +334,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                   </button>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
         <ConfirmationDialog
@@ -353,6 +363,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search my music"
               aria-label="Search my music"
+              maxLength={100}
               className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-64"
             />
           </div>
@@ -379,6 +390,12 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
       {/* Albums Grid */}
       {isLoading ? (
         <AlbumSkeletonRow />
+      ) : filteredAlbums.length === 0 ? (
+        <EmptyState
+          icon={FolderSearch}
+          title="No albums found"
+          description="Try adjusting your search or filter to find what you're looking for."
+        />
       ) : (
       <div className="relative overflow-hidden">
         {/* Left navigation arrow */}

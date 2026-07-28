@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import {
   Area,
   AreaChart,
@@ -11,9 +12,25 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, Printer } from 'lucide-react';
 import useEarningsServices from '@/services/earningsService';
 import { EarningsDataPoint } from '@/types';
+import { colorTokens } from '@/theme/colors';
+import { getDisplayNameFromToken } from '@/utils/jwt';
+
+const PRINT_TARGET_ID = 'earnings-report-print';
+const PRINT_BODY_CLASS = 'printing-earnings-report';
+const DATE_RANGE_LABEL = 'Last 12 months';
+
+// Tooltip fill / text colors come from the token system so the chart follows
+// the active theme automatically (issue #180).
+const TOOLTIP_FILL = colorTokens.primary.default;
+const TOOLTIP_TEXT = colorTokens.primary.contrast;
+const AXIS_COLOR = 'var(--color-text-muted)';
+const AXIS_LINE_COLOR = 'var(--color-border)';
+const LINE_COLOR = colorTokens.secondary.default;
+const AREA_STOP_A = colorTokens.primary.default;
+const AREA_STOP_B = colorTokens.secondary.default;
 
 // ─── Tooltip ────────────────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, coordinate }: any) => {
@@ -29,13 +46,13 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
             width={60}
             height={28}
             rx={8}
-            fill="#EC4899"
+            fill={TOOLTIP_FILL}
           />
           <text
             x={coordinate.x}
             y={coordinate.y - 18}
             textAnchor="middle"
-            fill="white"
+            fill={TOOLTIP_TEXT}
             fontSize={14}
             fontWeight="600"
           >
@@ -66,7 +83,7 @@ const CustomDot = ({
   highlightMonth: string;
 }) => {
   if (payload?.month === highlightMonth) {
-    return <circle cx={cx} cy={cy} r={6} fill="#EC4899" />;
+    return <circle cx={cx} cy={cy} r={6} fill={TOOLTIP_FILL} />;
   }
   return null;
 };
@@ -74,16 +91,16 @@ const CustomDot = ({
 // ─── Loading skeleton ────────────────────────────────────────────────────────
 const ChartSkeleton = () => (
   <div className="animate-pulse">
-    <div className="h-6 w-32 bg-gray-700 rounded mb-4" />
-    <div className="h-9 w-48 bg-gray-700 rounded mb-2" />
-    <div className="h-4 w-64 bg-gray-700 rounded mb-6" />
-    <div className="h-64 bg-gray-800 rounded" />
+    <div className="h-6 w-32 bg-surface-raised rounded mb-4" />
+    <div className="h-9 w-48 bg-surface-raised rounded mb-2" />
+    <div className="h-4 w-64 bg-surface-raised rounded mb-6" />
+    <div className="h-64 bg-surface-raised rounded" />
   </div>
 );
 
 // ─── Empty state ─────────────────────────────────────────────────────────────
 const EmptyState = () => (
-  <div className="h-64 flex flex-col items-center justify-center text-gray-500 gap-2">
+  <div className="h-64 flex flex-col items-center justify-center text-text-muted gap-2">
     <p className="text-lg font-semibold">No earnings data yet</p>
     <p className="text-sm">Your earnings and royalties will appear here once available.</p>
   </div>
@@ -109,49 +126,79 @@ export default function EarningsRoyalties() {
       ? `$${diff.toLocaleString()} more than last month`
       : `$${Math.abs(diff).toLocaleString()} less than last month`;
 
+  const handlePrint = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    const cleanup = () => {
+      document.body.classList.remove(PRINT_BODY_CLASS);
+      window.removeEventListener('afterprint', cleanup);
+    };
+
+    document.body.classList.add(PRINT_BODY_CLASS);
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+  }, []);
+
   return (
-    <div className="bg-[#151918] rounded-lg p-6">
+    <div id={PRINT_TARGET_ID} className="bg-surface-raised rounded-lg p-6">
+      {/* Print-only report header: hidden on screen, shown via @media print */}
+      <div className="earnings-print-only hidden">
+        <h1 className="text-lg font-bold">Earnings & Royalties Report</h1>
+        <p className="text-sm">Artist: {getDisplayNameFromToken()}</p>
+        <p className="text-sm">Date range: {DATE_RANGE_LABEL}</p>
+        <p className="text-sm">Generated: {new Date().toLocaleDateString()}</p>
+      </div>
+
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex-1">
-          <h2 className="text-white text-xl font-bold mb-4">Earnings & Royalties</h2>
+          <h2 className="text-text text-xl font-bold mb-4">Earnings & Royalties</h2>
           {isLoading ? (
             <div className="animate-pulse">
-              <div className="h-9 w-48 bg-gray-700 rounded mb-2" />
-              <div className="h-4 w-64 bg-gray-700 rounded" />
+              <div className="h-9 w-48 bg-surface-raised rounded mb-2" />
+              <div className="h-4 w-64 bg-surface-raised rounded" />
             </div>
           ) : (
             <div className="flex items-baseline gap-4">
-              <p className="text-white text-3xl font-bold">
+              <p className="text-text text-3xl font-bold">
                 ${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-gray-400 text-sm">{diffLabel}</p>
+              <p className="text-text-muted text-sm">{diffLabel}</p>
             </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="earnings-print-hide flex gap-2">
           <div className="relative">
-            <select className="bg-[#161616] border border-gray-700 rounded-lg px-4 pr-8 py-2 text-white text-sm appearance-none cursor-pointer hover:border-gray-600 transition-colors">
+            <select className="bg-surface-sunken border border-border rounded-lg px-4 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors">
               <option>Royalties</option>
             </select>
             <ChevronDown
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none"
               size={16}
             />
           </div>
           <div className="relative">
             <Calendar
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted"
               size={16}
             />
-            <select className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-8 py-2 text-white text-sm appearance-none cursor-pointer hover:border-gray-600 transition-colors">
-              <option>Last 12 months</option>
+            <select className="bg-surface-sunken border border-border rounded-lg pl-10 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors">
+              <option>{DATE_RANGE_LABEL}</option>
             </select>
             <ChevronDown
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none"
               size={16}
             />
           </div>
+          <button
+            type="button"
+            onClick={handlePrint}
+            aria-label="Print earnings report"
+            title="Print earnings report"
+            className="flex items-center justify-center w-11 h-11 bg-surface-sunken border border-border rounded-lg text-text-muted hover:border-border-subtle hover:text-text transition-colors cursor-pointer"
+          >
+            <Printer size={16} />
+          </button>
         </div>
       </div>
 
@@ -159,36 +206,36 @@ export default function EarningsRoyalties() {
       {isLoading ? (
         <ChartSkeleton />
       ) : isError ? (
-        <div className="h-64 flex items-center justify-center text-red-400 text-sm">
+        <div className="h-64 flex items-center justify-center text-error text-sm">
           Failed to load earnings data. Please try again later.
         </div>
       ) : chartData.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="h-64">
+        <div className="earnings-print-hide h-64">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorValue" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#D2045B" stopOpacity={0.35} />
-                  <stop offset="97.33%" stopColor="#D2045B" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#885FA8" stopOpacity={0.35} />
+                  <stop offset="0%" stopColor={AREA_STOP_A} stopOpacity={0.35} />
+                  <stop offset="97.33%" stopColor={AREA_STOP_A} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={AREA_STOP_B} stopOpacity={0.35} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="transparent" vertical={false} />
               <XAxis
                 dataKey="month"
-                stroke="#9CA3AF"
+                stroke={AXIS_COLOR}
                 style={{ fontSize: '12px' }}
-                tick={{ fill: '#9CA3AF' }}
-                axisLine={{ stroke: '#374151' }}
+                tick={{ fill: AXIS_COLOR }}
+                axisLine={{ stroke: AXIS_LINE_COLOR }}
               />
               <YAxis
-                stroke="#9CA3AF"
+                stroke={AXIS_COLOR}
                 style={{ fontSize: '12px' }}
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: AXIS_COLOR }}
                 tickFormatter={(v) => `$${v}`}
-                axisLine={{ stroke: '#374151' }}
+                axisLine={{ stroke: AXIS_LINE_COLOR }}
               />
               <Tooltip content={<CustomTooltip />} />
               {/* Earnings: filled area, no stroke */}
@@ -204,7 +251,7 @@ export default function EarningsRoyalties() {
               <Line
                 type="monotone"
                 dataKey="royalties"
-                stroke="#885FA8"
+                stroke={LINE_COLOR}
                 strokeWidth={1.4}
                 dot={(props: any) => (
                   <CustomDot {...props} highlightMonth={highlightMonth} />
@@ -214,7 +261,7 @@ export default function EarningsRoyalties() {
               {highlightMonth && (
                 <ReferenceLine
                   x={highlightMonth}
-                  stroke="white"
+                  stroke="var(--color-text-inverted)"
                   strokeWidth={1}
                   strokeDasharray="2 2"
                   opacity={0.5}
@@ -223,6 +270,29 @@ export default function EarningsRoyalties() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+      )}
+
+      {/* Print-only data table: charts don't render reliably on paper, so the
+          print report shows the same monthly figures as a plain table. */}
+      {chartData.length > 0 && (
+        <table className="earnings-print-only hidden">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Earnings</th>
+              <th>Royalties</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((point) => (
+              <tr key={point.month}>
+                <td>{point.month}</td>
+                <td>${point.earnings.toLocaleString()}</td>
+                <td>${point.royalties.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

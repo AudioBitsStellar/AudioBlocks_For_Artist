@@ -8,6 +8,10 @@ import { MOCK_MERCH_ITEMS, MOCK_MERCH_METRICS } from '@/lib/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import useMerchService, { MerchItem, CreateMerchPayload } from '@/services/merchService';
+import { useRole } from '@/hooks/useRole';
+import ConfirmationDialog from './shared/ConfirmationDialog';
+import EmptyState from './shared/EmptyState';
+import { sanitize } from '@/utils/sanitize';
 
 interface MerchFormProps {
   initial?: Partial<MerchItem>;
@@ -15,6 +19,23 @@ interface MerchFormProps {
   onClose: () => void;
   isBusy: boolean;
 }
+
+const MERCH_FIELD_MAX_LENGTHS: Record<keyof CreateMerchPayload, number> = {
+  title: 100,
+  detail: 300,
+  date: 50,
+  time: 50,
+  price: 20,
+  image: 500,
+};
+
+// Only show a running character count for fields long enough that users
+// might reasonably run into the limit.
+const MERCH_FIELD_SHOW_COUNT: Partial<Record<keyof CreateMerchPayload, boolean>> = {
+  title: true,
+  detail: true,
+  image: true,
+};
 
 function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
   const [form, setForm] = useState<CreateMerchPayload>({
@@ -44,7 +65,7 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
   const handleSave = () => {
     if (!form.title.trim() || !form.price.trim()) return;
     clearSavedData();
-    onSave(form);
+    onSave({ ...form, title: sanitize(form.title), detail: sanitize(form.detail) });
   };
 
   return (
@@ -54,22 +75,37 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
           <h2 className="text-white font-semibold text-lg">
             {initial ? 'Edit Merch' : 'New Merch'}
           </h2>
-          <button onClick={onClose} className="text-[#A3A3A3] hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            aria-label="Close merch form"
+            className="flex items-center justify-center min-w-11 min-h-11 text-[#A3A3A3] hover:text-white transition-colors"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {(['title', 'detail', 'date', 'time', 'price', 'image'] as (keyof CreateMerchPayload)[]).map((field) => (
-          <div key={field} className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-[#A3A3A3] capitalize">{field}</label>
-            <input
-              value={form[field] ?? ''}
-              onChange={set(field)}
-              placeholder={field === 'image' ? 'Image URL' : field}
-              className="rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-2 text-sm text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
-            />
-          </div>
-        ))}
+        {(['title', 'detail', 'date', 'time', 'price', 'image'] as (keyof CreateMerchPayload)[]).map((field) => {
+          const maxLength = MERCH_FIELD_MAX_LENGTHS[field];
+          const value = form[field] ?? '';
+          const isNearLimit = value.length >= maxLength * 0.9;
+          return (
+            <div key={field} className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-[#A3A3A3] capitalize">{field}</label>
+              <input
+                value={value}
+                onChange={set(field)}
+                placeholder={field === 'image' ? 'Image URL' : field}
+                maxLength={maxLength}
+                className="rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-2 text-sm text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+              />
+              {MERCH_FIELD_SHOW_COUNT[field] && isNearLimit && (
+                <span className={`self-end text-xs ${value.length >= maxLength ? 'text-red-500' : 'text-yellow-500'}`}>
+                  {value.length}/{maxLength}
+                </span>
+              )}
+            </div>
+          );
+        })}
 
         <div className="flex gap-3 pt-2">
           <button
@@ -95,12 +131,21 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
 export default function MerchesContent() {
   const { useGetMerches, useCreateMerch, useUpdateMerch, useDeleteMerch } = useMerchService();
   const { data, isLoading } = useGetMerches();
+  // RBAC – issue #173: gate destructive actions by role.
+  const { can } = useRole();
+  const canCreate = can('content:create');
+  const canEdit = can('content:edit');
+  const canDelete = can('content:delete');
 
   const createMutation = useCreateMerch();
 
   const [editTarget, setEditTarget] = useState<MerchItem | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; item: MerchItem | null }>({
+    isOpen: false,
+    item: null,
+  });
 
   const updateMutation = useUpdateMerch(editTarget?.id ?? 0);
   const deleteMutation = useDeleteMerch(deleteId ?? 0);
@@ -121,8 +166,14 @@ export default function MerchesContent() {
     updateMutation.mutate(payload, { onSuccess: () => setEditTarget(null) });
   };
 
-  const handleDelete = (id: number) => {
-    setDeleteId(id);
+  const handleDeleteRequest = (item: MerchItem) => {
+    setDeleteConfirmation({ isOpen: true, item });
+  };
+
+  const handleDeleteConfirm = () => {
+    const item = deleteConfirmation.item;
+    if (!item) return;
+    setDeleteId(item.id);
     deleteMutation.mutate(undefined as any, { onSuccess: () => setDeleteId(null) });
   };
 
@@ -136,9 +187,10 @@ export default function MerchesContent() {
             {featureFlags.useMockMerches && <MockDataBadge label="merches" />}
           </h1>
         </div>
-        {!featureFlags.useMockMerches && (
+        {!featureFlags.useMockMerches && canCreate && (
           <button
             onClick={() => setShowCreate(true)}
+            data-testid="create-merch-btn"
             className="self-start rounded-full bg-[#D2045B] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(210,4,91,0.35)] transition-colors hover:bg-[#B8043F]"
           >
             New Merch
@@ -178,7 +230,7 @@ export default function MerchesContent() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative w-full sm:w-72">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input type="text" placeholder="Search Merch" className="w-full rounded-full border border-[#2E2E2E] bg-[#111111] py-3 pl-12 pr-5 text-sm text-white placeholder:text-gray-500 focus:border-[#885FA8] focus:outline-none" />
+                <input type="text" placeholder="Search Merch" maxLength={100} className="w-full rounded-full border border-[#2E2E2E] bg-[#111111] py-3 pl-12 pr-5 text-sm text-white placeholder:text-gray-500 focus:border-[#885FA8] focus:outline-none" />
               </div>
               <button className="flex items-center justify-center gap-2 rounded-full border border-[#2E2E2E] bg-[#111111] px-5 py-3 text-sm font-medium text-white transition-colors hover:border-[#885FA8]">
                 <Filter className="h-4 w-4" /> Filter
@@ -187,17 +239,13 @@ export default function MerchesContent() {
           </div>
 
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-gray-500 gap-3">
-              <ShoppingBag className="h-10 w-10 text-[#A3A3A3]" />
-              <p className="text-lg font-semibold text-white">No merch yet</p>
-              <p className="text-sm">Add your first merch drop to get started.</p>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="mt-2 rounded-full bg-[#D2045B] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(210,4,91,0.35)] transition-colors hover:bg-[#B8043F]"
-              >
-                Add your first merch
-              </button>
-            </div>
+            <EmptyState
+              icon={ShoppingBag}
+              title="No merch yet"
+              description="Add your first merch drop to start selling to your fans."
+              ctaLabel="Add your first merch"
+              onCta={() => setShowCreate(true)}
+            />
           ) : (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {items.map((item) => (
@@ -212,29 +260,35 @@ export default function MerchesContent() {
                     />
                   </div>
                   <div className="space-y-3 px-6 py-5">
-                    <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-                    <p className="text-xs font-medium uppercase tracking-wide text-[#A3A3A3]">{item.detail}</p>
+                    <h3 className="text-lg font-semibold text-white">{sanitize(item.title)}</h3>
+                    <p className="text-xs font-medium uppercase tracking-wide text-[#A3A3A3]">{sanitize(item.detail)}</p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-[#C9C9C9]">
                       <span>{item.date}</span>
                       <span>{item.time}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        {!featureFlags.useMockMerches && (
+                        {!featureFlags.useMockMerches && (canEdit || canDelete) && (
                           <>
-                            <button
-                              onClick={() => setEditTarget(item)}
-                              className="rounded-full border border-[#2E2E2E] px-5 py-1.5 text-xs font-medium text-white transition-colors hover:border-[#885FA8]"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              disabled={deleteId === item.id && deleteMutation.isPending}
-                              className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:border-red-500 disabled:opacity-50"
-                            >
-                              {deleteId === item.id && deleteMutation.isPending ? '…' : 'Delete'}
-                            </button>
+                            {canEdit && (
+                              <button
+                                onClick={() => setEditTarget(item)}
+                                data-testid="edit-merch-btn"
+                                className="rounded-full border border-[#2E2E2E] px-5 py-1.5 text-xs font-medium text-white transition-colors hover:border-[#885FA8]"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDeleteRequest(item)}
+                                data-testid="delete-merch-btn"
+                                disabled={deleteId === item.id && deleteMutation.isPending}
+                                className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:border-red-500 disabled:opacity-50"
+                              >
+                                {deleteId === item.id && deleteMutation.isPending ? '…' : 'Delete'}
+                              </button>
+                            )}
                           </>
                         )}
                         {featureFlags.useMockMerches && (
@@ -269,6 +323,14 @@ export default function MerchesContent() {
           isBusy={updateMutation.isPending}
         />
       )}
+
+      <ConfirmationDialog
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, item: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Merch Item"
+        message={`Are you sure you want to delete "${deleteConfirmation.item?.title ?? 'this item'}"? This action is permanent and cannot be undone.`}
+      />
     </div>
   );
 }

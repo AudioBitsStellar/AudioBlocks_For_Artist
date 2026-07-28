@@ -19,7 +19,8 @@ const Upoad_Music
                     <h1 className="text-white text-3xl font-bold">Add Music</h1>
                     <button
                         onClick={route.back}
-                        className="rounded-full cursor-pointer p-2 text-gray-400 transition hover:bg-white/5 hover:text-white"
+                        aria-label="Go back"
+                        className="flex items-center justify-center min-w-11 min-h-11 rounded-full cursor-pointer text-gray-400 transition hover:bg-white/5 hover:text-white"
                     >
                         <X className="h-5 w-5" />
                     </button>

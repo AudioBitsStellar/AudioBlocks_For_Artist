@@ -13,7 +13,10 @@ import SetupArtistOnChainProfile from "@/components/common/wallet/SetupArtistOnC
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { analytics } from "@/lib/analytics";
 import { useToast } from "@/hooks/useToastHandler";
+import { useRole } from "@/hooks/useRole";
+import { ROLE_BADGE_STYLES, getSettingsRestrictionReason } from "@/types/role";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
+import { encodeHtmlEntities } from "@/utils/textEncoder";
 import ImageCropper from "@/components/ImageCropper";
 
 function ProfileFormSkeleton() {
@@ -47,16 +50,23 @@ export default function ProfilePage() {
 	const updateProfileMutation = useUpdateArtistProfile();
 	const { isLoading: isProfileLoading } = useGetArtistProfile(true);
 	const toast = useToast();
+	// RBAC – issue #173: settings switches are write-restricted, and we surface
+	// the active role in the user profile section above the tabs.
+	const { role, info: roleInfo, can } = useRole();
+	const canEditSettings = can('settings:edit');
 
 	const {
 		register,
 		setValue,
 		handleSubmit,
+		watch,
 		formState: { errors, isSubmitting, isValid },
 	} = useForm<updateProfilePayload>({
 		resolver: zodResolver(profileFormSchema),
 		mode: 'onChange',
 	});
+
+	const bioLength = watch('bio')?.length ?? 0;
 
 	const [profileImage, setProfileImage] = useState<string | null>(null);
 	const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -96,7 +106,7 @@ export default function ProfilePage() {
 		const formData = new FormData();
 
 		formData.append("username", data.username);
-		formData.append("bio", data.bio || '');
+		formData.append("bio", encodeHtmlEntities(data.bio || ''));
 		formData.append("website", data.website || '');
 		formData.append("twitter", data.twitter || '');
 
@@ -128,6 +138,33 @@ export default function ProfilePage() {
 
 		<>
 			<Breadcrumb items={[{ label: "Profile", isActive: true }]} />
+
+			{/* Role indicator – issue #173 acceptance criteria */}
+			<div
+				data-testid="profile-role-indicator"
+				className="mt-4 inline-flex items-center gap-3 rounded-xl border border-[#2A2A2A] bg-[#161616] px-4 py-3"
+			>
+				<span
+					data-testid="profile-role-badge"
+					data-role={role}
+					aria-label={`Active role: ${role}`}
+					className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide uppercase ${ROLE_BADGE_STYLES[role]}`}
+				>
+					{roleInfo.label}
+				</span>
+				<p className="text-xs text-[#A3A3A3]">
+					<span className="text-white font-medium">Workspace role:</span>{' '}
+					{roleInfo.description}
+				</p>
+				{!canEditSettings && (
+					<span
+						data-testid="profile-role-readonly"
+						className="ml-auto text-[10px] uppercase tracking-wide rounded-md bg-[#2A2A2A] px-2 py-1 text-[#A3A3A3]"
+					>
+						Read-only
+					</span>
+				)}
+			</div>
 
 			{/* Tabs */}
 			<div className="flex items-center gap-2 border-b border-[#2A2A2A]" role="tablist">
@@ -183,6 +220,7 @@ export default function ProfilePage() {
 								id="display-name"
 								{...register("username")}
 								placeholder="Add Display name"
+								maxLength={50}
 								aria-invalid={errors.username ? 'true' : 'false'}
 								aria-describedby={errors.username ? 'username-error' : undefined}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
@@ -208,6 +246,7 @@ export default function ProfilePage() {
 								id="short-bio"
 								{...register("bio")}
 								placeholder="Tell about yourself in a few words"
+								maxLength={500}
 								aria-invalid={errors.bio ? 'true' : 'false'}
 								aria-describedby={errors.bio ? 'bio-error' : undefined}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 py-3 resize-none"
@@ -223,6 +262,13 @@ export default function ProfilePage() {
 							{errors.bio && (
 								<p id="bio-error" className="text-[10px] text-red-500 mt-1" role="alert">{errors.bio.message}</p>
 							)}
+							<p
+								className={`text-[10px] mt-1 text-right ${
+									bioLength >= 500 ? 'text-red-500' : bioLength >= 450 ? 'text-yellow-500' : 'text-[#6F6F6F]'
+								}`}
+							>
+								{bioLength}/500
+							</p>
 						</div>
 
 						<div className="flex flex-col mt-7">
@@ -233,6 +279,7 @@ export default function ProfilePage() {
 								id="website-url"
 								{...register("website")}
 								placeholder="https://"
+								maxLength={500}
 								aria-invalid={errors.website ? 'true' : 'false'}
 								aria-describedby={errors.website ? 'website-error' : undefined}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
@@ -258,6 +305,7 @@ export default function ProfilePage() {
 								id="twitter-username"
 								{...register("twitter")}
 								placeholder="Enter your X username"
+								maxLength={50}
 								aria-invalid={errors.twitter ? 'true' : 'false'}
 								aria-describedby={errors.twitter ? 'twitter-error' : undefined}
 								className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
@@ -368,11 +416,15 @@ export default function ProfilePage() {
 								}))
 							}
 							role="switch"
+							disabled={!canEditSettings}
 							aria-checked={notifications.commentsOnSongs}
+							title={
+								canEditSettings ? undefined : getSettingsRestrictionReason(role)
+							}
 							className={`relative w-12 h-6 rounded-full transition-colors ${notifications.commentsOnSongs
 									? "bg-[#D2045B]"
 									: "bg-[#2A2A2A]"
-								}`}
+								} ${!canEditSettings ? "opacity-50 cursor-not-allowed" : ""}`}
 						>
 							<span
 								className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${notifications.commentsOnSongs
@@ -402,11 +454,15 @@ export default function ProfilePage() {
 								}))
 							}
 							role="switch"
+							disabled={!canEditSettings}
 							aria-checked={notifications.salesAndRoyalties}
+							title={
+								canEditSettings ? undefined : getSettingsRestrictionReason(role)
+							}
 							className={`relative w-12 h-6 rounded-full transition-colors ${notifications.salesAndRoyalties
 									? "bg-[#D2045B]"
 									: "bg-[#2A2A2A]"
-								}`}
+								} ${!canEditSettings ? "opacity-50 cursor-not-allowed" : ""}`}
 						>
 							<span
 								className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${notifications.salesAndRoyalties
@@ -436,11 +492,15 @@ export default function ProfilePage() {
 								}))
 							}
 							role="switch"
+							disabled={!canEditSettings}
 							aria-checked={notifications.platformAlerts}
+							title={
+								canEditSettings ? undefined : getSettingsRestrictionReason(role)
+							}
 							className={`relative w-12 h-6 rounded-full transition-colors ${notifications.platformAlerts
 									? "bg-[#D2045B]"
 									: "bg-[#2A2A2A]"
-								}`}
+								} ${!canEditSettings ? "opacity-50 cursor-not-allowed" : ""}`}
 						>
 							<span
 								className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${notifications.platformAlerts
@@ -450,6 +510,12 @@ export default function ProfilePage() {
 							/>
 						</button>
 					</div>
+
+					{!canEditSettings && (
+						<p className="text-xs text-[#A3A3A3] italic" data-testid="settings-readonly-notice">
+							{`You're signed in as a ${roleInfo.label.toLowerCase()} — settings are managed by the workspace owner.`}
+						</p>
+					)}
 				</div>
 			)}
 

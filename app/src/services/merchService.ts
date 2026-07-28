@@ -50,17 +50,41 @@ export interface PriceValidation {
 const CURRENCY = 'USD';
 const CURRENCY_SYMBOL = '$';
 
+/**
+ * Formats a price as a USD currency string.
+ *
+ * @param value - A numeric price, or a string containing one.
+ * @returns e.g. `"$12.50"`. Returns `"$0.00"` if `value` doesn't parse to a number.
+ * @throws Never throws.
+ */
 export function formatPrice(value: string | number): string {
   const num = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(num)) return `${CURRENCY_SYMBOL}0.00`;
   return `${CURRENCY_SYMBOL}${num.toFixed(2)}`;
 }
 
+/**
+ * Parses a user-entered price string (e.g. `"$12.50"`) into a number.
+ *
+ * @param value - Raw price text, may include currency symbols/commas.
+ * @returns The parsed number, or `NaN` if nothing numeric could be extracted.
+ * @throws Never throws.
+ */
 export function parsePrice(value: string): number {
   const cleaned = value.replace(/[^0-9.\-]/g, '');
   return parseFloat(cleaned);
 }
 
+/**
+ * Validates a merch item payload before it's submitted.
+ *
+ * @param payload - The merch fields to validate (title, detail, price).
+ * @returns `{ valid, errors }` — `errors` maps field name to a human-readable message; empty when `valid` is true.
+ * @throws Never throws.
+ * @example
+ * const { valid, errors } = validateMerchPayload({ title: '', detail: '', date: '', time: '', price: '-1' });
+ * // valid === false, errors.title === 'Title is required', errors.price === 'Price cannot be negative'
+ */
 export function validateMerchPayload(payload: CreateMerchPayload): PriceValidation {
   const errors: Record<string, string> = {};
 
@@ -92,6 +116,15 @@ export function validateMerchPayload(payload: CreateMerchPayload): PriceValidati
   return { valid: Object.keys(errors).length === 0, errors };
 }
 
+/**
+ * Adjusts an inventory item's stock count by `change`, clamped to zero.
+ *
+ * @param items - The current inventory list.
+ * @param id - The id of the item to adjust.
+ * @param change - Amount to add (negative to subtract).
+ * @returns A new array with the matching item's `stock` updated; unchanged if no item matches `id`.
+ * @throws Never throws.
+ */
 export function updateStock(
   items: MerchInventoryItem[],
   id: number,
@@ -104,6 +137,15 @@ export function updateStock(
   );
 }
 
+/**
+ * Reserves `quantity` units of an inventory item, if enough are available.
+ *
+ * @param items - The current inventory list.
+ * @param id - The id of the item to reserve stock from.
+ * @param quantity - How many units to reserve.
+ * @returns `{ items, success }` — `items` is unchanged and `success` is `false` if the item is missing or unavailable stock is insufficient.
+ * @throws Never throws.
+ */
 export function reserveStock(
   items: MerchInventoryItem[],
   id: number,
@@ -127,9 +169,21 @@ const useMerchService = () => {
   const handleSuccess = useHandleSuccess();
   const handleError = useHandleError();
 
+  /**
+   * Fetches the artist's merch (metrics + list).
+   *
+   * @returns A React Query result: `{ data: MerchListResponse | undefined, isLoading, isError, error, refetch, ... }`.
+   * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
+   */
   const useGetMerches = () =>
     useGet<MerchListResponse>(MERCH_QUERY_KEY, MERCH_ENDPOINTS.LIST);
 
+  /**
+   * Creates a new merch item. Invalidates the merch cache and shows a success/error toast on completion.
+   *
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with a `CreateMerchPayload`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
   const useCreateMerch = () =>
     usePost<MerchItem, CreateMerchPayload>(MERCH_ENDPOINTS.CREATE, {
       onSuccess: () => handleSuccess("Merch item created!"),
@@ -137,6 +191,13 @@ const useMerchService = () => {
       invalidateQueries: [MERCH_QUERY_KEY],
     });
 
+  /**
+   * Updates an existing merch item. Invalidates the merch cache and shows a success/error toast on completion.
+   *
+   * @param id - The merch item's id.
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with an `UpdateMerchPayload`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
   const useUpdateMerch = (id: number) =>
     usePut<MerchItem, UpdateMerchPayload>(MERCH_ENDPOINTS.UPDATE(id), {
       onSuccess: () => handleSuccess("Merch item updated!"),
@@ -144,6 +205,13 @@ const useMerchService = () => {
       invalidateQueries: [MERCH_QUERY_KEY],
     });
 
+  /**
+   * Deletes a merch item. Invalidates the merch cache and shows a success/error toast on completion.
+   *
+   * @param id - The merch item's id.
+   * @returns A React Query mutation: call `.mutate()` or `.mutateAsync()`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
   const useDeleteMerch = (id: number) =>
     useDelete<void>(MERCH_ENDPOINTS.DELETE(id), {
       onSuccess: () => handleSuccess("Merch item deleted."),
