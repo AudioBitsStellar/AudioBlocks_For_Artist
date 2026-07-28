@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+
+FROM node:20-alpine
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+COPY app/package.json app/package-lock.json ./
+RUN npm ci --ignore-scripts
+
+COPY app/ .
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=development
+
+EXPOSE 3000
+CMD ["npm", "run", "dev"]

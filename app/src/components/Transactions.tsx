@@ -48,37 +48,64 @@ export default function Transactions() {
           description="Your royalty payments and earnings will appear here once your music starts generating revenue."
         />
       ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full" role="table" aria-label="Transactions list">
-          <thead>
-            <tr className="border-b border-border-subtle">
-              <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">Type</th>
-              <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">Song</th>
-              <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">Value</th>
-              <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">Date</th>
-              <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">View</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          {/* Mobile card layout — hidden on md and above */}
+          <ul className="flex flex-col gap-3 md:hidden" aria-label="Transactions list">
             {transactions.map((transaction, index) => (
-              <tr key={index} className="border-b border-border-subtle">
-                <td className="text-text py-3 text-sm">{transaction.type}</td>
-                <td className="text-text py-3 text-sm">{transaction.song}</td>
-                <td className="text-text py-3 text-sm">{transaction.value}</td>
-                <td className="text-text-muted py-3 text-sm">
-                  {/* Issue #177: shared locale-aware date util. */}
-                  {formatDate(transaction.date, 'short')}
-                </td>
-                <td className="py-3">
-                  <button className="text-primary hover:text-primary-hover text-sm underline transition-colors">
-                    view
-                  </button>
-                </td>
-              </tr>
+              <li
+                key={index}
+                className="bg-surface-sunken border border-border-subtle rounded-lg p-4 flex flex-col gap-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-text text-sm font-semibold">{transaction.type}</span>
+                  <span className="text-text text-sm font-semibold">{transaction.value}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-text-muted text-sm">{transaction.song}</span>
+                  <span className="text-text-muted text-sm">
+                    {formatDate(transaction.date, 'short')}
+                  </span>
+                </div>
+                <button className="text-primary hover:text-primary-hover text-sm underline transition-colors self-start">
+                  view
+                </button>
+              </li>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </ul>
+
+          {/* Desktop table layout — hidden below md */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full" role="table" aria-label="Transactions list">
+              <thead>
+                <tr className="border-b border-border-subtle">
+                  <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">Type</th>
+                  <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">Song</th>
+                  <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">Value</th>
+                  <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">Date</th>
+                  <th className="text-left text-text-muted text-sm font-semibold pb-3" scope="col">View</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((transaction, index) => (
+                  <tr key={index} className="border-b border-border-subtle">
+                    <td className="text-text py-3 text-sm">{transaction.type}</td>
+                    <td className="text-text py-3 text-sm">{transaction.song}</td>
+                    <td className="text-text py-3 text-sm">{transaction.value}</td>
+                    <td className="text-text-muted py-3 text-sm">
+                      {/* Issue #177: shared locale-aware date util. */}
+                      {formatDate(transaction.date, 'short')}
+                    </td>
+                    <td className="py-3">
+                      <button className="text-primary hover:text-primary-hover text-sm underline transition-colors">
+                        view
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
