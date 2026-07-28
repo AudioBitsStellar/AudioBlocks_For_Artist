@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import Cookies from "js-cookie";
+import { getCSRFToken, getCSRFTokenHeader, refreshCSRFToken } from "@/utils/csrfToken";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -60,12 +61,39 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add CSRF token for state-changing requests
+    const method = config.method?.toUpperCase();
+    if (method && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+      const csrfHeaders = getCSRFTokenHeader();
+      Object.assign(config.headers, csrfHeaders);
+    }
+
     return config;
   });
 
   apiClient.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      // Handle CSRF token refresh from server
+      const newCsrfToken = response.headers["x-csrf-token"];
+      if (newCsrfToken && typeof newCsrfToken === "string") {
+        refreshCSRFToken();
+      }
+      return response;
+    },
     (error: AxiosError) => {
+      // Handle CSRF token validation errors
+      if (error.response?.status === 403 && typeof window !== "undefined") {
+        const errorData = error.response.data as Record<string, unknown>;
+        if (
+          errorData?.code === "CSRF_TOKEN_INVALID" ||
+          errorData?.message?.includes("CSRF")
+        ) {
+          refreshCSRFToken();
+          return Promise.reject(extractApiError(error));
+        }
+      }
+
       if (error.response?.status === 401 && typeof window !== "undefined") {
         if (!redirecting) {
           redirecting = true;

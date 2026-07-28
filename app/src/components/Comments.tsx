@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Send, Paperclip, User } from 'lucide-react';
-import { encodeHtmlEntities } from '@/utils/textEncoder';
+import { sanitize } from '@/utils/sanitize';
 
 const COMMENT_MAX_LENGTH = 500;
 const COMMENT_WARN_THRESHOLD = COMMENT_MAX_LENGTH * 0.9;
@@ -40,10 +40,10 @@ export default function Comments() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-white font-semibold text-sm">{comment.name}</span>
+                <span className="text-white font-semibold text-sm">{sanitize(comment.name)}</span>
                 <span className="text-gray-400 text-sm">{comment.time}</span>
               </div>
-              <p className="text-gray-300 text-sm">{encodeHtmlEntities(comment.comment)}</p>
+              <p className="text-gray-300 text-sm">{sanitize(comment.comment)}</p>
             </div>
           </div>
         ))}

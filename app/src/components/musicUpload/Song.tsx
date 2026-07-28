@@ -14,6 +14,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import MintSongButton from '@/components/common/wallet/MintSongButton';
 import { analytics } from '@/lib/analytics';
 import { isRetryableError, getErrorMessage } from '@/utils/errorRecovery';
+import { sanitize } from '@/utils/sanitize';
 
 const ALLOWED_AUDIO_TYPES = new Set([
     'audio/mpeg',
@@ -45,10 +46,17 @@ const Song = () => {
     const [failedChunkIndex, setFailedChunkIndex] = useState<number>(0);
 
     const [coverImage, setCoverImage] = useState<string | null>(null);
-    const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; type: string; status: 'uploading' | 'success' | 'failed' } | null>(null);
+    const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; type: string; status: 'uploading' | 'success' | 'failed' | 'cancelled' } | null>(null);
     const [validationError, setValidationError] = useState<string | null>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    // #128 — the shared usePost/axios client has no AbortSignal support, so
+    // cancellation is cooperative: the chunk loop below checks this ref
+    // between chunks and stops sending further chunks once it's set. The
+    // one already-in-flight request (if any) still completes server-side,
+    // but no further chunk requests are made and the UI reflects "cancelled"
+    // immediately.
+    const cancelRequestedRef = useRef(false);
 
     const { useFinalizeUpload, useUploadChunk, useUploadCover } = useUploadServices();
     const uploadChunk = useUploadChunk();
@@ -138,6 +146,7 @@ const Song = () => {
         setFileId(generateFileId());
         setRetryCount(0);
         setFailedChunkIndex(0);
+        cancelRequestedRef.current = false;
 
         setUploadedFile({
             name: file.name,
@@ -151,6 +160,11 @@ const Song = () => {
         const chunks = splitFile(file);
 
         for (let i = startChunk; i < chunks.length; i++) {
+            if (cancelRequestedRef.current) {
+                setFailedChunkIndex(i);
+                throw new Error('UPLOAD_CANCELLED');
+            }
+
             const form = new FormData();
             form.append("fileId", fileId);
             form.append("chunkIndex", String(i));
@@ -182,6 +196,7 @@ const Song = () => {
             setFileId(generateFileId());
             setRetryCount(0);
             setFailedChunkIndex(0);
+            cancelRequestedRef.current = false;
 
             const fileSize = formatFileSize(file.size);
             setUploadedFile({ name: file.name, size: fileSize, type: formatFileType(file), status: 'uploading' });
@@ -200,6 +215,7 @@ const Song = () => {
         }
 
         try {
+            cancelRequestedRef.current = false;
             setRetryCount(prev => prev + 1);
             setUploadedFile(prev =>
                 prev ? { ...prev, status: "uploading" } : prev
@@ -212,6 +228,13 @@ const Song = () => {
             );
 
         } catch (err) {
+            if (err instanceof Error && err.message === 'UPLOAD_CANCELLED') {
+                setUploadedFile(prev =>
+                    prev ? { ...prev, status: "cancelled" } : prev
+                );
+                toast.success('Upload cancelled');
+                return;
+            }
             console.error(err);
             setUploadedFile(prev =>
                 prev ? { ...prev, status: "failed" } : prev
@@ -222,6 +245,7 @@ const Song = () => {
 
 
     const handleDelete = () => {
+        cancelRequestedRef.current = false;
         setUploadedFile(null);
         setAudioFile(null);
         setFileId(null);
@@ -256,6 +280,11 @@ const Song = () => {
 
             const chunks = splitFile(audioFile);
             for (let i = 0; i < chunks.length; i++) {
+                if (cancelRequestedRef.current) {
+                    setFailedChunkIndex(i);
+                    throw new Error('UPLOAD_CANCELLED');
+                }
+
                 const form = new FormData();
                 form.append("fileId", fileId);
                 form.append("chunkIndex", String(i));
@@ -280,10 +309,10 @@ const Song = () => {
             const finalizeResult: any = await finalizeUpload.mutateAsync({
                 fileId: fileId,
                 totalChunks: totalChunks,
-                title: data.title,
-                description: data.description,
+                title: sanitize(data.title),
+                description: sanitize(data.description),
                 genre: data.genre,
-                composers: data.composer,
+                composers: sanitize(data.composer),
                 coverArtPath: coverArtPath,
                 // marketPrice: data.marketPrice,
             });
@@ -315,6 +344,14 @@ const Song = () => {
             setAudioFile(null);
             setFileId(null);
         } catch (err: any) {
+            if (err instanceof Error && err.message === 'UPLOAD_CANCELLED') {
+                setUploadedFile((prev) =>
+                    prev ? { ...prev, status: "cancelled" } : prev
+                );
+                toast.success('Upload cancelled');
+                setIsUploading(false);
+                return;
+            }
             console.error(err);
             const reason = getErrorMessage(err);
             analytics.uploadFailed({ fileId, reason });
@@ -329,6 +366,10 @@ const Song = () => {
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const handleCancel = () => {
+        cancelRequestedRef.current = true;
     };
 
 
@@ -587,6 +628,9 @@ const Song = () => {
                                             {uploadedFile.status === 'success' && (
                                                     <span className="text-[10px] text-green-500 font-medium">Upload finished</span>
                                                 )}
+                                            {uploadedFile.status === 'cancelled' && (
+                                                    <span className="text-[10px] text-[#A3A3A3] font-medium">Upload cancelled</span>
+                                                )}
                                             {uploadedFile.status === 'uploading' && (
                                                     <span className="text-[10px] text-yellow-500 font-medium">
                                                         Uploading... {uploadProgress}%
@@ -605,6 +649,16 @@ const Song = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
+                                    {uploadedFile.status === 'uploading' && (
+                                        <button
+                                            onClick={handleCancel}
+                                            className="px-2 py-1 text-[10px] font-medium text-[#A3A3A3] hover:text-white transition-colors"
+                                            title="Cancel upload"
+                                            aria-label="Cancel upload"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
                                     {uploadedFile.status === 'failed' && retryCount < MAX_RETRY_ATTEMPTS && (
                                         <button
                                             onClick={handleRetry}

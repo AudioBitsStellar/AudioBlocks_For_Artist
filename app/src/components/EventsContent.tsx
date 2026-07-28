@@ -1,11 +1,12 @@
 'use client';
 
-import { Filter, Search, CalendarDays, Clock3, Trash2, Loader2 } from 'lucide-react';
+import { Filter, Search, CalendarDays, Clock3, Trash2, Loader2, CalendarPlus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { featureFlags } from '@/lib/featureFlags';
 import { MOCK_EVENTS, MOCK_EVENT_METRICS } from '@/lib/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
 import ConfirmationDialog from './shared/ConfirmationDialog';
+import EmptyState from './shared/EmptyState';
 
 import useEventsService from '@/services/eventsService';
 import { formatDate } from '@/utils/date';
@@ -99,17 +100,13 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
       </div>
 
       {eventsList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-text-muted gap-3">
-          <CalendarDays className="h-10 w-10 text-text-muted" />
-          <p className="text-lg font-semibold text-text">No events yet</p>
-          <p className="text-sm">Create your first event to get started.</p>
-          <button
-            onClick={onNewEvent}
-            className="mt-2 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-contrast shadow-[0_10px_30px_rgba(210,4,91,0.35)] transition-colors hover:bg-primary-hover"
-          >
-            Create your first event
-          </button>
-        </div>
+        <EmptyState
+          icon={CalendarPlus}
+          title="No events yet"
+          description="Create your first event to start selling tickets and engaging with your fans."
+          ctaLabel="Create your first event"
+          onCta={onNewEvent}
+        />
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {eventsList.map((event) => (
