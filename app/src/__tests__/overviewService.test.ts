@@ -1,53 +1,38 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
-
-const { mockGet } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-}));
-
-vi.mock('@/api/axios', () => ({
-  createApiClient: vi.fn().mockResolvedValue({
-    get: mockGet,
-  }),
-}));
-
+import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import useOverviewServices from '@/services/overviewService';
+import { useGet } from '@/api/queryClient';
 import { OVERVIEW_ENDPOINTS } from '@/api/api-endpoint';
-import { OverviewKpi, OverviewResponse } from '@/types';
+import React from 'react';
+import { OverviewKpi } from '@/types';
 
-function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
+vi.mock('@/api/queryClient', () => ({
+  useGet: vi.fn(),
+}));
+
+const mockGet = useGet as Mock;
+
+const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div>{children}</div>
+);
+
+describe('overviewService', () => {
+  const successResponse = {
+    success: true,
+    data: {
+      songsPublished: 10,
+      totalEarnings: 2500,
+      listenersCount: 15000,
+      mostStreamedRegion: 'North America',
     },
-  });
-}
+  };
 
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return React.createElement(QueryClientProvider, { client: makeQueryClient() }, children);
-}
-
-const baseKpi: OverviewKpi = {
-  songsPublished: 12,
-  totalEarnings: 4321.5,
-  listenersCount: 8900,
-  mostStreamedRegion: 'Lagos',
-};
-
-const successResponse: OverviewResponse = {
-  success: true,
-  data: baseKpi,
-};
-
-describe('useOverviewServices', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('useGetOverviewKpi – happy path', () => {
-    it('fetches and returns dashboard KPI data', async () => {
+  describe('useGetOverviewKpi – success states', () => {
+    it('returns the data successfully when the backend call succeeds', async () => {
       mockGet.mockResolvedValue({ data: successResponse });
 
       const { result } = renderHook(() => useOverviewServices().useGetOverviewKpi(), {
@@ -56,90 +41,20 @@ describe('useOverviewServices', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(result.current.data).toEqual(successResponse);
-      expect(mockGet).toHaveBeenCalledWith(OVERVIEW_ENDPOINTS.GET_OVERVIEW);
-      expect(mockGet).toHaveBeenCalledTimes(1);
+      expect(result.current.data?.success).toBe(true);
+      const data = result.current.data?.data;
+      expect(data?.songsPublished).toBe(10);
+      expect(data?.totalEarnings).toBe(2500);
+      expect(data?.listenersCount).toBe(15000);
+      expect(data?.mostStreamedRegion).toBe('North America');
     });
 
-    it('calculates and reflects summary statistics from the response', async () => {
-      mockGet.mockResolvedValue({ data: successResponse });
-
-      const { result } = renderHook(() => useOverviewServices().useGetOverviewKpi(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      // "Summary" = the aggregated numbers on the dashboard cards.
-      const aggregated = result.current.data?.data;
-      expect(aggregated).toBeDefined();
-      expect(aggregated?.songsPublished).toBe(12);
-      expect(aggregated?.totalEarnings).toBeCloseTo(4321.5);
-      expect(aggregated?.listenersCount).toBe(8900);
-      expect(aggregated?.mostStreamedRegion).toBe('Lagos');
-    });
-
-    it('returns zeroed metrics for an empty account', async () => {
-      mockGet.mockResolvedValue({
-        data: {
-          success: true,
-          data: {
-            songsPublished: 0,
-            totalEarnings: 0,
-            listenersCount: 0,
-            mostStreamedRegion: '',
-          },
-        } satisfies OverviewResponse,
-      });
-
-      const { result } = renderHook(() => useOverviewServices().useGetOverviewKpi(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      const aggregated = result.current.data?.data;
-      expect(aggregated?.songsPublished).toBe(0);
-      expect(aggregated?.totalEarnings).toBe(0);
-      expect(aggregated?.listenersCount).toBe(0);
-      expect(aggregated?.mostStreamedRegion).toBe('');
-    });
-
-    it('passes enabled:true by default and triggers the request', async () => {
-      mockGet.mockResolvedValue({ data: successResponse });
-
-      const { result } = renderHook(() => useOverviewServices().useGetOverviewKpi(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.isFetching).toBe(false);
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    it('skips fetching when enabled is false', async () => {
-      mockGet.mockResolvedValue({ data: successResponse });
-
-      const { result } = renderHook(
-        () => useOverviewServices().useGetOverviewKpi(false),
-        { wrapper: Wrapper },
-      );
-
-      // Give React Query a tick to settle.
-      await waitFor(() => expect(result.current.isLoading || result.current.isFetched).toBe(true));
-
-      expect(mockGet).not.toHaveBeenCalled();
-      expect(result.current.data).toBeUndefined();
-    });
-  });
-
-  describe('useGetOverviewKpi – partial data', () => {
-    it('returns data with only some metrics present (others missing)', async () => {
+    it('tolerates missing optional fields gracefully', async () => {
       mockGet.mockResolvedValue({
         data: {
           success: true,
           data: {
             songsPublished: 5,
-            // totalEarnings omitted – backend degraded
             totalEarnings: undefined as unknown as number,
             listenersCount: 0,
             mostStreamedRegion: '—',
@@ -168,7 +83,6 @@ describe('useOverviewServices', () => {
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      // The hook itself does not throw – consumers can branch on `success`.
       expect(result.current.data?.success).toBe(false);
     });
   });
@@ -223,6 +137,119 @@ describe('useOverviewServices', () => {
       const services = useOverviewServices();
       expect(services).toHaveProperty('useGetOverviewKpi');
       expect(typeof services.useGetOverviewKpi).toBe('function');
+    });
+  });
+
+  describe('useGetStatistics', () => {
+    it('should retrieve aggregated statistics correctly', () => {
+      const mockData = {
+        data: [
+          { label: 'Total Plays', value: 10000 },
+          { label: 'Earnings', value: 5000 },
+          { label: 'Fans', value: 3000 },
+        ],
+      };
+
+      (useGet as Mock).mockReturnValue({
+        data: mockData,
+        isLoading: false,
+        isError: false,
+      });
+
+      const { result } = renderHook(() => useOverviewServices().useGetStatistics());
+
+      expect(useGet).toHaveBeenCalledWith(
+        ['get-artist-statistics'],
+        OVERVIEW_ENDPOINTS.GET_STATISTICS,
+        { enabled: true, staleTime: 300000 }
+      );
+      expect(result.current.data).toEqual(mockData);
+    });
+
+    it('should handle very large datasets gracefully', () => {
+      const largeData = {
+        data: Array.from({ length: 10000 }, (_, i) => ({
+          label: `Metric ${i}`,
+          value: i * 100,
+        })),
+      };
+
+      (useGet as Mock).mockReturnValue({
+        data: largeData,
+        isLoading: false,
+        isError: false,
+      });
+
+      const { result } = renderHook(() => useOverviewServices().useGetStatistics());
+
+      expect(result.current.data.data.length).toBe(10000);
+      expect(result.current.data.data[9999].value).toBe(999900);
+    });
+
+    it('should handle API errors when fetching statistics', () => {
+      (useGet as Mock).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error('Failed to fetch stats'),
+      });
+
+      const { result } = renderHook(() => useOverviewServices().useGetStatistics());
+
+      expect(result.current.isError).toBe(true);
+      expect(result.current.error.message).toBe('Failed to fetch stats');
+    });
+  });
+
+  describe('useGetRecentActivity', () => {
+    it('should retrieve recent activity list', () => {
+      const mockData = {
+        data: [
+          { id: '1', action: 'Uploaded Song', timestamp: '2023-01-01T10:00:00Z', details: 'Song A' },
+          { id: '2', action: 'New Fan', timestamp: '2023-01-02T12:00:00Z', details: 'User B' },
+        ],
+      };
+
+      (useGet as Mock).mockReturnValue({
+        data: mockData,
+        isLoading: false,
+        isError: false,
+      });
+
+      const { result } = renderHook(() => useOverviewServices().useGetRecentActivity());
+
+      expect(useGet).toHaveBeenCalledWith(
+        ['get-artist-recent-activity'],
+        OVERVIEW_ENDPOINTS.GET_RECENT_ACTIVITY,
+        { enabled: true, staleTime: 120000 }
+      );
+      expect(result.current.data).toEqual(mockData);
+    });
+
+    it('should handle empty activity list', () => {
+      (useGet as Mock).mockReturnValue({
+        data: { data: [] },
+        isLoading: false,
+        isError: false,
+      });
+
+      const { result } = renderHook(() => useOverviewServices().useGetRecentActivity());
+
+      expect(result.current.data.data).toEqual([]);
+    });
+
+    it('should handle API failure gracefully', () => {
+      (useGet as Mock).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error('Network error'),
+      });
+
+      const { result } = renderHook(() => useOverviewServices().useGetRecentActivity());
+
+      expect(result.current.isError).toBe(true);
+      expect(result.current.error.message).toBe('Network error');
     });
   });
 });

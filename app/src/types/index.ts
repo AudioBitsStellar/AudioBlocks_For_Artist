@@ -109,3 +109,25 @@ export interface AlbumsResponse {
   success: boolean;
   data: Album[];
 }
+
+export interface Statistic {
+  label: string;
+  value: number;
+}
+
+export interface StatisticsResponse {
+  success: boolean;
+  data: Statistic[];
+}
+
+export interface RecentActivity {
+  id: string;
+  action: string;
+  timestamp: string;
+  details?: string;
+}
+
+export interface RecentActivityResponse {
+  success: boolean;
+  data: RecentActivity[];
+}

@@ -1,6 +1,6 @@
 import { OVERVIEW_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
-import { OverviewResponse } from "@/types";
+import { OverviewResponse, StatisticsResponse, RecentActivityResponse } from "@/types";
 
 /**
  * Query key for the artist overview KPI cache (issue #121).
@@ -38,7 +38,29 @@ const useOverviewServices = () => {
     );
   };
 
-  return { useGetOverviewKpi };
+  const useGetStatistics = (enabled: boolean = true) => {
+    return useGet<StatisticsResponse>(
+      ["get-artist-statistics"],
+      OVERVIEW_ENDPOINTS.GET_STATISTICS,
+      {
+        enabled,
+        staleTime: 1000 * 60 * 5,
+      }
+    );
+  };
+
+  const useGetRecentActivity = (enabled: boolean = true) => {
+    return useGet<RecentActivityResponse>(
+      ["get-artist-recent-activity"],
+      OVERVIEW_ENDPOINTS.GET_RECENT_ACTIVITY,
+      {
+        enabled,
+        staleTime: 1000 * 60 * 2,
+      }
+    );
+  };
+
+  return { useGetOverviewKpi, useGetStatistics, useGetRecentActivity };
 };
 
 export default useOverviewServices;

@@ -40,6 +40,8 @@ export const EARNINGS_ENDPOINTS = {
 
 export const OVERVIEW_ENDPOINTS = {
   GET_OVERVIEW: "/artist/overview",
+  GET_STATISTICS: "/artist/statistics",
+  GET_RECENT_ACTIVITY: "/artist/recent-activity",
 };
 
 export const ALBUM_ENDPOINTS = {
