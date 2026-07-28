@@ -11,6 +11,7 @@ import useMerchService, { MerchItem, CreateMerchPayload } from '@/services/merch
 import { useRole } from '@/hooks/useRole';
 import ConfirmationDialog from './shared/ConfirmationDialog';
 import EmptyState from './shared/EmptyState';
+import { sanitize } from '@/utils/sanitize';
 
 interface MerchFormProps {
   initial?: Partial<MerchItem>;
@@ -64,7 +65,7 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
   const handleSave = () => {
     if (!form.title.trim() || !form.price.trim()) return;
     clearSavedData();
-    onSave(form);
+    onSave({ ...form, title: sanitize(form.title), detail: sanitize(form.detail) });
   };
 
   return (
@@ -259,8 +260,8 @@ export default function MerchesContent() {
                     />
                   </div>
                   <div className="space-y-3 px-6 py-5">
-                    <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-                    <p className="text-xs font-medium uppercase tracking-wide text-[#A3A3A3]">{item.detail}</p>
+                    <h3 className="text-lg font-semibold text-white">{sanitize(item.title)}</h3>
+                    <p className="text-xs font-medium uppercase tracking-wide text-[#A3A3A3]">{sanitize(item.detail)}</p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-[#C9C9C9]">
                       <span>{item.date}</span>
                       <span>{item.time}</span>

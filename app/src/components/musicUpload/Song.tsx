@@ -14,6 +14,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import MintSongButton from '@/components/common/wallet/MintSongButton';
 import { analytics } from '@/lib/analytics';
 import { isRetryableError, getErrorMessage } from '@/utils/errorRecovery';
+import { sanitize } from '@/utils/sanitize';
 
 const ALLOWED_AUDIO_TYPES = new Set([
     'audio/mpeg',
@@ -308,10 +309,10 @@ const Song = () => {
             const finalizeResult: any = await finalizeUpload.mutateAsync({
                 fileId: fileId,
                 totalChunks: totalChunks,
-                title: data.title,
-                description: data.description,
+                title: sanitize(data.title),
+                description: sanitize(data.description),
                 genre: data.genre,
-                composers: data.composer,
+                composers: sanitize(data.composer),
                 coverArtPath: coverArtPath,
                 // marketPrice: data.marketPrice,
             });

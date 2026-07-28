@@ -107,6 +107,12 @@ const useOnchainServices = () => {
   const handleSuccess = useHandleSuccess();
   const handleError = useHandleError();
 
+  /**
+   * Persists the artist's Stellar public key on their account record.
+   *
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with a `ConnectWalletRequest`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
   const useConnectWallet = () =>
     usePost<ApiEnvelope<ConnectWalletResponse>, ConnectWalletRequest>(
       ARTIST_ONCHAIN_ENDPOINTS.CONNECT_WALLET,
@@ -115,6 +121,12 @@ const useOnchainServices = () => {
       }
     );
 
+  /**
+   * Builds the `register_artist` Soroban transaction XDR for the artist to sign with Freighter.
+   *
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with a `PrepareArtistSetupRequest`; resolves to a `PreparedTransaction`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
   const usePrepareArtistSetup = () =>
     usePost<ApiEnvelope<PreparedTransaction>, PrepareArtistSetupRequest>(
       ARTIST_ONCHAIN_ENDPOINTS.PREPARE_SETUP,
@@ -123,6 +135,12 @@ const useOnchainServices = () => {
       }
     );
 
+  /**
+   * Relays the Freighter-signed `register_artist` XDR to the Stellar network.
+   *
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with a `SubmitArtistSetupRequest` (the signed XDR); resolves to `{ txHash, artistId, tokenId }`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
   const useSubmitArtistSetup = () =>
     usePost<ApiEnvelope<SubmitArtistSetupResponse>, SubmitArtistSetupRequest>(
       ARTIST_ONCHAIN_ENDPOINTS.SUBMIT_SETUP,
@@ -132,6 +150,14 @@ const useOnchainServices = () => {
       }
     );
 
+  /**
+   * Builds the `mint_song` Soroban transaction XDR for the artist to sign with Freighter.
+   * Requires the song to have finished transcoding/IPFS pinning first.
+   *
+   * @param songId - The id of the song to mint.
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with a `PrepareSongMintRequest`; resolves to a `PreparedTransaction`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
   const usePrepareSongMint = (songId: string) =>
     usePost<ApiEnvelope<PreparedTransaction>, PrepareSongMintRequest>(
       SONG_ONCHAIN_ENDPOINTS.prepareMint(songId),
@@ -140,6 +166,13 @@ const useOnchainServices = () => {
       }
     );
 
+  /**
+   * Relays the Freighter-signed `mint_song` XDR to the Stellar network.
+   *
+   * @param songId - The id of the song being minted.
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with a `SubmitSongMintRequest` (the signed XDR); resolves to `{ txHash, songId, tokenId }`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
   const useSubmitSongMint = (songId: string) =>
     usePost<ApiEnvelope<SubmitSongMintResponse>, SubmitSongMintRequest>(
       SONG_ONCHAIN_ENDPOINTS.submitMint(songId),
