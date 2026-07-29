@@ -7,6 +7,46 @@ on:
     branches: [main]
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm install
+
+      - name: Lint
+        working-directory: app
+        run: npm run lint --silent
+
+      - name: Type check
+        working-directory: app
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Run tests
+        working-directory: app
+        run: npm run test --silent
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
   unit-and-accessibility:
     name: Unit tests + Accessibility audit
     runs-on: ubuntu-latest
