@@ -34,64 +34,67 @@ export default function Sidebar({
   const pathname = usePathname();
   const navItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
-  // Prevent body scroll while mobile drawer is open
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
+    if (!open) {
       document.body.style.overflow = '';
+      return;
     }
-    return () => { document.body.style.overflow = ''; };
-  }, [open]);
 
-  // Arrow key navigation between sidebar links
-  const handleNavKeyDown = (e: React.KeyboardEvent<HTMLElement>, index: number) => {
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [open, onClose]);
+
+  const handleNavKeyDown = (event: React.KeyboardEvent<HTMLElement>, index: number) => {
     const total = navItems.length;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
       const next = (index + 1) % total;
       navItemRefs.current[next]?.focus();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const prev = (index - 1 + total) % total;
-      navItemRefs.current[prev]?.focus();
-    } else if (e.key === 'Home') {
-      e.preventDefault();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      const previous = (index - 1 + total) % total;
+      navItemRefs.current[previous]?.focus();
+    } else if (event.key === 'Home') {
+      event.preventDefault();
       navItemRefs.current[0]?.focus();
-    } else if (e.key === 'End') {
-      e.preventDefault();
+    } else if (event.key === 'End') {
+      event.preventDefault();
       navItemRefs.current[total - 1]?.focus();
     }
   };
 
   return (
     <>
-      {/* Mobile Dark Overlay */}
-      {open && (
-        <div
-          onClick={onClose}
-          aria-hidden="true"
-          className="fixed inset-0 bg-black/60 z-40 md:hidden"
-        />
-      )}
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        className={`fixed inset-0 z-40 bg-black/60 transition-opacity duration-300 md:hidden ${
+          open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      />
 
-      {/* Sidebar Container */}
       <aside
+        id="sidebar-nav"
         role={open ? 'dialog' : 'navigation'}
         aria-modal={open ? true : undefined}
         aria-label="Sidebar navigation"
-        className={`
-          fixed top-0 left-0 h-full w-64 bg-surface dark:bg-background flex flex-col
-          border-r border-transparent dark:border-border-subtle
-          transform transition-transform duration-300 ease-in-out
-          z-50
-
-          ${open ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0
-        `}
+        className={`fixed left-0 top-0 z-50 flex h-full w-64 transform flex-col border-r border-transparent bg-surface transition-transform duration-300 ease-in-out dark:border-border-subtle dark:bg-background md:translate-x-0 ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
-        {/* Mobile Header */}
-        <div className="p-6 flex items-center justify-between md:hidden">
+        <div className="flex items-center justify-between p-6 md:hidden">
           <Image
             src="/logo.png"
             alt="AudioBlocks Logo"
@@ -99,7 +102,8 @@ export default function Sidebar({
             height={50}
           />
           <button
-            className="cursor-pointer text-white hover:text-pink-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black rounded-lg p-1"
+            type="button"
+            className="cursor-pointer rounded-lg p-2 text-white hover:text-pink-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             onClick={onClose}
             aria-label="Close navigation menu"
           >
@@ -107,11 +111,10 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Desktop Logo */}
-        <div className="hidden md:flex p-9">
+        <div className="hidden p-9 md:flex">
           <Link
             href="/"
-            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black rounded-lg"
+            className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             aria-label="AudioBlocks Home"
           >
             <Image
@@ -123,29 +126,26 @@ export default function Sidebar({
           </Link>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1" aria-label="Main navigation" role="navigation">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-4" aria-label="Main navigation">
           {navItems.map((item, index) => {
             const Icon = item.icon;
-            const isActive =
-              pathname === item.href ||
-              pathname.startsWith(item.href + '/');
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             const unread = item.href === '/dashboard/messages' ? getTotalUnreadCount() : 0;
 
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                ref={(el) => { navItemRefs.current[index] = el; }}
+                ref={(element) => {
+                  navItemRefs.current[index] = element;
+                }}
                 onClick={onClose}
-                onKeyDown={(e) => handleNavKeyDown(e, index)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
-                  focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black
-                  ${
-                    isActive
-                      ? 'text-pink-500 font-semibold bg-pink-500/10'
-                      : 'text-gray-300 dark:text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
+                onKeyDown={(event) => handleNavKeyDown(event, index)}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black ${
+                  isActive
+                    ? 'bg-pink-500/10 font-semibold text-pink-500'
+                    : 'text-gray-300 hover:bg-white/5 hover:text-white dark:text-gray-400'
+                }`}
                 aria-current={isActive ? 'page' : undefined}
               >
                 <Icon size={20} aria-hidden="true" />
@@ -153,7 +153,7 @@ export default function Sidebar({
                   {item.name}
                 </span>
                 {unread > 0 && (
-                  <span className="h-5 min-w-5 rounded-full bg-[#D2045B] flex items-center justify-center text-[10px] font-bold text-white px-1">
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D2045B] px-1 text-[10px] font-bold text-white">
                     {unread}
                   </span>
                 )}
@@ -162,17 +162,13 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* Legal */}
-        <div className="p-4" role="navigation" aria-label="Legal links">
-          <h3 className="text-gray-400 dark:text-gray-500 text-sm font-semibold mb-2">
-            Legal
-          </h3>
+        <div className="space-y-2 p-4" aria-label="Legal links">
           {legalLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
               onClick={onClose}
-              className="block text-gray-400 dark:text-gray-500 text-sm hover:text-white py-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              className="block rounded-lg px-4 py-1 text-xs text-gray-400 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
             >
               {link.name}
             </Link>
