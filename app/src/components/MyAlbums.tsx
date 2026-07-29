@@ -101,6 +101,9 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
                 <SafeImage
                   src={album.coverArtUrl ?? ''}
                   alt={album.title}
+                  loading="lazy"
+                  width={192}
+                  height={192}
                   className="w-full h-full object-cover"
                   srcSet={album.coverArtUrl ? `${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=200&h=200')} 200w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=400&h=400')} 400w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=800&h=800')} 800w` : undefined}
                   sizes="(max-width: 640px) 120px, (max-width: 1024px) 192px, 192px"
