@@ -4,7 +4,7 @@ import { Music, Calendar, Tag, Settings as SettingsIcon, Star, Home, X, BarChart
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { getTotalUnreadCount } from '@/services/messageService';
 
 const navItems = [
@@ -32,6 +32,7 @@ export default function Sidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const navItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
   // Prevent body scroll while mobile drawer is open
   useEffect(() => {
@@ -42,6 +43,26 @@ export default function Sidebar({
     }
     return () => { document.body.style.overflow = ''; };
   }, [open]);
+
+  // Arrow key navigation between sidebar links
+  const handleNavKeyDown = (e: React.KeyboardEvent<HTMLElement>, index: number) => {
+    const total = navItems.length;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = (index + 1) % total;
+      navItemRefs.current[next]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = (index - 1 + total) % total;
+      navItemRefs.current[prev]?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      navItemRefs.current[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      navItemRefs.current[total - 1]?.focus();
+    }
+  };
 
   return (
     <>
@@ -54,11 +75,11 @@ export default function Sidebar({
         />
       )}
 
-      {/* Sidebar */}
-      <div
-        role={open ? 'dialog' : undefined}
+      {/* Sidebar Container */}
+      <aside
+        role={open ? 'dialog' : 'navigation'}
         aria-modal={open ? true : undefined}
-        aria-label="Navigation"
+        aria-label="Sidebar navigation"
         className={`
           fixed top-0 left-0 h-full w-64 bg-surface dark:bg-background flex flex-col
           border-r border-transparent dark:border-border-subtle
@@ -77,14 +98,22 @@ export default function Sidebar({
             width={90}
             height={50}
           />
-          <button className='cursor-pointer' onClick={onClose} aria-label="Close navigation menu">
+          <button
+            className="cursor-pointer text-white hover:text-pink-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black rounded-lg p-1"
+            onClick={onClose}
+            aria-label="Close navigation menu"
+          >
             <X className="text-white" aria-hidden="true" />
           </button>
         </div>
 
         {/* Desktop Logo */}
         <div className="hidden md:flex p-9">
-          <Link href="/">
+          <Link
+            href="/"
+            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black rounded-lg"
+            aria-label="AudioBlocks Home"
+          >
             <Image
               src="/logo.png"
               alt="AudioBlocks Logo"
@@ -95,8 +124,8 @@ export default function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1" aria-label="Main navigation">
-          {navItems.map((item) => {
+        <nav className="flex-1 p-4 space-y-1" aria-label="Main navigation" role="navigation">
+          {navItems.map((item, index) => {
             const Icon = item.icon;
             const isActive =
               pathname === item.href ||
@@ -107,12 +136,15 @@ export default function Sidebar({
               <Link
                 key={item.name}
                 href={item.href}
+                ref={(el) => { navItemRefs.current[index] = el; }}
                 onClick={onClose}
+                onKeyDown={(e) => handleNavKeyDown(e, index)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black
                   ${
                     isActive
-                      ? 'text-pink-500'
-                      : 'text-gray-300 dark:text-gray-400 hover:text-white'
+                      ? 'text-pink-500 font-semibold bg-pink-500/10'
+                      : 'text-gray-300 dark:text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 aria-current={isActive ? 'page' : undefined}
               >
@@ -131,7 +163,7 @@ export default function Sidebar({
         </nav>
 
         {/* Legal */}
-        <div className="p-4">
+        <div className="p-4" role="navigation" aria-label="Legal links">
           <h3 className="text-gray-400 dark:text-gray-500 text-sm font-semibold mb-2">
             Legal
           </h3>
@@ -140,13 +172,13 @@ export default function Sidebar({
               key={link.name}
               href={link.href}
               onClick={onClose}
-              className="block text-gray-400 dark:text-gray-500 text-sm hover:text-white py-1"
+              className="block text-gray-400 dark:text-gray-500 text-sm hover:text-white py-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               {link.name}
             </Link>
           ))}
         </div>
-      </div>
+      </aside>
     </>
   );
 }
