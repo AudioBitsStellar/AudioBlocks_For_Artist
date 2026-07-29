@@ -1,6 +1,7 @@
-import axios, { AxiosError, AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
 import { getCSRFToken, getCSRFTokenHeader, refreshCSRFToken } from "@/utils/csrfToken";
+import { isRetryableError, calculateBackoff } from "@/utils/retry";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -56,7 +57,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
 
   // Read the token fresh on every request, not just at client creation time,
   // so a login that happens after this module loads is picked up.
-  apiClient.interceptors.request.use((config) => {
+  apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -73,7 +74,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
   });
 
   apiClient.interceptors.response.use(
-    (response) => {
+    (response: any) => {
       // Handle CSRF token refresh from server
       const newCsrfToken = response.headers["x-csrf-token"];
       if (newCsrfToken && typeof newCsrfToken === "string") {
@@ -81,13 +82,15 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       }
       return response;
     },
-    (error: AxiosError) => {
+    async (error: AxiosError) => {
+      const config = error.config as InternalAxiosRequestConfig & { _retry?: number; _retryCount?: number };
+
       // Handle CSRF token validation errors
       if (error.response?.status === 403 && typeof window !== "undefined") {
         const errorData = error.response.data as Record<string, unknown>;
         if (
           errorData?.code === "CSRF_TOKEN_INVALID" ||
-          errorData?.message?.includes("CSRF")
+          (typeof errorData?.message === "string" && errorData.message.includes("CSRF"))
         ) {
           refreshCSRFToken();
           return Promise.reject(extractApiError(error));
@@ -101,6 +104,33 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
           window.location.href = "/login";
         }
       }
+
+      // Retry logic for transient failures
+      if (isRetryableError(error) && config && !config._retry) {
+        config._retry = true;
+        const maxRetries = 3;
+        const retryCount = config._retryCount || 0;
+
+        if (retryCount < maxRetries) {
+          config._retryCount = retryCount + 1;
+          const delay = calculateBackoff(retryCount + 1, 1000);
+
+          // Show toast notification for retry
+          if (typeof window !== "undefined") {
+            const { toast } = await import("sonner");
+            toast.info(`Retrying request... (Attempt ${retryCount + 1}/${maxRetries})`, {
+              duration: delay,
+            });
+          }
+
+          // Wait for backoff delay
+          await new Promise((resolve) => setTimeout(resolve, delay));
+
+          // Retry the request
+          return apiClient(config);
+        }
+      }
+
       return Promise.reject(extractApiError(error));
     }
   );
