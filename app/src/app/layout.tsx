@@ -102,6 +102,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <a
+          href="#main-content"
+          className="absolute left-4 top-4 z-[100] -translate-y-[200%] rounded-md bg-white px-4 py-2 font-semibold text-black shadow-lg transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-black"
+        >
+          Skip to main content
+        </a>
         <Provider>
           <OfflineIndicator />
           {children}
