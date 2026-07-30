@@ -19,8 +19,20 @@ export interface EventItem {
   image: string;
 }
 
+export interface EngagementTrendPoint {
+  date: string;
+  score: number;
+  attendees: number;
+}
+
+export interface EventEngagement {
+  metrics: EventMetric[];
+  trend: EngagementTrendPoint[];
+}
+
 export interface EventListResponse {
   metrics: EventMetric[];
+  engagement: EventEngagement;
   items: EventItem[];
 }
 
