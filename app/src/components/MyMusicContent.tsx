@@ -1,25 +1,27 @@
 'use client';
 
-import { Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, Play, MoreVertical, Clock, Heart, MessageCircle, FolderDown, X, Upload, Music, Trash2, RotateCw, Plus, FolderSearch } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Download,
+  Filter,
+  FolderSearch,
+  GripVertical,
+  Heart,
+  MessageCircle,
+  MoreVertical,
+  Play,
+  Search,
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { MUSIC_GENRES } from './shared/music_genre';
-import { MusicFormValues } from '@/types';
-import { useForm } from 'react-hook-form';
 import ConfirmationDialog from './shared/ConfirmationDialog';
 import EmptyState from './shared/EmptyState';
 
-function getImageSrcSet(baseUrl: string): string {
-  const sizes = [200, 400, 800];
-  return sizes
-    .map((size) => {
-      const url = new URL(baseUrl);
-      url.searchParams.set('w', String(size));
-      url.searchParams.set('h', String(size));
-      return `${url.toString()} ${size}w`;
-    })
-    .join(', ');
-}
+const SONG_ORDER_STORAGE_KEY = 'my-music-track-order';
 
 interface Album {
   id: number;
@@ -46,17 +48,64 @@ interface MyMusicContentProps {
   onAlbumSelect?: (album: Album | null) => void;
 }
 
+const albums: Album[] = [
+  {
+    id: 1,
+    title: 'Echoes of the Soul',
+    artist: 'Misty Brown',
+    type: 'New Album',
+    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 2,
+    title: 'Midnight Vibes',
+    artist: 'Alex Johnson',
+    type: 'EP',
+    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 3,
+    title: 'Electric Dreams',
+    artist: 'Sarah Williams',
+    type: 'Single',
+    image: 'https://images.unsplash.com/photo-1516280440619-37996c4e5b4e?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 4,
+    title: 'Serenity Falls',
+    artist: 'Marcus Chen',
+    type: 'New Album',
+    image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafbd?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 5,
+    title: 'Cosmic Journey',
+    artist: 'Elena Martinez',
+    type: 'Remix',
+    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+];
 
+const initialSongs: Song[] = [
+  { id: 1, title: 'Golden Skies', albumName: 'Echoes of the Soul', artist: 'Misty Brown', duration: '3:42', value: '$12.50', likes: 124, comments: 18, downloads: 86, thumbnail: albums[0].image },
+  { id: 2, title: 'Neon Hearts', albumName: 'Midnight Vibes', artist: 'Alex Johnson', duration: '4:08', value: '$10.00', likes: 98, comments: 12, downloads: 64, thumbnail: albums[1].image },
+  { id: 3, title: 'Electric Dreams', albumName: 'Electric Dreams', artist: 'Sarah Williams', duration: '3:25', value: '$8.75', likes: 156, comments: 24, downloads: 102, thumbnail: albums[2].image },
+  { id: 4, title: 'Still Waters', albumName: 'Serenity Falls', artist: 'Marcus Chen', duration: '5:12', value: '$15.00', likes: 76, comments: 9, downloads: 42, thumbnail: albums[3].image },
+  { id: 5, title: 'Beyond the Stars', albumName: 'Cosmic Journey', artist: 'Elena Martinez', duration: '4:36', value: '$11.25', likes: 211, comments: 31, downloads: 148, thumbnail: albums[4].image },
+  { id: 6, title: 'Afterglow', albumName: 'Echoes of the Soul', artist: 'Misty Brown', duration: '3:58', value: '$9.50', likes: 87, comments: 11, downloads: 59, thumbnail: albums[0].image },
+  { id: 7, title: 'City Lights', albumName: 'Midnight Vibes', artist: 'Alex Johnson', duration: '3:16', value: '$7.50', likes: 133, comments: 16, downloads: 91, thumbnail: albums[1].image },
+  { id: 8, title: 'Open Skies', albumName: 'Serenity Falls', artist: 'Marcus Chen', duration: '4:44', value: '$13.00', likes: 65, comments: 7, downloads: 38, thumbnail: albums[3].image },
+];
 
 function AlbumSkeletonRow() {
   return (
     <div className="flex gap-6 overflow-hidden pl-12 pr-12" aria-hidden="true" data-testid="my-music-skeleton">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="shrink-0 w-64">
-          <div className="w-64 h-64 rounded-lg bg-gray-800 animate-pulse mb-3" />
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div key={index} className="w-64 shrink-0">
+          <div className="mb-3 h-64 w-64 animate-pulse rounded-lg bg-gray-800" />
           <div className="flex flex-col items-center gap-2">
-            <div className="h-4 w-32 rounded bg-gray-800 animate-pulse" />
-            <div className="h-3 w-20 rounded bg-gray-800 animate-pulse" />
+            <div className="h-4 w-32 animate-pulse rounded bg-gray-800" />
+            <div className="h-3 w-20 animate-pulse rounded bg-gray-800" />
           </div>
         </div>
       ))}
@@ -67,408 +116,160 @@ function AlbumSkeletonRow() {
 export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [songs, setSongs] = useState<Song[]>([]);
+  const [songs, setSongs] = useState<Song[]>(initialSongs);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [draggedSongId, setDraggedSongId] = useState<number | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<number | null>(null);
+  const [reorderMessage, setReorderMessage] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; songId: number | null }>({
     isOpen: false,
-    songId: null
+    songId: null,
   });
 
-  // Simulates the initial library fetch. Once this is wired to a real
-  // backend endpoint, replace with that request's own loading state.
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 600);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleDeleteConfirm = () => {
-    if (deleteConfirmation.songId !== null) {
-      setSongs(prev => prev.filter(s => s.id !== deleteConfirmation.songId));
+  useEffect(() => {
+    try {
+      const savedOrder = window.localStorage.getItem(SONG_ORDER_STORAGE_KEY);
+      if (!savedOrder) return;
+      const order = JSON.parse(savedOrder) as number[];
+      const positions = new Map(order.map((id, index) => [id, index]));
+      setSongs((current) => [...current].sort((a, b) => (positions.get(a.id) ?? current.length) - (positions.get(b.id) ?? current.length)));
+    } catch {
+      window.localStorage.removeItem(SONG_ORDER_STORAGE_KEY);
     }
+  }, []);
+
+  const persistSongs = (nextSongs: Song[]) => {
+    setSongs(nextSongs);
+    window.localStorage.setItem(SONG_ORDER_STORAGE_KEY, JSON.stringify(nextSongs.map((song) => song.id)));
   };
 
+  const moveSong = (songId: number, targetId: number) => {
+    if (songId === targetId) return;
+    const fromIndex = songs.findIndex((song) => song.id === songId);
+    const toIndex = songs.findIndex((song) => song.id === targetId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const nextSongs = [...songs];
+    const [movedSong] = nextSongs.splice(fromIndex, 1);
+    nextSongs.splice(toIndex, 0, movedSong);
+    persistSongs(nextSongs);
+    setReorderMessage(`${movedSong.title} moved to position ${toIndex + 1}`);
+  };
 
-  const albumTitles = [
-    'Echoes of the Soul',
-    'Midnight Vibes',
-    'Electric Dreams',
-    'Serenity Falls',
-    'Cosmic Journey',
-    'Urban Legends',
-    'Golden Hour',
-    'Night Drive',
-    'Ocean Waves',
-    'Mountain Peak',
-    'Desert Storm',
-    'City Lights',
-    'Rainy Days',
-    'Summer Breeze',
-    'Winter Blues',
-  ];
+  const moveSongBy = (songId: number, offset: number) => {
+    const index = songs.findIndex((song) => song.id === songId);
+    const targetIndex = index + offset;
+    if (index < 0 || targetIndex < 0 || targetIndex >= songs.length) return;
+    moveSong(songId, songs[targetIndex].id);
+  };
 
-  const artists = [
-    'Misty Brown',
-    'Alex Johnson',
-    'Sarah Williams',
-    'Marcus Chen',
-    'Elena Martinez',
-    'David Thompson',
-    'Lisa Anderson',
-    'Ryan Cooper',
-    'Amanda Lee',
-    'Chris Parker',
-  ];
-
-  const albumTypes = [
-    'New Album',
-    'EP',
-    'Single',
-    'New Album',
-    'Remix',
-    'Live',
-    'New Album',
-    'EP',
-    'Single',
-    'New Album',
-  ];
-
-  const imageIds = [
-    '1493225457124-a3eb161ffa5f',
-    '1511671782779-c97d3d27a1d4',
-    '1516280440619-37996c4e5b4e',
-    '1470229722913-7c0e2dbbafbd',
-    '1493225457124-a3eb161ffa5f',
-    '1511671782779-c97d3d27a1d4',
-    '1516280440619-37996c4e5b4e',
-    '1470229722913-7c0e2dbbafbd',
-    '1493225457124-a3eb161ffa5f',
-    '1511671782779-c97d3d27a1d4',
-    '1516280440619-37996c4e5b4e',
-    '1470229722913-7c0e2dbbafbd',
-    '1493225457124-a3eb161ffa5f',
-    '1511671782779-c97d3d27a1d4',
-  ];
-
-  // Create 15 albums for scrolling
-  const albums = Array.from({ length: 15 }, (_, i) => {
-    const imageId = imageIds[i % imageIds.length];
-    return {
-      id: i + 1,
-      title: albumTitles[i % albumTitles.length],
-      artist: artists[i % artists.length],
-      type: albumTypes[i % albumTypes.length],
-      image: `https://images.unsplash.com/photo-${imageId}?w=400&h=400&fit=crop&auto=format&q=80`,
-    };
-  });
-
-  const filteredAlbums = albums.filter(album => {
-    const matchesSearch = album.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          album.artist.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterType === 'all' || album.type.toLowerCase() === filterType.toLowerCase();
+  const filteredSongs = useMemo(() => songs.filter((song) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = song.title.toLowerCase().includes(query) || song.albumName.toLowerCase().includes(query) || song.artist.toLowerCase().includes(query);
+    const matchesFilter = filterType === 'all' || song.albumName === filterType;
     return matchesSearch && matchesFilter;
-  });
+  }), [songs, searchQuery, filterType]);
 
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-    }
-  };
-
-  // Generate random song data for an album
-  const generateSongs = (album: Album): Song[] => {
-    const songTitles = [
-      'Relax and Unwind', 'Midnight Dreams', 'Electric Pulse', 'Silent Echo', 'Neon Nights',
-      'Crystal Clear', 'Thunder Road', 'Starlight', 'Ocean Breeze', 'City Lights',
-      'Desert Wind', 'Mountain Peak', 'Rainy Days', 'Summer Vibes', 'Winter Storm'
-    ];
-
-    const numSongs = Math.floor(Math.random() * 8) + 5; // 5-12 songs per album
-    const generatedSongs: Song[] = [];
-    const imageId = imageIds[Math.floor(Math.random() * imageIds.length)];
-
-    for (let i = 0; i < numSongs; i++) {
-      const minutes = Math.floor(Math.random() * 20) + 1; // 1-20 minutes
-      const seconds = Math.floor(Math.random() * 60);
-      const duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-      const value = `${Math.floor(Math.random() * 900) + 100} ABT`;
-      const likes = Math.floor(Math.random() * 20000) + 1000;
-      const comments = Math.floor(Math.random() * 20000) + 1000;
-      const downloads = Math.floor(Math.random() * 20000) + 1000;
-
-      generatedSongs.push({
-        id: i + 1,
-        title: songTitles[i % songTitles.length],
-        albumName: album.title,
-        artist: album.artist,
-        duration,
-        value,
-        likes,
-        comments,
-        downloads,
-        thumbnail: `https://images.unsplash.com/photo-${imageId}?w=100&h=100&fit=crop&auto=format&q=80`
-      });
-    }
-
-    return generatedSongs;
-  };
-
-  const handleAlbumClick = (album: Album) => {
-    const generatedSongs = generateSongs(album);
-    setSongs(generatedSongs);
+  const selectAlbum = (album: Album | null) => {
     setSelectedAlbum(album);
     onAlbumSelect?.(album);
+    setFilterType(album?.title ?? 'all');
   };
 
-  // If an album is selected, show the song list
-  if (selectedAlbum) {
-    return (
-      <div>
-        {/* Header with title and Search/Filter */}
-        <div className="flex items-center justify-between mb-6 flex-nowrap gap-4">
-          <h1 className="text-white text-3xl font-bold shrink-0">{selectedAlbum.title}</h1>
-          <div className="flex items-center gap-3 flex-nowrap min-w-0">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} aria-hidden="true" />
-              <input
-                type="text"
-                placeholder="Search Songs"
-                aria-label="Search songs"
-                maxLength={100}
-                className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-full"
-              />
-            </div>
-            <button className="bg-[#161616] border border-gray-700 rounded-lg px-4 py-2 text-white hover:border-purple-600 transition-colors flex items-center gap-2 shrink-0">
-              <Filter size={20} aria-hidden="true" />
-              <span className="text-sm">Filter</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Songs List */}
-        <div className="bg-[#161616] border border-gray-800 rounded-lg overflow-hidden">
-          <div className="divide-y divide-gray-800">
-            {songs.length === 0 ? (
-              <EmptyState
-                icon={Music}
-                title="No songs in this album"
-                description="Upload your first track to start building your music library."
-                ctaLabel="Upload Music"
-                onCta={() => {}}
-              />
-            ) : songs.map((song, index) => (
-              <div
-                key={song.id}
-                className={`px-6 py-4 hover:bg-[#1a1a1a] transition-colors cursor-pointer group ${index === 0 ? 'bg-[#1a1a1a]' : ''
-                  }`}
-              >
-                <div className="flex items-center gap-4">
-                  {/* Number */}
-                  <div className="w-8 text-center text-gray-400 group-hover:text-white transition-colors text-sm" aria-label={`Song number ${index + 1}`}>
-                    {index + 1}
-                  </div>
-
-                  {/* Thumbnail */}
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-800 shrink-0 relative">
-                    <Image
-                      src={song.thumbnail}
-                      alt={`${song.title} cover art`}
-                      width={48}
-                      height={48}
-                      srcSet={getImageSrcSet(song.thumbnail)}
-                      sizes="(max-width: 640px) 48px, 48px"
-                      className="w-full h-full object-cover"
-                      unoptimized
-                    />
-                  </div>
-
-                  {/* Song Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-medium group-hover:text-purple-400 transition-colors truncate">
-                      {song.title}
-                    </h3>
-                    <p className="text-gray-400 text-xs truncate">{song.albumName}</p>
-                    <p className="text-gray-500 text-xs truncate">{song.artist}</p>
-                  </div>
-
-                  {/* Duration */}
-                  <div className="text-gray-400 text-sm w-16 text-right" aria-label={`Duration: ${song.duration}`}>
-                    {song.duration}
-                  </div>
-
-                  {/* Value */}
-                  <div className="text-gray-400 text-sm w-20 text-right" aria-label={`Value: ${song.value}`}>
-                    {song.value}
-                  </div>
-
-                  {/* Engagement Metrics */}
-                  <div className="flex items-center gap-4" aria-label={`Likes: ${(song.likes / 1000).toFixed(1)}K, Comments: ${(song.comments / 1000).toFixed(1)}K, Downloads: ${(song.downloads / 1000).toFixed(1)}K`}>
-                    <div className="flex items-center gap-1 text-gray-400 text-sm">
-                      <Heart size={16} aria-hidden="true" />
-                      <span>{(song.likes / 1000).toFixed(1)}K</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-gray-400 text-sm">
-                      <MessageCircle size={16} aria-hidden="true" />
-                      <span>{(song.comments / 1000).toFixed(1)}K</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-gray-400 text-sm">
-                      <FolderDown size={16} aria-hidden="true" />
-                      <span>{(song.downloads / 1000).toFixed(1)}K</span>
-                    </div>
-                  </div>
-
-                  {/* Delete Song */}
-                  <button 
-                    onClick={() => setDeleteConfirmation({ isOpen: true, songId: song.id })}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-2"
-                    aria-label={`Delete ${song.title}`}
-                  >
-                    <Trash2 size={20} aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-            )))}
-          </div>
-        </div>
-        <ConfirmationDialog
-          isOpen={deleteConfirmation.isOpen}
-          onClose={() => setDeleteConfirmation({ isOpen: false, songId: null })}
-          onConfirm={handleDeleteConfirm}
-          title="Delete Song"
-          message="Are you sure you want to delete this song? This action is permanent and cannot be undone."
-        />
-      </div>
-    );
-  }
+  const handleDeleteConfirm = () => {
+    if (deleteConfirmation.songId === null) return;
+    persistSongs(songs.filter((song) => song.id !== deleteConfirmation.songId));
+    setDeleteConfirmation({ isOpen: false, songId: null });
+  };
 
   return (
-    <div>
-      {/* Header Section */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-white text-3xl font-bold">My Music</h1>
-        <div className="flex items-center gap-3">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} aria-hidden="true" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search my music"
-              aria-label="Search my music"
-              maxLength={100}
-              className="bg-[#161616] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 text-sm w-64"
-            />
-          </div>
-          {/* Filter Dropdown */}
-          <div className="relative">
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              aria-label="Filter albums by type"
-              className="bg-[#161616] border border-gray-700 rounded-lg pl-4 pr-10 py-2 text-white hover:border-purple-600 transition-colors text-sm focus:outline-none cursor-pointer appearance-none"
-            >
-              <option value="all">All Types</option>
-              <option value="new album">Albums</option>
-              <option value="ep">EPs</option>
-              <option value="single">Singles</option>
-              <option value="remix">Remixes</option>
-              <option value="live">Live</option>
-            </select>
-            <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} aria-hidden="true" />
+    <div className="w-full text-white">
+      <section className="mb-10">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">My Albums</h2>
+          <div className="flex gap-2">
+            <button type="button" aria-label="Scroll albums left" onClick={() => scrollContainerRef.current?.scrollBy({ left: -300, behavior: 'smooth' })} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#885FA8] hover:bg-[#7A4F98]"><ChevronLeft size={20} /></button>
+            <button type="button" aria-label="Scroll albums right" onClick={() => scrollContainerRef.current?.scrollBy({ left: 300, behavior: 'smooth' })} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#885FA8] hover:bg-[#7A4F98]"><ChevronRight size={20} /></button>
           </div>
         </div>
-      </div>
+        {isLoading ? <AlbumSkeletonRow /> : (
+          <div ref={scrollContainerRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+            {albums.map((album) => (
+              <button type="button" key={album.id} onClick={() => selectAlbum(selectedAlbum?.id === album.id ? null : album)} className={`group w-48 shrink-0 text-center ${selectedAlbum?.id === album.id ? 'text-pink-400' : 'text-white'}`}>
+                <Image src={album.image} alt={album.title} width={192} height={192} className="mb-3 h-48 w-48 rounded-lg object-cover transition-transform duration-200 group-hover:scale-[1.02]" />
+                <span className="block truncate font-medium">{album.title}</span>
+                <span className="block truncate text-sm text-gray-400">{album.artist}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
 
-      {/* Albums Grid */}
-      {isLoading ? (
-        <AlbumSkeletonRow />
-      ) : filteredAlbums.length === 0 ? (
-        <EmptyState
-          icon={FolderSearch}
-          title="No albums found"
-          description="Try adjusting your search or filter to find what you're looking for."
-        />
-      ) : (
-      <div className="relative overflow-hidden">
-        {/* Left navigation arrow */}
-        <button
-          onClick={scrollLeft}
-          aria-label="Scroll albums left"
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#885FA8] bg-opacity-80 flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg pointer-events-auto"
-        >
-          <ChevronLeft size={20} className="text-white" aria-hidden="true" />
-        </button>
+      <section>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold">My Tracks</h2>
+            <p className="mt-1 text-sm text-gray-400">Drag tracks to customize their listing order.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <label className="relative block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} aria-hidden="true" />
+              <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search tracks" aria-label="Search tracks" className="w-52 rounded-lg border border-gray-700 bg-[#161616] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-pink-500" />
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border border-gray-700 bg-[#161616] px-3 text-sm text-gray-300">
+              <Filter size={16} aria-hidden="true" />
+              <select value={filterType} onChange={(event) => { setFilterType(event.target.value); setSelectedAlbum(null); }} aria-label="Filter tracks by album" className="bg-transparent py-2.5 outline-none">
+                <option value="all">All albums</option>
+                {albums.map((album) => <option key={album.id} value={album.title}>{album.title}</option>)}
+              </select>
+            </label>
+          </div>
+        </div>
 
-        {/* Right navigation arrow */}
-        <button
-          onClick={scrollRight}
-          aria-label="Scroll albums right"
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#885FA8] bg-opacity-80 flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg pointer-events-auto"
-        >
-          <ChevronRight size={20} className="text-white" aria-hidden="true" />
-        </button>
-
-        {/* Scrollable album cards */}
-        <div
-          ref={scrollContainerRef}
-          className="flex gap-6 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide pl-12 pr-12"
-          style={{
-            scrollBehavior: 'smooth',
-            WebkitOverflowScrolling: 'touch'
-          }}
-          aria-label="Albums carousel"
-          role="region"
-        >
-          {filteredAlbums.map((album) => (
-            <div
-              key={album.id}
-              className="shrink-0 w-64 cursor-pointer group"
-              onClick={() => handleAlbumClick(album)}
-              role="button"
-              tabIndex={0}
-              aria-label={`View album: ${album.title} by ${album.artist}`}
-            >
-              <div className="relative mb-3">
-                <div className="w-64 h-64 rounded-lg relative overflow-hidden bg-gray-800 group-hover:scale-105 transition-transform duration-300">
-                  <Image
-                    src={album.image}
-                    alt={`${album.title} cover art`}
-                    width={256}
-                    height={256}
-                    srcSet={getImageSrcSet(album.image)}
-                    sizes="(max-width: 640px) 120px, (max-width: 1024px) 256px, 256px"
-                    className="w-full h-full object-cover"
-                    unoptimized
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center z-10 pointer-events-none">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-                      <div className="w-16 h-16 rounded-full bg-purple-600 flex items-center justify-center shadow-lg">
-                        <Play size={24} className="text-white ml-1" fill="white" aria-hidden="true" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="text-center">
-                <h3 className="text-white font-semibold text-lg mb-1 group-hover:text-purple-400 transition-colors">{album.title}</h3>
-                <p className="text-gray-400 text-sm mb-1">{album.artist}</p>
-                <span className="inline-block bg-purple-600/20 text-purple-400 text-xs px-2 py-1 rounded">
-                  {album.type}
-                </span>
-              </div>
+        <div aria-live="polite" className="sr-only">{reorderMessage}</div>
+        {filteredSongs.length === 0 ? (
+          <EmptyState icon={FolderSearch} title="No tracks found" description="Try adjusting your search or album filter." />
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-gray-800 bg-[#111111]">
+            <div className="hidden grid-cols-[40px_1fr_140px_100px_100px_100px_48px] items-center gap-4 border-b border-gray-800 px-4 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid">
+              <span aria-hidden="true" /><span>Track</span><span>Duration</span><span>Likes</span><span>Comments</span><span>Downloads</span><span aria-hidden="true" />
             </div>
-          ))}
-        </div>
-      </div>
-      )}
+            {filteredSongs.map((song, index) => {
+              const fullIndex = songs.findIndex((item) => item.id === song.id);
+              const isDragging = draggedSongId === song.id;
+              const isDropTarget = dropTargetId === song.id && draggedSongId !== song.id;
+              return (
+                <div key={song.id} draggable onDragStart={(event) => { setDraggedSongId(song.id); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(song.id)); }} onDragOver={(event) => { event.preventDefault(); setDropTargetId(song.id); }} onDragLeave={() => setDropTargetId(null)} onDrop={(event) => { event.preventDefault(); const sourceId = Number(event.dataTransfer.getData('text/plain')); moveSong(sourceId, song.id); setDraggedSongId(null); setDropTargetId(null); }} onDragEnd={() => { setDraggedSongId(null); setDropTargetId(null); }} className={`grid grid-cols-[40px_1fr_48px] items-center gap-4 border-b border-gray-800 px-4 py-3 transition-all duration-200 last:border-b-0 md:grid-cols-[40px_1fr_140px_100px_100px_100px_48px] ${isDragging ? 'scale-[0.99] opacity-40' : ''} ${isDropTarget ? 'border-t-2 border-t-pink-500 bg-pink-500/10' : 'hover:bg-white/[0.03]'}`}>
+                  <button type="button" draggable={false} aria-label={`Drag ${song.title} to reorder`} title="Drag to reorder" className="flex h-10 w-10 cursor-grab items-center justify-center rounded text-gray-500 hover:bg-white/10 hover:text-white active:cursor-grabbing"><GripVertical size={20} /></button>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Image src={song.thumbnail} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded object-cover" />
+                    <div className="min-w-0"><p className="truncate font-medium">{song.title}</p><p className="truncate text-sm text-gray-400">{song.artist} · {song.albumName}</p></div>
+                  </div>
+                  <span className="hidden text-sm text-gray-400 md:block"><Clock size={14} className="mr-1 inline" />{song.duration}</span>
+                  <span className="hidden text-sm text-gray-400 md:block"><Heart size={14} className="mr-1 inline" />{song.likes}</span>
+                  <span className="hidden text-sm text-gray-400 md:block"><MessageCircle size={14} className="mr-1 inline" />{song.comments}</span>
+                  <span className="hidden text-sm text-gray-400 md:block"><Download size={14} className="mr-1 inline" />{song.downloads}</span>
+                  <div className="flex items-center justify-end gap-1">
+                    <button type="button" aria-label={`Move ${song.title} up`} disabled={fullIndex === 0} onClick={() => moveSongBy(song.id, -1)} className="hidden h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white disabled:invisible md:flex"><ArrowUp size={15} /></button>
+                    <button type="button" aria-label={`Move ${song.title} down`} disabled={fullIndex === songs.length - 1} onClick={() => moveSongBy(song.id, 1)} className="hidden h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white disabled:invisible md:flex"><ArrowDown size={15} /></button>
+                    <button type="button" aria-label={`Play ${song.title}`} className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-600 hover:bg-pink-500"><Play size={15} fill="currentColor" /></button>
+                    <button type="button" aria-label={`More actions for ${song.title}`} onClick={() => setDeleteConfirmation({ isOpen: true, songId: song.id })} className="flex h-9 w-9 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white"><MoreVertical size={18} /></button>
+                  </div>
+                  <div className="col-span-2 flex gap-2 text-xs text-gray-400 md:hidden"><span>{song.duration}</span><span>·</span><span>{song.likes} likes</span><span>·</span><span>{index + 1} of {filteredSongs.length}</span></div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <ConfirmationDialog isOpen={deleteConfirmation.isOpen} onClose={() => setDeleteConfirmation({ isOpen: false, songId: null })} onConfirm={handleDeleteConfirm} title="Delete track" message="Are you sure you want to delete this track? This action cannot be undone." confirmText="Delete" />
     </div>
   );
 }
