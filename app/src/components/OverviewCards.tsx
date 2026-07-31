@@ -56,18 +56,71 @@ function CardGrid({ cards, isMock }: { cards: KpiCard[]; isMock: boolean }) {
   );
 }
 
+function SkeletonPlaceholder({ className }: { className: string }) {
+  return <div aria-hidden="true" className={`overview-skeleton-shimmer ${className}`} />;
+}
+
+function SkeletonCard({ isFirst }: { isFirst: boolean }) {
+  const content = (
+    <div className="p-6">
+      <SkeletonPlaceholder className="h-5 w-2/3 rounded mb-2" />
+      <SkeletonPlaceholder className="h-8 w-1/2 rounded" />
+    </div>
+  );
+
+  if (isFirst) {
+    return (
+      <div className="relative rounded-lg p-[1px] bg-gradient-to-br from-purple-500 via-pink-500 to-gray-900">
+        <div className="bg-[#0F0F0F] dark:bg-black rounded-lg">{content}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#0F0F0F] dark:bg-black border border-gray-800 dark:border-white/10 rounded-lg p-6">
+      <SkeletonPlaceholder className="h-5 w-2/3 rounded mb-2" />
+      <SkeletonPlaceholder className="h-8 w-1/2 rounded" />
+    </div>
+  );
+}
+
 function OverviewCardsSkeleton() {
   return (
-    <div>
+    <div role="status" aria-label="Loading overview" aria-busy="true">
       <h2 className="text-white text-lg font-semibold mb-4">Overview</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-[#0F0F0F] border border-gray-800 rounded-lg p-6 animate-pulse">
-            <div className="h-3 bg-gray-700 rounded w-2/3 mb-3" />
-            <div className="h-6 bg-gray-700 rounded w-1/2" />
-          </div>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <SkeletonCard key={index} isFirst={index === 0} />
         ))}
       </div>
+      <style jsx global>{`
+        .overview-skeleton-shimmer {
+          background: linear-gradient(
+            110deg,
+            rgba(55, 65, 81, 0.7) 30%,
+            rgba(107, 114, 128, 0.85) 50%,
+            rgba(55, 65, 81, 0.7) 70%
+          );
+          background-size: 200% 100%;
+          animation: overview-skeleton-shimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes overview-skeleton-shimmer {
+          0% {
+            background-position: 200% 0;
+          }
+          100% {
+            background-position: -200% 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .overview-skeleton-shimmer {
+            animation: none;
+            background-position: 0 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
