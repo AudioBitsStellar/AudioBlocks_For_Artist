@@ -1,46 +1,30 @@
-import { type NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 
-const DEV_CSP = [
+const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-eval' 'unsafe-inline' localhost:* 127.0.0.1:*",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.sentry.io",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self' ws: wss: localhost:* 127.0.0.1:*",
+  "font-src 'self' data: https:",
+  "connect-src 'self' https: ws: wss:",
+  "media-src 'self' https: blob:",
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
 ].join('; ')
 
-const PROD_CSP = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self' https:",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ')
-
-export function middleware(request: NextRequest) {
+export function middleware(_request: NextRequest) {
   const response = NextResponse.next()
-  const isDev = process.env.NODE_ENV !== 'production'
-  const csp = isDev ? DEV_CSP : PROD_CSP
 
-  response.headers.set('Content-Security-Policy', csp)
+  response.headers.set('Content-Security-Policy-Report-Only', CSP)
 
   return response
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)$).*)',
-  ],
+  matcher: ['/(.*)'],
 }
