@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { Calendar, ChevronDown, Printer } from 'lucide-react';
+import { Calendar, ChevronDown, Download, Printer } from 'lucide-react';
 import useEarningsServices from '@/services/earningsService';
 import { EarningsDataPoint } from '@/types';
 import { colorTokens } from '@/theme/colors';
@@ -22,8 +22,6 @@ const PRINT_TARGET_ID = 'earnings-report-print';
 const PRINT_BODY_CLASS = 'printing-earnings-report';
 const DATE_RANGE_LABEL = 'Last 12 months';
 
-// Tooltip fill / text colors come from the token system so the chart follows
-// the active theme automatically (issue #180).
 const TOOLTIP_FILL = colorTokens.primary.default;
 const TOOLTIP_TEXT = colorTokens.primary.contrast;
 const AXIS_COLOR = 'var(--color-text-muted)';
@@ -32,7 +30,30 @@ const LINE_COLOR = colorTokens.secondary.default;
 const AREA_STOP_A = colorTokens.primary.default;
 const AREA_STOP_B = colorTokens.secondary.default;
 
-// ─── Tooltip ────────────────────────────────────────────────────────────────
+const CSV_HEADERS = ['Month', 'Earnings', 'Royalties'];
+
+function escapeCsvValue(value: string | number): string {
+  const stringValue = String(value);
+  return /[",\n\r]/.test(stringValue)
+    ? `"${stringValue.replace(/"/g, '""')}"`
+    : stringValue;
+}
+
+function getCurrentMonthFilename(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `earnings_${year}-${month}.csv`;
+}
+
+function createEarningsCsv(data: EarningsDataPoint[]): string {
+  const rows = data.map((point) =>
+    [point.month, point.earnings, point.royalties].map(escapeCsvValue).join(','),
+  );
+
+  return [CSV_HEADERS.join(','), ...rows].join('\r\n');
+}
+
 const CustomTooltip = ({ active, payload, coordinate }: any) => {
   if (active && payload && payload.length) {
     const data: EarningsDataPoint = payload[0].payload;
@@ -65,12 +86,10 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
   return null;
 };
 
-// Returns the last month in the dataset (the highlighted dot)
 function highlightedMonth(payload: EarningsDataPoint): string {
   return payload.month;
 }
 
-// ─── Dot ────────────────────────────────────────────────────────────────────
 const CustomDot = ({
   cx,
   cy,
@@ -88,7 +107,6 @@ const CustomDot = ({
   return null;
 };
 
-// ─── Loading skeleton ────────────────────────────────────────────────────────
 const ChartSkeleton = () => (
   <div className="animate-pulse">
     <div className="h-6 w-32 bg-surface-raised rounded mb-4" />
@@ -98,7 +116,6 @@ const ChartSkeleton = () => (
   </div>
 );
 
-// ─── Empty state ─────────────────────────────────────────────────────────────
 const EmptyState = () => (
   <div className="h-64 flex flex-col items-center justify-center text-text-muted gap-2">
     <p className="text-lg font-semibold">No earnings data yet</p>
@@ -106,15 +123,12 @@ const EmptyState = () => (
   </div>
 );
 
-// ─── Main component ──────────────────────────────────────────────────────────
 export default function EarningsRoyalties() {
   const { useGetEarnings } = useEarningsServices();
   const { data: response, isLoading, isError } = useGetEarnings(true);
 
   const summary = response?.data;
   const chartData: EarningsDataPoint[] = summary?.data ?? [];
-
-  // The most recent month gets the pink dot + dashed reference line
   const highlightMonth = chartData.length > 0 ? chartData[chartData.length - 1].month : '';
 
   const totalEarnings = summary?.totalEarnings ?? 0;
@@ -123,8 +137,8 @@ export default function EarningsRoyalties() {
     diff === 0
       ? 'Same as last month'
       : diff > 0
-      ? `$${diff.toLocaleString()} more than last month`
-      : `$${Math.abs(diff).toLocaleString()} less than last month`;
+        ? `$${diff.toLocaleString()} more than last month`
+        : `$${Math.abs(diff).toLocaleString()} less than last month`;
 
   const handlePrint = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -139,9 +153,25 @@ export default function EarningsRoyalties() {
     window.print();
   }, []);
 
+  const handleExport = useCallback(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const csv = createEarningsCsv(chartData);
+    const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = getCurrentMonthFilename();
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [chartData]);
+
   return (
     <div id={PRINT_TARGET_ID} className="bg-surface-raised rounded-lg p-6">
-      {/* Print-only report header: hidden on screen, shown via @media print */}
       <div className="earnings-print-only hidden">
         <h1 className="text-lg font-bold">Earnings & Royalties Report</h1>
         <p className="text-sm">Artist: {getDisplayNameFromToken()}</p>
@@ -149,7 +179,6 @@ export default function EarningsRoyalties() {
         <p className="text-sm">Generated: {new Date().toLocaleDateString()}</p>
       </div>
 
-      {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex-1">
           <h2 className="text-text text-xl font-bold mb-4">Earnings & Royalties</h2>
@@ -167,132 +196,114 @@ export default function EarningsRoyalties() {
             </div>
           )}
         </div>
+
         <div className="earnings-print-hide flex gap-2">
           <div className="relative">
-            <select className="bg-surface-sunken border border-border rounded-lg px-4 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors">
+            <select
+              aria-label="Earnings type"
+              className="bg-surface-sunken border border-border rounded-lg px-4 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors"
+            >
               <option>Royalties</option>
             </select>
             <ChevronDown
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none"
               size={16}
+              aria-hidden="true"
             />
           </div>
+
           <div className="relative">
             <Calendar
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted"
               size={16}
+              aria-hidden="true"
             />
-            <select className="bg-surface-sunken border border-border rounded-lg pl-10 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors">
+            <select
+              aria-label="Earnings date range"
+              className="bg-surface-sunken border border-border rounded-lg pl-10 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors"
+            >
               <option>{DATE_RANGE_LABEL}</option>
             </select>
             <ChevronDown
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none"
               size={16}
+              aria-hidden="true"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={handleExport}
+            aria-label="Export earnings and royalties as CSV"
+            className="inline-flex items-center gap-2 bg-surface-sunken border border-border rounded-lg px-4 py-2 text-text text-sm hover:border-border-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Download size={16} aria-hidden="true" />
+            Export CSV
+          </button>
+
           <button
             type="button"
             onClick={handlePrint}
-            aria-label="Print earnings report"
-            title="Print earnings report"
-            className="flex items-center justify-center w-11 h-11 bg-surface-sunken border border-border rounded-lg text-text-muted hover:border-border-subtle hover:text-text transition-colors cursor-pointer"
+            aria-label="Print earnings and royalties report"
+            className="inline-flex items-center justify-center bg-surface-sunken border border-border rounded-lg px-3 py-2 text-text hover:border-border-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Printer size={16} />
+            <Printer size={16} aria-hidden="true" />
           </button>
         </div>
       </div>
 
-      {/* Chart area */}
-      {isLoading ? (
-        <ChartSkeleton />
-      ) : isError ? (
-        <div className="h-64 flex items-center justify-center text-error text-sm">
+      {isError ? (
+        <div className="h-64 flex items-center justify-center text-red-400" role="alert">
           Failed to load earnings data. Please try again later.
         </div>
+      ) : isLoading ? (
+        <ChartSkeleton />
       ) : chartData.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="earnings-print-hide h-64">
+        <div className="h-80" aria-label="Earnings and royalties chart">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorValue" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id="earnings-area-gradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={AREA_STOP_A} stopOpacity={0.35} />
-                  <stop offset="97.33%" stopColor={AREA_STOP_A} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={AREA_STOP_B} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={AREA_STOP_B} stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="transparent" vertical={false} />
-              <XAxis
-                dataKey="month"
-                stroke={AXIS_COLOR}
-                style={{ fontSize: '12px' }}
-                tick={{ fill: AXIS_COLOR }}
-                axisLine={{ stroke: AXIS_LINE_COLOR }}
-              />
+              <CartesianGrid stroke={AXIS_LINE_COLOR} strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="month" stroke={AXIS_COLOR} axisLine={false} tickLine={false} />
               <YAxis
                 stroke={AXIS_COLOR}
-                style={{ fontSize: '12px' }}
-                tick={{ fill: AXIS_COLOR }}
-                tickFormatter={(v) => `$${v}`}
-                axisLine={{ stroke: AXIS_LINE_COLOR }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(value) => `$${Number(value).toLocaleString()}`}
               />
               <Tooltip content={<CustomTooltip />} />
-              {/* Earnings: filled area, no stroke */}
+              <ReferenceLine
+                x={highlightMonth}
+                stroke={AXIS_COLOR}
+                strokeDasharray="5 5"
+                ifOverflow="extendDomain"
+              />
               <Area
                 type="monotone"
                 dataKey="earnings"
-                stroke="transparent"
-                strokeWidth={0}
-                fill="url(#colorValue)"
-                dot={false}
+                stroke={LINE_COLOR}
+                fill="url(#earnings-area-gradient)"
+                strokeWidth={2}
+                dot={<CustomDot highlightMonth={highlightMonth} />}
+                activeDot={{ r: 6 }}
               />
-              {/* Royalties: line with pink dot on latest month */}
               <Line
                 type="monotone"
                 dataKey="royalties"
-                stroke={LINE_COLOR}
-                strokeWidth={1.4}
-                dot={(props: any) => (
-                  <CustomDot {...props} highlightMonth={highlightMonth} />
-                )}
-                activeDot={false}
+                stroke={TOOLTIP_FILL}
+                strokeWidth={2}
+                dot={false}
               />
-              {highlightMonth && (
-                <ReferenceLine
-                  x={highlightMonth}
-                  stroke="var(--color-text-inverted)"
-                  strokeWidth={1}
-                  strokeDasharray="2 2"
-                  opacity={0.5}
-                />
-              )}
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      )}
-
-      {/* Print-only data table: charts don't render reliably on paper, so the
-          print report shows the same monthly figures as a plain table. */}
-      {chartData.length > 0 && (
-        <table className="earnings-print-only hidden">
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th>Earnings</th>
-              <th>Royalties</th>
-            </tr>
-          </thead>
-          <tbody>
-            {chartData.map((point) => (
-              <tr key={point.month}>
-                <td>{point.month}</td>
-                <td>${point.earnings.toLocaleString()}</td>
-                <td>${point.royalties.toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       )}
     </div>
   );
