@@ -1,9 +1,11 @@
-import OverviewCards from '@/components/OverviewCards';
-import EarningsRoyalties from '@/components/EarningsRoyalties';
-import MyAlbums from '@/components/MyAlbums';
-import FansEngagement from '@/components/FansEngagement';
-import Transactions from '@/components/Transactions';
-import Comments from '@/components/Comments';
+import dynamic from 'next/dynamic';
+
+const OverviewCards = dynamic(() => import('@/components/OverviewCards'));
+const EarningsRoyalties = dynamic(() => import('@/components/EarningsRoyalties'));
+const MyAlbums = dynamic(() => import('@/components/MyAlbums'));
+const FansEngagement = dynamic(() => import('@/components/FansEngagement'));
+const Transactions = dynamic(() => import('@/components/Transactions'));
+const Comments = dynamic(() => import('@/components/Comments'));
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function OverviewPage() {

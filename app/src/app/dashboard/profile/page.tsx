@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import dynamic from 'next/dynamic';
 import Breadcrumb from "@/components/Breadcrumb";
 import Image from "next/image";
 import { updateProfilePayload } from "@/types";
@@ -9,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { profileFormSchema } from "@/types/formValidation";
 import MusicLoader from "@/components/MusicLoader";
 import useArtistServices from "@/services/artistServices";
-import SetupArtistOnChainProfile from "@/components/common/wallet/SetupArtistOnChainProfile";
+const SetupArtistOnChainProfile = dynamic(() => import('@/components/common/wallet/SetupArtistOnChainProfile'));
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { analytics } from "@/lib/analytics";
 import { useToast } from "@/hooks/useToastHandler";
@@ -17,7 +18,8 @@ import { useRole } from "@/hooks/useRole";
 import { ROLE_BADGE_STYLES, getSettingsRestrictionReason } from "@/types/role";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { encodeHtmlEntities } from "@/utils/textEncoder";
-import ImageCropper from "@/components/ImageCropper";
+
+const ImageCropper = dynamic(() => import('@/components/ImageCropper'));
 
 function ProfileFormSkeleton() {
 	return (
