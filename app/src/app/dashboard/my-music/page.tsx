@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Breadcrumb from '@/components/Breadcrumb';
-import MyMusicContent from '@/components/MyMusicContent';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import dynamic from 'next/dynamic';
+
+const MyMusicContent = dynamic(() => import('@/components/MyMusicContent'));
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Album } from '@/types';

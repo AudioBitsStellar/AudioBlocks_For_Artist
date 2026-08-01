@@ -1,6 +1,8 @@
-import AnalyticsSummaryCards from '@/components/AnalyticsSummaryCards';
-import AnalyticsPlayTrends from '@/components/AnalyticsPlayTrends';
-import AnalyticsGeographic from '@/components/AnalyticsGeographic';
+import dynamic from 'next/dynamic';
+
+const AnalyticsSummaryCards = dynamic(() => import('@/components/AnalyticsSummaryCards'));
+const AnalyticsPlayTrends = dynamic(() => import('@/components/AnalyticsPlayTrends'));
+const AnalyticsGeographic = dynamic(() => import('@/components/AnalyticsGeographic'));
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { getAnalyticsData } from '@/services/analyticsService';
 

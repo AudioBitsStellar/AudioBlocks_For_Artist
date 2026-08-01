@@ -1,6 +1,8 @@
 "use client";
-import Album from "@/components/musicUpload/Album";
-import Song from "@/components/musicUpload/Song";
+import dynamic from 'next/dynamic';
+
+const Album = dynamic(() => import('@/components/musicUpload/Album'));
+const Song = dynamic(() => import('@/components/musicUpload/Song'));
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

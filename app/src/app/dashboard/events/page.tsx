@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Breadcrumb from '@/components/Breadcrumb';
-import EventsContent from '@/components/EventsContent';
-import NewEventModal from '@/components/common/modals/NewEventModal';
+import dynamic from 'next/dynamic';
+
+const EventsContent = dynamic(() => import('@/components/EventsContent'));
+const NewEventModal = dynamic(() => import('@/components/common/modals/NewEventModal'));
 
 export default function EventsPage() {
   const [isNewEventOpen, setIsNewEventOpen] = useState(false);

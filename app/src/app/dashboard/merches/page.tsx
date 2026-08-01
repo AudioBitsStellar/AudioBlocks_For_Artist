@@ -1,5 +1,7 @@
 import Breadcrumb from '@/components/Breadcrumb';
-import MerchesContent from '@/components/MerchesContent';
+import dynamic from 'next/dynamic';
+
+const MerchesContent = dynamic(() => import('@/components/MerchesContent'));
 
 export default function MerchesPage() {
   return (
