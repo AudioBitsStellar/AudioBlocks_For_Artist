@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type Mode = "song" | "album";
-const Upoad_Music = () => {
+const Upload_Music = () => {
   const [mode, setMode] = useState<Mode>("song");
   const route = useRouter();
 
@@ -63,4 +63,4 @@ const Upoad_Music = () => {
   );
 };
 
-export default Upoad_Music;
+export default Upload_Music;
