@@ -74,7 +74,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
   apiClient.interceptors.response.use(
     (response: AxiosResponse) => {
       // Handle CSRF token refresh from server
-      const newCsrfToken = response.headers["x-csrf-token"];
+      const newCsrfToken = response.headers["x-csrf-token"] as string | undefined;
       if (newCsrfToken && typeof newCsrfToken === "string") {
         refreshCSRFToken();
       }

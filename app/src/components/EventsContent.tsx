@@ -34,7 +34,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import useEventsService from "@/services/eventsService";
+import useEventsService, { EventItem } from "@/services/eventsService";
 import { formatDate } from "@/utils/date";
 
 interface EventsContentProps {
@@ -72,7 +72,7 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
     ? MOCK_ENGAGEMENT_TREND
     : (data?.engagement?.trend ?? []);
 
-  const [eventsList, setEventsList] = useState<any[]>([]);
+  const [eventsList, setEventsList] = useState<EventItem[]>([]);
   const [engPeriod, setEngPeriod] = useState<"7" | "30">("30");
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
