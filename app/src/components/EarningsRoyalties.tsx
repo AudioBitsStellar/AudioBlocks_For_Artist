@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -13,7 +13,7 @@ import {
   ReferenceLine,
   TooltipProps,
 } from "recharts";
-import { Calendar, ChevronDown, Download, Printer } from "lucide-react";
+import { Calendar, ChevronDown, Download, Printer, Wallet } from "lucide-react";
 import useEarningsServices from "@/services/earningsService";
 import { EarningsDataPoint } from "@/types";
 import { colorTokens } from "@/theme/colors";
@@ -129,6 +129,7 @@ export default function EarningsRoyalties() {
   const summary = response?.data;
   const chartData: EarningsDataPoint[] = summary?.data ?? [];
   const highlightMonth = chartData.length > 0 ? chartData[chartData.length - 1].month : "";
+  const [payoutRequested, setPayoutRequested] = useState(false);
 
   const totalEarnings = summary?.totalEarnings ?? 0;
   const diff = summary?.comparedToLastMonth ?? 0;
@@ -138,6 +139,31 @@ export default function EarningsRoyalties() {
       : diff > 0
         ? `$${diff.toLocaleString()} more than last month`
         : `$${Math.abs(diff).toLocaleString()} less than last month`;
+
+  const availablePayout = Math.max(totalEarnings, 0);
+  const payoutHistory = [
+    ...(payoutRequested
+      ? [
+          {
+            id: "pending-request",
+            amount: availablePayout,
+            status: "Pending review",
+            requestedAt: "Today",
+          },
+        ]
+      : []),
+    {
+      id: "last-withdrawal",
+      amount: 1840,
+      status: "Completed",
+      requestedAt: "Jul 12, 2026",
+    },
+  ];
+
+  const handleRequestPayout = useCallback(() => {
+    if (availablePayout <= 0) return;
+    setPayoutRequested(true);
+  }, [availablePayout]);
 
   const handlePrint = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -249,6 +275,60 @@ export default function EarningsRoyalties() {
             <Printer size={16} aria-hidden="true" />
           </button>
         </div>
+      </div>
+
+      <div className="earnings-print-hide grid gap-4 lg:grid-cols-[1.1fr_0.9fr] mb-6">
+        <section className="rounded-lg border border-border bg-surface-sunken p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-text font-semibold">
+                <Wallet size={18} aria-hidden="true" />
+                <h3>Request payout</h3>
+              </div>
+              <p className="mt-1 text-sm text-text-muted">
+                Send available royalties to your connected payout destination.
+              </p>
+            </div>
+            <span className="rounded-full bg-surface-raised px-3 py-1 text-xs text-text-muted">
+              {payoutRequested ? "Pending" : "Ready"}
+            </span>
+          </div>
+          <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-text-muted">Available balance</p>
+              <p className="text-2xl font-bold text-text">
+                ${availablePayout.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRequestPayout}
+              disabled={isLoading || availablePayout <= 0 || payoutRequested}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {payoutRequested ? "Request submitted" : "Request payout"}
+            </button>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-border bg-surface-sunken p-4">
+          <h3 className="text-text font-semibold">Withdrawal history</h3>
+          <ul className="mt-3 space-y-3" aria-label="Withdrawal history">
+            {payoutHistory.map((payout) => (
+              <li key={payout.id} className="flex items-center justify-between gap-3 text-sm">
+                <div>
+                  <p className="font-medium text-text">
+                    ${payout.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-text-muted">{payout.requestedAt}</p>
+                </div>
+                <span className="rounded-full bg-surface-raised px-3 py-1 text-xs text-text-muted">
+                  {payout.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
 
       {isError ? (
