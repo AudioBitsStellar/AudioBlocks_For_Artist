@@ -82,3 +82,4 @@ export default function SoundsSection() {
   );
 }
 
+export { SoundsSection, SoundsSection as SoundSection };

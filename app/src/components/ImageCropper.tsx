@@ -238,3 +238,5 @@ export default function ImageCropper({
     </div>
   );
 }
+
+export { ImageCropper };

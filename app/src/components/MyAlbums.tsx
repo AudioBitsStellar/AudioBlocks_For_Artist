@@ -175,3 +175,5 @@ export default function MyAlbums() {
   }
   return <LiveMyAlbums />;
 }
+
+export { MyAlbums };

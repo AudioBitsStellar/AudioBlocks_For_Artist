@@ -262,3 +262,5 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     </div>
   );
 }
+
+export { MintSongButton };

@@ -34,3 +34,4 @@ const GoToTopButton = () => {
 
 export default GoToTopButton;
 
+export { GoToTopButton };

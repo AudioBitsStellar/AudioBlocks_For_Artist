@@ -94,3 +94,5 @@ export default function LoyaltyRewardsTier({
     </div>
   );
 }
+
+export { LoyaltyRewardsTier };

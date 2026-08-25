@@ -16,3 +16,5 @@ export default function MockDataBadge({ label }: { label: string }) {
     </span>
   );
 }
+
+export { MockDataBadge };

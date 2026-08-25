@@ -155,3 +155,5 @@ export default function SafeImage({
     </div>
   );
 }
+
+export { SafeImage };

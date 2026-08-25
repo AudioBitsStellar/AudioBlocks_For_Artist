@@ -51,3 +51,4 @@ const ArtistUpgrade = () => {
 
 export default ArtistUpgrade;
 
+export { ArtistUpgrade };

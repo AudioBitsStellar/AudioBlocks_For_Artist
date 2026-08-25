@@ -178,3 +178,5 @@ export default function Sidebar({
     </>
   );
 }
+
+export { Sidebar };

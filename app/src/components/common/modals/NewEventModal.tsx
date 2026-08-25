@@ -217,7 +217,4 @@ export default function NewEventModal({ open, onOpenChange }: NewEventModalProps
   );
 }
 
-
-
-
-
+export { NewEventModal };

@@ -100,3 +100,4 @@ const ArtistFeatures = () => {
 
 export default ArtistFeatures;
 
+export { ArtistFeatures };

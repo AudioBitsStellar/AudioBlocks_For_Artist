@@ -130,3 +130,4 @@ const Discover = () => {
 
 export default Discover;
 
+export { Discover };

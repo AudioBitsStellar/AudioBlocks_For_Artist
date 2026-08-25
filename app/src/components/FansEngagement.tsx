@@ -116,3 +116,4 @@ export default function FansEngagement() {
   );
 }
 
+export { FansEngagement };

@@ -65,3 +65,5 @@ export default function ServiceWorkerRegister() {
 
   return null;
 }
+
+export { ServiceWorkerRegister };

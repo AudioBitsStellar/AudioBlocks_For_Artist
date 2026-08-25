@@ -123,3 +123,4 @@ const HowItWorks = () => {
 
 export default HowItWorks;
 
+export { HowItWorks };

@@ -317,3 +317,4 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
   );
 }
 
+export { AddMusicModal };

@@ -103,3 +103,5 @@ const ArtistHubHero = () => {
 };
 
 export default ArtistHubHero;
+
+export { ArtistHubHero };

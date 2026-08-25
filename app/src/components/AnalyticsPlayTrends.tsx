@@ -94,3 +94,5 @@ export default function AnalyticsPlayTrends({
     </div>
   );
 }
+
+export { AnalyticsPlayTrends };

@@ -334,3 +334,5 @@ export default function MerchesContent() {
     </div>
   );
 }
+
+export { MerchesContent };

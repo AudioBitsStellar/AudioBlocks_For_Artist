@@ -441,3 +441,5 @@ const Album = () => {
 }
 
 export default Album
+
+export { Album };

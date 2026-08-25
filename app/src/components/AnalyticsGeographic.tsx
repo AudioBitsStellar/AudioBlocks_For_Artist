@@ -53,3 +53,5 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
     </div>
   );
 }
+
+export { AnalyticsGeographic };

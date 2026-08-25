@@ -323,3 +323,4 @@ ClaimArtistNameModal.displayName = 'ClaimArtistNameModal';
 
 export default ClaimArtistNameModal;
 
+export { ClaimArtistNameModal };
