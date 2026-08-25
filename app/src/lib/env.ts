@@ -16,9 +16,7 @@ const booleanString = z
  * client bundles, so every key here must use that prefix.
  */
 const clientSchema = z.object({
-  NEXT_PUBLIC_API_BASE_URL: z
-    .string({ required_error: "is required" })
-    .url("must be a valid URL"),
+  NEXT_PUBLIC_API_BASE_URL: z.string({ required_error: "is required" }).url("must be a valid URL"),
   NEXT_PUBLIC_ANALYTICS_WRITE_KEY: z
     .string({ required_error: "is required" })
     .min(1, "must not be empty"),
@@ -30,9 +28,7 @@ const clientSchema = z.object({
  * sets itself — validated here for safety, not required from the user).
  */
 const serverSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
 
 const envSchema = clientSchema.merge(serverSchema);

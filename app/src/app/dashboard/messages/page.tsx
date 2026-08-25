@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Send, MessageSquare, User } from 'lucide-react';
-import Breadcrumb from '@/components/Breadcrumb';
+import { useState, useRef, useEffect } from "react";
+import { Send, MessageSquare, User } from "lucide-react";
+import Breadcrumb from "@/components/Breadcrumb";
 import {
   getConversations,
   sendMessage,
   formatMessageTime,
   formatConversationDate,
   type Conversation,
-} from '@/services/messageService';
+} from "@/services/messageService";
 
 function ConversationList({
   conversations,
@@ -37,7 +37,7 @@ function ConversationList({
           <button
             onClick={() => onSelect(c)}
             className={`w-full flex items-start gap-3 px-4 py-4 text-left hover:bg-[#1A1A1A] transition-colors ${
-              selectedId === c.id ? 'bg-[#1A1A1A]' : ''
+              selectedId === c.id ? "bg-[#1A1A1A]" : ""
             }`}
           >
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#2A2A2A] flex items-center justify-center">
@@ -68,16 +68,16 @@ function ConversationList({
 
 function MessageThread({ conversation }: { conversation: Conversation }) {
   const [messages, setMessages] = useState(conversation.messages);
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMessages(conversation.messages);
-    setDraft('');
+    setDraft("");
   }, [conversation.id]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSend = () => {
@@ -85,11 +85,11 @@ function MessageThread({ conversation }: { conversation: Conversation }) {
     if (!text) return;
     const msg = sendMessage({ conversationId: conversation.id, content: text });
     setMessages((prev) => [...prev, msg]);
-    setDraft('');
+    setDraft("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -108,19 +108,19 @@ function MessageThread({ conversation }: { conversation: Conversation }) {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.isFromArtist ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${msg.isFromArtist ? "justify-end" : "justify-start"}`}
           >
             <div
               className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${
                 msg.isFromArtist
-                  ? 'bg-[#D2045B] text-white rounded-br-sm'
-                  : 'bg-[#1F1F1F] text-white rounded-bl-sm'
+                  ? "bg-[#D2045B] text-white rounded-br-sm"
+                  : "bg-[#1F1F1F] text-white rounded-bl-sm"
               }`}
             >
               <p>{msg.content}</p>
               <p
                 className={`text-[10px] mt-1 ${
-                  msg.isFromArtist ? 'text-white/60 text-right' : 'text-[#A3A3A3]'
+                  msg.isFromArtist ? "text-white/60 text-right" : "text-[#A3A3A3]"
                 }`}
               >
                 {formatMessageTime(msg.timestamp)}
@@ -162,7 +162,7 @@ export default function MessagesPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: 'Messages', isActive: true }]} />
+      <Breadcrumb items={[{ label: "Messages", isActive: true }]} />
 
       <div className="space-y-1">
         <p className="text-xs uppercase tracking-[0.3em] text-[#A3A3A3]">Inbox</p>
@@ -185,7 +185,9 @@ export default function MessagesPage() {
             <div className="flex flex-col items-center justify-center h-full text-center px-6">
               <MessageSquare className="h-12 w-12 text-[#A3A3A3] mb-3" />
               <p className="text-white font-semibold">Select a conversation</p>
-              <p className="text-[#A3A3A3] text-sm mt-1">Choose a fan from the list to read their messages.</p>
+              <p className="text-[#A3A3A3] text-sm mt-1">
+                Choose a fan from the list to read their messages.
+              </p>
             </div>
           )}
         </div>

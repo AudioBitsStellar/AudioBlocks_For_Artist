@@ -7,7 +7,7 @@
  * still show mock data during the transition period.
  */
 
-const globalMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+const globalMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 export const featureFlags = {
   /** Overview KPI cards — wired to real API when false */

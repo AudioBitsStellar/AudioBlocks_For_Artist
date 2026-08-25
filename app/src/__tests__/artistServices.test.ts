@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
-import useArtistServices from '@/services/artistServices';
-import { USER_ENDPOINTS } from '@/api/api-endpoint';
-import { useGet, usePut } from '@/api/queryClient';
-import type { ApiError } from '@/api/axios';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from "react";
+import useArtistServices from "@/services/artistServices";
+import { USER_ENDPOINTS } from "@/api/api-endpoint";
+import { useGet, usePut } from "@/api/queryClient";
+import type { ApiError } from "@/api/axios";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -30,12 +30,12 @@ const mockMutationState = {
   reset: vi.fn(),
 };
 
-vi.mock('@/api/queryClient', () => ({
+vi.mock("@/api/queryClient", () => ({
   useGet: vi.fn(() => mockQueryState),
   usePut: vi.fn(() => mockMutationState),
 }));
 
-vi.mock('@/hooks/useToastHandler', () => ({
+vi.mock("@/hooks/useToastHandler", () => ({
   useHandleError: () => mockHandleError,
   useHandleSuccess: () => mockHandleSuccess,
 }));
@@ -52,7 +52,7 @@ function makeWrapper() {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-describe('artistServices — error handling (issue #104)', () => {
+describe("artistServices — error handling (issue #104)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -79,25 +79,25 @@ describe('artistServices — error handling (issue #104)', () => {
     mockMutationState.mutate.mockReset();
   });
 
-  describe('hook surface', () => {
-    it('exposes useGetArtistProfile and useUpdateArtistProfile', () => {
+  describe("hook surface", () => {
+    it("exposes useGetArtistProfile and useUpdateArtistProfile", () => {
       const wrapper = makeWrapper();
       const { result } = renderHook(() => useArtistServices(), { wrapper });
       expect(result.current.useGetArtistProfile).toBeDefined();
       expect(result.current.useUpdateArtistProfile).toBeDefined();
     });
 
-    it('calls useGet with the profile endpoint', async () => {
+    it("calls useGet with the profile endpoint", async () => {
       const wrapper = makeWrapper();
       renderHook(() => useArtistServices().useGetArtistProfile(true), { wrapper });
       expect(useGet).toHaveBeenCalledWith(
-        ['get-artist-profile'],
+        ["get-artist-profile"],
         USER_ENDPOINTS.PROFILE,
         expect.objectContaining({ enabled: true, staleTime: 0 })
       );
     });
 
-    it('calls usePut with the update-profile endpoint', async () => {
+    it("calls usePut with the update-profile endpoint", async () => {
       const wrapper = makeWrapper();
       renderHook(() => useArtistServices().useUpdateArtistProfile(), { wrapper });
       expect(usePut).toHaveBeenCalledWith(
@@ -107,14 +107,14 @@ describe('artistServices — error handling (issue #104)', () => {
     });
   });
 
-  describe('error standardization', () => {
-    it('useGetArtistProfile normalizes an ApiError-shaped failure and toasts the full {status, message, code} object', async () => {
+  describe("error standardization", () => {
+    it("useGetArtistProfile normalizes an ApiError-shaped failure and toasts the full {status, message, code} object", async () => {
       const wrapper = makeWrapper();
 
       vi.mocked(useGet).mockImplementationOnce(() => ({
         ...mockQueryState,
         isError: true,
-        error: { status: 500, message: 'Server error from backend', code: 'ERR_INTERNAL' },
+        error: { status: 500, message: "Server error from backend", code: "ERR_INTERNAL" },
       }));
 
       renderHook(() => useArtistServices().useGetArtistProfile(true), { wrapper });
@@ -125,12 +125,12 @@ describe('artistServices — error handling (issue #104)', () => {
       const [apiArg] = mockHandleError.mock.calls[0];
       expect(apiArg).toEqual({
         status: 500,
-        message: 'Server error from backend',
-        code: 'ERR_INTERNAL',
+        message: "Server error from backend",
+        code: "ERR_INTERNAL",
       });
     });
 
-    it('useGetArtistProfile surfaces a plain Error instance through extractApiError', async () => {
+    it("useGetArtistProfile surfaces a plain Error instance through extractApiError", async () => {
       const wrapper = makeWrapper();
 
       // A plain JS `Error` is NOT already in `{status, message}` shape (it has
@@ -139,7 +139,7 @@ describe('artistServices — error handling (issue #104)', () => {
       vi.mocked(useGet).mockImplementationOnce(() => ({
         ...mockQueryState,
         isError: true,
-        error: new Error('random failure string'),
+        error: new Error("random failure string"),
       }));
 
       renderHook(() => useArtistServices().useGetArtistProfile(true), { wrapper });
@@ -147,22 +147,21 @@ describe('artistServices — error handling (issue #104)', () => {
       await waitFor(() => expect(mockHandleError).toHaveBeenCalled());
 
       const [apiArg] = mockHandleError.mock.calls[0];
-      expect(apiArg).toEqual({ status: 0, message: 'random failure string' });
+      expect(apiArg).toEqual({ status: 0, message: "random failure string" });
     });
 
-    it('useGetArtistProfile does NOT fire toast on every rerender for the same fingerprint', async () => {
+    it("useGetArtistProfile does NOT fire toast on every rerender for the same fingerprint", async () => {
       const wrapper = makeWrapper();
 
       vi.mocked(useGet).mockImplementation(() => ({
         ...mockQueryState,
         isError: true,
-        error: { status: 401, message: 'Authentication required' },
+        error: { status: 401, message: "Authentication required" },
       }));
 
-      const { rerender } = renderHook(
-        () => useArtistServices().useGetArtistProfile(true),
-        { wrapper }
-      );
+      const { rerender } = renderHook(() => useArtistServices().useGetArtistProfile(true), {
+        wrapper,
+      });
 
       await waitFor(() => expect(mockHandleError).toHaveBeenCalledTimes(1));
 
@@ -174,19 +173,18 @@ describe('artistServices — error handling (issue #104)', () => {
       expect(mockHandleError).toHaveBeenCalledTimes(1);
     });
 
-    it('useGetArtistProfile fires toast AGAIN when the error fingerprint changes', async () => {
+    it("useGetArtistProfile fires toast AGAIN when the error fingerprint changes", async () => {
       const wrapper = makeWrapper();
 
       vi.mocked(useGet).mockImplementationOnce(() => ({
         ...mockQueryState,
         isError: true,
-        error: { status: 401, message: 'Authentication required' },
+        error: { status: 401, message: "Authentication required" },
       }));
 
-      const { rerender } = renderHook(
-        () => useArtistServices().useGetArtistProfile(true),
-        { wrapper }
-      );
+      const { rerender } = renderHook(() => useArtistServices().useGetArtistProfile(true), {
+        wrapper,
+      });
 
       await waitFor(() => expect(mockHandleError).toHaveBeenCalledTimes(1));
 
@@ -194,7 +192,7 @@ describe('artistServices — error handling (issue #104)', () => {
       vi.mocked(useGet).mockImplementation(() => ({
         ...mockQueryState,
         isError: true,
-        error: { status: 500, message: 'Internal Server Error' },
+        error: { status: 500, message: "Internal Server Error" },
       }));
 
       rerender();
@@ -202,11 +200,11 @@ describe('artistServices — error handling (issue #104)', () => {
       await waitFor(() => expect(mockHandleError).toHaveBeenCalledTimes(2));
       expect(mockHandleError.mock.calls[1][0]).toMatchObject({
         status: 500,
-        message: 'Internal Server Error',
+        message: "Internal Server Error",
       });
     });
 
-    it('useUpdateArtistProfile propagates the full ApiError to the toast handler', async () => {
+    it("useUpdateArtistProfile propagates the full ApiError to the toast handler", async () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onError?: (error: unknown) => void } = {};
 
@@ -218,19 +216,19 @@ describe('artistServices — error handling (issue #104)', () => {
       renderHook(() => useArtistServices().useUpdateArtistProfile(), { wrapper });
 
       act(() => {
-        capturedOptions.onError?.({ status: 422, message: 'Validation failed', code: 'VAL_ERR' });
+        capturedOptions.onError?.({ status: 422, message: "Validation failed", code: "VAL_ERR" });
       });
 
       expect(mockHandleError).toHaveBeenCalledTimes(1);
       const [apiArg] = mockHandleError.mock.calls[0];
       expect(apiArg).toEqual({
         status: 422,
-        message: 'Validation failed',
-        code: 'VAL_ERR',
+        message: "Validation failed",
+        code: "VAL_ERR",
       });
     });
 
-    it('useUpdateArtistProfile normalizes a plain Error instance into ApiError', async () => {
+    it("useUpdateArtistProfile normalizes a plain Error instance into ApiError", async () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onError?: (error: unknown) => void } = {};
 
@@ -242,16 +240,16 @@ describe('artistServices — error handling (issue #104)', () => {
       renderHook(() => useArtistServices().useUpdateArtistProfile(), { wrapper });
 
       act(() => {
-        capturedOptions.onError?.(new Error('boom'));
+        capturedOptions.onError?.(new Error("boom"));
       });
 
       const [apiArg] = mockHandleError.mock.calls[0];
       // extractApiError omits `code` entirely when it's not present, so we
       // match against the actual returned shape rather than `{ ..., code: undefined }`.
-      expect(apiArg).toEqual({ status: 0, message: 'boom' });
+      expect(apiArg).toEqual({ status: 0, message: "boom" });
     });
 
-    it('useUpdateArtistProfile success path surfaces the response message', async () => {
+    it("useUpdateArtistProfile success path surfaces the response message", async () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onSuccess?: (data: unknown) => void } = {};
 
@@ -263,13 +261,13 @@ describe('artistServices — error handling (issue #104)', () => {
       renderHook(() => useArtistServices().useUpdateArtistProfile(), { wrapper });
 
       act(() => {
-        capturedOptions.onSuccess?.({ message: 'All set!' });
+        capturedOptions.onSuccess?.({ message: "All set!" });
       });
 
-      expect(mockHandleSuccess).toHaveBeenCalledWith('All set!');
+      expect(mockHandleSuccess).toHaveBeenCalledWith("All set!");
     });
 
-    it('useUpdateArtistProfile success path falls back to a default message', async () => {
+    it("useUpdateArtistProfile success path falls back to a default message", async () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onSuccess?: (data: unknown) => void } = {};
 
@@ -284,26 +282,26 @@ describe('artistServices — error handling (issue #104)', () => {
         capturedOptions.onSuccess?.({});
       });
 
-      expect(mockHandleSuccess).toHaveBeenCalledWith('Profile updated successfully!');
+      expect(mockHandleSuccess).toHaveBeenCalledWith("Profile updated successfully!");
     });
   });
 
-  describe('try/catch safety net', () => {
-    it('useGetArtistProfile falls through to a generic toast if extractApiError throws', async () => {
+  describe("try/catch safety net", () => {
+    it("useGetArtistProfile falls through to a generic toast if extractApiError throws", async () => {
       const wrapper = makeWrapper();
 
       // Use a plain Error (NOT already-normalized) so normalizeError funnels
       // through extractApiError instead of short-circuiting via the
       // idempotency guard, letting the spy throw.
-      const axiosApi = await import('@/api/axios');
-      vi.spyOn(axiosApi, 'extractApiError').mockImplementationOnce(() => {
-        throw new Error('Normalization blew up');
+      const axiosApi = await import("@/api/axios");
+      vi.spyOn(axiosApi, "extractApiError").mockImplementationOnce(() => {
+        throw new Error("Normalization blew up");
       });
 
       vi.mocked(useGet).mockImplementationOnce(() => ({
         ...mockQueryState,
         isError: true,
-        error: new Error('boom'),
+        error: new Error("boom"),
       }));
 
       renderHook(() => useArtistServices().useGetArtistProfile(true), { wrapper });
@@ -313,11 +311,11 @@ describe('artistServices — error handling (issue #104)', () => {
       const [apiArg] = mockHandleError.mock.calls[0];
       expect(apiArg).toEqual({
         status: 0,
-        message: 'An unexpected error occurred while loading your profile.',
+        message: "An unexpected error occurred while loading your profile.",
       });
     });
 
-    it('useUpdateArtistProfile falls through to a generic toast if extractApiError throws', async () => {
+    it("useUpdateArtistProfile falls through to a generic toast if extractApiError throws", async () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onError?: (error: unknown) => void } = {};
 
@@ -328,22 +326,22 @@ describe('artistServices — error handling (issue #104)', () => {
 
       // Plain Error so the idempotency guard doesn't short-circuit and the
       // spy can actually be reached.
-      const axiosApi = await import('@/api/axios');
-      vi.spyOn(axiosApi, 'extractApiError').mockImplementationOnce(() => {
-        throw new Error('Normalization blew up');
+      const axiosApi = await import("@/api/axios");
+      vi.spyOn(axiosApi, "extractApiError").mockImplementationOnce(() => {
+        throw new Error("Normalization blew up");
       });
 
       renderHook(() => useArtistServices().useUpdateArtistProfile(), { wrapper });
 
       act(() => {
-        capturedOptions.onError?.(new Error('boom'));
+        capturedOptions.onError?.(new Error("boom"));
       });
 
       expect(mockHandleError).toHaveBeenCalledTimes(1);
       const [apiArg] = mockHandleError.mock.calls[0];
       expect(apiArg).toEqual({
         status: 0,
-        message: 'An unexpected error occurred while updating your profile.',
+        message: "An unexpected error occurred while updating your profile.",
       });
     });
   });

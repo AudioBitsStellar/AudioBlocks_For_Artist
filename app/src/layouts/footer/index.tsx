@@ -1,6 +1,6 @@
-import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEnvelope } from 'react-icons/fa';
-import Image from 'next/image';
-import Link from 'next/link';
+import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEnvelope } from "react-icons/fa";
+import Image from "next/image";
+import Link from "next/link";
 
 const Footer = () => {
   return (
@@ -34,7 +34,7 @@ const Footer = () => {
           </div>
 
           {/* Support */}
-          <div className='md:pt-7'>
+          <div className="md:pt-7">
             <h3 className="text-[#5B5C61] font-semibold mb-4">Support</h3>
             <ul className="space-y-4 text-sm">
               <li>
@@ -58,27 +58,27 @@ const Footer = () => {
           {/* Social Media */}
           <div>
             <h3 className="text-[#5B5C61] font-semibold mb-4">Social Media</h3>
-            <div className='space-y-4'>
-            <p className="text-sm mb-3">
-              For recent updates and news follow our social media feeds.
-            </p>
-            <div className="flex space-x-4 text-xl">
-              <Link href="#" className="hover:text-white">
-                <FaYoutube />
-              </Link>
-              <Link href="#" className="hover:text-white">
-                <FaInstagram />
-              </Link>
-              <Link href="#" className="hover:text-white">
-                <FaFacebookF />
-              </Link>
-              <Link href="#" className="hover:text-white">
-                <FaTwitter />
-              </Link>
-              <Link href="#" className="hover:text-white">
-                <FaEnvelope />
-              </Link>
-            </div>
+            <div className="space-y-4">
+              <p className="text-sm mb-3">
+                For recent updates and news follow our social media feeds.
+              </p>
+              <div className="flex space-x-4 text-xl">
+                <Link href="#" className="hover:text-white">
+                  <FaYoutube />
+                </Link>
+                <Link href="#" className="hover:text-white">
+                  <FaInstagram />
+                </Link>
+                <Link href="#" className="hover:text-white">
+                  <FaFacebookF />
+                </Link>
+                <Link href="#" className="hover:text-white">
+                  <FaTwitter />
+                </Link>
+                <Link href="#" className="hover:text-white">
+                  <FaEnvelope />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -88,4 +88,3 @@ const Footer = () => {
 };
 
 export default Footer;
-

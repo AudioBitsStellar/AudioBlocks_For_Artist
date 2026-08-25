@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { RoleProvider } from '@/context/RoleContext';
-import TopHeader from './TopHeader';
+import type { Meta, StoryObj } from "@storybook/react";
+import { RoleProvider } from "@/context/RoleContext";
+import TopHeader from "./TopHeader";
 
 const meta: Meta<typeof TopHeader> = {
-  title: 'Layout/TopHeader',
+  title: "Layout/TopHeader",
   component: TopHeader,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   parameters: {
-    layout: 'padded',
+    layout: "padded",
   },
   decorators: [
     (Story) => (
@@ -57,8 +57,8 @@ export const Manager: Story = {
   args: {
     onMenuClick: () => {},
     sidebarOpen: false,
-    userName: 'Ada Lovelace',
-    userRole: 'manager',
+    userName: "Ada Lovelace",
+    userRole: "manager",
   },
 };
 
@@ -66,7 +66,7 @@ export const Viewer: Story = {
   args: {
     onMenuClick: () => {},
     sidebarOpen: false,
-    userName: 'Grace Hopper',
-    userRole: 'viewer',
+    userName: "Grace Hopper",
+    userRole: "viewer",
   },
 };

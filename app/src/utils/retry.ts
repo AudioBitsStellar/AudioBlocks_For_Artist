@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { toast } from "sonner";
 
 export interface RetryConfig {
   maxRetries?: number;
@@ -8,12 +8,12 @@ export interface RetryConfig {
 
 /**
  * Determines if an error is retryable based on its type and status code.
- * 
+ *
  * Retryable errors:
  * - Network errors (no response)
  * - 429 (Rate Limit)
  * - 503 (Service Unavailable)
- * 
+ *
  * Non-retryable errors:
  * - 400 (Bad Request)
  * - 401 (Unauthorized)
@@ -51,7 +51,7 @@ export function isRetryableError(error: Error): boolean {
 /**
  * Calculates exponential backoff delay for a given attempt.
  * Uses the formula: baseDelay * (2 ^ (attempt - 1))
- * 
+ *
  * @param attempt - Current retry attempt (1-indexed)
  * @param baseDelay - Base delay in milliseconds (default: 1000ms)
  * @returns Delay in milliseconds
@@ -62,21 +62,14 @@ export function calculateBackoff(attempt: number, baseDelay: number = 1000): num
 
 /**
  * Executes a function with automatic retry logic and exponential backoff.
- * 
+ *
  * @param fn - The async function to execute
  * @param config - Retry configuration options
  * @returns The result of the function
  * @throws The last error if all retries are exhausted
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  config: RetryConfig = {}
-): Promise<T> {
-  const {
-    maxRetries = 3,
-    baseDelay = 1000,
-    onRetry,
-  } = config;
+export async function withRetry<T>(fn: () => Promise<T>, config: RetryConfig = {}): Promise<T> {
+  const { maxRetries = 3, baseDelay = 1000, onRetry } = config;
 
   let lastError: Error;
 

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 /**
  * Registers the AudioBlocks service worker on the client.
@@ -12,20 +12,20 @@ import { useEffect } from 'react';
  */
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!('serviceWorker' in navigator)) return;
+    if (typeof window === "undefined") return;
+    if (!("serviceWorker" in navigator)) return;
 
     // Avoid registering twice in dev (React StrictMode re-runs effects).
     const register = async () => {
       try {
-        const registration = await navigator.serviceWorker.register('/sw.js', {
-          scope: '/',
+        const registration = await navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
         });
 
         // Listen for waiting workers and activate them on the next reload
         // so users get the latest shell without manual intervention.
         if (registration.waiting) {
-          registration.waiting.postMessage('SKIP_WAITING');
+          registration.waiting.postMessage("SKIP_WAITING");
         }
         // Track whether we've already initiated a reload so the listener
         // only fires once per controller swap.
@@ -38,28 +38,28 @@ export default function ServiceWorkerRegister() {
           // handlers from a future iteration) is consistent.
           window.location.reload();
         };
-        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+        navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
 
-        registration.addEventListener('updatefound', () => {
+        registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;
           if (!newWorker) return;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              newWorker.postMessage('SKIP_WAITING');
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              newWorker.postMessage("SKIP_WAITING");
             }
           });
         });
       } catch (err) {
         // Service worker registration is non-fatal – log quietly so the app still runs.
-        console.warn('[sw] registration failed', err);
+        console.warn("[sw] registration failed", err);
       }
     };
 
     // Defer until after page load to keep first paint snappy.
-    if (document.readyState === 'complete') {
+    if (document.readyState === "complete") {
       register();
     } else {
-      window.addEventListener('load', register, { once: true });
+      window.addEventListener("load", register, { once: true });
     }
   }, []);
 

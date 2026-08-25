@@ -1,42 +1,42 @@
-'use client';
+"use client";
 
-import { ArrowUpRight, CornerDownRight } from 'lucide-react';
+import { ArrowUpRight, CornerDownRight } from "lucide-react";
 
 const listenerFeatures = [
   {
-    title: 'Discover New Music',
-    description: 'Find underground gems and fresh tracks from emerging African artists.',
+    title: "Discover New Music",
+    description: "Find underground gems and fresh tracks from emerging African artists.",
   },
   {
-    title: 'Stream Without Disruption',
-    description: 'Ad-free, high-quality music streaming designed for music lovers.',
+    title: "Stream Without Disruption",
+    description: "Ad-free, high-quality music streaming designed for music lovers.",
   },
   {
-    title: 'Earn as You Listen',
-    description: 'Collect points and rewards by engaging with tracks.',
+    title: "Earn as You Listen",
+    description: "Collect points and rewards by engaging with tracks.",
   },
   {
-    title: 'Support Artists Directly',
-    description: 'Tip your favorite creators or buy digital merch to help them grow.',
+    title: "Support Artists Directly",
+    description: "Tip your favorite creators or buy digital merch to help them grow.",
   },
 ];
 
 const artistFeatures = [
   {
-    title: 'Upload and Share Your Music',
-    description: 'Easily publish your tracks to reach a growing community of listeners.',
+    title: "Upload and Share Your Music",
+    description: "Easily publish your tracks to reach a growing community of listeners.",
   },
   {
-    title: 'Earn with Every Stream',
-    description: 'Get paid fairly through streaming, tips, subscriptions, and fan support.',
+    title: "Earn with Every Stream",
+    description: "Get paid fairly through streaming, tips, subscriptions, and fan support.",
   },
   {
-    title: 'Sell Digital Merch & NFTs',
-    description: 'Create your digital storefront to sell exclusive tracks, collectibles, and more.',
+    title: "Sell Digital Merch & NFTs",
+    description: "Create your digital storefront to sell exclusive tracks, collectibles, and more.",
   },
   {
-    title: 'Get Discovered & Funded',
-    description: 'Join to gain visibility to grow your reach.',
+    title: "Get Discovered & Funded",
+    description: "Join to gain visibility to grow your reach.",
   },
 ];
 
@@ -84,7 +84,7 @@ const HowItWorks = () => {
 
         {/* Artists Card */}
         <div className="border border-[#27272B] rounded-2xl p-6 relative">
-          <div className='flex justify-between items-center'>
+          <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold mb-3 text-white">Artists</h3>
             <button
               aria-hidden="true"
@@ -122,4 +122,3 @@ const HowItWorks = () => {
 };
 
 export default HowItWorks;
-

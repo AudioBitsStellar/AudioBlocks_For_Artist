@@ -1,6 +1,7 @@
 # Accessibility Audit - Dashboard Routes
 
 ## Overview
+
 This document outlines accessibility findings and fixes across all `/dashboard` routes: overview, my-music, upload-music, events, merches, and profile.
 
 ---
@@ -8,6 +9,7 @@ This document outlines accessibility findings and fixes across all `/dashboard` 
 ## Route: /dashboard/overview
 
 ### Components Audited
+
 - `OverviewCards.tsx`
 - `EarningsRoyalties.tsx`
 - `MyMusicContent.tsx`
@@ -18,20 +20,24 @@ This document outlines accessibility findings and fixes across all `/dashboard` 
 ### Findings & Fixes
 
 #### OverviewCards.tsx
+
 - **Status**: No critical issues found
 - Cards have proper semantic structure with headings
 
 #### EarningsRoyalties.tsx
+
 - **Fixed**: Added `aria-label` to select dropdowns for better screen reader context
 - **Fixed**: Added `aria-hidden="true"` to decorative SVG elements in chart tooltip
 
 #### MyMusicContent.tsx
+
 - **Fixed**: Added `aria-label` to search inputs for screen readers
 - **Fixed**: Added `aria-hidden="true"` to decorative icons
 - **Fixed**: Added `aria-label` to album cards with album title and artist
 - **Fixed**: Delete button now has `aria-label` with song title
 
 #### Transactions.tsx
+
 - **Fixed**: Added `aria-label` to select dropdowns
 - **Fixed**: Added `aria-hidden="true"` to decorative ChevronDown icons
 - **Fixed**: Added `scope="col"` to table headers for proper semantics
@@ -41,101 +47,109 @@ This document outlines accessibility findings and fixes across all `/dashboard` 
 ## Route: /dashboard/my-music
 
 ### Components Audited
+
 - `MyMusicContent.tsx`
 
 ### Findings & Fixes
 
-| Issue | Component | Severity | Status |
-|-------|-----------|----------|--------|
-| Missing `aria-label` on search inputs | MyMusicContent.tsx | Medium | Fixed |
-| Missing `aria-hidden` on decorative icons | MyMusicContent.tsx | Low | Fixed |
-| Album cards missing proper alt text | MyMusicContent.tsx | Medium | Fixed |
-| Delete button missing accessible name | MyMusicContent.tsx | High | Fixed - added aria-label |
-| Scrollable album carousel missing keyboard instructions | MyMusicContent.tsx | Low | Consider adding skip links |
+| Issue                                                   | Component          | Severity | Status                     |
+| ------------------------------------------------------- | ------------------ | -------- | -------------------------- |
+| Missing `aria-label` on search inputs                   | MyMusicContent.tsx | Medium   | Fixed                      |
+| Missing `aria-hidden` on decorative icons               | MyMusicContent.tsx | Low      | Fixed                      |
+| Album cards missing proper alt text                     | MyMusicContent.tsx | Medium   | Fixed                      |
+| Delete button missing accessible name                   | MyMusicContent.tsx | High     | Fixed - added aria-label   |
+| Scrollable album carousel missing keyboard instructions | MyMusicContent.tsx | Low      | Consider adding skip links |
 
 ---
 
 ## Route: /dashboard/upload-music
 
 ### Components Audited
+
 - `Song.tsx`
 - `Album.tsx`
 
 ### Findings & Fixes
 
-| Issue | Component | Severity | Status |
-|-------|-----------|----------|--------|
-| Missing `id` and `htmlFor` associations for labels | Song.tsx, Album.tsx | High | Fixed |
-| Missing `aria-invalid` on form inputs | Song.tsx, Album.tsx | High | Fixed |
-| Missing inline error messages with `role="alert"` | Song.tsx, Album.tsx | High | Fixed |
-| Submit button not disabled during invalid state | Song.tsx, Album.tsx | Medium | Fixed |
-| Missing `aria-label` on file inputs | Song.tsx, Album.tsx | Medium | Fixed |
-| Drag-and-drop areas missing keyboard support | Song.tsx | Medium | Fixed - added role and tabIndex |
+| Issue                                              | Component           | Severity | Status                          |
+| -------------------------------------------------- | ------------------- | -------- | ------------------------------- |
+| Missing `id` and `htmlFor` associations for labels | Song.tsx, Album.tsx | High     | Fixed                           |
+| Missing `aria-invalid` on form inputs              | Song.tsx, Album.tsx | High     | Fixed                           |
+| Missing inline error messages with `role="alert"`  | Song.tsx, Album.tsx | High     | Fixed                           |
+| Submit button not disabled during invalid state    | Song.tsx, Album.tsx | Medium   | Fixed                           |
+| Missing `aria-label` on file inputs                | Song.tsx, Album.tsx | Medium   | Fixed                           |
+| Drag-and-drop areas missing keyboard support       | Song.tsx            | Medium   | Fixed - added role and tabIndex |
 
 ---
 
 ## Route: /dashboard/profile
 
 ### Components Audited
+
 - `profile/page.tsx`
 
 ### Findings & Fixes
 
-| Issue | Component | Severity | Status |
-|-------|-----------|----------|--------|
-| Missing `id` and `htmlFor` associations for labels | profile/page.tsx | High | Fixed |
-| Missing `aria-invalid` on form inputs | profile/page.tsx | High | Fixed |
-| Missing inline error messages with `role="alert"` | profile/page.tsx | High | Fixed |
-| Save button not disabled during invalid state | profile/page.tsx | Medium | Fixed |
-| Toggle switches missing `role="switch"` and `aria-checked` | profile/page.tsx | High | Fixed |
-| Missing `aria-controls` and `aria-selected` on tabs | profile/page.tsx | High | Fixed |
-| Profile form missing required indicator | profile/page.tsx | Medium | Fixed - added asterisk |
+| Issue                                                      | Component        | Severity | Status                 |
+| ---------------------------------------------------------- | ---------------- | -------- | ---------------------- |
+| Missing `id` and `htmlFor` associations for labels         | profile/page.tsx | High     | Fixed                  |
+| Missing `aria-invalid` on form inputs                      | profile/page.tsx | High     | Fixed                  |
+| Missing inline error messages with `role="alert"`          | profile/page.tsx | High     | Fixed                  |
+| Save button not disabled during invalid state              | profile/page.tsx | Medium   | Fixed                  |
+| Toggle switches missing `role="switch"` and `aria-checked` | profile/page.tsx | High     | Fixed                  |
+| Missing `aria-controls` and `aria-selected` on tabs        | profile/page.tsx | High     | Fixed                  |
+| Profile form missing required indicator                    | profile/page.tsx | Medium   | Fixed - added asterisk |
 
 ---
 
 ## Route: /dashboard/events
 
 ### Components Audited
+
 - `EventsContent.tsx`
 - `NewEventModal.tsx`
 
 ### Findings & Fixes
 
-| Issue | Component | Severity | Status |
-|-------|-----------|----------|--------|
-| Modal missing proper aria labeling | NewEventModal.tsx | Medium | Already has sr-only titles |
-| Delete action ambiguous for screen readers | EventsContent.tsx | Low | Button has clear text |
-| Form fields have inline validation | NewEventModal.tsx | Medium | Not yet implemented - consider adding |
+| Issue                                      | Component         | Severity | Status                                |
+| ------------------------------------------ | ----------------- | -------- | ------------------------------------- |
+| Modal missing proper aria labeling         | NewEventModal.tsx | Medium   | Already has sr-only titles            |
+| Delete action ambiguous for screen readers | EventsContent.tsx | Low      | Button has clear text                 |
+| Form fields have inline validation         | NewEventModal.tsx | Medium   | Not yet implemented - consider adding |
 
 ---
 
 ## Route: /dashboard/merches
 
 ### Components Audited
+
 - `MerchesContent.tsx`
 
 ### Findings & Fixes
 
-| Issue | Component | Severity | Status |
-|-------|-----------|----------|--------|
-| Modal dialog needs proper labeling | MerchesContent.tsx | Medium | Already properly labeled |
-| Delete confirmation missing focus trap | MerchesContent.tsx | Medium | Consider adding focus management |
-| Image alt text using generic names | MerchesContent.tsx | Medium | Uses item.title for alt |
+| Issue                                  | Component          | Severity | Status                           |
+| -------------------------------------- | ------------------ | -------- | -------------------------------- |
+| Modal dialog needs proper labeling     | MerchesContent.tsx | Medium   | Already properly labeled         |
+| Delete confirmation missing focus trap | MerchesContent.tsx | Medium   | Consider adding focus management |
+| Image alt text using generic names     | MerchesContent.tsx | Medium   | Uses item.title for alt          |
 
 ---
 
 ## Common Issues Found Across Routes
 
 ### Color Contrast (WCAG AA - 4.5:1 minimum)
+
 - Text on dark backgrounds: Generally passing with #9CA3AF (gray-400) on #0F0F0F background
 - Check: #A3A3A3 on #161616 for form placeholders
 
 ### Focus Management
+
 - Sidebar mobile drawer: Has basic focus management
 - Modal dialogs: Radix UI provides focus trapping (NewEventModal)
 - Consider adding visible focus indicators for keyboard navigation
 
 ### Keyboard Navigation
+
 - All interactive elements are clickable but some may benefit from `tabIndex`
 - Carousel navigation buttons are keyboard accessible
 

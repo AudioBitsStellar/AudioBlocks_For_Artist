@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { FanLoyaltyProgram, LoyaltyProgramConfig } from '@/types';
-import { useI18n } from '@/context/I18nContext';
-import LoyaltyRewardsTier from './LoyaltyRewardsTier';
-import LoyaltyExclusiveContent from './LoyaltyExclusiveContent';
-import LoyaltyRewardsCatalog from './LoyaltyRewardsCatalog';
-import { Gift, Crown, Trophy } from 'lucide-react';
+import { FanLoyaltyProgram, LoyaltyProgramConfig } from "@/types";
+import { useI18n } from "@/context/I18nContext";
+import LoyaltyRewardsTier from "./LoyaltyRewardsTier";
+import LoyaltyExclusiveContent from "./LoyaltyExclusiveContent";
+import LoyaltyRewardsCatalog from "./LoyaltyRewardsCatalog";
+import { Gift, Crown, Trophy } from "lucide-react";
 
 interface LoyaltyDashboardProps {
   loyaltyProgram: FanLoyaltyProgram | null;
@@ -45,9 +45,7 @@ export default function LoyaltyDashboard({
           <Crown className="h-8 w-8 text-[#D2045B]" />
           <div>
             <h2 className="text-2xl font-bold text-white">{t.rewards.title}</h2>
-            <p className="text-sm text-[#A3A3A3]">
-              Earn points and unlock exclusive rewards
-            </p>
+            <p className="text-sm text-[#A3A3A3]">Earn points and unlock exclusive rewards</p>
           </div>
         </div>
 

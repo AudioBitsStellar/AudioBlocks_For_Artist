@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { GeographicData } from '@/services/analyticsService';
-import { Globe } from 'lucide-react';
+import { GeographicData } from "@/services/analyticsService";
+import { Globe } from "lucide-react";
 
 interface AnalyticsGeographicProps {
   data: GeographicData[];
@@ -29,9 +29,7 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
                   <p className="text-white font-medium">{item.country}</p>
                   <p className="text-gray-500 text-sm">{item.region}</p>
                 </div>
-                <p className="text-pink-500 font-semibold">
-                  {item.plays.toLocaleString()}
-                </p>
+                <p className="text-pink-500 font-semibold">{item.plays.toLocaleString()}</p>
               </div>
               <div className="w-full bg-[#2d3d2d] rounded-full h-2 overflow-hidden">
                 <div
@@ -47,7 +45,8 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
 
       <div className="mt-6 p-4 bg-[#2d3d2d] rounded-lg border border-[#3d4d3d]">
         <p className="text-gray-400 text-sm">
-          Total Plays from Top 10: {sortedData.reduce((sum, d) => sum + d.plays, 0).toLocaleString()}
+          Total Plays from Top 10:{" "}
+          {sortedData.reduce((sum, d) => sum + d.plays, 0).toLocaleString()}
         </p>
       </div>
     </div>

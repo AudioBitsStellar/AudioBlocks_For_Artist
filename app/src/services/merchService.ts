@@ -47,8 +47,8 @@ export interface PriceValidation {
   errors: Record<string, string>;
 }
 
-const CURRENCY = 'USD';
-const CURRENCY_SYMBOL = '$';
+const CURRENCY = "USD";
+const CURRENCY_SYMBOL = "$";
 
 /**
  * Formats a price as a USD currency string.
@@ -58,7 +58,7 @@ const CURRENCY_SYMBOL = '$';
  * @throws Never throws.
  */
 export function formatPrice(value: string | number): string {
-  const num = typeof value === 'string' ? parseFloat(value) : value;
+  const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return `${CURRENCY_SYMBOL}0.00`;
   return `${CURRENCY_SYMBOL}${num.toFixed(2)}`;
 }
@@ -71,7 +71,7 @@ export function formatPrice(value: string | number): string {
  * @throws Never throws.
  */
 export function parsePrice(value: string): number {
-  const cleaned = value.replace(/[^0-9.\-]/g, '');
+  const cleaned = value.replace(/[^0-9.\-]/g, "");
   return parseFloat(cleaned);
 }
 
@@ -89,27 +89,27 @@ export function validateMerchPayload(payload: CreateMerchPayload): PriceValidati
   const errors: Record<string, string> = {};
 
   if (!payload.title || !payload.title.trim()) {
-    errors.title = 'Title is required';
+    errors.title = "Title is required";
   } else if (payload.title.length > 200) {
-    errors.title = 'Title must be 200 characters or fewer';
+    errors.title = "Title must be 200 characters or fewer";
   }
 
   if (!payload.detail || !payload.detail.trim()) {
-    errors.detail = 'Description is required';
+    errors.detail = "Description is required";
   } else if (payload.detail.length > 2000) {
-    errors.detail = 'Description must be 2000 characters or fewer';
+    errors.detail = "Description must be 2000 characters or fewer";
   }
 
   if (!payload.price || !payload.price.toString().trim()) {
-    errors.price = 'Price is required';
+    errors.price = "Price is required";
   } else {
     const priceNum = parsePrice(payload.price.toString());
     if (isNaN(priceNum)) {
-      errors.price = 'Price must be a valid number';
+      errors.price = "Price must be a valid number";
     } else if (priceNum < 0) {
-      errors.price = 'Price cannot be negative';
+      errors.price = "Price cannot be negative";
     } else if (priceNum > 999999.99) {
-      errors.price = 'Price exceeds maximum allowed value';
+      errors.price = "Price exceeds maximum allowed value";
     }
   }
 
@@ -128,12 +128,10 @@ export function validateMerchPayload(payload: CreateMerchPayload): PriceValidati
 export function updateStock(
   items: MerchInventoryItem[],
   id: number,
-  change: number,
+  change: number
 ): MerchInventoryItem[] {
   return items.map((item) =>
-    item.id === id
-      ? { ...item, stock: Math.max(0, item.stock + change) }
-      : item,
+    item.id === id ? { ...item, stock: Math.max(0, item.stock + change) } : item
   );
 }
 
@@ -149,7 +147,7 @@ export function updateStock(
 export function reserveStock(
   items: MerchInventoryItem[],
   id: number,
-  quantity: number,
+  quantity: number
 ): { items: MerchInventoryItem[]; success: boolean } {
   const idx = items.findIndex((i) => i.id === id);
   if (idx === -1) return { items, success: false };
@@ -175,8 +173,7 @@ const useMerchService = () => {
    * @returns A React Query result: `{ data: MerchListResponse | undefined, isLoading, isError, error, refetch, ... }`.
    * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
    */
-  const useGetMerches = () =>
-    useGet<MerchListResponse>(MERCH_QUERY_KEY, MERCH_ENDPOINTS.LIST);
+  const useGetMerches = () => useGet<MerchListResponse>(MERCH_QUERY_KEY, MERCH_ENDPOINTS.LIST);
 
   /**
    * Creates a new merch item. Invalidates the merch cache and shows a success/error toast on completion.

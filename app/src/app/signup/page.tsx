@@ -48,7 +48,9 @@ export default function SignupPage() {
       >
         <div>
           <h1 className="text-white text-2xl font-bold">Create your artist account</h1>
-          <p className="text-sm text-[#A3A3A3] mt-1">Join AudioBlocks to upload and manage your music.</p>
+          <p className="text-sm text-[#A3A3A3] mt-1">
+            Join AudioBlocks to upload and manage your music.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -67,7 +69,10 @@ export default function SignupPage() {
               aria-invalid={errors.name ? "true" : "false"}
               aria-describedby={errors.name ? "signup-name-error" : undefined}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
-              style={{ background: "#FFFFFF0A", border: errors.name ? "1px solid #EF4444" : "none" }}
+              style={{
+                background: "#FFFFFF0A",
+                border: errors.name ? "1px solid #EF4444" : "none",
+              }}
             />
             {errors.name && (
               <span id="signup-name-error" role="alert" className="text-xs text-red-500 mt-1">
@@ -87,7 +92,8 @@ export default function SignupPage() {
                 minLength: { value: 3, message: "Username must be at least 3 characters" },
                 pattern: {
                   value: /^[a-zA-Z0-9._-]+$/,
-                  message: "Username can only contain letters, numbers, dots, underscores, and hyphens",
+                  message:
+                    "Username can only contain letters, numbers, dots, underscores, and hyphens",
                 },
               })}
               placeholder="Add a username"
@@ -95,7 +101,10 @@ export default function SignupPage() {
               aria-invalid={errors.username ? "true" : "false"}
               aria-describedby={errors.username ? "signup-username-error" : undefined}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
-              style={{ background: "#FFFFFF0A", border: errors.username ? "1px solid #EF4444" : "none" }}
+              style={{
+                background: "#FFFFFF0A",
+                border: errors.username ? "1px solid #EF4444" : "none",
+              }}
             />
             {errors.username && (
               <span id="signup-username-error" role="alert" className="text-xs text-red-500 mt-1">
@@ -123,7 +132,10 @@ export default function SignupPage() {
               aria-invalid={errors.email ? "true" : "false"}
               aria-describedby={errors.email ? "signup-email-error" : undefined}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
-              style={{ background: "#FFFFFF0A", border: errors.email ? "1px solid #EF4444" : "none" }}
+              style={{
+                background: "#FFFFFF0A",
+                border: errors.email ? "1px solid #EF4444" : "none",
+              }}
             />
             {errors.email && (
               <span id="signup-email-error" role="alert" className="text-xs text-red-500 mt-1">
@@ -154,7 +166,10 @@ export default function SignupPage() {
               aria-invalid={errors.password ? "true" : "false"}
               aria-describedby={errors.password ? "signup-password-error" : undefined}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
-              style={{ background: "#FFFFFF0A", border: errors.password ? "1px solid #EF4444" : "none" }}
+              style={{
+                background: "#FFFFFF0A",
+                border: errors.password ? "1px solid #EF4444" : "none",
+              }}
             />
             {errors.password && (
               <span id="signup-password-error" role="alert" className="text-xs text-red-500 mt-1">
@@ -167,7 +182,9 @@ export default function SignupPage() {
             type="submit"
             disabled={isSubmitDisabled}
             className={`${
-              isSubmitDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-[#B8043F]"
+              isSubmitDisabled
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer hover:bg-[#B8043F]"
             } w-full rounded-lg bg-[#D2045B] text-white font-semibold px-6 py-3 transition-colors`}
           >
             {isBusy ? <MusicLoader small /> : "Sign up"}

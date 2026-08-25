@@ -4,7 +4,7 @@
 
 export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
   fn: T,
-  delayMs: number,
+  delayMs: number
 ): T & { cancel: () => void; flush: () => void } {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastArgs: Parameters<T> | null = null;
@@ -45,7 +45,7 @@ export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
 
 export function throttle<T extends (...args: Parameters<T>) => ReturnType<T>>(
   fn: T,
-  intervalMs: number,
+  intervalMs: number
 ): T & { cancel: () => void } {
   let lastRun = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -143,7 +143,7 @@ export class RateLimiter {
 
 export function withRateLimit<T extends (...args: Parameters<T>) => Promise<ReturnType<T>>>(
   fn: T,
-  limiter: RateLimiter,
+  limiter: RateLimiter
 ): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>> | undefined> {
   return async (...args: Parameters<T>) => {
     if (!limiter.tryConsume()) return undefined;

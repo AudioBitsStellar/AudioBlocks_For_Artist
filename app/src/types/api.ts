@@ -193,7 +193,10 @@ export interface MerchMetric {
   topItem?: string;
 }
 
-export interface MerchListResponse extends ApiEnvelope<{ items: MerchItem[]; metrics: MerchMetric }> {}
+export interface MerchListResponse extends ApiEnvelope<{
+  items: MerchItem[];
+  metrics: MerchMetric;
+}> {}
 
 export interface CreateMerchPayload {
   name: string;
@@ -238,7 +241,10 @@ export interface EventMetric {
   totalAttendees: number;
 }
 
-export interface EventListResponse extends ApiEnvelope<{ events: EventItem[]; metrics: EventMetric }> {}
+export interface EventListResponse extends ApiEnvelope<{
+  events: EventItem[];
+  metrics: EventMetric;
+}> {}
 
 export interface CreateEventPayload {
   title: string;
@@ -334,8 +340,7 @@ export type NotificationPreferences = Record<
   Record<NotificationChannel, boolean>
 >;
 
-export interface NotificationPreferencesResponse
-  extends ApiEnvelope<NotificationPreferences> {}
+export interface NotificationPreferencesResponse extends ApiEnvelope<NotificationPreferences> {}
 
 // ── Pagination meta ───────────────────────────────────────────────────────────
 

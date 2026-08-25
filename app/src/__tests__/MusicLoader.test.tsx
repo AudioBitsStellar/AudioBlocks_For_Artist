@@ -9,52 +9,52 @@
 // component's real behavior rather than inventing coverage for a feature
 // that isn't there (see the PR description for more detail).
 
-import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
-import MusicLoader from '@/components/MusicLoader';
+import { describe, it, expect } from "vitest";
+import { render } from "@testing-library/react";
+import MusicLoader from "@/components/MusicLoader";
 
-describe('MusicLoader', () => {
-  it('renders four animated bars', () => {
+describe("MusicLoader", () => {
+  it("renders four animated bars", () => {
     const { container } = render(<MusicLoader />);
-    const bars = container.querySelectorAll('.animate-music-fast');
+    const bars = container.querySelectorAll(".animate-music-fast");
     expect(bars).toHaveLength(4);
   });
 
-  it('defaults to the large (h-8) size when small is not passed', () => {
+  it("defaults to the large (h-8) size when small is not passed", () => {
     const { container } = render(<MusicLoader />);
     const wrapper = container.firstElementChild;
-    expect(wrapper?.className).toContain('h-8');
-    expect(wrapper?.className).not.toContain('h-4');
+    expect(wrapper?.className).toContain("h-8");
+    expect(wrapper?.className).not.toContain("h-4");
   });
 
-  it('renders at the large (h-8) size when small is explicitly false', () => {
+  it("renders at the large (h-8) size when small is explicitly false", () => {
     const { container } = render(<MusicLoader small={false} />);
     const wrapper = container.firstElementChild;
-    expect(wrapper?.className).toContain('h-8');
+    expect(wrapper?.className).toContain("h-8");
   });
 
-  it('renders at the small (h-4) size when small is true', () => {
+  it("renders at the small (h-4) size when small is true", () => {
     const { container } = render(<MusicLoader small />);
     const wrapper = container.firstElementChild;
-    expect(wrapper?.className).toContain('h-4');
-    expect(wrapper?.className).not.toContain('h-8');
+    expect(wrapper?.className).toContain("h-4");
+    expect(wrapper?.className).not.toContain("h-8");
   });
 
-  it('applies a staggered animation delay to each bar', () => {
+  it("applies a staggered animation delay to each bar", () => {
     const { container } = render(<MusicLoader />);
-    const bars = Array.from(container.querySelectorAll('.animate-music-fast'));
+    const bars = Array.from(container.querySelectorAll(".animate-music-fast"));
     const delays = bars.map((bar) => (bar as HTMLElement).style.animationDelay);
-    expect(delays).toEqual(['0s', '0.15s', '0.3s', '0.45s']);
+    expect(delays).toEqual(["0s", "0.15s", "0.3s", "0.45s"]);
   });
 
-  it('re-renders without throwing when toggled between small and large', () => {
+  it("re-renders without throwing when toggled between small and large", () => {
     const { rerender, container } = render(<MusicLoader small={false} />);
-    expect(container.firstElementChild?.className).toContain('h-8');
+    expect(container.firstElementChild?.className).toContain("h-8");
 
     rerender(<MusicLoader small={true} />);
-    expect(container.firstElementChild?.className).toContain('h-4');
+    expect(container.firstElementChild?.className).toContain("h-4");
 
     rerender(<MusicLoader small={false} />);
-    expect(container.firstElementChild?.className).toContain('h-8');
+    expect(container.firstElementChild?.className).toContain("h-8");
   });
 });

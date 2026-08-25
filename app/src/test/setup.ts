@@ -23,7 +23,7 @@ try {
   // eslint-disable-next-line no-console
   console.warn(
     "[vitest setup] vitest-axe/matchers not available; accessibility matchers will not be registered.",
-    err,
+    err
   );
   // The original comment block continues below for context.
   // Skip a11y matcher registration gracefully. The accessibility tests

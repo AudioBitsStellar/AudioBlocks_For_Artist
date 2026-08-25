@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import MerchesContent from './MerchesContent';
+import type { Meta, StoryObj } from "@storybook/react";
+import MerchesContent from "./MerchesContent";
 
 const meta: Meta<typeof MerchesContent> = {
-  title: 'Dashboard/MerchesContent',
+  title: "Dashboard/MerchesContent",
   component: MerchesContent,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   parameters: {
-    layout: 'padded',
+    layout: "padded",
   },
 };
 

@@ -1,4 +1,5 @@
 ## Description
+
 <!-- What changed and why. Link related issues if applicable. -->
 
 ## Type of Change
@@ -11,9 +12,11 @@
 - [ ] Other (please describe):
 
 ## Testing
+
 <!-- Describe how the change was tested. -->
 
 ## Screenshots
+
 <!-- Add screenshots if the change is visual. -->
 
 ## Checklist

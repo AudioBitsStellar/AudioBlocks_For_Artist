@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useI18n } from '@/context/I18nContext';
-import { MusicMetadata, MultilingualText, SupportedLanguage } from '@/types';
+import { useI18n } from "@/context/I18nContext";
+import { MusicMetadata, MultilingualText, SupportedLanguage } from "@/types";
 
 /**
  * Hook for working with multilingual music metadata
@@ -13,15 +13,18 @@ export function useMultilingualMusic() {
   /**
    * Get text in current locale, fallback to primary language if not available
    */
-  const getLocalizedText = (multilingualText: MultilingualText, primaryLang: SupportedLanguage = 'en'): string => {
-    return multilingualText[locale] ?? multilingualText[primaryLang] ?? '';
+  const getLocalizedText = (
+    multilingualText: MultilingualText,
+    primaryLang: SupportedLanguage = "en"
+  ): string => {
+    return multilingualText[locale] ?? multilingualText[primaryLang] ?? "";
   };
 
   /**
    * Create a new multilingual text object
    */
   const createMultilingualText = (text: string | Partial<MultilingualText>): MultilingualText => {
-    if (typeof text === 'string') {
+    if (typeof text === "string") {
       return { [locale]: text };
     }
     return text as MultilingualText;
@@ -68,7 +71,7 @@ export function useMultilingualMusic() {
    */
   const isCompleteTranslation = (
     multilingualText: MultilingualText,
-    requiredLanguages: SupportedLanguage[] = ['en', 'es']
+    requiredLanguages: SupportedLanguage[] = ["en", "es"]
   ): boolean => {
     return requiredLanguages.every((lang) => multilingualText[lang]?.trim());
   };

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { isTokenExpired, clearTokens, getStoredToken } from '@/services/authService';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { isTokenExpired, clearTokens, getStoredToken } from "@/services/authService";
 
 /** Minutes before expiry to show the warning modal */
 const WARNING_BEFORE_EXPIRY_MS = 5 * 60 * 1000;
@@ -47,8 +47,8 @@ export function useSessionTimeout({
 
   // Calculate seconds remaining until token expiry
   const getSecondsRemaining = useCallback((): number => {
-    if (typeof window === 'undefined') return 0;
-    const expiry = localStorage.getItem('token_expiry');
+    if (typeof window === "undefined") return 0;
+    const expiry = localStorage.getItem("token_expiry");
     if (!expiry) return Infinity;
     return Math.max(0, Math.floor((Number(expiry) - Date.now()) / 1000));
   }, []);

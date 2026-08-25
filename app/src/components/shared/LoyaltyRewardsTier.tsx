@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { FanLoyaltyProgram, LoyaltyProgramConfig } from '@/types';
-import { useLoyaltyProgram } from '@/hooks/useLoyaltyProgram';
-import { useI18n } from '@/context/I18nContext';
+import { FanLoyaltyProgram, LoyaltyProgramConfig } from "@/types";
+import { useLoyaltyProgram } from "@/hooks/useLoyaltyProgram";
+import { useI18n } from "@/context/I18nContext";
 
 interface LoyaltyRewardsTierProps {
   loyaltyProgram: FanLoyaltyProgram | null;
@@ -12,17 +12,12 @@ interface LoyaltyRewardsTierProps {
 /**
  * Component displaying tier information and progress to next tier
  */
-export default function LoyaltyRewardsTier({
-  loyaltyProgram,
-  config,
-}: LoyaltyRewardsTierProps) {
+export default function LoyaltyRewardsTier({ loyaltyProgram, config }: LoyaltyRewardsTierProps) {
   const { t } = useI18n();
-  const {
-    currentTierInfo,
-    nextTierInfo,
-    progressToNextTier,
-    formatPoints,
-  } = useLoyaltyProgram(loyaltyProgram, config);
+  const { currentTierInfo, nextTierInfo, progressToNextTier, formatPoints } = useLoyaltyProgram(
+    loyaltyProgram,
+    config
+  );
 
   if (!loyaltyProgram) {
     return null;
@@ -37,7 +32,10 @@ export default function LoyaltyRewardsTier({
         </p>
         <div
           className="flex items-center gap-3 rounded-xl p-4"
-          style={{ backgroundColor: `${currentTierInfo.color}20`, borderLeft: `4px solid ${currentTierInfo.color}` }}
+          style={{
+            backgroundColor: `${currentTierInfo.color}20`,
+            borderLeft: `4px solid ${currentTierInfo.color}`,
+          }}
         >
           <div
             className="h-12 w-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
@@ -46,12 +44,10 @@ export default function LoyaltyRewardsTier({
             {currentTierInfo.tier[0].toUpperCase()}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white capitalize">
-              {currentTierInfo.tier}
-            </h3>
+            <h3 className="text-lg font-semibold text-white capitalize">{currentTierInfo.tier}</h3>
             <p className="text-sm text-[#A3A3A3]">
-              {formatPoints(loyaltyProgram.points.current)} / {formatPoints(currentTierInfo.maxPoints)}{' '}
-              {t.rewards.yourPoints.toLowerCase()}
+              {formatPoints(loyaltyProgram.points.current)} /{" "}
+              {formatPoints(currentTierInfo.maxPoints)} {t.rewards.yourPoints.toLowerCase()}
             </p>
           </div>
         </div>
