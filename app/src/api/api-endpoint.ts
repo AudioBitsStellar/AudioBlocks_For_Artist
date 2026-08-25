@@ -38,6 +38,7 @@ export const MERCH_ENDPOINTS = {
 
 export const EARNINGS_ENDPOINTS = {
   GET_EARNINGS: "/artist/earnings",
+  GET_PLATFORM_REVENUE: "/artist/earnings/platforms",
 };
 
 export const OVERVIEW_ENDPOINTS = {

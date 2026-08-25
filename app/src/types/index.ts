@@ -87,6 +87,23 @@ export interface EarningsResponse {
   data: EarningsSummary;
 }
 
+export interface PlatformRevenue {
+  platform: string;
+  revenue: number;
+  percentage: number;
+  streams: number;
+}
+
+export interface PlatformRevenueSummary {
+  totalRevenue: number;
+  platforms: PlatformRevenue[];
+}
+
+export interface PlatformRevenueResponse {
+  success: boolean;
+  data: PlatformRevenueSummary;
+}
+
 export interface OverviewKpi {
   songsPublished: number;
   totalEarnings: number;

@@ -102,6 +102,22 @@ export interface EarningsSummary {
 
 export interface EarningsResponse extends ApiEnvelope<EarningsSummary> {}
 
+// ── Platform Revenue Breakdown ──────────────────────────────────────────────
+
+export interface PlatformRevenue {
+  platform: string;
+  revenue: number;
+  percentage: number;
+  streams: number;
+}
+
+export interface PlatformRevenueSummary {
+  totalRevenue: number;
+  platforms: PlatformRevenue[];
+}
+
+export interface PlatformRevenueResponse extends ApiEnvelope<PlatformRevenueSummary> {}
+
 // ── Transactions ──────────────────────────────────────────────────────────────
 
 export type TransactionType = "Royalty" | "Sale" | "Payout" | "Refund";

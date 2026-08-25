@@ -1,6 +1,6 @@
 import { EARNINGS_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
-import { EarningsResponse } from "@/types";
+import { EarningsResponse, PlatformRevenueResponse } from "@/types";
 
 const useEarningsServices = () => {
   /**
@@ -22,7 +22,25 @@ const useEarningsServices = () => {
     });
   };
 
-  return { useGetEarnings };
+  /**
+   * Fetches the artist's revenue broken down by streaming platform —
+   * per-platform revenue, percentage share, and stream counts — cached for 5 minutes.
+   *
+   * @param enabled - Set false to skip fetching. Defaults to true.
+   * @returns A React Query result with PlatformRevenueResponse data.
+   */
+  const useGetPlatformRevenue = (enabled: boolean = true) => {
+    return useGet<PlatformRevenueResponse>(
+      ["get-platform-revenue"],
+      EARNINGS_ENDPOINTS.GET_PLATFORM_REVENUE,
+      {
+        enabled,
+        staleTime: 1000 * 60 * 5,
+      }
+    );
+  };
+
+  return { useGetEarnings, useGetPlatformRevenue };
 };
 
 export default useEarningsServices;
