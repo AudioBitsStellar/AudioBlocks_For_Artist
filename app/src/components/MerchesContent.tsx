@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Filter, Search, ShoppingBag, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { featureFlags } from '@/lib/featureFlags';
-import { MOCK_MERCH_ITEMS, MOCK_MERCH_METRICS } from '@/lib/mockData';
+import { MOCK_MERCH_ITEMS, MOCK_MERCH_METRICS } from '@/__mocks__/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import useMerchService, { MerchItem, CreateMerchPayload } from '@/services/merchService';
