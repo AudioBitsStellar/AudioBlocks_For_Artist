@@ -30,6 +30,9 @@ export type PlaybackAction =
   | { type: 'SET_PLAYLIST'; playlist: Track[] }
   | { type: 'NEXT_TRACK' }
   | { type: 'PREV_TRACK' }
+  | { type: 'ADD_TO_QUEUE'; track: Track }
+  | { type: 'SET_QUEUE'; queue: Track[] }
+  | { type: 'CLEAR_QUEUE' }
   | { type: 'SET_ERROR'; error: string }
   | { type: 'CLEAR_ERROR' };
 
@@ -39,6 +42,7 @@ export const initialPlaybackState: PlaybackState = {
   volume: 1,
   seekPosition: 0,
   playlist: [],
+  queue: [],
   error: null,
 };
 
@@ -86,6 +90,24 @@ export function playbackReducer(
         ? { ...state, currentTrack: prev, isPlaying: true, seekPosition: 0 }
         : state;
     }
+
+    case 'ADD_TO_QUEUE':
+      return {
+        ...state,
+        queue: [...state.queue, action.track],
+      };
+
+    case 'SET_QUEUE':
+      return {
+        ...state,
+        queue: action.queue,
+      };
+
+    case 'CLEAR_QUEUE':
+      return {
+        ...state,
+        queue: [],
+      };
 
     case 'SET_ERROR':
       return { ...state, error: action.error, isPlaying: false };

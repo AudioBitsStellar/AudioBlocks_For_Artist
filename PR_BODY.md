@@ -149,3 +149,5 @@ npm run start                    # then visit /dashboard/offline (devtools "Offl
 ## Linked issues
 
 Closes #172, #173, #174, #175 (all four are addressed by this PR).
+
+Closes #302, #306, #304, #322 (all four are addressed by this PR).
