@@ -16,6 +16,7 @@ import MintSongButton from "@/components/common/wallet/MintSongButton";
 import { analytics } from "@/lib/analytics";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { sanitize } from "@/utils/sanitize";
+import { extractAudioMetadata, formatDuration, type AudioMetadata } from "@/utils/audioMetadata";
 
 const ALLOWED_AUDIO_TYPES = new Set([
   "audio/mpeg",
@@ -54,6 +55,8 @@ const Song = () => {
     status: "uploading" | "success" | "failed" | "cancelled";
   } | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [audioMetadata, setAudioMetadata] = useState<AudioMetadata | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // #128 — the shared usePost/axios client has no AbortSignal support, so
@@ -158,6 +161,9 @@ const Song = () => {
     setRetryCount(0);
     setFailedChunkIndex(0);
     cancelRequestedRef.current = false;
+    setPreviewUrl(URL.createObjectURL(file));
+    setAudioMetadata(null);
+    extractAudioMetadata(file).then(setAudioMetadata);
 
     setUploadedFile({
       name: file.name,
@@ -207,6 +213,9 @@ const Song = () => {
       setRetryCount(0);
       setFailedChunkIndex(0);
       cancelRequestedRef.current = false;
+      setPreviewUrl(URL.createObjectURL(file));
+      setAudioMetadata(null);
+      extractAudioMetadata(file).then(setAudioMetadata);
 
       const fileSize = formatFileSize(file.size);
       setUploadedFile({
@@ -255,6 +264,8 @@ const Song = () => {
     setAudioFile(null);
     setFileId(null);
     setUploadProgress(0);
+    setPreviewUrl(null);
+    setAudioMetadata(null);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -651,6 +662,11 @@ const Song = () => {
                           Upload finished
                         </span>
                       )}
+                      {uploadedFile.status === "success" && mintableSongId && (
+                        <span className="text-[10px] text-yellow-500 font-medium animate-pulse">
+                          Processing audio&hellip;
+                        </span>
+                      )}
                       {uploadedFile.status === "cancelled" && (
                         <span className="text-[10px] text-[#A3A3A3] font-medium">
                           Upload cancelled
@@ -709,6 +725,21 @@ const Song = () => {
               <p className="text-[10px] text-[#A3A3A3]">No uploads added to the queue</p>
             )}
           </div>
+
+          {previewUrl && (
+            <div className="mt-3 bg-[#1a1a1a] rounded-lg p-2">
+              <p className="text-xs font-semibold text-white mb-1.5">Preview</p>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <audio controls src={previewUrl} className="w-full h-8" />
+              {audioMetadata && (
+                <p className="text-[10px] text-[#A3A3A3] mt-1.5">
+                  {formatDuration(audioMetadata.durationSec)} &middot;{" "}
+                  {audioMetadata.sampleRateHz.toLocaleString()} Hz &middot;{" "}
+                  ~{audioMetadata.bitrateKbps} kbps
+                </p>
+              )}
+            </div>
+          )}
 
           {mintableSongId && (
             <div className="mt-3 bg-[#1a1a1a] rounded-lg p-3 flex items-center justify-between gap-2">
