@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Monitor, Smartphone, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
-import { MOCK_MERCH_ITEMS } from '@/lib/mockData';
+import { MOCK_MERCH_ITEMS } from '@/__mocks__/mockData';
 import { featureFlags } from '@/lib/featureFlags';
 import useMerchService from '@/services/merchService';
 

@@ -7,6 +7,7 @@ import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { toast } from "sonner";
+import { ApiEnvelope, SubmitArtistSetupResponse } from "@/types/api";
 
 type SetupStatus = 'idle' | 'not_installed' | 'preparing' | 'awaiting_signature' | 'submitting' | 'success' | 'rejected' | 'timeout' | 'failed';
 
@@ -63,17 +64,18 @@ export default function SetupArtistOnChainProfile() {
       let signedXdr: string;
       try {
         signedXdr = await signTransactionXdr(prepared.data.xdr, prepared.data.networkPassphrase, address);
-      } catch (signErr: any) {
-        if (signErr?.message?.toLowerCase().includes("rejected") || signErr?.message?.toLowerCase().includes("user rejected")) {
+      } catch (signErr: unknown) {
+        const error = signErr as Error;
+        if (error?.message?.toLowerCase().includes("rejected") || error?.message?.toLowerCase().includes("user rejected")) {
           setStatus('rejected');
           analytics.mintFailed({ songId: 'artist-profile', reason: "user rejected signature" });
           return;
         }
-        throw signErr;
+        throw error;
       }
 
       setStatus('submitting');
-      const result: any = await submitMutation.mutateAsync({ signedXdr });
+      const result: ApiEnvelope<SubmitArtistSetupResponse> = await submitMutation.mutateAsync({ signedXdr });
 
       const hash = result?.data?.txHash ?? '';
       setTxHash(hash);
@@ -86,8 +88,9 @@ export default function SetupArtistOnChainProfile() {
         tokenId: result?.data?.tokenId ?? '',
       });
       toast.success("Profile setup succeeded on-chain!");
-    } catch (err: any) {
-      const reason = err?.message ?? "unknown";
+    } catch (err: unknown) {
+      const error = err as Error;
+      const reason = error?.message ?? "unknown";
       analytics.mintFailed({ songId: 'artist-profile', reason });
       
       if (reason.toLowerCase().includes("timeout") || reason.toLowerCase().includes("network")) {

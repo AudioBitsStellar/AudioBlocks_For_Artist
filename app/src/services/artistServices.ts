@@ -127,7 +127,7 @@ const useArtistServices = () => {
 	 */
 	const useUpdateArtistProfile = () => {
 		return usePut<updateProfilePayload>(USER_ENDPOINTS.UPDATE_PROFILE, {
-			onSuccess(response: any) {
+			onSuccess(response: { message?: string }) {
 				handleSuccess(response?.message || "Profile updated successfully!");
 			},
 			onError(error: unknown) {

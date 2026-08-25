@@ -1,7 +1,7 @@
 'use client';
 
 import { featureFlags } from '@/lib/featureFlags';
-import { MOCK_OVERVIEW_CARDS } from '@/lib/mockData';
+import { MOCK_OVERVIEW_CARDS } from '@/__mocks__/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
 import useOverviewServices from '@/services/overviewService';
 

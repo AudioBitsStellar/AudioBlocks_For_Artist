@@ -7,7 +7,7 @@ vi.mock("@/lib/featureFlags", () => ({
   featureFlags: { useMockOverviewCards: true },
 }));
 
-vi.mock("@/lib/mockData", () => ({
+vi.mock("@/__mocks__/mockData", () => ({
   MOCK_OVERVIEW_CARDS: [
     { title: "Total Streams", value: "12,340", isFirst: true },
     { title: "Monthly Listeners", value: "3,210", isFirst: false },

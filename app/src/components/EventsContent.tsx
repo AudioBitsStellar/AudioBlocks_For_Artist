@@ -3,7 +3,7 @@
 import { Filter, Search, CalendarDays, Clock3, Trash2, Loader2, CalendarPlus, TrendingUp, Users, Activity, UserPlus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { featureFlags } from '@/lib/featureFlags';
-import { MOCK_EVENTS, MOCK_EVENT_METRICS, MOCK_EVENT_ENGAGEMENT_METRICS, MOCK_ENGAGEMENT_TREND } from '@/lib/mockData';
+import { MOCK_EVENTS, MOCK_EVENT_METRICS, MOCK_EVENT_ENGAGEMENT_METRICS, MOCK_ENGAGEMENT_TREND } from '@/__mocks__/mockData';
 import MockDataBadge from '@/components/MockDataBadge';
 import ConfirmationDialog from './shared/ConfirmationDialog';
 import EmptyState from './shared/EmptyState';

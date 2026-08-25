@@ -40,7 +40,7 @@ vi.mock('@/lib/analytics', () => ({
 }));
 
 vi.mock('@/components/common/wallet/MintSongButton', () => ({
-  default: ({ songId }: any) => (
+  default: ({ songId }: { songId: string }) => (
     <button data-testid="mint-song-btn">
       Mint Song {songId}
     </button>

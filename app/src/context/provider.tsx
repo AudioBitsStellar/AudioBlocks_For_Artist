@@ -7,8 +7,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: (failureCount, error: any) => {
-        if (error?.status >= 400 && error?.status < 500) {
+      retry: (failureCount, error: Error) => {
+        const httpError = error as { status?: number };
+        if (httpError?.status >= 400 && httpError?.status < 500) {
           return false;
         }
         return failureCount < 3;

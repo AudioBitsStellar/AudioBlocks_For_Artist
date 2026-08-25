@@ -21,13 +21,14 @@ export interface RetryConfig {
  * - 404 (Not Found)
  * - Other 4xx client errors
  */
-export function isRetryableError(error: any): boolean {
+export function isRetryableError(error: Error): boolean {
+  const httpError = error as { response?: { status: number } };
   // Network errors (no response) are retryable
-  if (!error.response) {
+  if (!httpError.response) {
     return true;
   }
 
-  const status = error.response?.status;
+  const status = httpError.response?.status;
 
   // Retry on rate limit (429) and service unavailable (503)
   if (status === 429 || status === 503) {

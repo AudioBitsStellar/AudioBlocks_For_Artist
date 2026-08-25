@@ -9,6 +9,7 @@ import { isRetryableError } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { useState, useEffect } from "react";
 import { Loader2, Check, AlertCircle } from 'lucide-react';
+import { ApiEnvelope, SubmitSongMintResponse } from "@/types/api";
 
 interface MintSongButtonProps {
   songId: string;
@@ -75,17 +76,18 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
       let signedXdr: string;
       try {
         signedXdr = await signTransactionXdr(prepared.data.xdr, prepared.data.networkPassphrase, address);
-      } catch (signErr: any) {
-        if (signErr?.message?.toLowerCase().includes("rejected") || signErr?.message?.toLowerCase().includes("user rejected")) {
+      } catch (signErr: unknown) {
+        const error = signErr as Error;
+        if (error?.message?.toLowerCase().includes("rejected") || error?.message?.toLowerCase().includes("user rejected")) {
           setStatus('rejected');
           analytics.mintFailed({ songId, reason: "user rejected signature" });
           return;
         }
-        throw signErr;
+        throw error;
       }
 
       setStatus('submitting');
-      const result: any = await submitMutation.mutateAsync({ signedXdr });
+      const result: ApiEnvelope<SubmitSongMintResponse> = await submitMutation.mutateAsync({ signedXdr });
 
       setStatus('success');
       setTxDetails({
@@ -100,8 +102,9 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
         tokenId: result?.data?.tokenId ?? '',
       });
       toast.success("Minting succeeded!");
-    } catch (err: any) {
-      const reason = err?.message ?? "unknown";
+    } catch (err: unknown) {
+      const error = err as Error;
+      const reason = error?.message ?? "unknown";
       analytics.mintFailed({ songId, reason });
       
       if (reason.toLowerCase().includes("timeout") || reason.toLowerCase().includes("network")) {
