@@ -132,7 +132,8 @@ const useOnchainServices = () => {
     usePost<ApiEnvelope<PreparedTransaction>, PrepareArtistSetupRequest>(
       ARTIST_ONCHAIN_ENDPOINTS.PREPARE_SETUP,
       {
-        onError: (error) => handleError(error.message || "Failed to prepare on-chain artist setup."),
+        onError: (error) =>
+          handleError(error.message || "Failed to prepare on-chain artist setup."),
       }
     );
 

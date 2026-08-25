@@ -1,27 +1,19 @@
-'use client';
+"use client";
 
-import Sidebar from '@/components/Sidebar';
-import TopHeader from '@/components/TopHeader';
-import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
-import RoleProvider from '@/context/RoleContext';
-import { useState } from 'react';
+import Sidebar from "@/components/Sidebar";
+import TopHeader from "@/components/TopHeader";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import RoleProvider from "@/context/RoleContext";
+import { useState } from "react";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-
-
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+
   return (
     <RoleProvider>
       <div className="flex min-h-screen bg-[#151918]">
         {/* Sidebar */}
-        <Sidebar open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)} />
-
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         {/* Main content */}
         <div className="md:ml-64 min-w-0 w-full flex flex-col">

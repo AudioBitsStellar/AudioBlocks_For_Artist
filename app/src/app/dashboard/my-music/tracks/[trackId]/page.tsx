@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import PathBreadcrumb from '@/components/PathBreadcrumb';
+import PathBreadcrumb from "@/components/PathBreadcrumb";
 
 interface TrackDetailPageProps {
   params: {

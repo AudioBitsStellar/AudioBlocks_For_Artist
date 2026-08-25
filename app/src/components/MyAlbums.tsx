@@ -1,28 +1,56 @@
-'use client';
+"use client";
 
-import { ChevronRight, ChevronLeft, ArrowUpRight, Trash2, Disc3 } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
-import useAlbumServices from '@/services/albumService';
-import { featureFlags } from '@/lib/featureFlags';
-import { Album } from '@/types';
-import ConfirmationDialog from './shared/ConfirmationDialog';
-import EmptyState from './shared/EmptyState';
-import SafeImage from './SafeImage';
-import { useToast } from '@/hooks/useToastHandler';
+import { ChevronRight, ChevronLeft, ArrowUpRight, Trash2, Disc3 } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import useAlbumServices from "@/services/albumService";
+import { featureFlags } from "@/lib/featureFlags";
+import { Album } from "@/types";
+import ConfirmationDialog from "./shared/ConfirmationDialog";
+import EmptyState from "./shared/EmptyState";
+import SafeImage from "./SafeImage";
+import { useToast } from "@/hooks/useToastHandler";
 
 const MOCK_ALBUMS: Album[] = [
-  { id: '1', title: 'Echoes of the Soul', coverArtUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
-  { id: '2', title: 'Midnight Vibes', coverArtUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop' },
-  { id: '3', title: 'Electric Dreams', coverArtUrl: 'https://images.unsplash.com/photo-1516280440619-37996c4e5b4e?w=400&h=400&fit=crop' },
-  { id: '4', title: 'Serenity Falls', coverArtUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafbd?w=400&h=400&fit=crop' },
-  { id: '5', title: 'Cosmic Journey', coverArtUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
+  {
+    id: "1",
+    title: "Echoes of the Soul",
+    coverArtUrl:
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop",
+  },
+  {
+    id: "2",
+    title: "Midnight Vibes",
+    coverArtUrl:
+      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop",
+  },
+  {
+    id: "3",
+    title: "Electric Dreams",
+    coverArtUrl:
+      "https://images.unsplash.com/photo-1516280440619-37996c4e5b4e?w=400&h=400&fit=crop",
+  },
+  {
+    id: "4",
+    title: "Serenity Falls",
+    coverArtUrl:
+      "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafbd?w=400&h=400&fit=crop",
+  },
+  {
+    id: "5",
+    title: "Cosmic Journey",
+    coverArtUrl:
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop",
+  },
 ];
 
 function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
   const [albums, setAlbums] = useState<Album[]>(initialAlbums);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; albumId: string | null }>({
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    albumId: string | null;
+  }>({
     isOpen: false,
-    albumId: null
+    albumId: null,
   });
   const toast = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -32,17 +60,17 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
   }, [initialAlbums]);
 
   const scrollLeft = () => {
-    scrollContainerRef.current?.scrollBy({ left: -200, behavior: 'smooth' });
+    scrollContainerRef.current?.scrollBy({ left: -200, behavior: "smooth" });
   };
 
   const scrollRight = () => {
-    scrollContainerRef.current?.scrollBy({ left: 200, behavior: 'smooth' });
+    scrollContainerRef.current?.scrollBy({ left: 200, behavior: "smooth" });
   };
 
   const handleDeleteConfirm = () => {
     if (deleteConfirmation.albumId !== null) {
-      setAlbums(prev => prev.filter(a => a.id !== deleteConfirmation.albumId));
-      toast.success('Album deleted successfully');
+      setAlbums((prev) => prev.filter((a) => a.id !== deleteConfirmation.albumId));
+      toast.success("Album deleted successfully");
     }
     setDeleteConfirmation({ isOpen: false, albumId: null });
   };
@@ -93,19 +121,23 @@ function AlbumCarousel({ albums: initialAlbums }: { albums: Album[] }) {
         <div
           ref={scrollContainerRef}
           className="flex gap-4 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide pl-12 pr-12"
-          style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
+          style={{ scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}
         >
           {albums.map((album) => (
             <div key={album.id} className="flex-shrink-0 w-48 group relative">
               <div className="w-48 h-48 rounded-lg mb-2 relative overflow-hidden bg-gray-800">
                 <SafeImage
-                  src={album.coverArtUrl ?? ''}
+                  src={album.coverArtUrl ?? ""}
                   alt={album.title}
                   loading="lazy"
                   width={192}
                   height={192}
                   className="w-full h-full object-cover"
-                  srcSet={album.coverArtUrl ? `${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=200&h=200')} 200w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=400&h=400')} 400w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, '?w=800&h=800')} 800w` : undefined}
+                  srcSet={
+                    album.coverArtUrl
+                      ? `${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, "?w=200&h=200")} 200w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, "?w=400&h=400")} 400w, ${album.coverArtUrl.replace(/\?w=\d+&h=\d+/, "?w=800&h=800")} 800w`
+                      : undefined
+                  }
                   sizes="(max-width: 640px) 120px, (max-width: 1024px) 192px, 192px"
                 />
                 <button

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   SearchItem,
   CategorizedResults,
@@ -9,7 +9,7 @@ import {
   getRecentSearches,
   addRecentSearch,
   clearRecentSearches,
-} from '@/utils/search';
+} from "@/utils/search";
 
 export interface UseGlobalSearchOptions {
   items: SearchItem[];
@@ -41,7 +41,7 @@ export function useGlobalSearch({
   items,
   debounceMs = 200,
 }: UseGlobalSearchOptions): UseGlobalSearchReturn {
-  const [query, setQueryState] = useState('');
+  const [query, setQueryState] = useState("");
   const [results, setResults] = useState<CategorizedResults>(EMPTY_RESULTS);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -54,16 +54,16 @@ export function useGlobalSearch({
   // Keyboard shortcut: Cmd/Ctrl + K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setIsOpen(true);
       }
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setIsOpen(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const setQuery = useCallback(
@@ -75,7 +75,7 @@ export function useGlobalSearch({
         setResults(q.trim() ? categorizeResults(filtered) : EMPTY_RESULTS);
       }, debounceMs);
     },
-    [items, debounceMs],
+    [items, debounceMs]
   );
 
   const hasResults = Object.values(results).some((arr) => arr.length > 0);
@@ -83,15 +83,18 @@ export function useGlobalSearch({
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => {
     setIsOpen(false);
-    setQueryState('');
+    setQueryState("");
     setResults(EMPTY_RESULTS);
   }, []);
 
-  const selectResult = useCallback((item: SearchItem) => {
-    addRecentSearch(item.name);
-    setRecentSearches(getRecentSearches());
-    close();
-  }, [close]);
+  const selectResult = useCallback(
+    (item: SearchItem) => {
+      addRecentSearch(item.name);
+      setRecentSearches(getRecentSearches());
+      close();
+    },
+    [close]
+  );
 
   const clearRecent = useCallback(() => {
     clearRecentSearches();

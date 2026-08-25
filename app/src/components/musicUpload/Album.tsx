@@ -1,22 +1,52 @@
-import { Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, Play, MoreVertical, Clock, Heart, MessageCircle, FolderDown, X, Upload, Music, Trash2, RotateCw, Plus } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
-import Image from 'next/image';
-import { MusicFormValues } from '@/types';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { albumFormSchema } from '@/types/formValidation';
-import { MUSIC_GENRES } from '../shared/music_genre';
-import { useAutoSave } from '@/hooks/useAutoSave';
-import { toast } from 'sonner';
+import {
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  Play,
+  MoreVertical,
+  Clock,
+  Heart,
+  MessageCircle,
+  FolderDown,
+  X,
+  Upload,
+  Music,
+  Trash2,
+  RotateCw,
+  Plus,
+} from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import Image from "next/image";
+import { MusicFormValues } from "@/types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { albumFormSchema } from "@/types/formValidation";
+import { MUSIC_GENRES } from "../shared/music_genre";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { toast } from "sonner";
 
 const Album = () => {
-
   const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; status: 'uploading' | 'success' | 'failed' } | null>(null);
-  const [albumMusicFiles, setAlbumMusicFiles] = useState<Array<{ id: number; name: string; size: string; progress: number; timeLeft: number; status: 'uploading' | 'success' | 'failed' }>>([]);
+  const [uploadedFile, setUploadedFile] = useState<{
+    name: string;
+    size: string;
+    status: "uploading" | "success" | "failed";
+  } | null>(null);
+  const [albumMusicFiles, setAlbumMusicFiles] = useState<
+    Array<{
+      id: number;
+      name: string;
+      size: string;
+      progress: number;
+      timeLeft: number;
+      status: "uploading" | "success" | "failed";
+    }>
+  >([]);
   const albumFileInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const coverInputRef = useRef<HTMLInputElement>(null);
-   const nextFileId = useRef(1);
+  const nextFileId = useRef(1);
 
   const {
     register,
@@ -26,20 +56,23 @@ const Album = () => {
     formState: { errors, isSubmitting, isValid },
   } = useForm<MusicFormValues>({
     resolver: zodResolver(albumFormSchema),
-    mode: 'onChange',
+    mode: "onChange",
   });
 
   const watchedValues = watch();
-  const { restore, clearSavedData } = useAutoSave('upload-album', watchedValues as Record<string, unknown>, isSubmitting);
+  const { restore, clearSavedData } = useAutoSave(
+    "upload-album",
+    watchedValues as Record<string, unknown>,
+    isSubmitting
+  );
 
   useEffect(() => {
     const saved = restore();
     if (saved) {
       reset(saved as MusicFormValues);
-      toast.success('Draft restored');
+      toast.success("Draft restored");
     }
   }, []);
-
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -53,22 +86,26 @@ const Album = () => {
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' b';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' kb';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' mb';
+    if (bytes < 1024) return bytes + " b";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " kb";
+    return (bytes / (1024 * 1024)).toFixed(1) + " mb";
   };
 
-   const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const fileSize = formatFileSize(file.size);
-      setUploadedFile({ name: file.name, size: fileSize, status: 'uploading' });
+      setUploadedFile({ name: file.name, size: fileSize, status: "uploading" });
 
       // Simulate upload process
       setTimeout(() => {
         // Randomly set to success or failed for demo
         const success = Math.random() > 0.3;
-        setUploadedFile({ name: file.name, size: fileSize, status: success ? 'success' : 'failed' });
+        setUploadedFile({
+          name: file.name,
+          size: fileSize,
+          status: success ? "success" : "failed",
+        });
       }, 2000);
     }
   };
@@ -78,50 +115,69 @@ const Album = () => {
     const file = e.dataTransfer.files[0];
     if (file) {
       const fileSize = formatFileSize(file.size);
-      setUploadedFile({ name: file.name, size: fileSize, status: 'uploading' });
+      setUploadedFile({ name: file.name, size: fileSize, status: "uploading" });
 
       // Simulate upload process
       setTimeout(() => {
         const success = Math.random() > 0.3;
-        setUploadedFile({ name: file.name, size: fileSize, status: success ? 'success' : 'failed' });
+        setUploadedFile({
+          name: file.name,
+          size: fileSize,
+          status: success ? "success" : "failed",
+        });
       }, 2000);
     }
   };
 
   const handleRetry = () => {
     if (uploadedFile) {
-      setUploadedFile({ ...uploadedFile, status: 'uploading' });
+      setUploadedFile({ ...uploadedFile, status: "uploading" });
       setTimeout(() => {
         const success = Math.random() > 0.3;
-        setUploadedFile({ ...uploadedFile, status: success ? 'success' : 'failed' });
+        setUploadedFile({ ...uploadedFile, status: success ? "success" : "failed" });
       }, 2000);
     }
   };
 
   const handleAddAnotherMusic = () => {
     const newId = nextFileId.current++;
-    setAlbumMusicFiles([...albumMusicFiles, {
-      id: newId,
-      name: '',
-      size: '',
-      progress: 0,
-      timeLeft: 0,
-      status: 'uploading'
-    }]);
+    setAlbumMusicFiles([
+      ...albumMusicFiles,
+      {
+        id: newId,
+        name: "",
+        size: "",
+        progress: 0,
+        timeLeft: 0,
+        status: "uploading",
+      },
+    ]);
   };
 
   const handleAlbumFileUpload = (id: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const fileSize = formatFileSize(file.size);
-      setAlbumMusicFiles(prev => {
-        const existing = prev.find(f => f.id === id);
+      setAlbumMusicFiles((prev) => {
+        const existing = prev.find((f) => f.id === id);
         if (existing) {
-          return prev.map(f =>
-            f.id === id ? { ...f, name: file.name, size: fileSize, progress: 0, timeLeft: 15, status: 'uploading' } : f
+          return prev.map((f) =>
+            f.id === id
+              ? {
+                  ...f,
+                  name: file.name,
+                  size: fileSize,
+                  progress: 0,
+                  timeLeft: 15,
+                  status: "uploading",
+                }
+              : f
           );
         } else {
-          return [...prev, { id, name: file.name, size: fileSize, progress: 0, timeLeft: 15, status: 'uploading' }];
+          return [
+            ...prev,
+            { id, name: file.name, size: fileSize, progress: 0, timeLeft: 15, status: "uploading" },
+          ];
         }
       });
 
@@ -136,25 +192,28 @@ const Album = () => {
           progress = 100;
           timeLeft = 0;
           clearInterval(interval);
-          setAlbumMusicFiles(prev => prev.map(f =>
-            f.id === id ? { ...f, progress: 100, timeLeft: 0, status: 'success' } : f
-          ));
+          setAlbumMusicFiles((prev) =>
+            prev.map((f) =>
+              f.id === id ? { ...f, progress: 100, timeLeft: 0, status: "success" } : f
+            )
+          );
         } else {
-          setAlbumMusicFiles(prev => prev.map(f =>
-            f.id === id ? { ...f, progress: Math.min(100, progress), timeLeft } : f
-          ));
+          setAlbumMusicFiles((prev) =>
+            prev.map((f) =>
+              f.id === id ? { ...f, progress: Math.min(100, progress), timeLeft } : f
+            )
+          );
         }
       }, 500);
     }
   };
 
   const handleDeleteAlbumFile = (id: number) => {
-    setAlbumMusicFiles(prev => prev.filter(f => f.id !== id));
+    setAlbumMusicFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-
   const onSubmit = (data: MusicFormValues) => {
-    console.log('Form submitted:', {
+    console.log("Form submitted:", {
       ...data,
       coverImage,
       uploadedFile,
@@ -175,17 +234,21 @@ const Album = () => {
           </label>
           <input
             id="album-title"
-            {...register('albumTitle')}
+            {...register("albumTitle")}
             placeholder="Enter Album Title"
             maxLength={100}
-            aria-invalid={errors.albumTitle ? 'true' : 'false'}
-            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.albumTitle ? 'border-red-500' : 'border-[#2A2A2A]'}`}
+            aria-invalid={errors.albumTitle ? "true" : "false"}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.albumTitle ? "border-red-500" : "border-[#2A2A2A]"}`}
           />
           {errors.albumTitle && (
-            <p className="text-[10px] text-red-500" role="alert">{errors.albumTitle.message}</p>
+            <p className="text-[10px] text-red-500" role="alert">
+              {errors.albumTitle.message}
+            </p>
           )}
           {(watchedValues.albumTitle?.length ?? 0) >= 90 && (
-            <p className={`text-[10px] text-right ${(watchedValues.albumTitle?.length ?? 0) >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+            <p
+              className={`text-[10px] text-right ${(watchedValues.albumTitle?.length ?? 0) >= 100 ? "text-red-500" : "text-yellow-500"}`}
+            >
               {watchedValues.albumTitle?.length ?? 0}/100
             </p>
           )}
@@ -197,9 +260,9 @@ const Album = () => {
           </label>
           <select
             id="album-genre"
-            {...register('genre')}
-            aria-invalid={errors.genre ? 'true' : 'false'}
-            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.genre ? 'border-red-500' : 'border-[#2A2A2A]'}`}
+            {...register("genre")}
+            aria-invalid={errors.genre ? "true" : "false"}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.genre ? "border-red-500" : "border-[#2A2A2A]"}`}
           >
             <option value="" disabled>
               Select genre
@@ -212,7 +275,9 @@ const Album = () => {
             ))}
           </select>
           {errors.genre && (
-            <p className="text-[10px] text-red-500" role="alert">{errors.genre.message}</p>
+            <p className="text-[10px] text-red-500" role="alert">
+              {errors.genre.message}
+            </p>
           )}
         </div>
 
@@ -222,17 +287,21 @@ const Album = () => {
           </label>
           <input
             id="album-song-title"
-            {...register('songTitle')}
+            {...register("songTitle")}
             placeholder="Add Song Title"
             maxLength={100}
-            aria-invalid={errors.songTitle ? 'true' : 'false'}
-            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.songTitle ? 'border-red-500' : 'border-[#2A2A2A]'}`}
+            aria-invalid={errors.songTitle ? "true" : "false"}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.songTitle ? "border-red-500" : "border-[#2A2A2A]"}`}
           />
           {errors.songTitle && (
-            <p className="text-[10px] text-red-500" role="alert">{errors.songTitle.message}</p>
+            <p className="text-[10px] text-red-500" role="alert">
+              {errors.songTitle.message}
+            </p>
           )}
           {(watchedValues.songTitle?.length ?? 0) >= 90 && (
-            <p className={`text-[10px] text-right ${(watchedValues.songTitle?.length ?? 0) >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
+            <p
+              className={`text-[10px] text-right ${(watchedValues.songTitle?.length ?? 0) >= 100 ? "text-red-500" : "text-yellow-500"}`}
+            >
               {watchedValues.songTitle?.length ?? 0}/100
             </p>
           )}
@@ -245,14 +314,16 @@ const Album = () => {
             </label>
             <input
               id="album-purchase-price"
-              {...register('purchasePrice')}
+              {...register("purchasePrice")}
               placeholder="Add Price of Song"
               maxLength={20}
-              aria-invalid={errors.purchasePrice ? 'true' : 'false'}
-              className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.purchasePrice ? 'border-red-500' : 'border-[#2A2A2A]'}`}
+              aria-invalid={errors.purchasePrice ? "true" : "false"}
+              className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.purchasePrice ? "border-red-500" : "border-[#2A2A2A]"}`}
             />
             {errors.purchasePrice && (
-              <p className="text-[10px] text-red-500" role="alert">{errors.purchasePrice.message}</p>
+              <p className="text-[10px] text-red-500" role="alert">
+                {errors.purchasePrice.message}
+              </p>
             )}
           </div>
 
@@ -295,20 +366,27 @@ const Album = () => {
                           <Play size={12} className="text-[#A3A3A3] ml-0.5" fill="#A3A3A3" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-white truncate">{file.name || 'Choose file'}</p>
+                          <p className="text-xs text-white truncate">
+                            {file.name || "Choose file"}
+                          </p>
                           {file.name && (
                             <div className="flex items-center gap-2 mt-1">
                               <p className="text-[10px] text-[#A3A3A3]">{file.size}</p>
-                              {file.status === 'uploading' && (
+                              {file.status === "uploading" && (
                                 <span className="text-[10px] text-[#A3A3A3]">
-                                  {Math.round(file.progress)}% {file.timeLeft > 0 && `(${file.timeLeft} sec left)`}
+                                  {Math.round(file.progress)}%{" "}
+                                  {file.timeLeft > 0 && `(${file.timeLeft} sec left)`}
                                 </span>
                               )}
-                              {file.status === 'success' && (
-                                <span className="text-[10px] text-green-500 font-medium">Upload finished</span>
+                              {file.status === "success" && (
+                                <span className="text-[10px] text-green-500 font-medium">
+                                  Upload finished
+                                </span>
                               )}
-                              {file.status === 'failed' && (
-                                <span className="text-[10px] text-red-500 font-medium">Upload failed</span>
+                              {file.status === "failed" && (
+                                <span className="text-[10px] text-red-500 font-medium">
+                                  Upload failed
+                                </span>
                               )}
                             </div>
                           )}
@@ -325,7 +403,7 @@ const Album = () => {
                         </button>
                       )}
                     </div>
-                    {file.status === 'uploading' && file.name && (
+                    {file.status === "uploading" && file.name && (
                       <div className="mt-2">
                         <div className="w-full h-1.5 bg-[#2A2A2A] rounded-full overflow-hidden">
                           <div
@@ -385,7 +463,7 @@ const Album = () => {
         <button
           onClick={handleSubmit(onSubmit)}
           disabled={isSubmitting || !isValid}
-          className={`w-[131px] rounded-lg font-semibold px-6 py-3 transition-colors mt-6 ${isSubmitting || !isValid ? 'opacity-70 cursor-not-allowed bg-[#8a8a8a]' : 'bg-[#D2045B] hover:bg-[#B8043F]'} text-white`}
+          className={`w-[131px] rounded-lg font-semibold px-6 py-3 transition-colors mt-6 ${isSubmitting || !isValid ? "opacity-70 cursor-not-allowed bg-[#8a8a8a]" : "bg-[#D2045B] hover:bg-[#B8043F]"} text-white`}
         >
           Add Album
         </button>
@@ -394,16 +472,13 @@ const Album = () => {
       {/* Right Column - Media Uploads */}
       <div className="space-y-6  col-span-1">
         {/* Add Music Cover Section */}
-        <div className="rounded-2xl border border-[#2A2A2A] bg-[#161616] p-6 w-full flex flex-col" style={{ height: '321px' }}>
+        <div
+          className="rounded-2xl border border-[#2A2A2A] bg-[#161616] p-6 w-full flex flex-col"
+          style={{ height: "321px" }}
+        >
           {coverImage ? (
             <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
-              <Image
-                src={coverImage}
-                alt="Music cover"
-                fill
-                className="object-cover"
-                unoptimized
-              />
+              <Image src={coverImage} alt="Music cover" fill className="object-cover" unoptimized />
             </div>
           ) : (
             <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-teal-500 via-purple-500 to-pink-500 mb-4 flex items-center justify-center relative overflow-hidden">
@@ -416,7 +491,9 @@ const Album = () => {
           )}
 
           <h3 className="text-white font-semibold mb-2">Add Music Cover</h3>
-          <p className="text-sm text-[#A3A3A3] mb-4 flex-1">Make your song stand out with a striking cover image</p>
+          <p className="text-sm text-[#A3A3A3] mb-4 flex-1">
+            Make your song stand out with a striking cover image
+          </p>
 
           <input
             ref={coverInputRef}
@@ -434,10 +511,9 @@ const Album = () => {
             Add Cover
           </button>
         </div>
-
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Album
+export default Album;

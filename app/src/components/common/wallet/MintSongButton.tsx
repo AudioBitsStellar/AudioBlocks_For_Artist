@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { isRetryableError } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { useState, useEffect } from "react";
-import { Loader2, Check, AlertCircle } from 'lucide-react';
+import { Loader2, Check, AlertCircle } from "lucide-react";
 import { ApiEnvelope, SubmitSongMintResponse } from "@/types/api";
 
 interface MintSongButtonProps {
@@ -16,7 +16,16 @@ interface MintSongButtonProps {
   albumId?: number;
 }
 
-type MintStatus = 'idle' | 'not_installed' | 'preparing' | 'awaiting_signature' | 'submitting' | 'success' | 'rejected' | 'timeout' | 'failed';
+type MintStatus =
+  | "idle"
+  | "not_installed"
+  | "preparing"
+  | "awaiting_signature"
+  | "submitting"
+  | "success"
+  | "rejected"
+  | "timeout"
+  | "failed";
 
 interface MintTransactionDetails {
   txHash?: string;
@@ -32,21 +41,25 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
   const prepareMutation = usePrepareSongMint(songId);
   const submitMutation = useSubmitSongMint(songId);
 
-  const [status, setStatus] = useState<MintStatus>('idle');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [status, setStatus] = useState<MintStatus>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
   const [txDetails, setTxDetails] = useState<MintTransactionDetails>({});
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
 
-  const isBusy = prepareMutation.isPending || submitMutation.isPending || ['preparing', 'awaiting_signature', 'submitting'].includes(status) || cooldownActive;
+  const isBusy =
+    prepareMutation.isPending ||
+    submitMutation.isPending ||
+    ["preparing", "awaiting_signature", "submitting"].includes(status) ||
+    cooldownActive;
 
   useEffect(() => {
     if (!cooldownActive) return;
     if (cooldownRemaining <= 0) {
       setCooldownActive(false);
-      setStatus('idle');
+      setStatus("idle");
       setTxDetails({});
-      setErrorMsg('');
+      setErrorMsg("");
       return;
     }
     const timer = setTimeout(() => {
@@ -57,60 +70,69 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   const handleMint = async () => {
     if (!address) return;
-    
+
     const available = await isFreighterAvailable();
     if (!available) {
-      setStatus('not_installed');
+      setStatus("not_installed");
       return;
     }
 
-    setStatus('preparing');
-    setErrorMsg('');
+    setStatus("preparing");
+    setErrorMsg("");
     setTxDetails({});
     analytics.mintStarted({ songId, walletAddress: address });
 
     try {
       const prepared = await prepareMutation.mutateAsync({ albumId });
-      
-      setStatus('awaiting_signature');
+
+      setStatus("awaiting_signature");
       let signedXdr: string;
       try {
-        signedXdr = await signTransactionXdr(prepared.data.xdr, prepared.data.networkPassphrase, address);
+        signedXdr = await signTransactionXdr(
+          prepared.data.xdr,
+          prepared.data.networkPassphrase,
+          address
+        );
       } catch (signErr: unknown) {
         const error = signErr as Error;
-        if (error?.message?.toLowerCase().includes("rejected") || error?.message?.toLowerCase().includes("user rejected")) {
-          setStatus('rejected');
+        if (
+          error?.message?.toLowerCase().includes("rejected") ||
+          error?.message?.toLowerCase().includes("user rejected")
+        ) {
+          setStatus("rejected");
           analytics.mintFailed({ songId, reason: "user rejected signature" });
           return;
         }
         throw error;
       }
 
-      setStatus('submitting');
-      const result: ApiEnvelope<SubmitSongMintResponse> = await submitMutation.mutateAsync({ signedXdr });
+      setStatus("submitting");
+      const result: ApiEnvelope<SubmitSongMintResponse> = await submitMutation.mutateAsync({
+        signedXdr,
+      });
 
-      setStatus('success');
+      setStatus("success");
       setTxDetails({
-        txHash: result?.data?.txHash ?? '',
-        tokenId: result?.data?.tokenId ?? '',
+        txHash: result?.data?.txHash ?? "",
+        tokenId: result?.data?.tokenId ?? "",
       });
       setCooldownActive(true);
       setCooldownRemaining(COOLDOWN_DURATION);
       analytics.mintSucceeded({
         songId,
-        txHash: result?.data?.txHash ?? '',
-        tokenId: result?.data?.tokenId ?? '',
+        txHash: result?.data?.txHash ?? "",
+        tokenId: result?.data?.tokenId ?? "",
       });
       toast.success("Minting succeeded!");
     } catch (err: unknown) {
       const error = err as Error;
       const reason = error?.message ?? "unknown";
       analytics.mintFailed({ songId, reason });
-      
+
       if (reason.toLowerCase().includes("timeout") || reason.toLowerCase().includes("network")) {
-        setStatus('timeout');
+        setStatus("timeout");
       } else {
-        setStatus('failed');
+        setStatus("failed");
       }
       setErrorMsg(reason);
     }
@@ -120,10 +142,14 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     return <ConnectStellarWalletButton />;
   }
 
-  if (status === 'preparing') {
+  if (status === "preparing") {
     return (
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-blue-600/30 rounded-lg" role="status" aria-live="polite">
+        <div
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-blue-600/30 rounded-lg"
+          role="status"
+          aria-live="polite"
+        >
           <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
           <span className="text-xs text-blue-400 font-medium">Preparing transaction...</span>
         </div>
@@ -132,10 +158,14 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     );
   }
 
-  if (status === 'awaiting_signature') {
+  if (status === "awaiting_signature") {
     return (
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-yellow-600/30 rounded-lg" role="status" aria-live="polite">
+        <div
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-yellow-600/30 rounded-lg"
+          role="status"
+          aria-live="polite"
+        >
           <Loader2 className="h-4 w-4 animate-spin text-yellow-500" />
           <span className="text-xs text-yellow-400 font-medium">Awaiting wallet signature...</span>
         </div>
@@ -144,10 +174,14 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     );
   }
 
-  if (status === 'submitting') {
+  if (status === "submitting") {
     return (
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-purple-600/30 rounded-lg" role="status" aria-live="polite">
+        <div
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-purple-600/30 rounded-lg"
+          role="status"
+          aria-live="polite"
+        >
           <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
           <span className="text-xs text-purple-400 font-medium">Broadcasting to network...</span>
         </div>
@@ -156,13 +190,13 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     );
   }
 
-  if (status === 'not_installed') {
+  if (status === "not_installed") {
     return (
       <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-yellow-600/30 rounded-lg">
         <p className="text-xs text-yellow-500 font-medium">Freighter wallet not detected.</p>
-        <a 
-          href="https://www.freighter.app" 
-          target="_blank" 
+        <a
+          href="https://www.freighter.app"
+          target="_blank"
           rel="noopener noreferrer"
           className="text-center rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
@@ -172,9 +206,13 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     );
   }
 
-  if (status === 'rejected') {
+  if (status === "rejected") {
     return (
-      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg" role="alert" aria-live="polite">
+      <div
+        className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg"
+        role="alert"
+        aria-live="polite"
+      >
         <div className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-red-500" />
           <p className="text-xs text-red-500 font-medium">Signature rejected by user.</p>
@@ -189,9 +227,13 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     );
   }
 
-  if (status === 'timeout') {
+  if (status === "timeout") {
     return (
-      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg" role="alert" aria-live="polite">
+      <div
+        className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg"
+        role="alert"
+        aria-live="polite"
+      >
         <div className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-red-500" />
           <p className="text-xs text-red-500 font-medium">Request timed out or network error.</p>
@@ -206,9 +248,13 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     );
   }
 
-  if (status === 'failed') {
+  if (status === "failed") {
     return (
-      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg" role="alert" aria-live="polite">
+      <div
+        className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg"
+        role="alert"
+        aria-live="polite"
+      >
         <div className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-red-500" />
           <p className="text-xs text-red-500 font-medium">Mint failed: {errorMsg}</p>
@@ -223,22 +269,22 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
     );
   }
 
-  if (status === 'success') {
+  if (status === "success") {
     return (
-      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-green-600/30 rounded-lg" role="status" aria-live="polite">
+      <div
+        className="flex flex-col gap-2 p-3 bg-zinc-900 border border-green-600/30 rounded-lg"
+        role="status"
+        aria-live="polite"
+      >
         <div className="flex items-center gap-2">
           <Check className="h-4 w-4 text-green-500" />
           <p className="text-xs text-green-400 font-medium">Minted successfully!</p>
         </div>
         {txDetails.txHash && (
-          <p className="text-[10px] text-gray-400 font-mono truncate">
-            Tx: {txDetails.txHash}
-          </p>
+          <p className="text-[10px] text-gray-400 font-mono truncate">Tx: {txDetails.txHash}</p>
         )}
         {txDetails.tokenId && (
-          <p className="text-[10px] text-gray-400">
-            Token ID: {txDetails.tokenId}
-          </p>
+          <p className="text-[10px] text-gray-400">Token ID: {txDetails.tokenId}</p>
         )}
         {cooldownActive && (
           <p className="text-[10px] text-gray-400">

@@ -1,9 +1,4 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  QueryKey,
-} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, QueryKey } from "@tanstack/react-query";
 import { createApiClient } from "./axios";
 // import { ApiResponse } from "@/types";
 

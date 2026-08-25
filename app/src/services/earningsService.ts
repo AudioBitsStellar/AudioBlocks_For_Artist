@@ -16,14 +16,10 @@ const useEarningsServices = () => {
    * const totalEarnings = data?.data.totalEarnings ?? 0;
    */
   const useGetEarnings = (enabled: boolean = true) => {
-    return useGet<EarningsResponse>(
-      ["get-artist-earnings"],
-      EARNINGS_ENDPOINTS.GET_EARNINGS,
-      {
-        enabled,
-        staleTime: 1000 * 60 * 5, // 5 min cache
-      }
-    );
+    return useGet<EarningsResponse>(["get-artist-earnings"], EARNINGS_ENDPOINTS.GET_EARNINGS, {
+      enabled,
+      staleTime: 1000 * 60 * 5, // 5 min cache
+    });
   };
 
   return { useGetEarnings };

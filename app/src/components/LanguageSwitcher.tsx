@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useI18n, type Locale } from '@/context/I18nContext';
+import { useI18n, type Locale } from "@/context/I18nContext";
 
 /**
  * Dropdown that lets users switch between supported locales — closes #159.

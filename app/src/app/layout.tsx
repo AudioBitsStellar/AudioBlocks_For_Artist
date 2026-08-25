@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
-import Provider from '@/context/provider';
-import OfflineIndicator from '@/components/OfflineIndicator';
-import { Toaster } from 'sonner';
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import Provider from "@/context/provider";
+import OfflineIndicator from "@/components/OfflineIndicator";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,10 +43,7 @@ export const metadata: Metadata = {
   },
 };
 
-const REQUIRED_ENV_VARS = [
-  "NEXT_PUBLIC_API_BASE_URL",
-  "NEXT_PUBLIC_API_URL"
-];
+const REQUIRED_ENV_VARS = ["NEXT_PUBLIC_API_BASE_URL", "NEXT_PUBLIC_API_URL"];
 
 function validateEnv() {
   const missing: string[] = [];
@@ -56,7 +53,11 @@ function validateEnv() {
       const val = process.env[name];
       if (!val) {
         missing.push(name);
-      } else if (name.includes("API") && !val.startsWith("http://") && !val.startsWith("https://")) {
+      } else if (
+        name.includes("API") &&
+        !val.startsWith("http://") &&
+        !val.startsWith("https://")
+      ) {
         missing.push(`${name} (must start with http:// or https://)`);
       }
     }
@@ -78,7 +79,8 @@ export default function RootLayout({
           <div className="max-w-md w-full bg-zinc-900 border border-red-500/50 rounded-xl p-8 shadow-2xl text-center">
             <h1 className="text-2xl font-bold text-red-500 mb-4">Configuration Error</h1>
             <p className="text-zinc-400 mb-6">
-              The application failed to start because some required environment variables are missing or misconfigured:
+              The application failed to start because some required environment variables are
+              missing or misconfigured:
             </p>
             <ul className="text-left bg-black/40 border border-zinc-800 rounded-lg p-4 mb-6 space-y-2 text-sm font-mono text-zinc-300">
               {missingEnv.map((env) => (
@@ -89,7 +91,8 @@ export default function RootLayout({
               ))}
             </ul>
             <p className="text-xs text-zinc-500">
-              Please define these variables in your <code>.env.local</code> file and restart the dev server.
+              Please define these variables in your <code>.env.local</code> file and restart the dev
+              server.
             </p>
           </div>
         </body>
@@ -99,9 +102,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <a
           href="#main-content"
           className="absolute left-4 top-4 z-[100] -translate-y-[200%] rounded-md bg-white px-4 py-2 font-semibold text-black shadow-lg transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-black"
@@ -118,7 +119,7 @@ export default function RootLayout({
             closeButton
             toastOptions={{
               classNames: {
-                toast: 'font-sans',
+                toast: "font-sans",
               },
             }}
           />
@@ -127,12 +128,12 @@ export default function RootLayout({
             aria-live="polite"
             aria-atomic="true"
             style={{
-              position: 'absolute',
+              position: "absolute",
               left: -10000,
-              top: 'auto',
+              top: "auto",
               width: 1,
               height: 1,
-              overflow: 'hidden',
+              overflow: "hidden",
             }}
           />
         </Provider>

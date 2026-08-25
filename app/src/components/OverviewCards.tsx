@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { featureFlags } from '@/lib/featureFlags';
-import { MOCK_OVERVIEW_CARDS } from '@/__mocks__/mockData';
-import MockDataBadge from '@/components/MockDataBadge';
-import useOverviewServices from '@/services/overviewService';
+import { featureFlags } from "@/lib/featureFlags";
+import { MOCK_OVERVIEW_CARDS } from "@/__mocks__/mockData";
+import MockDataBadge from "@/components/MockDataBadge";
+import useOverviewServices from "@/services/overviewService";
 
 interface KpiCard {
   title: string;
@@ -12,15 +12,24 @@ interface KpiCard {
 }
 
 function formatCurrency(n: number): string {
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function kpiToCards(data: { songsPublished: number; totalEarnings: number; listenersCount: number; mostStreamedRegion: string }): KpiCard[] {
+function kpiToCards(data: {
+  songsPublished: number;
+  totalEarnings: number;
+  listenersCount: number;
+  mostStreamedRegion: string;
+}): KpiCard[] {
   return [
-    { title: 'Songs Published', value: String(data.songsPublished), isFirst: true },
-    { title: 'Total Earnings', value: formatCurrency(data.totalEarnings), isFirst: false },
-    { title: 'Listeners Count', value: data.listenersCount.toLocaleString('en-US'), isFirst: false },
-    { title: 'Most Streamed Region', value: data.mostStreamedRegion, isFirst: false },
+    { title: "Songs Published", value: String(data.songsPublished), isFirst: true },
+    { title: "Total Earnings", value: formatCurrency(data.totalEarnings), isFirst: false },
+    {
+      title: "Listeners Count",
+      value: data.listenersCount.toLocaleString("en-US"),
+      isFirst: false,
+    },
+    { title: "Most Streamed Region", value: data.mostStreamedRegion, isFirst: false },
   ];
 }
 
@@ -38,14 +47,18 @@ function CardGrid({ cards, isMock }: { cards: KpiCard[]; isMock: boolean }) {
               <div className="relative rounded-lg p-[1px] bg-gradient-to-br from-purple-500 via-pink-500 to-gray-900">
                 <div className="bg-[#0F0F0F] dark:bg-black rounded-lg">
                   <div className="p-6">
-                    <p className="text-gray-400 dark:text-gray-300 text-sm font-normal mb-2">{card.title}</p>
+                    <p className="text-gray-400 dark:text-gray-300 text-sm font-normal mb-2">
+                      {card.title}
+                    </p>
                     <p className="text-white text-2xl font-bold">{card.value}</p>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="bg-[#0F0F0F] dark:bg-black border border-gray-800 dark:border-white/10 rounded-lg p-6">
-                <p className="text-gray-400 dark:text-gray-300 text-sm font-normal mb-2">{card.title}</p>
+                <p className="text-gray-400 dark:text-gray-300 text-sm font-normal mb-2">
+                  {card.title}
+                </p>
                 <p className="text-white text-2xl font-bold">{card.value}</p>
               </div>
             )}
@@ -135,7 +148,9 @@ function LiveOverviewCards() {
     return (
       <div>
         <h2 className="text-white text-lg font-semibold mb-4">Overview</h2>
-        <p className="text-red-400 text-sm">Failed to load overview data. Please try again later.</p>
+        <p className="text-red-400 text-sm">
+          Failed to load overview data. Please try again later.
+        </p>
       </div>
     );
   }

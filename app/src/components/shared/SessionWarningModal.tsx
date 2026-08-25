@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { Clock, LogOut, RefreshCw } from 'lucide-react';
+import { Clock, LogOut, RefreshCw } from "lucide-react";
 
 interface SessionWarningModalProps {
   /** Whether the modal is visible */
@@ -59,8 +59,11 @@ export default function SessionWarningModal({
             disabled={isRefreshing}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-contrast rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-            {isRefreshing ? 'Extending…' : 'Extend Session'}
+            <RefreshCw
+              className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+              aria-hidden="true"
+            />
+            {isRefreshing ? "Extending…" : "Extend Session"}
           </button>
           <button
             onClick={onLogout}

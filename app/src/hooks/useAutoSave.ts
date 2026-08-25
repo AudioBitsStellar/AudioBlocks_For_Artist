@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from "react";
 
 const DEBOUNCE_MS = 500;
 const INTERVAL_MS = 30000;
-const STORAGE_PREFIX = 'draft:';
+const STORAGE_PREFIX = "draft:";
 
 export function useAutoSave<T extends Record<string, unknown>>(
   key: string,
   data: T,
-  isSubmitting: boolean,
+  isSubmitting: boolean
 ) {
   const storageKey = `${STORAGE_PREFIX}${key}`;
   const dataRef = useRef(data);
@@ -49,7 +49,7 @@ export function useAutoSave<T extends Record<string, unknown>>(
   }, [save]);
 
   const restore = useCallback((): T | null => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     try {
       const raw = localStorage.getItem(storageKey);
       if (!raw) return null;

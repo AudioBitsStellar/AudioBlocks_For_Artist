@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
-import { ReactNode } from 'react';
+import * as Dialog from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
+import { ReactNode } from "react";
 
 export interface ModalProps {
   open: boolean;
@@ -10,7 +10,7 @@ export interface ModalProps {
   title?: string;
   subtitle?: string;
   children: ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
   showCloseButton?: boolean;
   className?: string;
   contentClassName?: string;
@@ -19,10 +19,10 @@ export interface ModalProps {
 }
 
 const sizeClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
 };
 
 /**
@@ -35,12 +35,12 @@ export default function Modal({
   title,
   subtitle,
   children,
-  size = 'md',
+  size = "md",
   showCloseButton = true,
-  className = '',
-  contentClassName = '',
-  overlayClassName = '',
-  closeAriaLabel = 'Close dialog',
+  className = "",
+  contentClassName = "",
+  overlayClassName = "",
+  closeAriaLabel = "Close dialog",
 }: ModalProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange} modal>
@@ -62,10 +62,14 @@ export default function Modal({
                 {(title || subtitle) && (
                   <div>
                     {subtitle && (
-                      <p className="text-xs uppercase tracking-[0.3em] text-[#A3A3A3]">{subtitle}</p>
+                      <p className="text-xs uppercase tracking-[0.3em] text-[#A3A3A3]">
+                        {subtitle}
+                      </p>
                     )}
                     {title && (
-                      <Dialog.Title className={`${subtitle ? 'mt-2' : ''} text-2xl font-semibold text-white`}>
+                      <Dialog.Title
+                        className={`${subtitle ? "mt-2" : ""} text-2xl font-semibold text-white`}
+                      >
                         {title}
                       </Dialog.Title>
                     )}

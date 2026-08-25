@@ -22,10 +22,12 @@ The application lacks "skip to main content" links at the top of the page. Keybo
 **Impact:** Keyboard users must navigate through entire navigation menu on each page load
 
 **Files Affected:**
+
 - `app/layout.tsx`
 
 **Recommended Fix:**
 Add skip link after `<html>` tag:
+
 ```tsx
 <a
   href="#main-content"
@@ -38,6 +40,7 @@ Add skip link after `<html>` tag:
 Add `id="main-content"` to main content wrapper in each page.
 
 **Acceptance Criteria:**
+
 - [ ] Skip link appears on page load
 - [ ] Skip link is hidden until focused
 - [ ] Skip link jumps to main content when activated
@@ -62,11 +65,13 @@ Carousel components lack proper keyboard navigation. Carousel items are not keyb
 **Impact:** Keyboard users cannot navigate carousel content effectively
 
 **Files Affected:**
+
 - `components/MyAlbums.tsx`
 - `components/common/home/Discover.tsx`
 
 **Recommended Fix:**
 Make carousel items focusable and add keyboard event handlers:
+
 ```tsx
 <div
   className="flex-shrink-0 w-48 group relative"
@@ -75,15 +80,16 @@ Make carousel items focusable and add keyboard event handlers:
   aria-label={`Album: ${album.title}`}
 >
   {/* Album content */}
-</div>
+</div>;
 
 const handleKeyDown = (e: React.KeyboardEvent) => {
-  if (e.key === 'ArrowLeft') scrollLeft();
-  if (e.key === 'ArrowRight') scrollRight();
+  if (e.key === "ArrowLeft") scrollLeft();
+  if (e.key === "ArrowRight") scrollRight();
 };
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Carousel items are keyboard focusable
 - [ ] Arrow keys navigate carousel
 - [ ] Focus order is logical
@@ -108,11 +114,13 @@ Custom modal implementations lack proper focus trapping. Focus can escape the mo
 **Impact:** Keyboard users lose context when focus escapes modals
 
 **Files Affected:**
+
 - `components/MerchesContent.tsx`
 - `components/common/modals/`
 
 **Recommended Fix:**
 Implement focus trap using useRef and useEffect:
+
 ```tsx
 useEffect(() => {
   if (isOpen) {
@@ -128,6 +136,7 @@ useEffect(() => {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Focus is trapped inside modal when open
 - [ ] Focus moves to first focusable element on open
 - [ ] Focus returns to trigger element on close
@@ -154,14 +163,17 @@ The footer logo has empty alt text, preventing screen reader users from identify
 **Impact:** Screen reader users cannot identify the brand logo
 
 **Files Affected:**
+
 - `layouts/footer/index.tsx` line 12
 
 **Recommended Fix:**
+
 ```tsx
 <Image src="/logo.png" alt="AudioBlocks Logo" height={90} width={90} />
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Logo has descriptive alt text
 - [ ] Alt text is announced by screen readers
 - [ ] Logo is properly identified as brand
@@ -184,9 +196,11 @@ All feature images use generic `alt="image"` instead of descriptive text, provid
 **Impact:** Screen reader users get no meaningful information about feature images
 
 **Files Affected:**
+
 - `components/common/home/Featured.tsx` line 48
 
 **Recommended Fix:**
+
 ```tsx
 <Image
   width={900}
@@ -199,6 +213,7 @@ All feature images use generic `alt="image"` instead of descriptive text, provid
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All feature images have descriptive alt text
 - [ ] Alt text includes feature title and description
 - [ ] Screen readers announce meaningful image descriptions
@@ -221,19 +236,19 @@ Carousel navigation buttons with only icons lack `aria-label`, making them inacc
 **Impact:** Screen reader users cannot understand button purpose
 
 **Files Affected:**
+
 - `components/common/home/Discover.tsx` lines 82-93
 
 **Recommended Fix:**
+
 ```tsx
-<button
-  onClick={() => sliderRef.current?.slickPrev()}
-  aria-label="Previous slide"
->
+<button onClick={() => sliderRef.current?.slickPrev()} aria-label="Previous slide">
   <ArrowLeft className="w-5 h-5" />
 </button>
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All icon-only buttons have aria-label
 - [ ] Labels describe button function clearly
 - [ ] Screen readers announce button purpose
@@ -256,9 +271,11 @@ Category tabs function as tablist but lack proper ARIA attributes, making them i
 **Impact:** Screen reader users cannot understand tab interface
 
 **Files Affected:**
+
 - `components/common/home/Discover.tsx` lines 67-79
 
 **Recommended Fix:**
+
 ```tsx
 <div role="tablist" aria-label="Music categories">
   {categories.map((cat) => (
@@ -280,6 +297,7 @@ Category tabs function as tablist but lack proper ARIA attributes, making them i
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Tablist has role="tablist"
 - [ ] Tabs have role="tab"
 - [ ] Active tab has aria-selected="true"
@@ -304,9 +322,11 @@ Social media links have no text alternatives, causing screen readers to announce
 **Impact:** Screen reader users cannot identify social media platforms
 
 **Files Affected:**
+
 - `layouts/footer/index.tsx` lines 66-80
 
 **Recommended Fix:**
+
 ```tsx
 <Link href="#" className="hover:text-white" aria-label="Follow us on YouTube">
   <FaYoutube aria-hidden="true" />
@@ -314,6 +334,7 @@ Social media links have no text alternatives, causing screen readers to announce
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All social media links have aria-label
 - [ ] Labels include platform names
 - [ ] Icons marked with aria-hidden="true"
@@ -337,9 +358,11 @@ Required fields in signup form lack visual and programmatic required indicators,
 **Impact:** Screen reader users cannot identify required fields
 
 **Files Affected:**
+
 - `app/signup/page.tsx` lines 52-70
 
 **Recommended Fix:**
+
 ```tsx
 <label htmlFor="signup-email" className="text-sm font-medium text-white mb-2">
   Email <span className="text-red-500" aria-hidden="true">*</span>
@@ -354,6 +377,7 @@ Required fields in signup form lack visual and programmatic required indicators,
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Required fields have visual asterisk
 - [ ] Required fields have aria-required="true"
 - [ ] Screen readers announce required status
@@ -377,26 +401,31 @@ Email field error lacks `aria-describedby` association, preventing screen reader
 **Impact:** Screen reader users may not hear error messages
 
 **Files Affected:**
+
 - `app/signup/page.tsx` lines 73-87
 
 **Recommended Fix:**
+
 ```tsx
 <input
   id="signup-email"
   type="email"
   {...register("email", { required: "Email is required" })}
-  aria-invalid={errors.email ? 'true' : 'false'}
-  aria-describedby={errors.email ? 'signup-email-error' : undefined}
+  aria-invalid={errors.email ? "true" : "false"}
+  aria-describedby={errors.email ? "signup-email-error" : undefined}
   // ... other props
-/>
-{errors.email && (
-  <span id="signup-email-error" role="alert" className="text-xs text-red-500 mt-1">
-    {errors.email.message}
-  </span>
-)}
+/>;
+{
+  errors.email && (
+    <span id="signup-email-error" role="alert" className="text-xs text-red-500 mt-1">
+      {errors.email.message}
+    </span>
+  );
+}
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Error messages have unique IDs
 - [ ] Inputs reference error IDs via aria-describedby
 - [ ] aria-invalid set correctly on errors
@@ -420,15 +449,18 @@ Placeholder text color `#6F6F6F` on `#161616` background has contrast ratio of ~
 **Impact:** Low vision users cannot read placeholder text
 
 **Files Affected:**
+
 - Multiple components using placeholder text
 
 **Recommended Fix:**
+
 ```css
 /* Update placeholder color to meet AA standards */
-.placeholder:text-[#9CA3AF] /* #9CA3AF on #161616 = ~5.2:1 */
+.placeholder: text-[#9CA3AF]; /* #9CA3AF on #161616 = ~5.2:1 */
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Placeholder text meets 4.5:1 contrast ratio
 - [ ] Contrast verified with contrast checker
 - [ ] All placeholder text updated consistently
@@ -451,9 +483,11 @@ Many interactive elements lack visible focus indicators, relying only on browser
 **Impact:** Keyboard users cannot see which element has focus
 
 **Files Affected:**
+
 - Multiple components with interactive elements
 
 **Recommended Fix:**
+
 ```css
 /* Add to globals.css */
 *:focus-visible {
@@ -469,6 +503,7 @@ button:focus-visible {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All interactive elements have visible focus
 - [ ] Focus indicator is at least 2px
 - [ ] Focus indicator has good contrast
@@ -492,12 +527,14 @@ The hero component uses native `alert()` which is not accessible to screen reade
 **Impact:** Breaks screen reader focus and provides poor accessibility
 
 **Files Affected:**
+
 - `components/common/artist-hub/ArtistHubHero.tsx` line 30
 
 **Recommended Fix:**
 Replace with accessible toast notification or modal dialog using Radix UI Dialog or similar accessible component library.
 
 **Acceptance Criteria:**
+
 - [ ] Native alert() removed
 - [ ] Accessible dialog/toast implemented
 - [ ] Focus management implemented
@@ -522,9 +559,11 @@ The Discover component uses `<h1>` for section heading when page already has an 
 **Impact:** Screen reader users cannot understand content structure
 
 **Files Affected:**
+
 - `components/common/home/Discover.tsx` line 55
 
 **Recommended Fix:**
+
 ```tsx
 <h2 className="text-4xl font-semibold text-[#A3A3A3] font-poppins leading-tight tracking-tight">
   Buy, Sell <span className="text-white">& Discover</span> Tracks
@@ -532,6 +571,7 @@ The Discover component uses `<h1>` for section heading when page already has an 
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Heading hierarchy is logical
 - [ ] Only one h1 per page
 - [ ] Headings properly nested
@@ -555,9 +595,11 @@ If radio button groups exist in the application, they must use `<fieldset>` and 
 **Impact:** Screen reader users cannot understand radio button relationships
 
 **Files Affected:**
+
 - Any components with radio button groups (if added)
 
 **Recommended Fix:**
+
 ```tsx
 <fieldset>
   <legend>Choose your plan:</legend>
@@ -573,6 +615,7 @@ If radio button groups exist in the application, they must use `<fieldset>` and 
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Radio groups wrapped in fieldset
 - [ ] Group description in legend
 - [ ] Screen readers announce group context
@@ -585,11 +628,13 @@ If radio button groups exist in the application, they must use `<fieldset>` and 
 After implementing fixes, verify with:
 
 ### Automated Testing
+
 - [ ] Run axe-core on all pages
 - [ ] Run axe-core on all components
 - [ ] Verify no new violations introduced
 
 ### Manual Keyboard Testing
+
 - [ ] Test all pages with Tab navigation
 - [ ] Test all forms with keyboard only
 - [ ] Test carousel navigation with keyboard
@@ -597,6 +642,7 @@ After implementing fixes, verify with:
 - [ ] Test focus order matches visual order
 
 ### Manual Screen Reader Testing
+
 - [ ] Test NVDA on Windows
 - [ ] Test VoiceOver on macOS
 - [ ] Test forms with screen reader
@@ -604,6 +650,7 @@ After implementing fixes, verify with:
 - [ ] Test carousel navigation
 
 ### Visual Testing
+
 - [ ] Test with Windows High Contrast mode
 - [ ] Test with browser zoom (200%)
 - [ ] Test color contrast with contrast checker

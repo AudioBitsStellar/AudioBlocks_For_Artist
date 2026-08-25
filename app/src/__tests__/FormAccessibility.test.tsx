@@ -18,15 +18,15 @@
  * Uses @testing-library/jest-dom and axe-core (via vitest-axe).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { axe } from 'vitest-axe';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { axe } from "vitest-axe";
 // `toHaveNoViolations` matcher is registered globally in src/test/setup.ts.
 
 // ── Shared mocks ────────────────────────────────────────────────────────────
 
-vi.mock('sonner', () => ({
+vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -36,22 +36,22 @@ vi.mock('sonner', () => ({
   },
 }));
 
-vi.mock('js-cookie', () => ({
+vi.mock("js-cookie", () => ({
   default: { set: vi.fn(), get: vi.fn(), remove: vi.fn() },
 }));
 
-vi.mock('next/navigation', () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
 }));
 
-vi.mock('@/services/authService', () => ({
+vi.mock("@/services/authService", () => ({
   default: () => ({
     useRegisterEmail: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useLoginEmail: () => ({ mutateAsync: vi.fn(), isPending: false }),
   }),
 }));
 
-vi.mock('@/services/uploadSerive', () => ({
+vi.mock("@/services/uploadSerive", () => ({
   default: () => ({
     useFinalizeUpload: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useUploadChunk: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -59,7 +59,7 @@ vi.mock('@/services/uploadSerive', () => ({
   }),
 }));
 
-vi.mock('@/lib/analytics', () => ({
+vi.mock("@/lib/analytics", () => ({
   analytics: {
     uploadStarted: vi.fn(),
     uploadCompleted: vi.fn(),
@@ -67,7 +67,7 @@ vi.mock('@/lib/analytics', () => ({
   },
 }));
 
-vi.mock('@/hooks/useToastHandler', () => ({
+vi.mock("@/hooks/useToastHandler", () => ({
   useToast: () => ({
     success: vi.fn(),
     error: vi.fn(),
@@ -79,19 +79,19 @@ vi.mock('@/hooks/useToastHandler', () => ({
   useHandleError: () => vi.fn(),
 }));
 
-vi.mock('@/hooks/useAutoSave', () => ({
+vi.mock("@/hooks/useAutoSave", () => ({
   useAutoSave: () => ({ restore: () => null, clearSavedData: vi.fn() }),
 }));
 
 // ── 1. Signup form ───────────────────────────────────────────────────────────
 
-describe('Signup form accessibility', () => {
+describe("Signup form accessibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('every required input has a programmatic label', async () => {
-    const { default: SignupPage } = await import('@/app/signup/page');
+  it("every required input has a programmatic label", async () => {
+    const { default: SignupPage } = await import("@/app/signup/page");
     render(<SignupPage />);
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
@@ -99,29 +99,29 @@ describe('Signup form accessibility', () => {
   });
 
   it('exposes validation errors via role="alert" on empty submit', async () => {
-    const { default: SignupPage } = await import('@/app/signup/page');
+    const { default: SignupPage } = await import("@/app/signup/page");
     render(<SignupPage />);
 
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
-      const alerts = screen.getAllByRole('alert');
+      const alerts = screen.getAllByRole("alert");
       expect(alerts.length).toBeGreaterThan(0);
       expect(
-        alerts.some((a) => /email is required|password is required/i.test(a.textContent || '')),
+        alerts.some((a) => /email is required|password is required/i.test(a.textContent || ""))
       ).toBe(true);
     });
   });
 
-  it('associates the password error with its input via aria-describedby', async () => {
-    const { default: SignupPage } = await import('@/app/signup/page');
+  it("associates the password error with its input via aria-describedby", async () => {
+    const { default: SignupPage } = await import("@/app/signup/page");
     render(<SignupPage />);
 
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
       const passwordInput = screen.getByLabelText(/password/i);
-      const describedBy = passwordInput.getAttribute('aria-describedby');
+      const describedBy = passwordInput.getAttribute("aria-describedby");
       expect(describedBy).toBeTruthy();
       const errorEl = describedBy ? document.getElementById(describedBy) : null;
       expect(errorEl).not.toBeNull();
@@ -129,30 +129,30 @@ describe('Signup form accessibility', () => {
     });
   });
 
-  it('moves focus to the first invalid input on submission', async () => {
-    const { default: SignupPage } = await import('@/app/signup/page');
+  it("moves focus to the first invalid input on submission", async () => {
+    const { default: SignupPage } = await import("@/app/signup/page");
     render(<SignupPage />);
 
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
       // react-hook-form's default behaviour: setFocus on first invalid field.
       const active = document.activeElement as HTMLElement | null;
       expect(active).not.toBeNull();
       const tag = active?.tagName?.toLowerCase();
-      const type = active?.getAttribute('type');
+      const type = active?.getAttribute("type");
       // Either an input with the email or password name, or a select etc.
       // We accept either because RHF sometimes focuses the container of an
       // invalid radio group; in this form it should be one of the inputs.
-      expect(['input', 'textarea', 'select'].includes(tag ?? '')).toBe(true);
+      expect(["input", "textarea", "select"].includes(tag ?? "")).toBe(true);
       // Specifically: email or password field
-      const name = active?.getAttribute('name');
-      expect(['email', 'password'].includes(name ?? type ?? '')).toBe(true);
+      const name = active?.getAttribute("name");
+      expect(["email", "password"].includes(name ?? type ?? "")).toBe(true);
     });
   });
 
-  it('passes an automated axe-core audit', async () => {
-    const { default: SignupPage } = await import('@/app/signup/page');
+  it("passes an automated axe-core audit", async () => {
+    const { default: SignupPage } = await import("@/app/signup/page");
     const { container } = render(<SignupPage />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
@@ -161,13 +161,13 @@ describe('Signup form accessibility', () => {
 
 // ── 2. Login form ────────────────────────────────────────────────────────────
 
-describe('Login form accessibility', () => {
+describe("Login form accessibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('every required input has a programmatic label', async () => {
-    const { default: LoginPage } = await import('@/app/login/page');
+  it("every required input has a programmatic label", async () => {
+    const { default: LoginPage } = await import("@/app/login/page");
     render(<LoginPage />);
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
@@ -175,33 +175,33 @@ describe('Login form accessibility', () => {
   });
 
   it('rejects empty submission with role="alert" errors', async () => {
-    const { default: LoginPage } = await import('@/app/login/page');
+    const { default: LoginPage } = await import("@/app/login/page");
     render(<LoginPage />);
 
-    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await userEvent.click(screen.getByRole("button", { name: /log in/i }));
 
     await waitFor(() => {
-      const alerts = screen.getAllByRole('alert');
+      const alerts = screen.getAllByRole("alert");
       expect(alerts.length).toBeGreaterThanOrEqual(2);
-      expect(alerts.some((a) => /email is required/i.test(a.textContent || ''))).toBe(true);
+      expect(alerts.some((a) => /email is required/i.test(a.textContent || ""))).toBe(true);
     });
   });
 
-  it('associates the email error with its input via aria-describedby', async () => {
-    const { default: LoginPage } = await import('@/app/login/page');
+  it("associates the email error with its input via aria-describedby", async () => {
+    const { default: LoginPage } = await import("@/app/login/page");
     render(<LoginPage />);
 
-    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await userEvent.click(screen.getByRole("button", { name: /log in/i }));
 
     await waitFor(() => {
       const emailInput = screen.getByLabelText(/email/i);
-      const describedBy = emailInput.getAttribute('aria-describedby');
+      const describedBy = emailInput.getAttribute("aria-describedby");
       expect(describedBy).toBeTruthy();
     });
   });
 
-  it('passes an automated axe-core audit', async () => {
-    const { default: LoginPage } = await import('@/app/login/page');
+  it("passes an automated axe-core audit", async () => {
+    const { default: LoginPage } = await import("@/app/login/page");
     const { container } = render(<LoginPage />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
@@ -210,28 +210,28 @@ describe('Login form accessibility', () => {
 
 // ── 3. Song upload form ──────────────────────────────────────────────────────
 
-describe('Song upload form accessibility', () => {
+describe("Song upload form accessibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('exposes role="alert" validation errors for required fields', async () => {
-    const { default: Song } = await import('@/components/musicUpload/Song');
+    const { default: Song } = await import("@/components/musicUpload/Song");
     render(<Song />);
 
-    await userEvent.click(screen.getByRole('button', { name: /add music/i }));
+    await userEvent.click(screen.getByRole("button", { name: /add music/i }));
 
     await waitFor(() => {
-      const alerts = screen.getAllByRole('alert');
-      expect(alerts.some((a) => /song title is required/i.test(a.textContent || ''))).toBe(true);
+      const alerts = screen.getAllByRole("alert");
+      expect(alerts.some((a) => /song title is required/i.test(a.textContent || ""))).toBe(true);
     });
   });
 
   it('marks each invalid input with aria-invalid="true" after submit', async () => {
-    const { default: Song } = await import('@/components/musicUpload/Song');
+    const { default: Song } = await import("@/components/musicUpload/Song");
     render(<Song />);
 
-    await userEvent.click(screen.getByRole('button', { name: /add music/i }));
+    await userEvent.click(screen.getByRole("button", { name: /add music/i }));
 
     await waitFor(() => {
       const invalidFields = document.querySelectorAll('input[aria-invalid="true"]');
@@ -239,21 +239,21 @@ describe('Song upload form accessibility', () => {
     });
   });
 
-  it('associates the title error with its input via aria-describedby', async () => {
-    const { default: Song } = await import('@/components/musicUpload/Song');
+  it("associates the title error with its input via aria-describedby", async () => {
+    const { default: Song } = await import("@/components/musicUpload/Song");
     render(<Song />);
 
-    await userEvent.click(screen.getByRole('button', { name: /add music/i }));
+    await userEvent.click(screen.getByRole("button", { name: /add music/i }));
 
     await waitFor(() => {
       const titleInput = screen.getByLabelText(/song title/i);
-      const describedBy = titleInput.getAttribute('aria-describedby');
+      const describedBy = titleInput.getAttribute("aria-describedby");
       expect(describedBy).toBeTruthy();
     });
   });
 
-  it('passes an automated axe-core audit', async () => {
-    const { default: Song } = await import('@/components/musicUpload/Song');
+  it("passes an automated axe-core audit", async () => {
+    const { default: Song } = await import("@/components/musicUpload/Song");
     const { container } = render(<Song />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();

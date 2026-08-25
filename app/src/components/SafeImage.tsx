@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -21,7 +21,7 @@ export default function SafeImage({
   fallbackSrc,
   className,
   placeholderClassName,
-  loading = 'lazy',
+  loading = "lazy",
   width = 192,
   height = 192,
   ...props
@@ -32,13 +32,13 @@ export default function SafeImage({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       setShouldLoad(true);
       return;
     }
 
     // Use native lazy loading if supported
-    if ('loading' in HTMLImageElement.prototype) {
+    if ("loading" in HTMLImageElement.prototype) {
       setShouldLoad(true);
       return;
     }
@@ -51,7 +51,7 @@ export default function SafeImage({
           observer.disconnect();
         }
       },
-      { rootMargin: '100px' }
+      { rootMargin: "100px" }
     );
 
     if (containerRef.current) {
@@ -91,11 +91,11 @@ export default function SafeImage({
         aria-label={alt}
         data-testid="safe-image-placeholder"
         className={[
-          'flex items-center justify-center bg-gray-800 text-gray-500 rounded-lg aspect-square',
-          className ?? '',
-          placeholderClassName ?? '',
+          "flex items-center justify-center bg-gray-800 text-gray-500 rounded-lg aspect-square",
+          className ?? "",
+          placeholderClassName ?? "",
         ]
-          .join(' ')
+          .join(" ")
           .trim()}
       >
         <svg
@@ -116,7 +116,10 @@ export default function SafeImage({
   }
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden aspect-square rounded-lg bg-gray-800">
+    <div
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden aspect-square rounded-lg bg-gray-800"
+    >
       {!isLoaded && (
         <div
           data-testid="image-skeleton-placeholder"
@@ -146,8 +149,8 @@ export default function SafeImage({
           loading={loading}
           onLoad={handleLoad}
           onError={handleError}
-          className={`${className ?? ''} transition-opacity duration-300 ${
-            isLoaded ? 'opacity-100' : 'opacity-0'
+          className={`${className ?? ""} transition-opacity duration-300 ${
+            isLoaded ? "opacity-100" : "opacity-0"
           }`}
           {...props}
         />

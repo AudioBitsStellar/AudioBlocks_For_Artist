@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 
 export default function TracksPage() {
-  redirect('/dashboard/my-music');
+  redirect("/dashboard/my-music");
 }

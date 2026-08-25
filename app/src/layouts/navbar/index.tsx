@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { ArrowRight, Menu, X } from 'lucide-react';
-import Image from 'next/image';
-import { Variants, motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import { ArrowRight, Menu, X } from "lucide-react";
+import Image from "next/image";
+import { Variants, motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,25 +15,25 @@ const Navbar = () => {
       setScrolled(window.scrollY > 20);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Variants for animation
   const menuVariants: Variants = {
-    hidden: { x: '100%' },
+    hidden: { x: "100%" },
     visible: {
       x: 0,
       transition: {
         duration: 0.3,
-        ease: 'easeInOut',
-        when: 'beforeChildren',
+        ease: "easeInOut",
+        when: "beforeChildren",
         staggerChildren: 0.1,
       },
     },
     exit: {
-      x: '100%',
-      transition: { duration: 0.3, ease: 'easeInOut' },
+      x: "100%",
+      transition: { duration: 0.3, ease: "easeInOut" },
     },
   };
 
@@ -46,7 +46,7 @@ const Navbar = () => {
     <>
       <nav
         className={`w-full z-30 sticky top-0 py-4 transition-all duration-300 ${
-          scrolled ? 'bg-[#0f0f0f]/80 backdrop-blur-lg ' : ''
+          scrolled ? "bg-[#0f0f0f]/80 backdrop-blur-lg " : ""
         }`}
       >
         <div className="flex h-[51px] items-center justify-between py-4 max-w-11/12 mx-auto">
@@ -74,7 +74,7 @@ const Navbar = () => {
           <div className="flex md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMenuOpen}
               className="flex items-center justify-center min-w-11 min-h-11 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D2045B]"
             >
@@ -131,5 +131,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-

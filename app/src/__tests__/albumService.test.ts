@@ -1,21 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from "react";
 
 const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn(),
 }));
 
-vi.mock('@/api/axios', () => ({
+vi.mock("@/api/axios", () => ({
   createApiClient: vi.fn().mockResolvedValue({
     get: mockGet,
   }),
 }));
 
-import useAlbumServices from '@/services/albumService';
-import { ALBUM_ENDPOINTS } from '@/api/api-endpoint';
-import { AlbumsResponse } from '@/types';
+import useAlbumServices from "@/services/albumService";
+import { ALBUM_ENDPOINTS } from "@/api/api-endpoint";
+import { AlbumsResponse } from "@/types";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -33,11 +33,11 @@ const mockAlbum: AlbumsResponse = {
   success: true,
   data: [
     {
-      id: '1',
-      title: 'Test Album',
-      artist: 'Test Artist',
-      coverImage: 'https://example.com/cover.jpg',
-      releaseDate: '2025-01-01',
+      id: "1",
+      title: "Test Album",
+      artist: "Test Artist",
+      coverImage: "https://example.com/cover.jpg",
+      releaseDate: "2025-01-01",
       trackCount: 10,
     },
   ],
@@ -48,13 +48,13 @@ const emptyAlbums: AlbumsResponse = {
   data: [],
 };
 
-describe('useAlbumServices', () => {
+describe("useAlbumServices", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('useGetAlbums', () => {
-    it('calls the correct endpoint', async () => {
+  describe("useGetAlbums", () => {
+    it("calls the correct endpoint", async () => {
       mockGet.mockResolvedValueOnce({ data: mockAlbum });
 
       const { result } = renderHook(() => useAlbumServices().useGetAlbums(), {
@@ -66,7 +66,7 @@ describe('useAlbumServices', () => {
       expect(mockGet).toHaveBeenCalledWith(ALBUM_ENDPOINTS.LIST, expect.anything());
     });
 
-    it('returns album data on success', async () => {
+    it("returns album data on success", async () => {
       mockGet.mockResolvedValueOnce({ data: mockAlbum });
 
       const { result } = renderHook(() => useAlbumServices().useGetAlbums(), {
@@ -78,7 +78,7 @@ describe('useAlbumServices', () => {
       expect(result.current.data?.data).toHaveLength(1);
     });
 
-    it('returns empty list when no albums exist', async () => {
+    it("returns empty list when no albums exist", async () => {
       mockGet.mockResolvedValueOnce({ data: emptyAlbums });
 
       const { result } = renderHook(() => useAlbumServices().useGetAlbums(), {
@@ -89,8 +89,8 @@ describe('useAlbumServices', () => {
       expect(result.current.data?.data).toHaveLength(0);
     });
 
-    it('handles API errors gracefully', async () => {
-      mockGet.mockRejectedValueOnce(new Error('Network error'));
+    it("handles API errors gracefully", async () => {
+      mockGet.mockRejectedValueOnce(new Error("Network error"));
 
       const { result } = renderHook(() => useAlbumServices().useGetAlbums(), {
         wrapper: Wrapper,
@@ -100,17 +100,17 @@ describe('useAlbumServices', () => {
       expect(result.current.error).toBeInstanceOf(Error);
     });
 
-    it('does not fetch when enabled is false', () => {
+    it("does not fetch when enabled is false", () => {
       const { result } = renderHook(() => useAlbumServices().useGetAlbums(false), {
         wrapper: Wrapper,
       });
 
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.fetchStatus).toBe('idle');
+      expect(result.current.fetchStatus).toBe("idle");
       expect(mockGet).not.toHaveBeenCalled();
     });
 
-    it('fetches by default when no argument is provided', async () => {
+    it("fetches by default when no argument is provided", async () => {
       mockGet.mockResolvedValueOnce({ data: mockAlbum });
 
       const { result } = renderHook(() => useAlbumServices().useGetAlbums(), {
@@ -122,13 +122,13 @@ describe('useAlbumServices', () => {
     });
   });
 
-  describe('service structure', () => {
-    it('returns useGetAlbums function', () => {
+  describe("service structure", () => {
+    it("returns useGetAlbums function", () => {
       const { result } = renderHook(() => useAlbumServices(), {
         wrapper: Wrapper,
       });
 
-      expect(typeof result.current.useGetAlbums).toBe('function');
+      expect(typeof result.current.useGetAlbums).toBe("function");
     });
   });
 });

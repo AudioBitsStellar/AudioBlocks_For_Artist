@@ -22,34 +22,34 @@
 
 export const colorTokens = {
   primary: {
-    default: 'var(--color-primary)',
-    hover: 'var(--color-primary-hover)',
-    contrast: 'var(--color-primary-contrast)',
+    default: "var(--color-primary)",
+    hover: "var(--color-primary-hover)",
+    contrast: "var(--color-primary-contrast)",
   },
   secondary: {
-    default: 'var(--color-secondary)',
-    contrast: 'var(--color-secondary-contrast)',
+    default: "var(--color-secondary)",
+    contrast: "var(--color-secondary-contrast)",
   },
-  background: 'var(--color-background)',
+  background: "var(--color-background)",
   surface: {
-    default: 'var(--color-surface)',
-    raised: 'var(--color-surface-raised)',
-    sunken: 'var(--color-surface-sunken)',
+    default: "var(--color-surface)",
+    raised: "var(--color-surface-raised)",
+    sunken: "var(--color-surface-sunken)",
   },
   text: {
-    default: 'var(--color-text)',
-    muted: 'var(--color-text-muted)',
-    subtle: 'var(--color-text-subtle)',
-    inverted: 'var(--color-text-inverted)',
+    default: "var(--color-text)",
+    muted: "var(--color-text-muted)",
+    subtle: "var(--color-text-subtle)",
+    inverted: "var(--color-text-inverted)",
   },
   border: {
-    default: 'var(--color-border)',
-    subtle: 'var(--color-border-subtle)',
+    default: "var(--color-border)",
+    subtle: "var(--color-border-subtle)",
   },
-  success: 'var(--color-success)',
-  warning: 'var(--color-warning)',
-  error: 'var(--color-error)',
-  info: 'var(--color-info)',
+  success: "var(--color-success)",
+  warning: "var(--color-warning)",
+  error: "var(--color-error)",
+  info: "var(--color-info)",
 } as const;
 
 export type ColorTokenKey = keyof typeof colorTokens;

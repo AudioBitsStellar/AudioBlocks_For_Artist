@@ -36,12 +36,8 @@ describe("validateEnv", () => {
 
     const result = validateEnv();
 
-    expect(result.NEXT_PUBLIC_API_BASE_URL).toBe(
-      validEnv.NEXT_PUBLIC_API_BASE_URL,
-    );
-    expect(result.NEXT_PUBLIC_ANALYTICS_WRITE_KEY).toBe(
-      validEnv.NEXT_PUBLIC_ANALYTICS_WRITE_KEY,
-    );
+    expect(result.NEXT_PUBLIC_API_BASE_URL).toBe(validEnv.NEXT_PUBLIC_API_BASE_URL);
+    expect(result.NEXT_PUBLIC_ANALYTICS_WRITE_KEY).toBe(validEnv.NEXT_PUBLIC_ANALYTICS_WRITE_KEY);
     expect(result.NEXT_PUBLIC_USE_MOCK_DATA).toBe(false);
   });
 

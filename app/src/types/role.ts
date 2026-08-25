@@ -10,35 +10,35 @@
  * in O(1) without enumerating every action.
  */
 
-export type Role = 'owner' | 'manager' | 'viewer';
+export type Role = "owner" | "manager" | "viewer";
 
-export const ROLES: ReadonlyArray<Role> = ['owner', 'manager', 'viewer'];
+export const ROLES: ReadonlyArray<Role> = ["owner", "manager", "viewer"];
 
 /**
  * Granular permission keys. Each role has a static set of allowed permissions,
  * defined in {@link ROLE_PERMISSION_TABLE}.
  */
 export type Permission =
-  | 'content:create'
-  | 'content:edit'
-  | 'content:delete'
-  | 'settings:read'
-  | 'settings:edit'
-  | 'workspace:manage'
-  | 'roles:manage';
+  | "content:create"
+  | "content:edit"
+  | "content:delete"
+  | "settings:read"
+  | "settings:edit"
+  | "workspace:manage"
+  | "roles:manage";
 
 export const ROLE_PERMISSION_TABLE: Readonly<Record<Role, ReadonlyArray<Permission>>> = {
   owner: [
-    'content:create',
-    'content:edit',
-    'content:delete',
-    'settings:read',
-    'settings:edit',
-    'workspace:manage',
-    'roles:manage',
+    "content:create",
+    "content:edit",
+    "content:delete",
+    "settings:read",
+    "settings:edit",
+    "workspace:manage",
+    "roles:manage",
   ],
-  manager: ['content:create', 'content:edit', 'content:delete', 'settings:read'],
-  viewer: ['settings:read'],
+  manager: ["content:create", "content:edit", "content:delete", "settings:read"],
+  viewer: ["settings:read"],
 };
 
 export interface UserRoleInfo {
@@ -51,19 +51,19 @@ export interface UserRoleInfo {
 
 export const ROLE_INFO: Readonly<Record<Role, UserRoleInfo>> = {
   owner: {
-    role: 'owner',
-    label: 'Owner',
-    description: 'Full access to all workspace settings and content.',
+    role: "owner",
+    label: "Owner",
+    description: "Full access to all workspace settings and content.",
   },
   manager: {
-    role: 'manager',
-    label: 'Manager',
-    description: 'Can create and edit content. Cannot change workspace settings.',
+    role: "manager",
+    label: "Manager",
+    description: "Can create and edit content. Cannot change workspace settings.",
   },
   viewer: {
-    role: 'viewer',
-    label: 'Viewer',
-    description: 'Read-only access to the artist workspace.',
+    role: "viewer",
+    label: "Viewer",
+    description: "Read-only access to the artist workspace.",
   },
 };
 
@@ -72,9 +72,9 @@ export const ROLE_INFO: Readonly<Record<Role, UserRoleInfo>> = {
  * the profile page. Centralising the palette keeps the two surfaces in sync.
  */
 export const ROLE_BADGE_STYLES: Readonly<Record<Role, string>> = {
-  owner: 'bg-[#D2045B] text-white',
-  manager: 'bg-[#885FA8] text-white',
-  viewer: 'bg-[#2A2A2A] text-[#C9C9C9]',
+  owner: "bg-[#D2045B] text-white",
+  manager: "bg-[#885FA8] text-white",
+  viewer: "bg-[#2A2A2A] text-[#C9C9C9]",
 };
 
 /**
@@ -84,11 +84,11 @@ export const ROLE_BADGE_STYLES: Readonly<Record<Role, string>> = {
  */
 export function getSettingsRestrictionReason(role: Role): string {
   switch (role) {
-    case 'owner':
-      return '';
-    case 'manager':
-      return 'Settings are managed by the workspace owner.';
-    case 'viewer':
-      return 'You have read-only access; settings are managed by the workspace owner.';
+    case "owner":
+      return "";
+    case "manager":
+      return "Settings are managed by the workspace owner.";
+    case "viewer":
+      return "You have read-only access; settings are managed by the workspace owner.";
   }
 }

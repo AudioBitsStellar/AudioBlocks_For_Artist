@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { ArrowRight } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { ArrowRight } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const Hero = () => {
   const router = useRouter();
 
   const handleStream = () => {
-    router.push('/login');
+    router.push("/login");
   };
   return (
     <section className="relative h-screen text-white py-35 overflow-hidden">
@@ -80,4 +80,3 @@ const Hero = () => {
 };
 
 export default Hero;
-

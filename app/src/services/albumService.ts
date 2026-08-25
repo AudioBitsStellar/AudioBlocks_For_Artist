@@ -11,14 +11,10 @@ const useAlbumServices = () => {
    * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
    */
   const useGetAlbums = (enabled: boolean = true) => {
-    return useGet<AlbumsResponse>(
-      ["get-artist-albums"],
-      ALBUM_ENDPOINTS.LIST,
-      {
-        enabled,
-        staleTime: 1000 * 60 * 2,
-      }
-    );
+    return useGet<AlbumsResponse>(["get-artist-albums"], ALBUM_ENDPOINTS.LIST, {
+      enabled,
+      staleTime: 1000 * 60 * 2,
+    });
   };
 
   return { useGetAlbums };
