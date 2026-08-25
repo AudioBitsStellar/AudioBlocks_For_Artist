@@ -47,6 +47,26 @@ const en = {
     scrollLeft: 'Scroll albums left',
     scrollRight: 'Scroll albums right',
     noCover: 'No Cover',
+
+    // Metadata and multilingual content
+    metadata: {
+      title: 'Title',
+      titlePlaceholder: 'Enter song/album title',
+      description: 'Description',
+      descriptionPlaceholder: 'Describe your music',
+      genre: 'Genre',
+      genrePlaceholder: 'Enter genre',
+      releaseDate: 'Release Date',
+      releaseDatePlaceholder: 'Select release date',
+      artist: 'Artist',
+      artistPlaceholder: 'Artist name',
+      album: 'Album',
+      albumPlaceholder: 'Album name',
+      lyrics: 'Lyrics',
+      lyricsPlaceholder: 'Enter song lyrics',
+      tags: 'Tags',
+      tagsPlaceholder: 'Add tags (comma separated)',
+    },
   },
 
   // Actions

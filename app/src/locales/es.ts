@@ -45,6 +45,26 @@ const es: Translations = {
     scrollLeft: 'Desplazar álbumes a la izquierda',
     scrollRight: 'Desplazar álbumes a la derecha',
     noCover: 'Sin Portada',
+
+    // Metadata and multilingual content
+    metadata: {
+      title: 'Título',
+      titlePlaceholder: 'Ingresa título de canción/álbum',
+      description: 'Descripción',
+      descriptionPlaceholder: 'Describe tu música',
+      genre: 'Género',
+      genrePlaceholder: 'Ingresa género',
+      releaseDate: 'Fecha de Lanzamiento',
+      releaseDatePlaceholder: 'Selecciona fecha de lanzamiento',
+      artist: 'Artista',
+      artistPlaceholder: 'Nombre del artista',
+      album: 'Álbum',
+      albumPlaceholder: 'Nombre del álbum',
+      lyrics: 'Letras',
+      lyricsPlaceholder: 'Ingresa letras de la canción',
+      tags: 'Etiquetas',
+      tagsPlaceholder: 'Añade etiquetas (separadas por comas)',
+    },
   },
 
   actions: {

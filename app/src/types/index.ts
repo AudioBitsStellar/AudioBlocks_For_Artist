@@ -131,3 +131,36 @@ export interface RecentActivityResponse {
   success: boolean;
   data: RecentActivity[];
 }
+
+// Multilingual content support for music metadata
+export type SupportedLanguage = 'en' | 'es';
+
+export interface MultilingualText {
+  [lang: string]: string;
+}
+
+export interface MusicMetadata {
+  // Primary multilingual fields
+  title: MultilingualText;
+  description?: MultilingualText;
+  lyrics?: MultilingualText;
+
+  // Standard fields
+  genre?: string;
+  artist?: string;
+  album?: string;
+  releaseDate?: string;
+  tags?: string[];
+
+  // Technical metadata
+  language?: SupportedLanguage; // Primary language
+  isMultilingual?: boolean;
+}
+
+export interface MultilingualMusicItem {
+  id: string;
+  metadata: MusicMetadata;
+  coverArtUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
