@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 
 const OverviewCards = dynamic(() => import("@/components/OverviewCards"));
 const EarningsRoyalties = dynamic(() => import("@/components/EarningsRoyalties"));
+const PlatformRevenueBreakdown = dynamic(() => import("@/components/PlatformRevenueBreakdown"));
 const MyAlbums = dynamic(() => import("@/components/MyAlbums"));
 const FansEngagement = dynamic(() => import("@/components/FansEngagement"));
 const Transactions = dynamic(() => import("@/components/Transactions"));
@@ -16,6 +17,9 @@ export default function OverviewPage() {
       </ErrorBoundary>
       <ErrorBoundary fallbackTitle="Failed to load earnings data">
         <EarningsRoyalties />
+      </ErrorBoundary>
+      <ErrorBoundary fallbackTitle="Failed to load platform revenue">
+        <PlatformRevenueBreakdown />
       </ErrorBoundary>
       <MyAlbums />
       <FansEngagement />
