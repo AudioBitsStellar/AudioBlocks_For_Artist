@@ -98,6 +98,51 @@ const en = {
     en: 'English',
     es: 'Español',
   },
+
+  // Fan Rewards & Loyalty Program
+  rewards: {
+    title: 'Loyalty Program',
+    yourPoints: 'Your Points',
+    currentTier: 'Current Tier',
+    earnMorePoints: 'Earn More Points',
+    redeemRewards: 'Redeem Rewards',
+    exclusiveContent: 'Exclusive Content',
+    unlockedContent: 'Unlocked Content',
+    lockedContent: 'Locked Content',
+
+    // Point sources
+    pointsPerStream: 'Points per stream',
+    pointsPerPurchase: 'Points per purchase',
+    pointsPerShare: 'Points per share',
+    pointsPerReview: 'Points per review',
+    pointsPerEvent: 'Points per event attendance',
+    referralBonus: 'Referral bonus',
+
+    // Tiers
+    tiers: {
+      bronze: 'Bronze',
+      silver: 'Silver',
+      gold: 'Gold',
+      platinum: 'Platinum',
+    },
+
+    // Actions
+    unlock: 'Unlock',
+    redeem: 'Redeem',
+    share: 'Share',
+    viewDetails: 'View Details',
+    unlockNow: 'Unlock Now',
+    redeemNow: 'Redeem Now',
+
+    // Messages
+    needMorePoints: 'You need {points} more points to unlock this',
+    pointsExpire: 'Points expire on {date}',
+    congratulations: 'Congratulations!',
+    newTierUnlocked: 'You\'ve unlocked {tier} tier!',
+    rewardRedeemed: 'Reward successfully redeemed',
+    noRewards: 'No rewards available yet',
+    noExclusiveContent: 'Check back soon for exclusive content',
+  },
 } as const;
 
 export type Translations = typeof en;
