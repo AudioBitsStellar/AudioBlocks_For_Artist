@@ -1,10 +1,10 @@
 'use client';
 
-import * as Dialog from '@radix-ui/react-dialog';
 import Image from 'next/image';
-import { X, Upload, Music } from 'lucide-react';
+import { Upload, Music } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Modal from '@/components/shared/Modal';
 
 interface AddMusicModalProps {
   open: boolean;
@@ -109,47 +109,37 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange} modal>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-sm" style={{ zIndex: 100000 }} />
-        <Dialog.Content
-          className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto"
-          style={{ zIndex: 100001 }}
-        >
-          <div className="w-full max-w-6xl rounded-3xl border border-[#2A2A2A] bg-[#0F0F0F] p-8 shadow-2xl my-8">
-            {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setMode('album')}
-                  className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-                    mode === 'album'
-                      ? 'bg-[#D2045B] text-white'
-                      : 'bg-transparent text-white hover:bg-white/5'
-                  }`}
-                >
-                  Add Album
-                </button>
-                <button
-                  onClick={() => setMode('song')}
-                  className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-                    mode === 'song'
-                      ? 'bg-[#D2045B] text-white'
-                      : 'bg-transparent text-white hover:bg-white/5'
-                  }`}
-                >
-                  Add Song
-                </button>
-              </div>
-              <Dialog.Close asChild>
-                <button
-                  aria-label="Close add music dialog"
-                  className="flex items-center justify-center min-w-11 min-h-11 rounded-full text-gray-400 transition hover:bg-white/5 hover:text-white"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </Dialog.Close>
-            </div>
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      size="xl"
+      contentClassName="max-w-6xl"
+      closeAriaLabel="Close add music dialog"
+    >
+      <div className="space-y-6">
+        {/* Mode Selection */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMode('album')}
+            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
+              mode === 'album'
+                ? 'bg-[#D2045B] text-white'
+                : 'bg-transparent text-white hover:bg-white/5'
+            }`}
+          >
+            Add Album
+          </button>
+          <button
+            onClick={() => setMode('song')}
+            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
+              mode === 'song'
+                ? 'bg-[#D2045B] text-white'
+                : 'bg-transparent text-white hover:bg-white/5'
+            }`}
+          >
+            Add Song
+          </button>
+        </div>
 
             {/* Main Content - Two Columns */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -322,11 +312,8 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                   {errors.uploadedFile && <p className="text-red-500 text-xs mt-2">{errors.uploadedFile}</p>}
                 </div>
               </div>
-            </div>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+      </div>
+    </Modal>
   );
 }
 
