@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
 import { getCSRFToken, getCSRFTokenHeader, refreshCSRFToken } from "@/utils/csrfToken";
 import { isRetryableError, calculateBackoff } from "@/utils/retry";
@@ -74,7 +74,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
   });
 
   apiClient.interceptors.response.use(
-    (response: any) => {
+    (response: AxiosResponse) => {
       // Handle CSRF token refresh from server
       const newCsrfToken = response.headers["x-csrf-token"];
       if (newCsrfToken && typeof newCsrfToken === "string") {

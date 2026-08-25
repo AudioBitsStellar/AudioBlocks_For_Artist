@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  TooltipProps,
 } from 'recharts';
 import { Calendar, ChevronDown, Download, Printer } from 'lucide-react';
 import useEarningsServices from '@/services/earningsService';
@@ -54,10 +55,10 @@ function createEarningsCsv(data: EarningsDataPoint[]): string {
   return [CSV_HEADERS.join(','), ...rows].join('\r\n');
 }
 
-const CustomTooltip = ({ active, payload, coordinate }: any) => {
-  if (active && payload && payload.length) {
-    const data: EarningsDataPoint = payload[0].payload;
-    const isHighlighted = data.month === highlightedMonth(payload[0].payload);
+const CustomTooltip = ({ active, payload, coordinate }: TooltipProps<number, string>) => {
+  if (active && payload && payload.length && coordinate) {
+    const data: EarningsDataPoint = payload[0].payload as EarningsDataPoint;
+    const isHighlighted = data.month === highlightedMonth(payload[0].payload as EarningsDataPoint);
     if (isHighlighted) {
       return (
         <g>

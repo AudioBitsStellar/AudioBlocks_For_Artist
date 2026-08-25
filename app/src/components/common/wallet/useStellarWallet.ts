@@ -33,9 +33,10 @@ export function useStellarWallet() {
       setAddress(stellarPublicKey);
       handleSuccess("Stellar wallet connected!");
       return stellarPublicKey;
-    } catch (error: any) {
-      handleError(error.message || "Failed to connect Freighter wallet.");
-      throw error;
+    } catch (error: unknown) {
+      const err = error as Error;
+      handleError(err.message || "Failed to connect Freighter wallet.");
+      throw err;
     } finally {
       setIsConnecting(false);
     }

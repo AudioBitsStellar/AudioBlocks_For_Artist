@@ -2,6 +2,7 @@ import { Trash2, RotateCw, Play } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { UploadSong } from '@/types';
+import { FinalizeSongResponse } from '@/types/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { songFormSchema } from '@/types/formValidation';
@@ -306,7 +307,7 @@ const Song = () => {
             const coverArtPath = coverRes.data.cover;
 
             // 3. Finalize
-            const finalizeResult: any = await finalizeUpload.mutateAsync({
+            const finalizeResult: FinalizeSongResponse = await finalizeUpload.mutateAsync({
                 fileId: fileId,
                 totalChunks: totalChunks,
                 title: sanitize(data.title),
@@ -343,8 +344,9 @@ const Song = () => {
             setUploadedFile(null);
             setAudioFile(null);
             setFileId(null);
-        } catch (err: any) {
-            if (err instanceof Error && err.message === 'UPLOAD_CANCELLED') {
+        } catch (err: unknown) {
+            const error = err as Error;
+            if (error instanceof Error && error.message === 'UPLOAD_CANCELLED') {
                 setUploadedFile((prev) =>
                     prev ? { ...prev, status: "cancelled" } : prev
                 );
