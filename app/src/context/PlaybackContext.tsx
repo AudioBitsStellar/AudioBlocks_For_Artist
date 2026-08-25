@@ -39,6 +39,7 @@ export const initialPlaybackState: PlaybackState = {
   volume: 1,
   seekPosition: 0,
   playlist: [],
+  queue: [],
   error: null,
 };
 

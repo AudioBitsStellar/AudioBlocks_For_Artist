@@ -42,6 +42,17 @@ export interface MerchInventoryItem {
   reserved: number;
 }
 
+export interface MerchOrder {
+  id: number;
+  itemId: number;
+  itemTitle: string;
+  quantity: number;
+  price: string;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PriceValidation {
   valid: boolean;
   errors: Record<string, string>;
@@ -49,6 +60,11 @@ export interface PriceValidation {
 
 const CURRENCY = "USD";
 const CURRENCY_SYMBOL = "$";
+
+export interface PriceValidation {
+  valid: boolean;
+  errors: Record<string, string>;
+}
 
 /**
  * Formats a price as a USD currency string.
@@ -216,7 +232,42 @@ const useMerchService = () => {
       invalidateQueries: [MERCH_QUERY_KEY],
     });
 
-  return { useGetMerches, useCreateMerch, useUpdateMerch, useDeleteMerch };
+  /**
+   * Creates a new merch order. Invalidates the merch cache and shows a success/error toast on completion.
+   *
+   * @param itemId - The merch item ID to order.
+   * @param quantity - The quantity to order.
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
+  const useCreateMerchOrder = (itemId: number, quantity: number) =>
+    usePost<MerchOrder, { itemId: number; quantity: number }>(
+      MERCH_ENDPOINTS.CREATE_ORDER(itemId),
+      {
+        onSuccess: () => handleSuccess("Merch order created!"),
+        onError: (error) =>
+          handleError(error.message || "Failed to create merch order."),
+        invalidateQueries: [MERCH_QUERY_KEY],
+      },
+    );
+
+  /**
+   * Fetches the artist's merch orders.
+   *
+   * @returns A React Query result: `{ data: MerchOrder[] | undefined, isLoading, isError, error, refetch, ... }`.
+   * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
+   */
+  const useGetMerchOrders = () =>
+    useGet<MerchOrder[]>(['merch-orders'], MERCH_ENDPOINTS.ORDERS);
+
+  return {
+    useGetMerches,
+    useCreateMerch,
+    useUpdateMerch,
+    useDeleteMerch,
+    useCreateMerchOrder,
+    useGetMerchOrders,
+  };
 };
 
 export default useMerchService;

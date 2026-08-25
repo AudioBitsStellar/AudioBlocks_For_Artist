@@ -32,6 +32,8 @@ export const MERCH_ENDPOINTS = {
   CREATE: "/artist/merches",
   UPDATE: (id: number) => `/artist/merches/${id}`,
   DELETE: (id: number) => `/artist/merches/${id}`,
+  CREATE_ORDER: (id: number) => `/artist/merches/${id}/orders`,
+  ORDERS: "/artist/merches/orders",
 };
 
 export const EARNINGS_ENDPOINTS = {
