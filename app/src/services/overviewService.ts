@@ -28,14 +28,10 @@ const useOverviewServices = () => {
    * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
    */
   const useGetOverviewKpi = (enabled: boolean = true) => {
-    return useGet<OverviewResponse>(
-      OVERVIEW_QUERY_KEY,
-      OVERVIEW_ENDPOINTS.GET_OVERVIEW,
-      {
-        enabled,
-        staleTime: OVERVIEW_CACHE_TTL_MS,
-      }
-    );
+    return useGet<OverviewResponse>(OVERVIEW_QUERY_KEY, OVERVIEW_ENDPOINTS.GET_OVERVIEW, {
+      enabled,
+      staleTime: OVERVIEW_CACHE_TTL_MS,
+    });
   };
 
   const useGetStatistics = (enabled: boolean = true) => {

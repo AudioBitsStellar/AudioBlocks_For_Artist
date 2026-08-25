@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
-import { Permission, Role, ROLE_INFO, ROLE_PERMISSION_TABLE } from '@/types/role';
+import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react";
+import { Permission, Role, ROLE_INFO, ROLE_PERMISSION_TABLE } from "@/types/role";
 
 export interface RoleContextValue {
   role: Role;
-  info: typeof ROLE_INFO[Role];
+  info: (typeof ROLE_INFO)[Role];
   permissions: ReadonlyArray<Permission>;
   /**
    * Check whether the current role has a given permission.
@@ -22,7 +22,7 @@ export interface RoleContextValue {
   setRole: (role: Role) => void;
 }
 
-const DEFAULT_ROLE: Role = 'owner';
+const DEFAULT_ROLE: Role = "owner";
 
 export const RoleContext = createContext<RoleContextValue | undefined>(undefined);
 
@@ -41,12 +41,12 @@ export function RoleProvider({ initialRole = DEFAULT_ROLE, children }: RoleProvi
 
   const can = useCallback(
     (permission: Permission) => permissions.includes(permission),
-    [permissions],
+    [permissions]
   );
 
   const cannot = useCallback(
     (permission: Permission) => !permissions.includes(permission),
-    [permissions],
+    [permissions]
   );
 
   const setRole = useCallback((next: Role) => {
@@ -62,7 +62,7 @@ export function RoleProvider({ initialRole = DEFAULT_ROLE, children }: RoleProvi
       cannot,
       setRole,
     }),
-    [role, permissions, can, cannot, setRole],
+    [role, permissions, can, cannot, setRole]
   );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;

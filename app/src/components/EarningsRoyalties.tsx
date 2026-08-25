@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
+import { useCallback } from "react";
 import {
   Area,
   AreaChart,
@@ -12,47 +12,45 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   TooltipProps,
-} from 'recharts';
-import { Calendar, ChevronDown, Download, Printer } from 'lucide-react';
-import useEarningsServices from '@/services/earningsService';
-import { EarningsDataPoint } from '@/types';
-import { colorTokens } from '@/theme/colors';
-import { getDisplayNameFromToken } from '@/utils/jwt';
+} from "recharts";
+import { Calendar, ChevronDown, Download, Printer } from "lucide-react";
+import useEarningsServices from "@/services/earningsService";
+import { EarningsDataPoint } from "@/types";
+import { colorTokens } from "@/theme/colors";
+import { getDisplayNameFromToken } from "@/utils/jwt";
 
-const PRINT_TARGET_ID = 'earnings-report-print';
-const PRINT_BODY_CLASS = 'printing-earnings-report';
-const DATE_RANGE_LABEL = 'Last 12 months';
+const PRINT_TARGET_ID = "earnings-report-print";
+const PRINT_BODY_CLASS = "printing-earnings-report";
+const DATE_RANGE_LABEL = "Last 12 months";
 
 const TOOLTIP_FILL = colorTokens.primary.default;
 const TOOLTIP_TEXT = colorTokens.primary.contrast;
-const AXIS_COLOR = 'var(--color-text-muted)';
-const AXIS_LINE_COLOR = 'var(--color-border)';
+const AXIS_COLOR = "var(--color-text-muted)";
+const AXIS_LINE_COLOR = "var(--color-border)";
 const LINE_COLOR = colorTokens.secondary.default;
 const AREA_STOP_A = colorTokens.primary.default;
 const AREA_STOP_B = colorTokens.secondary.default;
 
-const CSV_HEADERS = ['Month', 'Earnings', 'Royalties'];
+const CSV_HEADERS = ["Month", "Earnings", "Royalties"];
 
 function escapeCsvValue(value: string | number): string {
   const stringValue = String(value);
-  return /[",\n\r]/.test(stringValue)
-    ? `"${stringValue.replace(/"/g, '""')}"`
-    : stringValue;
+  return /[",\n\r]/.test(stringValue) ? `"${stringValue.replace(/"/g, '""')}"` : stringValue;
 }
 
 function getCurrentMonthFilename(): string {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, "0");
   return `earnings_${year}-${month}.csv`;
 }
 
 function createEarningsCsv(data: EarningsDataPoint[]): string {
   const rows = data.map((point) =>
-    [point.month, point.earnings, point.royalties].map(escapeCsvValue).join(','),
+    [point.month, point.earnings, point.royalties].map(escapeCsvValue).join(",")
   );
 
-  return [CSV_HEADERS.join(','), ...rows].join('\r\n');
+  return [CSV_HEADERS.join(","), ...rows].join("\r\n");
 }
 
 const CustomTooltip = ({ active, payload, coordinate }: TooltipProps<number, string>) => {
@@ -130,41 +128,41 @@ export default function EarningsRoyalties() {
 
   const summary = response?.data;
   const chartData: EarningsDataPoint[] = summary?.data ?? [];
-  const highlightMonth = chartData.length > 0 ? chartData[chartData.length - 1].month : '';
+  const highlightMonth = chartData.length > 0 ? chartData[chartData.length - 1].month : "";
 
   const totalEarnings = summary?.totalEarnings ?? 0;
   const diff = summary?.comparedToLastMonth ?? 0;
   const diffLabel =
     diff === 0
-      ? 'Same as last month'
+      ? "Same as last month"
       : diff > 0
         ? `$${diff.toLocaleString()} more than last month`
         : `$${Math.abs(diff).toLocaleString()} less than last month`;
 
   const handlePrint = useCallback(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const cleanup = () => {
       document.body.classList.remove(PRINT_BODY_CLASS);
-      window.removeEventListener('afterprint', cleanup);
+      window.removeEventListener("afterprint", cleanup);
     };
 
     document.body.classList.add(PRINT_BODY_CLASS);
-    window.addEventListener('afterprint', cleanup);
+    window.addEventListener("afterprint", cleanup);
     window.print();
   }, []);
 
   const handleExport = useCallback(() => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (typeof window === "undefined" || typeof document === "undefined") return;
 
     const csv = createEarningsCsv(chartData);
-    const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
 
     link.href = url;
     link.download = getCurrentMonthFilename();
-    link.style.display = 'none';
+    link.style.display = "none";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -191,7 +189,7 @@ export default function EarningsRoyalties() {
           ) : (
             <div className="flex items-baseline gap-4">
               <p className="text-text text-3xl font-bold">
-                ${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                ${totalEarnings.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </p>
               <p className="text-text-muted text-sm">{diffLabel}</p>
             </div>

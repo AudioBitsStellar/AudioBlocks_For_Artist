@@ -10,7 +10,7 @@ export const USER_ENDPOINTS = {
 
 export const ARTIST_UPLOAD_ENDPOINTS = {
   UPLOAD_COVER: "/song/upload/cover",
-  UPLOAD_CHUNK:  "/song/upload/chunk",
+  UPLOAD_CHUNK: "/song/upload/chunk",
   UPLOAD_SONG: "/song/upload/finalize",
 };
 

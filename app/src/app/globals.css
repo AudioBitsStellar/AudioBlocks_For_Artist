@@ -15,58 +15,58 @@
   --background: #ffffff;
   --foreground: #111111;
 
-  --color-primary:           #d2045b;
-  --color-primary-hover:     #b8043f;
-  --color-primary-contrast:  #ffffff;
-  --color-secondary:         #885fa8;
-  --color-secondary-contrast:#ffffff;
+  --color-primary: #d2045b;
+  --color-primary-hover: #b8043f;
+  --color-primary-contrast: #ffffff;
+  --color-secondary: #885fa8;
+  --color-secondary-contrast: #ffffff;
 
-  --color-background:        #ffffff;
-  --color-surface:           #ffffff;
-  --color-surface-raised:    #f7f7f7;
-  --color-surface-sunken:    #f0f0f0;
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f7f7f7;
+  --color-surface-sunken: #f0f0f0;
 
-  --color-text:              #111111;
-  --color-text-muted:        #595959;
-  --color-text-subtle:       #595959;
-  --color-text-inverted:     #ffffff;
+  --color-text: #111111;
+  --color-text-muted: #595959;
+  --color-text-subtle: #595959;
+  --color-text-inverted: #ffffff;
 
-  --color-border:            #d4d4d4;
-  --color-border-subtle:     #e5e5e5;
+  --color-border: #d4d4d4;
+  --color-border-subtle: #e5e5e5;
 
-  --color-success:           #15803d;
-  --color-warning:           #a16207;
-  --color-error:             #dc2626;
-  --color-info:              #2563eb;
+  --color-success: #15803d;
+  --color-warning: #a16207;
+  --color-error: #dc2626;
+  --color-info: #2563eb;
 }
 
 .dark {
   --background: #000000;
   --foreground: #ffffff;
 
-  --color-primary:           #e83a87;
-  --color-primary-hover:     #ff5ba0;
-  --color-primary-contrast:  #ffffff;
-  --color-secondary:         #a87bc2;
-  --color-secondary-contrast:#ffffff;
+  --color-primary: #e83a87;
+  --color-primary-hover: #ff5ba0;
+  --color-primary-contrast: #ffffff;
+  --color-secondary: #a87bc2;
+  --color-secondary-contrast: #ffffff;
 
-  --color-background:        #000000;
-  --color-surface:           #161616;
-  --color-surface-raised:    #1e1e1e;
-  --color-surface-sunken:    #0f0f0f;
+  --color-background: #000000;
+  --color-surface: #161616;
+  --color-surface-raised: #1e1e1e;
+  --color-surface-sunken: #0f0f0f;
 
-  --color-text:              #ffffff;
-  --color-text-muted:        #b3b3b3;
-  --color-text-subtle:       #a3a3a3;
-  --color-text-inverted:     #000000;
+  --color-text: #ffffff;
+  --color-text-muted: #b3b3b3;
+  --color-text-subtle: #a3a3a3;
+  --color-text-inverted: #000000;
 
-  --color-border:            #404040;
-  --color-border-subtle:     #2a2a2a;
+  --color-border: #404040;
+  --color-border-subtle: #2a2a2a;
 
-  --color-success:           #4ade80;
-  --color-warning:           #fbbf24;
-  --color-error:             #f87171;
-  --color-info:              #60a5fa;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
 }
 
 /* Tailwind v4: register the tokens as theme colors so `bg-primary`,
@@ -122,22 +122,23 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4B5563;
+  background: #4b5563;
 }
 
 /* Hide scrollbar for album container */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+  display: none; /* Chrome, Safari and Opera */
 }
 
 @layer utilities {
   @keyframes music {
-    0%, 100% {
+    0%,
+    100% {
       height: 20%;
     }
     50% {

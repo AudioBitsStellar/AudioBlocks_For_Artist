@@ -29,8 +29,6 @@ describe("sanitize", () => {
   });
 
   it("does not double-escape when applied to already-safe text", () => {
-    expect(sanitize("Amet minim mollit non deserunt")).toBe(
-      "Amet minim mollit non deserunt"
-    );
+    expect(sanitize("Amet minim mollit non deserunt")).toBe("Amet minim mollit non deserunt");
   });
 });

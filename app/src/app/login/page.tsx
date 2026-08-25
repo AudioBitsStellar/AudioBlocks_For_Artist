@@ -46,37 +46,45 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="flex flex-col">
-            <label htmlFor="login-email" className="text-sm font-medium text-white mb-2">Email</label>
+            <label htmlFor="login-email" className="text-sm font-medium text-white mb-2">
+              Email
+            </label>
             <input
               id="login-email"
               type="email"
               {...register("email", { required: "Email is required" })}
               placeholder="you@example.com"
               maxLength={254}
-              aria-invalid={errors.email ? 'true' : 'false'}
-              aria-describedby={errors.email ? 'login-email-error' : undefined}
+              aria-invalid={errors.email ? "true" : "false"}
+              aria-describedby={errors.email ? "login-email-error" : undefined}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}
             />
             {errors.email && (
-              <span id="login-email-error" role="alert" className="text-xs text-red-500 mt-1">{errors.email.message}</span>
+              <span id="login-email-error" role="alert" className="text-xs text-red-500 mt-1">
+                {errors.email.message}
+              </span>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label htmlFor="login-password" className="text-sm font-medium text-white mb-2">Password</label>
+            <label htmlFor="login-password" className="text-sm font-medium text-white mb-2">
+              Password
+            </label>
             <input
               id="login-password"
               type="password"
               {...register("password", { required: "Password is required" })}
               placeholder="••••••••"
-              aria-invalid={errors.password ? 'true' : 'false'}
-              aria-describedby={errors.password ? 'login-password-error' : undefined}
+              aria-invalid={errors.password ? "true" : "false"}
+              aria-describedby={errors.password ? "login-password-error" : undefined}
               className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-12 rounded-2xl"
               style={{ background: "#FFFFFF0A", border: "none" }}
             />
             {errors.password && (
-              <span id="login-password-error" role="alert" className="text-xs text-red-500 mt-1">{errors.password.message}</span>
+              <span id="login-password-error" role="alert" className="text-xs text-red-500 mt-1">
+                {errors.password.message}
+              </span>
             )}
           </div>
 

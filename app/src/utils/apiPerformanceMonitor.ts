@@ -32,8 +32,7 @@ export class ApiPerformanceMonitor {
    * Timing is recorded even when the wrapped call throws.
    */
   async measure<T>(endpoint: string, method: string, fn: () => Promise<T>): Promise<T> {
-    const start =
-      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const start = typeof performance !== "undefined" ? performance.now() : Date.now();
 
     try {
       const result = await fn();
@@ -57,7 +56,7 @@ export class ApiPerformanceMonitor {
 
     if (slow) {
       console.warn(
-        `[ApiPerformance] Slow call: ${method} ${endpoint} took ${durationMs.toFixed(0)} ms (threshold: ${SLOW_THRESHOLD_MS} ms)`,
+        `[ApiPerformance] Slow call: ${method} ${endpoint} took ${durationMs.toFixed(0)} ms (threshold: ${SLOW_THRESHOLD_MS} ms)`
       );
     }
   }
@@ -66,9 +65,7 @@ export class ApiPerformanceMonitor {
   getPercentiles(): PercentileStats | null {
     if (this.entries.length === 0) return null;
 
-    const sorted = [...this.entries]
-      .map((e) => e.durationMs)
-      .sort((a, b) => a - b);
+    const sorted = [...this.entries].map((e) => e.durationMs).sort((a, b) => a - b);
 
     const at = (pct: number) =>
       sorted[Math.floor((sorted.length * pct) / 100)] ?? sorted[sorted.length - 1];
@@ -85,15 +82,15 @@ export class ApiPerformanceMonitor {
   logSummary(): void {
     const percentiles = this.getPercentiles();
     if (!percentiles) {
-      console.log('[ApiPerformance] No calls recorded yet.');
+      console.log("[ApiPerformance] No calls recorded yet.");
       return;
     }
 
     const slowCount = this.getSlowCalls().length;
-    console.group('[ApiPerformance] Summary');
+    console.group("[ApiPerformance] Summary");
     console.log(`Total calls : ${this.entries.length}`);
     console.log(
-      `P50: ${percentiles.p50.toFixed(0)} ms  |  P95: ${percentiles.p95.toFixed(0)} ms  |  P99: ${percentiles.p99.toFixed(0)} ms`,
+      `P50: ${percentiles.p50.toFixed(0)} ms  |  P95: ${percentiles.p95.toFixed(0)} ms  |  P99: ${percentiles.p99.toFixed(0)} ms`
     );
     console.log(`Slow calls  : ${slowCount} (>${SLOW_THRESHOLD_MS} ms)`);
     if (slowCount > 0) {
@@ -101,8 +98,8 @@ export class ApiPerformanceMonitor {
         this.getSlowCalls().map((e) => ({
           endpoint: e.endpoint,
           method: e.method,
-          'duration (ms)': e.durationMs.toFixed(0),
-        })),
+          "duration (ms)": e.durationMs.toFixed(0),
+        }))
       );
     }
     console.groupEnd();

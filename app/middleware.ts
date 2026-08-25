@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from "next/server";
 
 const CSP = [
   "default-src 'self'",
@@ -15,16 +15,16 @@ const CSP = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-].join('; ')
+].join("; ");
 
 export function middleware(_request: NextRequest) {
-  const response = NextResponse.next()
+  const response = NextResponse.next();
 
-  response.headers.set('Content-Security-Policy-Report-Only', CSP)
+  response.headers.set("Content-Security-Policy-Report-Only", CSP);
 
-  return response
+  return response;
 }
 
 export const config = {
-  matcher: ['/(.*)'],
-}
+  matcher: ["/(.*)"],
+};

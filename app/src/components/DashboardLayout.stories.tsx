@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta = {
-  title: 'Layout/DashboardLayout',
-  tags: ['autodocs'],
+  title: "Layout/DashboardLayout",
+  tags: ["autodocs"],
   parameters: {
-    layout: 'fullscreen',
+    layout: "fullscreen",
   },
 };
 

@@ -1,19 +1,19 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import FileUpload from './FileUpload';
+import type { Meta, StoryObj } from "@storybook/react";
+import FileUpload from "./FileUpload";
 
 const meta: Meta<typeof FileUpload> = {
-  title: 'Components/Forms/FileUpload',
+  title: "Components/Forms/FileUpload",
   component: FileUpload,
   parameters: {
-    layout: 'padded',
+    layout: "padded",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
-    label: { control: 'text' },
-    error: { control: 'text' },
-    helperText: { control: 'text' },
-    disabled: { control: 'boolean' },
-    acceptedFormats: { control: 'text' },
+    label: { control: "text" },
+    error: { control: "text" },
+    helperText: { control: "text" },
+    disabled: { control: "boolean" },
+    acceptedFormats: { control: "text" },
   },
 };
 
@@ -22,29 +22,29 @@ type Story = StoryObj<typeof FileUpload>;
 
 export const Default: Story = {
   args: {
-    label: 'Album Cover',
-    acceptedFormats: 'image/jpeg, image/png',
+    label: "Album Cover",
+    acceptedFormats: "image/jpeg, image/png",
   },
 };
 
 export const WithHelperText: Story = {
   args: {
-    label: 'Audio File',
-    acceptedFormats: 'audio/mp3, audio/wav',
-    helperText: 'Upload a high-quality audio file for your track',
+    label: "Audio File",
+    acceptedFormats: "audio/mp3, audio/wav",
+    helperText: "Upload a high-quality audio file for your track",
   },
 };
 
 export const WithError: Story = {
   args: {
-    label: 'Album Cover',
-    error: 'File size must be less than 10MB',
+    label: "Album Cover",
+    error: "File size must be less than 10MB",
   },
 };
 
 export const Disabled: Story = {
   args: {
-    label: 'Cover Image',
+    label: "Cover Image",
     disabled: true,
   },
 };

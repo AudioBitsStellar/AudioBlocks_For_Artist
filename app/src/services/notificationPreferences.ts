@@ -8,14 +8,11 @@
  * Pure functions – no React deps so it can be tested in isolation.
  */
 
-import type { AxiosResponse } from '@/types';
+import type { AxiosResponse } from "@/types";
 
-export type NotificationEventKey =
-  | 'newFan'
-  | 'earnings'
-  | 'eventReminder';
+export type NotificationEventKey = "newFan" | "earnings" | "eventReminder";
 
-export type NotificationChannel = 'email' | 'inApp';
+export type NotificationChannel = "email" | "inApp";
 
 export type NotificationPreferences = Record<
   NotificationEventKey,
@@ -27,16 +24,16 @@ export const NOTIFICATION_EVENT_LABELS: Record<
   { title: string; description: string }
 > = {
   newFan: {
-    title: 'New fans',
-    description: 'When a new listener follows you or adds your music.',
+    title: "New fans",
+    description: "When a new listener follows you or adds your music.",
   },
   earnings: {
-    title: 'Earnings',
-    description: 'Royalty payouts, sales milestones, and payout failures.',
+    title: "Earnings",
+    description: "Royalty payouts, sales milestones, and payout failures.",
   },
   eventReminder: {
-    title: 'Event reminders',
-    description: 'Upcoming shows, ticket sales going live, and schedule changes.',
+    title: "Event reminders",
+    description: "Upcoming shows, ticket sales going live, and schedule changes.",
   },
 };
 
@@ -46,11 +43,11 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   eventReminder: { email: true, inApp: true },
 };
 
-const STORAGE_KEY = 'audioblocks:notification-preferences:v1';
+const STORAGE_KEY = "audioblocks:notification-preferences:v1";
 
 /** Read preferences from localStorage, merging in defaults for missing keys. */
 export function loadNotificationPreferences(): NotificationPreferences {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return DEFAULT_NOTIFICATION_PREFERENCES;
   }
   try {
@@ -64,10 +61,8 @@ export function loadNotificationPreferences(): NotificationPreferences {
 }
 
 /** Persist preferences to localStorage. Returns true on success. */
-export function saveNotificationPreferences(
-  prefs: NotificationPreferences,
-): boolean {
-  if (typeof window === 'undefined') return false;
+export function saveNotificationPreferences(prefs: NotificationPreferences): boolean {
+  if (typeof window === "undefined") return false;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     return true;
@@ -76,9 +71,7 @@ export function saveNotificationPreferences(
   }
 }
 
-function mergeWithDefaults(
-  partial: Partial<NotificationPreferences>,
-): NotificationPreferences {
+function mergeWithDefaults(partial: Partial<NotificationPreferences>): NotificationPreferences {
   const result: NotificationPreferences = {
     newFan: { ...DEFAULT_NOTIFICATION_PREFERENCES.newFan },
     earnings: { ...DEFAULT_NOTIFICATION_PREFERENCES.earnings },
@@ -88,8 +81,8 @@ function mergeWithDefaults(
     const incoming = partial[key];
     if (incoming) {
       result[key] = {
-        email: typeof incoming.email === 'boolean' ? incoming.email : result[key].email,
-        inApp: typeof incoming.inApp === 'boolean' ? incoming.inApp : result[key].inApp,
+        email: typeof incoming.email === "boolean" ? incoming.email : result[key].email,
+        inApp: typeof incoming.inApp === "boolean" ? incoming.inApp : result[key].inApp,
       };
     }
   }
@@ -102,7 +95,7 @@ function mergeWithDefaults(
  * supports it; today it just falls back to localStorage.
  */
 export async function persistPreferencesToProfile(
-  prefs: NotificationPreferences,
+  prefs: NotificationPreferences
 ): Promise<AxiosResponse<NotificationPreferences>> {
   saveNotificationPreferences(prefs);
   return { success: true, data: prefs };

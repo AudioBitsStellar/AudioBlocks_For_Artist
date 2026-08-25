@@ -10,26 +10,26 @@
  * Old caches are purged in the `activate` handler so users receive the new shell.
  */
 
-const CACHE_VERSION = 'audioblocks-v1';
+const CACHE_VERSION = "audioblocks-v1";
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `assets-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
-  '/',
-  '/login',
-  '/signup',
-  '/dashboard',
-  '/favicon.ico',
-  '/logo.png',
-  '/logo2.png',
-  '/next.svg',
-  '/vercel.svg',
+  "/",
+  "/login",
+  "/signup",
+  "/dashboard",
+  "/favicon.ico",
+  "/logo.png",
+  "/logo2.png",
+  "/next.svg",
+  "/vercel.svg",
 ];
 
-const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(SHELL_CACHE);
@@ -37,18 +37,18 @@ self.addEventListener('install', (event) => {
       await Promise.all(
         PRECACHE_URLS.map(async (url) => {
           try {
-            await cache.add(new Request(url, { cache: 'reload' }));
+            await cache.add(new Request(url, { cache: "reload" }));
           } catch (err) {
             // Ignore individual failures – non-critical, the runtime cache will pick up later.
           }
-        }),
+        })
       );
       await self.skipWaiting();
-    })(),
+    })()
   );
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
@@ -56,18 +56,18 @@ self.addEventListener('activate', (event) => {
         keys
           // Drop caches that aren't tied to the current CACHE_VERSION.
           .filter((k) => !k.endsWith(`-${CACHE_VERSION}`))
-          .map((k) => caches.delete(k)),
+          .map((k) => caches.delete(k))
       );
       await self.clients.claim();
-    })(),
+    })()
   );
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   const { request } = event;
 
   // Only handle http(s); never intercept dev tools/extensions.
-  if (!request.url.startsWith('http')) return;
+  if (!request.url.startsWith("http")) return;
 
   // Mutating requests bypass the SW entirely.
   if (MUTATING_METHODS.has(request.method)) return;
@@ -84,7 +84,7 @@ self.addEventListener('fetch', (event) => {
 
 function isStaticAsset(url) {
   return /\.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|map)(?:\?.*)?$/i.test(
-    new URL(url).pathname,
+    new URL(url).pathname
   );
 }
 
@@ -93,7 +93,7 @@ async function cacheFirst(request, cacheName) {
   if (cached) return cached;
   try {
     const response = await fetch(request);
-    if (response && response.status === 200 && response.type === 'basic') {
+    if (response && response.status === 200 && response.type === "basic") {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
@@ -107,7 +107,7 @@ async function cacheFirst(request, cacheName) {
 async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
-    if (response && response.status === 200 && response.type === 'basic') {
+    if (response && response.status === 200 && response.type === "basic") {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
@@ -116,17 +116,17 @@ async function networkFirst(request, cacheName) {
     const cached = await caches.match(request);
     if (cached) return cached;
     // Last-resort fallback for page navigations: return the precached "/" shell.
-    if (request.mode === 'navigate') {
-      const shell = await caches.match('/');
+    if (request.mode === "navigate") {
+      const shell = await caches.match("/");
       if (shell) return shell;
     }
     return Response.error();
   }
 }
 
-self.addEventListener('message', (event) => {
+self.addEventListener("message", (event) => {
   // Allow the page to trigger an immediate skip + activation.
-  if (event.data === 'SKIP_WAITING') {
+  if (event.data === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });

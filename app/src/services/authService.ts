@@ -1,7 +1,7 @@
 import { AUTH_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
-import { useHandleError, useHandleSuccess } from '@/hooks/useToastHandler';
-import { getToken, clearSession } from '@/api/axios';
+import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
+import { getToken, clearSession } from "@/api/axios";
 import { AuthResponse, LoginEmailPayload, RegisterEmailPayload } from "@/types";
 
 interface ApiEnvelope<T> {
@@ -127,13 +127,10 @@ const useAuthServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useLoginEmail = () =>
-    usePost<ApiEnvelope<never> & AuthResponse, LoginEmailPayload>(
-      AUTH_ENDPOINTS.LOGIN_EMAIL,
-      {
-        onSuccess: () => handleSuccess("Logged in successfully!"),
-        onError: (error) => handleError(error.message || "Failed to log in."),
-      }
-    );
+    usePost<ApiEnvelope<never> & AuthResponse, LoginEmailPayload>(AUTH_ENDPOINTS.LOGIN_EMAIL, {
+      onSuccess: () => handleSuccess("Logged in successfully!"),
+      onError: (error) => handleError(error.message || "Failed to log in."),
+    });
 
   return { useRegisterEmail, useLoginEmail };
 };

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect, useRef } from "react";
+import { X } from "lucide-react";
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -31,11 +31,11 @@ export default function ConfirmationDialog({
     cancelButtonRef.current?.focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
       }
-      
-      if (e.key === 'Tab' && modalRef.current) {
+
+      if (e.key === "Tab" && modalRef.current) {
         const focusableElements = modalRef.current.querySelectorAll(
           'button, [href], input, select, textarea, [tabindex="0"]'
         );
@@ -56,20 +56,20 @@ export default function ConfirmationDialog({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
       aria-modal="true"
       role="dialog"
       aria-labelledby="confirm-dialog-title"
     >
-      <div 
+      <div
         ref={modalRef}
         className="w-full max-w-md bg-[#161616] border border-white/10 rounded-xl overflow-hidden shadow-2xl"
       >
@@ -78,7 +78,7 @@ export default function ConfirmationDialog({
             <h2 id="confirm-dialog-title" className="text-xl font-bold text-white">
               {title}
             </h2>
-            <button 
+            <button
               onClick={onClose}
               className="text-gray-400 hover:text-white transition-colors"
               aria-label="Close dialog"
@@ -86,9 +86,7 @@ export default function ConfirmationDialog({
               <X size={18} />
             </button>
           </div>
-          <p className="text-sm text-gray-300 mb-6 leading-relaxed">
-            {message}
-          </p>
+          <p className="text-sm text-gray-300 mb-6 leading-relaxed">{message}</p>
           <div className="flex justify-end gap-3">
             <button
               ref={cancelButtonRef}

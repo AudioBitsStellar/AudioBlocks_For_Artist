@@ -11,19 +11,13 @@ describe("isRetryableError", () => {
     expect(isRetryableError(makeApiError(0))).toBe(true);
   });
 
-  it.each([408, 429, 502, 503, 504])(
-    "treats status %i as retryable",
-    (status) => {
-      expect(isRetryableError(makeApiError(status))).toBe(true);
-    }
-  );
+  it.each([408, 429, 502, 503, 504])("treats status %i as retryable", (status) => {
+    expect(isRetryableError(makeApiError(status))).toBe(true);
+  });
 
-  it.each([400, 401, 403, 404, 422])(
-    "treats status %i as terminal (not retryable)",
-    (status) => {
-      expect(isRetryableError(makeApiError(status))).toBe(false);
-    }
-  );
+  it.each([400, 401, 403, 404, 422])("treats status %i as terminal (not retryable)", (status) => {
+    expect(isRetryableError(makeApiError(status))).toBe(false);
+  });
 
   it("treats plain Error with 'network error' message as retryable", () => {
     expect(isRetryableError(new Error("Network Error"))).toBe(true);

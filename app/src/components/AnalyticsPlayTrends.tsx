@@ -1,12 +1,20 @@
-'use client';
+"use client";
 
-import { PlayTrendData } from '@/services/analyticsService';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useState } from 'react';
+import { PlayTrendData } from "@/services/analyticsService";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { useState } from "react";
 
 interface AnalyticsPlayTrendsProps {
   data: PlayTrendData[];
-  period: 'last30days' | 'last90days';
+  period: "last30days" | "last90days";
 }
 
 const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknown[] }) => {
@@ -21,13 +29,10 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknow
   );
 };
 
-export default function AnalyticsPlayTrends({
-  data,
-  period,
-}: AnalyticsPlayTrendsProps) {
-  const [hoveredPeriod, setHoveredPeriod] = useState<'last30days' | 'last90days'>(period);
+export default function AnalyticsPlayTrends({ data, period }: AnalyticsPlayTrendsProps) {
+  const [hoveredPeriod, setHoveredPeriod] = useState<"last30days" | "last90days">(period);
 
-  const chartData = hoveredPeriod === 'last30days' ? data.slice(-30) : data;
+  const chartData = hoveredPeriod === "last30days" ? data.slice(-30) : data;
 
   return (
     <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 mb-8">
@@ -35,22 +40,22 @@ export default function AnalyticsPlayTrends({
         <h3 className="text-white text-lg font-semibold">Play Trends</h3>
         <div className="flex gap-2">
           <button
-            onClick={() => setHoveredPeriod('last30days')}
+            onClick={() => setHoveredPeriod("last30days")}
             className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-              hoveredPeriod === 'last30days'
-                ? 'bg-pink-500 text-white'
-                : 'bg-[#2d3d2d] text-gray-300 hover:bg-[#3d4d3d]'
+              hoveredPeriod === "last30days"
+                ? "bg-pink-500 text-white"
+                : "bg-[#2d3d2d] text-gray-300 hover:bg-[#3d4d3d]"
             }`}
             aria-label="View last 30 days"
           >
             30 Days
           </button>
           <button
-            onClick={() => setHoveredPeriod('last90days')}
+            onClick={() => setHoveredPeriod("last90days")}
             className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-              hoveredPeriod === 'last90days'
-                ? 'bg-pink-500 text-white'
-                : 'bg-[#2d3d2d] text-gray-300 hover:bg-[#3d4d3d]'
+              hoveredPeriod === "last90days"
+                ? "bg-pink-500 text-white"
+                : "bg-[#2d3d2d] text-gray-300 hover:bg-[#3d4d3d]"
             }`}
             aria-label="View last 90 days"
           >
@@ -60,24 +65,21 @@ export default function AnalyticsPlayTrends({
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart
-          data={chartData}
-          margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-        >
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#2d3d2d" />
           <XAxis
             dataKey="date"
             stroke="#666"
-            style={{ fontSize: '12px' }}
+            style={{ fontSize: "12px" }}
             tick={{
-              fill: '#999',
+              fill: "#999",
             }}
           />
           <YAxis
             stroke="#666"
-            style={{ fontSize: '12px' }}
+            style={{ fontSize: "12px" }}
             tick={{
-              fill: '#999',
+              fill: "#999",
             }}
           />
           <Tooltip content={<CustomTooltip />} />
