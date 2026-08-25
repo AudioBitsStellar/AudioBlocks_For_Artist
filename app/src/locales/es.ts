@@ -45,6 +45,26 @@ const es: Translations = {
     scrollLeft: 'Desplazar álbumes a la izquierda',
     scrollRight: 'Desplazar álbumes a la derecha',
     noCover: 'Sin Portada',
+
+    // Metadata and multilingual content
+    metadata: {
+      title: 'Título',
+      titlePlaceholder: 'Ingresa título de canción/álbum',
+      description: 'Descripción',
+      descriptionPlaceholder: 'Describe tu música',
+      genre: 'Género',
+      genrePlaceholder: 'Ingresa género',
+      releaseDate: 'Fecha de Lanzamiento',
+      releaseDatePlaceholder: 'Selecciona fecha de lanzamiento',
+      artist: 'Artista',
+      artistPlaceholder: 'Nombre del artista',
+      album: 'Álbum',
+      albumPlaceholder: 'Nombre del álbum',
+      lyrics: 'Letras',
+      lyricsPlaceholder: 'Ingresa letras de la canción',
+      tags: 'Etiquetas',
+      tagsPlaceholder: 'Añade etiquetas (separadas por comas)',
+    },
   },
 
   actions: {
@@ -72,6 +92,51 @@ const es: Translations = {
     label: 'Idioma',
     en: 'English',
     es: 'Español',
+  },
+
+  // Fan Rewards & Loyalty Program
+  rewards: {
+    title: 'Programa de Lealtad',
+    yourPoints: 'Tus Puntos',
+    currentTier: 'Nivel Actual',
+    earnMorePoints: 'Gana Más Puntos',
+    redeemRewards: 'Canjear Recompensas',
+    exclusiveContent: 'Contenido Exclusivo',
+    unlockedContent: 'Contenido Desbloqueado',
+    lockedContent: 'Contenido Bloqueado',
+
+    // Point sources
+    pointsPerStream: 'Puntos por transmisión',
+    pointsPerPurchase: 'Puntos por compra',
+    pointsPerShare: 'Puntos por compartición',
+    pointsPerReview: 'Puntos por reseña',
+    pointsPerEvent: 'Puntos por asistencia a evento',
+    referralBonus: 'Bonificación por referencia',
+
+    // Tiers
+    tiers: {
+      bronze: 'Bronce',
+      silver: 'Plata',
+      gold: 'Oro',
+      platinum: 'Platino',
+    },
+
+    // Actions
+    unlock: 'Desbloquear',
+    redeem: 'Canjear',
+    share: 'Compartir',
+    viewDetails: 'Ver Detalles',
+    unlockNow: 'Desbloquear Ahora',
+    redeemNow: 'Canjear Ahora',
+
+    // Messages
+    needMorePoints: 'Necesitas {points} puntos más para desbloquear esto',
+    pointsExpire: 'Los puntos expiran el {date}',
+    congratulations: '¡Felicitaciones!',
+    newTierUnlocked: '¡Has desbloqueado el nivel {tier}!',
+    rewardRedeemed: 'Recompensa canjeada exitosamente',
+    noRewards: 'Sin recompensas disponibles',
+    noExclusiveContent: 'Vuelve pronto para contenido exclusivo',
   },
 };
 

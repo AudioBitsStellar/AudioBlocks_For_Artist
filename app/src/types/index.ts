@@ -131,3 +131,111 @@ export interface RecentActivityResponse {
   success: boolean;
   data: RecentActivity[];
 }
+
+// Multilingual content support for music metadata
+export type SupportedLanguage = 'en' | 'es';
+
+export interface MultilingualText {
+  [lang: string]: string;
+}
+
+export interface MusicMetadata {
+  // Primary multilingual fields
+  title: MultilingualText;
+  description?: MultilingualText;
+  lyrics?: MultilingualText;
+
+  // Standard fields
+  genre?: string;
+  artist?: string;
+  album?: string;
+  releaseDate?: string;
+  tags?: string[];
+
+  // Technical metadata
+  language?: SupportedLanguage; // Primary language
+  isMultilingual?: boolean;
+}
+
+export interface MultilingualMusicItem {
+  id: string;
+  metadata: MusicMetadata;
+  coverArtUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Fan Rewards & Loyalty Program types
+export type RewardTier = 'bronze' | 'silver' | 'gold' | 'platinum';
+
+export interface RewardTierConfig {
+  tier: RewardTier;
+  minPoints: number;
+  maxPoints: number;
+  benefits: string[];
+  bonusMultiplier: number; // e.g., 1.5 for 50% bonus
+  color: string;
+}
+
+export interface LoyaltyPoints {
+  current: number;
+  total: number; // Lifetime points
+  lastEarned?: string; // ISO date
+  expiresAt?: string; // ISO date
+}
+
+export interface ExclusiveContent {
+  id: string;
+  title: string;
+  description: string;
+  type: 'song' | 'video' | 'behind-the-scenes' | 'merch' | 'event';
+  unlockRequiredPoints: number;
+  currentTier?: RewardTier;
+  isUnlocked: boolean;
+  contentUrl?: string;
+  thumbnailUrl?: string;
+  releaseDate?: string;
+  createdAt?: string;
+}
+
+export interface Reward {
+  id: string;
+  name: string;
+  description: string;
+  pointsCost: number;
+  category: 'discount' | 'exclusive' | 'experience' | 'merchandise';
+  expiresAt?: string;
+  isRedeemable: boolean;
+  redemptionCode?: string;
+  icon?: string;
+  benefitValue?: string; // e.g., "15% off", "Free shipping"
+}
+
+export interface RedeemableReward extends Reward {
+  redeemedAt?: string;
+  redeemedBy?: string;
+  usedAt?: string;
+}
+
+export interface FanLoyaltyProgram {
+  fanId: string;
+  artistId: string;
+  currentTier: RewardTier;
+  points: LoyaltyPoints;
+  exclusiveContent: ExclusiveContent[];
+  availableRewards: Reward[];
+  redeemedRewards: RedeemableReward[];
+  referralBonusPoints: number;
+  joinedAt: string; // ISO date
+  lastActivityAt?: string; // ISO date
+}
+
+export interface LoyaltyProgramConfig {
+  pointsPerStream: number;
+  pointsPerPurchase: number;
+  pointsPerShare: number;
+  pointsPerReview: number;
+  pointsPerEvent: number;
+  referralBonusPoints: number;
+  tiers: RewardTierConfig[];
+}

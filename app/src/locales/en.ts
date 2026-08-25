@@ -47,6 +47,26 @@ const en = {
     scrollLeft: 'Scroll albums left',
     scrollRight: 'Scroll albums right',
     noCover: 'No Cover',
+
+    // Metadata and multilingual content
+    metadata: {
+      title: 'Title',
+      titlePlaceholder: 'Enter song/album title',
+      description: 'Description',
+      descriptionPlaceholder: 'Describe your music',
+      genre: 'Genre',
+      genrePlaceholder: 'Enter genre',
+      releaseDate: 'Release Date',
+      releaseDatePlaceholder: 'Select release date',
+      artist: 'Artist',
+      artistPlaceholder: 'Artist name',
+      album: 'Album',
+      albumPlaceholder: 'Album name',
+      lyrics: 'Lyrics',
+      lyricsPlaceholder: 'Enter song lyrics',
+      tags: 'Tags',
+      tagsPlaceholder: 'Add tags (comma separated)',
+    },
   },
 
   // Actions
@@ -77,6 +97,51 @@ const en = {
     label: 'Language',
     en: 'English',
     es: 'Español',
+  },
+
+  // Fan Rewards & Loyalty Program
+  rewards: {
+    title: 'Loyalty Program',
+    yourPoints: 'Your Points',
+    currentTier: 'Current Tier',
+    earnMorePoints: 'Earn More Points',
+    redeemRewards: 'Redeem Rewards',
+    exclusiveContent: 'Exclusive Content',
+    unlockedContent: 'Unlocked Content',
+    lockedContent: 'Locked Content',
+
+    // Point sources
+    pointsPerStream: 'Points per stream',
+    pointsPerPurchase: 'Points per purchase',
+    pointsPerShare: 'Points per share',
+    pointsPerReview: 'Points per review',
+    pointsPerEvent: 'Points per event attendance',
+    referralBonus: 'Referral bonus',
+
+    // Tiers
+    tiers: {
+      bronze: 'Bronze',
+      silver: 'Silver',
+      gold: 'Gold',
+      platinum: 'Platinum',
+    },
+
+    // Actions
+    unlock: 'Unlock',
+    redeem: 'Redeem',
+    share: 'Share',
+    viewDetails: 'View Details',
+    unlockNow: 'Unlock Now',
+    redeemNow: 'Redeem Now',
+
+    // Messages
+    needMorePoints: 'You need {points} more points to unlock this',
+    pointsExpire: 'Points expire on {date}',
+    congratulations: 'Congratulations!',
+    newTierUnlocked: 'You\'ve unlocked {tier} tier!',
+    rewardRedeemed: 'Reward successfully redeemed',
+    noRewards: 'No rewards available yet',
+    noExclusiveContent: 'Check back soon for exclusive content',
   },
 } as const;
 
