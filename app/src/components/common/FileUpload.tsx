@@ -1,7 +1,7 @@
-import React, { InputHTMLAttributes, forwardRef, useState, DragEvent } from 'react';
-import { UploadCloud, File, X, AlertCircle } from 'lucide-react';
+import React, { InputHTMLAttributes, forwardRef, useState, DragEvent } from "react";
+import { UploadCloud, File, X, AlertCircle } from "lucide-react";
 
-export interface FileUploadProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface FileUploadProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   label?: string;
   error?: string;
   helperText?: string;
@@ -10,7 +10,10 @@ export interface FileUploadProps extends Omit<InputHTMLAttributes<HTMLInputEleme
 }
 
 const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
-  ({ className = '', label, error, helperText, disabled, onFileSelect, acceptedFormats, ...props }, ref) => {
+  (
+    { className = "", label, error, helperText, disabled, onFileSelect, acceptedFormats, ...props },
+    ref
+  ) => {
     const [isDragging, setIsDragging] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -27,9 +30,9 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
     const handleDrop = (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       setIsDragging(false);
-      
+
       if (disabled) return;
-      
+
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         setSelectedFile(file);
@@ -55,20 +58,20 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
     return (
       <div className="w-full flex flex-col gap-1.5">
         {label && (
-          <label className={`text-sm font-medium ${disabled ? 'text-gray-400' : 'text-gray-200'}`}>
+          <label className={`text-sm font-medium ${disabled ? "text-gray-400" : "text-gray-200"}`}>
             {label}
           </label>
         )}
-        
+
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`
             relative w-full border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all
-            ${disabled ? 'opacity-50 cursor-not-allowed border-gray-700 bg-gray-900/50' : 'cursor-pointer hover:bg-gray-800/50 hover:border-blue-500'}
-            ${isDragging ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700 bg-gray-900'}
-            ${error ? 'border-red-500 bg-red-500/5' : ''}
+            ${disabled ? "opacity-50 cursor-not-allowed border-gray-700 bg-gray-900/50" : "cursor-pointer hover:bg-gray-800/50 hover:border-blue-500"}
+            ${isDragging ? "border-blue-500 bg-blue-500/10" : "border-gray-700 bg-gray-900"}
+            ${error ? "border-red-500 bg-red-500/5" : ""}
             ${className}
           `}
         >
@@ -81,7 +84,7 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             {...props}
           />
-          
+
           {selectedFile ? (
             <div className="flex items-center gap-3 bg-gray-800 p-3 rounded-lg w-full max-w-sm">
               <div className="bg-blue-500/20 p-2 rounded text-blue-500">
@@ -89,7 +92,9 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
               </div>
               <div className="flex-1 overflow-hidden text-left">
                 <p className="text-sm font-medium text-gray-200 truncate">{selectedFile.name}</p>
-                <p className="text-xs text-gray-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p className="text-xs text-gray-400">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
               </div>
               {!disabled && (
                 <button
@@ -103,21 +108,25 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
             </div>
           ) : (
             <>
-              <div className={`p-3 rounded-full mb-3 ${error ? 'bg-red-500/10 text-red-500' : 'bg-gray-800 text-gray-400'}`}>
+              <div
+                className={`p-3 rounded-full mb-3 ${error ? "bg-red-500/10 text-red-500" : "bg-gray-800 text-gray-400"}`}
+              >
                 {error ? <AlertCircle size={24} /> : <UploadCloud size={24} />}
               </div>
               <p className="text-sm font-medium text-gray-200 mb-1">
                 <span className="text-blue-500">Click to upload</span> or drag and drop
               </p>
               <p className="text-xs text-gray-400">
-                {acceptedFormats ? `Accepted formats: ${acceptedFormats}` : 'SVG, PNG, JPG or MP3 (max. 10MB)'}
+                {acceptedFormats
+                  ? `Accepted formats: ${acceptedFormats}`
+                  : "SVG, PNG, JPG or MP3 (max. 10MB)"}
               </p>
             </>
           )}
         </div>
-        
+
         {(error || helperText) && (
-          <p className={`text-xs ${error ? 'text-red-500' : 'text-gray-400'}`}>
+          <p className={`text-xs ${error ? "text-red-500" : "text-gray-400"}`}>
             {error || helperText}
           </p>
         )}
@@ -126,7 +135,7 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
   }
 );
 
-FileUpload.displayName = 'FileUpload';
+FileUpload.displayName = "FileUpload";
 
 export default FileUpload;
 

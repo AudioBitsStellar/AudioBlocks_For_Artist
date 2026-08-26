@@ -49,31 +49,31 @@ everything — auth, profile, uploads — and to the
 
 ## Tech Stack
 
-| Concern | Library |
-|---|---|
-| Framework | Next.js 16 (App Router, React Compiler enabled), React 19 |
-| Styling | Tailwind CSS 4, Radix UI primitives (`Dialog`, `Tabs`) |
-| Forms | `react-hook-form` |
-| Data fetching | TanStack React Query, `axios` |
-| Charts | Recharts |
-| Carousels | `react-slick` |
-| Toasts | `sonner` |
-| Stellar / Soroban wallet | `@stellar/freighter-api` |
+| Concern                  | Library                                                   |
+| ------------------------ | --------------------------------------------------------- |
+| Framework                | Next.js 16 (App Router, React Compiler enabled), React 19 |
+| Styling                  | Tailwind CSS 4, Radix UI primitives (`Dialog`, `Tabs`)    |
+| Forms                    | `react-hook-form`                                         |
+| Data fetching            | TanStack React Query, `axios`                             |
+| Charts                   | Recharts                                                  |
+| Carousels                | `react-slick`                                             |
+| Toasts                   | `sonner`                                                  |
+| Stellar / Soroban wallet | `@stellar/freighter-api`                                  |
 
 ## Routes
 
-| Route | Description |
-|---|---|
-| `/` | Public artist-hub landing page (hero, features, upgrade CTA) |
-| `/login` | Email + password login |
-| `/signup` | Email + password signup (always registers as `role: "artist"`) |
-| `/dashboard` | Redirects to `/dashboard/overview` |
-| `/dashboard/overview` | KPI cards, earnings/royalties chart, albums carousel, fan engagement |
-| `/dashboard/my-music` | Song/album library, links to upload flow |
-| `/dashboard/upload-music` | Upload a song or an album |
-| `/dashboard/events` | Artist events management |
-| `/dashboard/merches` | Merchandise management |
-| `/dashboard/profile` | Profile editor, notification settings, and the **On-chain** tab (connect wallet + mint profile) |
+| Route                     | Description                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------- |
+| `/`                       | Public artist-hub landing page (hero, features, upgrade CTA)                                    |
+| `/login`                  | Email + password login                                                                          |
+| `/signup`                 | Email + password signup (always registers as `role: "artist"`)                                  |
+| `/dashboard`              | Redirects to `/dashboard/overview`                                                              |
+| `/dashboard/overview`     | KPI cards, earnings/royalties chart, albums carousel, fan engagement                            |
+| `/dashboard/my-music`     | Song/album library, links to upload flow                                                        |
+| `/dashboard/upload-music` | Upload a song or an album                                                                       |
+| `/dashboard/events`       | Artist events management                                                                        |
+| `/dashboard/merches`      | Merchandise management                                                                          |
+| `/dashboard/profile`      | Profile editor, notification settings, and the **On-chain** tab (connect wallet + mint profile) |
 
 ## Authentication
 
@@ -177,12 +177,12 @@ and on-chain actions all require it.
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Starts the Next.js dev server |
-| `npm run build` | Production build |
-| `npm start` | Serves the production build |
-| `npm run lint` | Runs ESLint |
+| Command         | Description                   |
+| --------------- | ----------------------------- |
+| `npm run dev`   | Starts the Next.js dev server |
+| `npm run build` | Production build              |
+| `npm start`     | Serves the production build   |
+| `npm run lint`  | Runs ESLint                   |
 
 ## Known Gaps / In Progress
 

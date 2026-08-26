@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useContext } from 'react';
-import { RoleContext, RoleContextValue } from '@/context/RoleContext';
-import { Permission, Role, ROLE_INFO } from '@/types/role';
+import { useContext } from "react";
+import { RoleContext, RoleContextValue } from "@/context/RoleContext";
+import { Permission, Role, ROLE_INFO } from "@/types/role";
 
 /**
  * Access the current user's role + permission helpers.
@@ -16,7 +16,7 @@ export function useRole(): RoleContextValue {
   if (!ctx) {
     const fallbackPerms: ReadonlyArray<Permission> = [];
     return {
-      role: 'viewer',
+      role: "viewer",
       info: ROLE_INFO.viewer,
       permissions: fallbackPerms,
       can: () => false,

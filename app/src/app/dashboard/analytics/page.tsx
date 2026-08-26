@@ -1,18 +1,19 @@
-import dynamic from 'next/dynamic';
+import dynamic from "next/dynamic";
 
-const AnalyticsSummaryCards = dynamic(() => import('@/components/AnalyticsSummaryCards'));
-const AnalyticsPlayTrends = dynamic(() => import('@/components/AnalyticsPlayTrends'));
-const AnalyticsGeographic = dynamic(() => import('@/components/AnalyticsGeographic'));
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { getAnalyticsData } from '@/services/analyticsService';
+const AnalyticsSummaryCards = dynamic(() => import("@/components/AnalyticsSummaryCards"));
+const AnalyticsPlayTrends = dynamic(() => import("@/components/AnalyticsPlayTrends"));
+const AnalyticsGeographic = dynamic(() => import("@/components/AnalyticsGeographic"));
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { getAnalyticsData } from "@/services/analyticsService";
 
 export const metadata = {
-  title: 'Fan Engagement Analytics | AudioBlocks',
-  description: 'View detailed analytics about your fan engagement, plays, and geographic distribution.',
+  title: "Fan Engagement Analytics | AudioBlocks",
+  description:
+    "View detailed analytics about your fan engagement, plays, and geographic distribution.",
 };
 
 export default function AnalyticsPage() {
-  const analyticsData = getAnalyticsData('last30days');
+  const analyticsData = getAnalyticsData("last30days");
 
   return (
     <>
@@ -44,23 +45,25 @@ export default function AnalyticsPage() {
             <div className="p-4 bg-[#2d3d2d] rounded-lg border border-[#3d4d3d]">
               <h4 className="text-pink-500 font-semibold mb-2">Peak Listening Hours</h4>
               <p className="text-gray-400 text-sm">
-                Your music gets the most listens between 7 PM and 11 PM local time, with a secondary peak
-                around 12 PM.
+                Your music gets the most listens between 7 PM and 11 PM local time, with a secondary
+                peak around 12 PM.
               </p>
             </div>
 
             <div className="p-4 bg-[#2d3d2d] rounded-lg border border-[#3d4d3d]">
               <h4 className="text-pink-500 font-semibold mb-2">Top Performing Track</h4>
               <p className="text-gray-400 text-sm">
-                Your most popular track this month has {(analyticsData.summary.totalPlays * 0.15).toLocaleString()} plays,
-                trending upward with a {(Math.random() * 20 + 10).toFixed(1)}% growth rate.
+                Your most popular track this month has{" "}
+                {(analyticsData.summary.totalPlays * 0.15).toLocaleString()} plays, trending upward
+                with a {(Math.random() * 20 + 10).toFixed(1)}% growth rate.
               </p>
             </div>
 
             <div className="p-4 bg-[#2d3d2d] rounded-lg border border-[#3d4d3d]">
               <h4 className="text-pink-500 font-semibold mb-2">Listener Retention</h4>
               <p className="text-gray-400 text-sm">
-                {(Math.random() * 20 + 60).toFixed(1)}% of listeners return to listen again, showing strong fan loyalty.
+                {(Math.random() * 20 + 60).toFixed(1)}% of listeners return to listen again, showing
+                strong fan loyalty.
               </p>
             </div>
           </div>

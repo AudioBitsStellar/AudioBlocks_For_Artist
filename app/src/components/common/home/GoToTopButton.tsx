@@ -1,11 +1,10 @@
-"use client"
+"use client";
 import { useEffect, useState } from "react";
-import { ArrowUp } from "lucide-react"; 
+import { ArrowUp } from "lucide-react";
 
 const GoToTopButton = () => {
   const [isVisible, setIsVisible] = useState(false);
 
- 
   useEffect(() => {
     const toggleVisibility = () => {
       setIsVisible(window.scrollY > 200);
@@ -33,5 +32,3 @@ const GoToTopButton = () => {
 };
 
 export default GoToTopButton;
-
-export { GoToTopButton };

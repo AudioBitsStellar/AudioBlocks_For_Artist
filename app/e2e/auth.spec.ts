@@ -23,8 +23,7 @@ const AUTH_USER = {
   name: "Test Artist",
   role: "artist",
 };
-const AUTH_TOKEN =
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.fake-signature-for-e2e-tests";
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.fake-signature-for-e2e-tests";
 
 test.describe("Signup flow", () => {
   test("fills the form, submits, and redirects to the dashboard", async ({ page }) => {
@@ -98,7 +97,9 @@ test.describe("Login flow", () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test("shows an error message for an invalid password and stays on the login page", async ({ page }) => {
+  test("shows an error message for an invalid password and stays on the login page", async ({
+    page,
+  }) => {
     await page.route("**/api/auth/login-email", async (route) => {
       await route.fulfill({
         status: 401,

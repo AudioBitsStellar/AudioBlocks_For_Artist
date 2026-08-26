@@ -46,9 +46,7 @@ export function resetRedirectState(): void {
 
 export const createApiClient = async (): Promise<AxiosInstance> => {
   const apiClient = axios.create({
-    baseURL:
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "http://localhost:3000/api",
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api",
     timeout: 15000,
     headers: {
       "Content-Type": "application/json",
@@ -76,14 +74,17 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
   apiClient.interceptors.response.use(
     (response: AxiosResponse) => {
       // Handle CSRF token refresh from server
-      const newCsrfToken = response.headers["x-csrf-token"];
+      const newCsrfToken = response.headers["x-csrf-token"] as string | undefined;
       if (newCsrfToken && typeof newCsrfToken === "string") {
         refreshCSRFToken();
       }
       return response;
     },
     async (error: AxiosError) => {
-      const config = error.config as InternalAxiosRequestConfig & { _retry?: number; _retryCount?: number };
+      const config = error.config as InternalAxiosRequestConfig & {
+        _retry?: number;
+        _retryCount?: number;
+      };
 
       // Handle CSRF token validation errors
       if (error.response?.status === 403 && typeof window !== "undefined") {

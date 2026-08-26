@@ -102,6 +102,22 @@ export interface EarningsSummary {
 
 export interface EarningsResponse extends ApiEnvelope<EarningsSummary> {}
 
+// ── Platform Revenue Breakdown ──────────────────────────────────────────────
+
+export interface PlatformRevenue {
+  platform: string;
+  revenue: number;
+  percentage: number;
+  streams: number;
+}
+
+export interface PlatformRevenueSummary {
+  totalRevenue: number;
+  platforms: PlatformRevenue[];
+}
+
+export interface PlatformRevenueResponse extends ApiEnvelope<PlatformRevenueSummary> {}
+
 // ── Transactions ──────────────────────────────────────────────────────────────
 
 export type TransactionType = "Royalty" | "Sale" | "Payout" | "Refund";
@@ -193,7 +209,10 @@ export interface MerchMetric {
   topItem?: string;
 }
 
-export interface MerchListResponse extends ApiEnvelope<{ items: MerchItem[]; metrics: MerchMetric }> {}
+export interface MerchListResponse extends ApiEnvelope<{
+  items: MerchItem[];
+  metrics: MerchMetric;
+}> {}
 
 export interface CreateMerchPayload {
   name: string;
@@ -238,7 +257,10 @@ export interface EventMetric {
   totalAttendees: number;
 }
 
-export interface EventListResponse extends ApiEnvelope<{ events: EventItem[]; metrics: EventMetric }> {}
+export interface EventListResponse extends ApiEnvelope<{
+  events: EventItem[];
+  metrics: EventMetric;
+}> {}
 
 export interface CreateEventPayload {
   title: string;
@@ -334,8 +356,7 @@ export type NotificationPreferences = Record<
   Record<NotificationChannel, boolean>
 >;
 
-export interface NotificationPreferencesResponse
-  extends ApiEnvelope<NotificationPreferences> {}
+export interface NotificationPreferencesResponse extends ApiEnvelope<NotificationPreferences> {}
 
 // ── Pagination meta ───────────────────────────────────────────────────────────
 

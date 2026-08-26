@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
-import ClaimArtistNameModal from '@/components/common/modals/ClaimArtistNameModal';
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { ArrowRight } from "lucide-react";
+import ClaimArtistNameModal from "@/components/common/modals/ClaimArtistNameModal";
 
 const ArtistHubHero = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -20,14 +20,13 @@ const ArtistHubHero = () => {
     );
   }, []);
 
-
   const handleClaimProfile = () => {
     setIsClaimModalOpen(true);
   };
 
   const handleUploadTrack = () => {
     // UI only - no navigation
-    alert('Upload New Track - UI only');
+    alert("Upload New Track - UI only");
   };
 
   return (
@@ -57,8 +56,8 @@ const ArtistHubHero = () => {
             </h1>
 
             <p className="font-['Inter'] font-medium text-[20px] leading-[150%] tracking-[-2%] text-center text-[#A3A3A3] max-w-3xl mx-auto">
-              Build a real music career with tools designed to help you connect with your fans and get
-              paid.
+              Build a real music career with tools designed to help you connect with your fans and
+              get paid.
             </p>
           </div>
 
@@ -90,7 +89,12 @@ const ArtistHubHero = () => {
         {/* Hero Image at Center */}
         <div className="relative z-10 mt-12 flex justify-center">
           <div className="relative w-[1145px] h-[494px]">
-            <Image src="/artist_hub/HeroImage.png" alt="Hero Image" fill className="object-contain" />
+            <Image
+              src="/artist_hub/HeroImage.png"
+              alt="Hero Image"
+              fill
+              className="object-contain"
+            />
           </div>
         </div>
       </section>

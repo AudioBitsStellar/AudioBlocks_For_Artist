@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Filter, Search, ShoppingBag, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { featureFlags } from '@/lib/featureFlags';
-import { MOCK_MERCH_ITEMS, MOCK_MERCH_METRICS } from '@/__mocks__/mockData';
-import MockDataBadge from '@/components/MockDataBadge';
-import { useAutoSave } from '@/hooks/useAutoSave';
-import useMerchService, { MerchItem, CreateMerchPayload } from '@/services/merchService';
-import { useRole } from '@/hooks/useRole';
-import ConfirmationDialog from './shared/ConfirmationDialog';
-import EmptyState from './shared/EmptyState';
-import { sanitize } from '@/utils/sanitize';
+import { useState, useEffect } from "react";
+import { Filter, Search, ShoppingBag, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { featureFlags } from "@/lib/featureFlags";
+import { MOCK_MERCH_ITEMS, MOCK_MERCH_METRICS } from "@/__mocks__/mockData";
+import MockDataBadge from "@/components/MockDataBadge";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import useMerchService, { MerchItem, CreateMerchPayload } from "@/services/merchService";
+import { useRole } from "@/hooks/useRole";
+import ConfirmationDialog from "./shared/ConfirmationDialog";
+import EmptyState from "./shared/EmptyState";
+import { sanitize } from "@/utils/sanitize";
 
 interface MerchFormProps {
   initial?: Partial<MerchItem>;
@@ -39,26 +39,29 @@ const MERCH_FIELD_SHOW_COUNT: Partial<Record<keyof CreateMerchPayload, boolean>>
 
 function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
   const [form, setForm] = useState<CreateMerchPayload>({
-    title: initial?.title ?? '',
-    detail: initial?.detail ?? '',
-    date: initial?.date ?? '',
-    time: initial?.time ?? '',
-    price: initial?.price ?? '',
-    image: initial?.image ?? '',
+    title: initial?.title ?? "",
+    detail: initial?.detail ?? "",
+    date: initial?.date ?? "",
+    time: initial?.time ?? "",
+    price: initial?.price ?? "",
+    image: initial?.image ?? "",
   });
 
-  const set = (key: keyof CreateMerchPayload) =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const set = (key: keyof CreateMerchPayload) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
-  const { restore, clearSavedData } = useAutoSave('create-merch', form as unknown as Record<string, unknown>, isBusy);
+  const { restore, clearSavedData } = useAutoSave(
+    "create-merch",
+    form as unknown as Record<string, unknown>,
+    isBusy
+  );
 
   useEffect(() => {
     if (initial) return;
     const saved = restore();
     if (saved) {
       setForm(saved as CreateMerchPayload);
-      toast.success('Draft restored');
+      toast.success("Draft restored");
     }
   }, []);
 
@@ -73,7 +76,7 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
       <div className="w-full max-w-md rounded-2xl border border-[#2A2A2A] bg-[#161616] p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-white font-semibold text-lg">
-            {initial ? 'Edit Merch' : 'New Merch'}
+            {initial ? "Edit Merch" : "New Merch"}
           </h2>
           <button
             onClick={onClose}
@@ -84,9 +87,11 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
           </button>
         </div>
 
-        {(['title', 'detail', 'date', 'time', 'price', 'image'] as (keyof CreateMerchPayload)[]).map((field) => {
+        {(
+          ["title", "detail", "date", "time", "price", "image"] as (keyof CreateMerchPayload)[]
+        ).map((field) => {
           const maxLength = MERCH_FIELD_MAX_LENGTHS[field];
-          const value = form[field] ?? '';
+          const value = form[field] ?? "";
           const isNearLimit = value.length >= maxLength * 0.9;
           return (
             <div key={field} className="flex flex-col gap-1">
@@ -94,12 +99,14 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
               <input
                 value={value}
                 onChange={set(field)}
-                placeholder={field === 'image' ? 'Image URL' : field}
+                placeholder={field === "image" ? "Image URL" : field}
                 maxLength={maxLength}
                 className="rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-2 text-sm text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
               />
               {MERCH_FIELD_SHOW_COUNT[field] && isNearLimit && (
-                <span className={`self-end text-xs ${value.length >= maxLength ? 'text-red-500' : 'text-yellow-500'}`}>
+                <span
+                  className={`self-end text-xs ${value.length >= maxLength ? "text-red-500" : "text-yellow-500"}`}
+                >
                   {value.length}/{maxLength}
                 </span>
               )}
@@ -114,7 +121,7 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
             className="flex-1 rounded-lg bg-[#D2045B] hover:bg-[#B8043F] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2 text-sm transition-colors flex items-center justify-center gap-2"
           >
             {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isBusy ? 'Saving…' : 'Save'}
+            {isBusy ? "Saving…" : "Save"}
           </button>
           <button
             onClick={onClose}
@@ -133,16 +140,19 @@ export default function MerchesContent() {
   const { data, isLoading } = useGetMerches();
   // RBAC – issue #173: gate destructive actions by role.
   const { can } = useRole();
-  const canCreate = can('content:create');
-  const canEdit = can('content:edit');
-  const canDelete = can('content:delete');
+  const canCreate = can("content:create");
+  const canEdit = can("content:edit");
+  const canDelete = can("content:delete");
 
   const createMutation = useCreateMerch();
 
   const [editTarget, setEditTarget] = useState<MerchItem | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; item: MerchItem | null }>({
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    item: MerchItem | null;
+  }>({
     isOpen: false,
     item: null,
   });
@@ -150,13 +160,9 @@ export default function MerchesContent() {
   const updateMutation = useUpdateMerch(editTarget?.id ?? 0);
   const deleteMutation = useDeleteMerch(deleteId ?? 0);
 
-  const metrics = featureFlags.useMockMerches
-    ? MOCK_MERCH_METRICS
-    : (data?.metrics ?? []);
+  const metrics = featureFlags.useMockMerches ? MOCK_MERCH_METRICS : (data?.metrics ?? []);
 
-  const items = featureFlags.useMockMerches
-    ? MOCK_MERCH_ITEMS
-    : (data?.items ?? []);
+  const items = featureFlags.useMockMerches ? MOCK_MERCH_ITEMS : (data?.items ?? []);
 
   const handleCreate = (payload: CreateMerchPayload) => {
     createMutation.mutate(payload, { onSuccess: () => setShowCreate(false) });
@@ -212,9 +218,14 @@ export default function MerchesContent() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {metrics.map((metric) => (
               <div key={metric.label} className="relative overflow-hidden rounded-3xl p-[1px]">
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${metric.gradient}`} aria-hidden />
+                <div
+                  className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${metric.gradient}`}
+                  aria-hidden
+                />
                 <div className="relative flex h-full flex-col justify-between rounded-3xl bg-[#121212] px-6 py-5">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-[#A3A3A3]">{metric.label}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-[#A3A3A3]">
+                    {metric.label}
+                  </span>
                   <p className="text-3xl font-semibold text-white">{metric.value}</p>
                   <span className="text-xs text-[#A3A3A3]">{metric.descriptor}</span>
                 </div>
@@ -230,7 +241,12 @@ export default function MerchesContent() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative w-full sm:w-72">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input type="text" placeholder="Search Merch" maxLength={100} className="w-full rounded-full border border-[#2E2E2E] bg-[#111111] py-3 pl-12 pr-5 text-sm text-white placeholder:text-gray-500 focus:border-[#885FA8] focus:outline-none" />
+                <input
+                  type="text"
+                  placeholder="Search Merch"
+                  maxLength={100}
+                  className="w-full rounded-full border border-[#2E2E2E] bg-[#111111] py-3 pl-12 pr-5 text-sm text-white placeholder:text-gray-500 focus:border-[#885FA8] focus:outline-none"
+                />
               </div>
               <button className="flex items-center justify-center gap-2 rounded-full border border-[#2E2E2E] bg-[#111111] px-5 py-3 text-sm font-medium text-white transition-colors hover:border-[#885FA8]">
                 <Filter className="h-4 w-4" /> Filter
@@ -249,11 +265,14 @@ export default function MerchesContent() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {items.map((item) => (
-                <div key={item.id} className="group overflow-hidden rounded-3xl border border-[#1F1F1F] bg-[#151818] shadow-lg transition-transform duration-200 hover:-translate-y-1">
+                <div
+                  key={item.id}
+                  className="group overflow-hidden rounded-3xl border border-[#1F1F1F] bg-[#151818] shadow-lg transition-transform duration-200 hover:-translate-y-1"
+                >
                   <div className="relative h-48 overflow-hidden">
                     <img
                       src={item.image}
-                      srcSet={`${item.image.replace(/w=\d+&h=\d+/, 'w=300&h=300')} 300w, ${item.image.replace(/w=\d+&h=\d+/, 'w=600&h=600')} 600w, ${item.image.replace(/w=\d+&h=\d+/, 'w=900&h=900')} 900w`}
+                      srcSet={`${item.image.replace(/w=\d+&h=\d+/, "w=300&h=300")} 300w, ${item.image.replace(/w=\d+&h=\d+/, "w=600&h=600")} 600w, ${item.image.replace(/w=\d+&h=\d+/, "w=900&h=900")} 900w`}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       alt={item.title}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -261,7 +280,9 @@ export default function MerchesContent() {
                   </div>
                   <div className="space-y-3 px-6 py-5">
                     <h3 className="text-lg font-semibold text-white">{sanitize(item.title)}</h3>
-                    <p className="text-xs font-medium uppercase tracking-wide text-[#A3A3A3]">{sanitize(item.detail)}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-[#A3A3A3]">
+                      {sanitize(item.detail)}
+                    </p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-[#C9C9C9]">
                       <span>{item.date}</span>
                       <span>{item.time}</span>
@@ -286,7 +307,7 @@ export default function MerchesContent() {
                                 disabled={deleteId === item.id && deleteMutation.isPending}
                                 className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:border-red-500 disabled:opacity-50"
                               >
-                                {deleteId === item.id && deleteMutation.isPending ? '…' : 'Delete'}
+                                {deleteId === item.id && deleteMutation.isPending ? "…" : "Delete"}
                               </button>
                             )}
                           </>
@@ -329,7 +350,7 @@ export default function MerchesContent() {
         onClose={() => setDeleteConfirmation({ isOpen: false, item: null })}
         onConfirm={handleDeleteConfirm}
         title="Delete Merch Item"
-        message={`Are you sure you want to delete "${deleteConfirmation.item?.title ?? 'this item'}"? This action is permanent and cannot be undone.`}
+        message={`Are you sure you want to delete "${deleteConfirmation.item?.title ?? "this item"}"? This action is permanent and cannot be undone.`}
       />
     </div>
   );

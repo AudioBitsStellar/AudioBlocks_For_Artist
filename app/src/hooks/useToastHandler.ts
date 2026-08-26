@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
+import { useCallback } from "react";
+import { toast } from "sonner";
 
 interface ApiError {
   message: string;
@@ -11,19 +11,20 @@ export const useHandleSuccess = () => {
   return useCallback((message?: string) => {
     // Announce for screen readers
     try {
-      if (typeof window !== 'undefined') {
-        const el = document.getElementById('sr-toast');
+      if (typeof window !== "undefined") {
+        const el = document.getElementById("sr-toast");
         if (el) {
-          el.textContent = message || 'Operation completed successfully';
+          el.textContent = message || "Operation completed successfully";
           setTimeout(() => {
-            if (el.textContent === (message || 'Operation completed successfully')) el.textContent = '';
+            if (el.textContent === (message || "Operation completed successfully"))
+              el.textContent = "";
           }, 4000);
         }
       }
     } catch (e) {
       // ignore DOM errors
     }
-    toast.success(message || 'Operation completed successfully', {
+    toast.success(message || "Operation completed successfully", {
       duration: 4000,
     });
   }, []);
@@ -33,44 +34,44 @@ export const useHandleError = () => {
   return useCallback((error: ApiError | string, customMessage?: string) => {
     let message: string;
 
-    if (typeof error === 'string') {
+    if (typeof error === "string") {
       message = customMessage || error;
     } else {
-      message = customMessage || error.message || 'An error occurred';
+      message = customMessage || error.message || "An error occurred";
 
       if (!customMessage && error.status) {
         switch (error.status) {
           case 400:
-            message = 'Invalid request. Please check your input.';
+            message = "Invalid request. Please check your input.";
             break;
           case 401:
-            message = 'Authentication required. Please log in.';
+            message = "Authentication required. Please log in.";
             break;
           case 403:
             message = "Access denied. You don't have permission.";
             break;
           case 404:
-            message = 'Resource not found.';
+            message = "Resource not found.";
             break;
           case 422:
-            message = 'Validation failed. Please check your input.';
+            message = "Validation failed. Please check your input.";
             break;
           case 500:
-            message = 'Server error. Please try again later.';
+            message = "Server error. Please try again later.";
             break;
           default:
-            message = error.message || 'An unexpected error occurred';
+            message = error.message || "An unexpected error occurred";
         }
       }
     }
 
     try {
-      if (typeof window !== 'undefined') {
-        const el = document.getElementById('sr-toast');
+      if (typeof window !== "undefined") {
+        const el = document.getElementById("sr-toast");
         if (el) {
           el.textContent = message;
           setTimeout(() => {
-            if (el.textContent === message) el.textContent = '';
+            if (el.textContent === message) el.textContent = "";
           }, 5000);
         }
       }
@@ -90,12 +91,12 @@ export const useToast = () => {
 
   const showInfo = useCallback((message: string) => {
     try {
-      if (typeof window !== 'undefined') {
-        const el = document.getElementById('sr-toast');
+      if (typeof window !== "undefined") {
+        const el = document.getElementById("sr-toast");
         if (el) {
           el.textContent = message;
           setTimeout(() => {
-            if (el.textContent === message) el.textContent = '';
+            if (el.textContent === message) el.textContent = "";
           }, 4000);
         }
       }
@@ -108,8 +109,8 @@ export const useToast = () => {
 
   const showLoading = useCallback((message: string) => {
     try {
-      if (typeof window !== 'undefined') {
-        const el = document.getElementById('sr-toast');
+      if (typeof window !== "undefined") {
+        const el = document.getElementById("sr-toast");
         if (el) {
           el.textContent = message;
         }

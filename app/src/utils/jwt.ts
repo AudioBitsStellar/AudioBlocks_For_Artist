@@ -1,4 +1,4 @@
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
 interface DecodedTokenClaims {
   name?: string;
@@ -8,8 +8,8 @@ interface DecodedTokenClaims {
 }
 
 function decodeBase64Url(segment: string): string {
-  const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+  const base64 = segment.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
   return atob(padded);
 }
 
@@ -18,14 +18,14 @@ function decodeBase64Url(segment: string): string {
  * JWT, purely for UI text (e.g. the print report header). Never use this for
  * authorization decisions — the signature is not checked.
  */
-export function getDisplayNameFromToken(fallback = 'Artist'): string {
-  if (typeof window === 'undefined') return fallback;
+export function getDisplayNameFromToken(fallback = "Artist"): string {
+  if (typeof window === "undefined") return fallback;
 
   try {
-    const token = Cookies.get('audioblocks_jwt') || localStorage.getItem('token');
+    const token = Cookies.get("audioblocks_jwt") || localStorage.getItem("token");
     if (!token) return fallback;
 
-    const payload = token.split('.')[1];
+    const payload = token.split(".")[1];
     if (!payload) return fallback;
 
     const claims: DecodedTokenClaims = JSON.parse(decodeBase64Url(payload));

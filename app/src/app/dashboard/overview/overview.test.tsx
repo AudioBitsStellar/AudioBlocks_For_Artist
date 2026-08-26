@@ -17,9 +17,7 @@ vi.mock("@/__mocks__/mockData", () => ({
 }));
 
 vi.mock("@/components/MockDataBadge", () => ({
-  default: ({ label }: { label: string }) => (
-    <span data-testid="mock-badge">{label}</span>
-  ),
+  default: ({ label }: { label: string }) => <span data-testid="mock-badge">{label}</span>,
 }));
 
 describe("OverviewCards", () => {

@@ -1,30 +1,30 @@
-'use client';
+"use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { ChevronDown } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { ChevronDown } from "lucide-react";
 
 const topSongs = [
-  { rank: 1, name: 'Tomothy Nguyen', listenings: 127 },
-  { rank: 2, name: 'Tomothy Nguyen', listenings: 104 },
-  { rank: 3, name: 'Evan Howard', listenings: 14 },
-  { rank: 4, name: 'Victoria Robertson', listenings: 53 },
-  { rank: 5, name: 'Leslie Cooper', listenings: 14 },
+  { rank: 1, name: "Tomothy Nguyen", listenings: 127 },
+  { rank: 2, name: "Tomothy Nguyen", listenings: 104 },
+  { rank: 3, name: "Evan Howard", listenings: 14 },
+  { rank: 4, name: "Victoria Robertson", listenings: 53 },
+  { rank: 5, name: "Leslie Cooper", listenings: 14 },
 ];
 
 const streamingRegions = [
-  { name: 'Nigeria', value: 45, color: '#9333EA' },
-  { name: 'Cameroon', value: 20, color: '#EC4899' },
-  { name: 'S/ Africa', value: 15, color: '#885FA8' },
-  { name: 'USA', value: 15, color: '#8B2635' },
-  { name: 'UK', value: 5, color: '#374151' },
+  { name: "Nigeria", value: 45, color: "#9333EA" },
+  { name: "Cameroon", value: 20, color: "#EC4899" },
+  { name: "S/ Africa", value: 15, color: "#885FA8" },
+  { name: "USA", value: 15, color: "#8B2635" },
+  { name: "UK", value: 5, color: "#374151" },
 ];
 
 const topStreamers = [
-  { rank: 1, name: 'Tomothy Nguyen', duration: '30d 24h 60m' },
-  { rank: 2, name: 'Tomothy Nguyen', duration: '24d 24h 60m' },
-  { rank: 3, name: 'Evan Howard', duration: '20d 24h 60m' },
-  { rank: 4, name: 'Victoria Robertson', duration: '16d 24h 60m' },
-  { rank: 5, name: 'Leslie Cooper', duration: '10d 24h 60m' },
+  { rank: 1, name: "Tomothy Nguyen", duration: "30d 24h 60m" },
+  { rank: 2, name: "Tomothy Nguyen", duration: "24d 24h 60m" },
+  { rank: 3, name: "Evan Howard", duration: "20d 24h 60m" },
+  { rank: 4, name: "Victoria Robertson", duration: "16d 24h 60m" },
+  { rank: 5, name: "Leslie Cooper", duration: "10d 24h 60m" },
 ];
 
 export default function FansEngagement() {
@@ -36,7 +36,10 @@ export default function FansEngagement() {
           <select className="bg-[#161616] border border-gray-700 rounded-lg px-4 pr-8 py-2 text-white text-sm appearance-none cursor-pointer hover:border-gray-600 transition-colors">
             <option>Last Week</option>
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+          <ChevronDown
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+            size={16}
+          />
         </div>
       </div>
 
@@ -115,5 +118,3 @@ export default function FansEngagement() {
     </div>
   );
 }
-
-export { FansEngagement };

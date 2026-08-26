@@ -1,19 +1,15 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Bell, User } from 'lucide-react';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Bell, User } from "lucide-react";
 
 const settingsNav = [
-  { name: 'Profile', icon: User, href: '/dashboard/profile' },
-  { name: 'Notifications', icon: Bell, href: '/dashboard/settings/notifications' },
+  { name: "Profile", icon: User, href: "/dashboard/profile" },
+  { name: "Notifications", icon: Bell, href: "/dashboard/settings/notifications" },
 ];
 
-export default function SettingsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
@@ -29,17 +25,16 @@ export default function SettingsLayout({
       >
         {settingsNav.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            pathname === item.href || pathname?.startsWith(item.href + '/');
+          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
           return (
             <Link
               key={item.name}
               href={item.href}
-              aria-current={isActive ? 'page' : undefined}
+              aria-current={isActive ? "page" : undefined}
               className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                 isActive
-                  ? 'border-primary bg-primary text-primary-contrast'
-                  : 'border-border bg-surface text-text-muted hover:text-text hover:border-secondary'
+                  ? "border-primary bg-primary text-primary-contrast"
+                  : "border-border bg-surface text-text-muted hover:text-text hover:border-secondary"
               }`}
             >
               <Icon size={16} aria-hidden="true" />

@@ -10,7 +10,7 @@ export const USER_ENDPOINTS = {
 
 export const ARTIST_UPLOAD_ENDPOINTS = {
   UPLOAD_COVER: "/song/upload/cover",
-  UPLOAD_CHUNK:  "/song/upload/chunk",
+  UPLOAD_CHUNK: "/song/upload/chunk",
   UPLOAD_SONG: "/song/upload/finalize",
 };
 
@@ -32,10 +32,13 @@ export const MERCH_ENDPOINTS = {
   CREATE: "/artist/merches",
   UPDATE: (id: number) => `/artist/merches/${id}`,
   DELETE: (id: number) => `/artist/merches/${id}`,
+  CREATE_ORDER: (id: number) => `/artist/merches/${id}/orders`,
+  ORDERS: "/artist/merches/orders",
 };
 
 export const EARNINGS_ENDPOINTS = {
   GET_EARNINGS: "/artist/earnings",
+  GET_PLATFORM_REVENUE: "/artist/earnings/platforms",
 };
 
 export const OVERVIEW_ENDPOINTS = {
@@ -54,4 +57,14 @@ export const EVENTS_ENDPOINTS = {
   CREATE: "/artist/events",
   UPDATE: (id: string | number) => `/artist/events/${id}`,
   DELETE: (id: string | number) => `/artist/events/${id}`,
+  CHECK_IN: (id: string | number) => `/artist/events/${id}/check-in`,
+  TICKETS: (id: string | number) => `/artist/events/${id}/tickets`,
+  VALIDATE_TICKET: (id: string | number) => `/artist/events/${id}/validate`,
+};
+
+export const MERCH_INVENTORY_ENDPOINTS = {
+  LIST: "/artist/merches/inventory",
+  UPDATE_STOCK: (id: number) => `/artist/merches/${id}/stock`,
+  ORDERS: "/artist/merches/orders",
+  ORDER_STATUS: (orderId: number) => `/artist/merches/orders/${orderId}`,
 };

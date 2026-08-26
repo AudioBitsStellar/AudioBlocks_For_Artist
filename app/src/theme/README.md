@@ -21,27 +21,27 @@ respond to, repainting every component that uses token-named utilities at once.
 
 ## Token catalog
 
-| Token                  | Light                    | Dark                  | Purpose                                  |
-| ---------------------- | ------------------------ | --------------------- | ---------------------------------------- |
-| `primary`              | `#D2045B` (brand pink)   | `#E83A87`             | Primary actions, links, brand accent     |
-| `primary-hover`        | `#B8043F`                | `#FF5BA0`             | Hover state for primary                  |
-| `primary-contrast`     | `#FFFFFF`                | `#FFFFFF`             | Text/icons sitting on a primary surface  |
-| `secondary`            | `#885FA8` (purple)       | `#A87BC2`             | Secondary actions, decorative accents   |
-| `secondary-contrast`   | `#FFFFFF`                | `#FFFFFF`             | Text/icons on a secondary surface        |
-| `background`           | `#FFFFFF`                | `#000000`             | Page-level background                    |
-| `surface`              | `#FFFFFF`                | `#161616`             | Cards, panels, dialogs                   |
-| `surface-raised`       | `#F7F7F7`                | `#1E1E1E`             | Hovered / elevated surface               |
-| `surface-sunken`       | `#F0F0F0`                | `#0F0F0F`             | Input fields, code blocks                |
-| `text`                 | `#111111`                | `#FFFFFF`             | Default body copy                        |
-| `text-muted`           | `#6F6F6F`                | `#A3A3A3`             | Captions, helpers, secondary text        |
-| `text-subtle`          | `#9CA3AF`                | `#6F6F6F`             | Disabled / placeholders                  |
-| `text-inverted`        | `#FFFFFF`                | `#000000`             | Text on inverse background               |
-| `border`               | `#E5E5E5`                | `#2A2A2A`             | Default borders                          |
-| `border-subtle`        | `#F0F0F0`                | `#1F1F1F`             | Very faint dividers                      |
-| `success`              | `#3DDC84`                | `#3DDC84`             | Success state                            |
-| `warning`              | `#FFB020`                | `#FFB020`             | Warning state                            |
-| `error`                | `#FF5252`                | `#FF7B7B`             | Validation errors, destructive actions  |
-| `info`                 | `#4F8DFF`                | `#4F8DFF`             | Informational messages                   |
+| Token                | Light                  | Dark      | Purpose                                 |
+| -------------------- | ---------------------- | --------- | --------------------------------------- |
+| `primary`            | `#D2045B` (brand pink) | `#E83A87` | Primary actions, links, brand accent    |
+| `primary-hover`      | `#B8043F`              | `#FF5BA0` | Hover state for primary                 |
+| `primary-contrast`   | `#FFFFFF`              | `#FFFFFF` | Text/icons sitting on a primary surface |
+| `secondary`          | `#885FA8` (purple)     | `#A87BC2` | Secondary actions, decorative accents   |
+| `secondary-contrast` | `#FFFFFF`              | `#FFFFFF` | Text/icons on a secondary surface       |
+| `background`         | `#FFFFFF`              | `#000000` | Page-level background                   |
+| `surface`            | `#FFFFFF`              | `#161616` | Cards, panels, dialogs                  |
+| `surface-raised`     | `#F7F7F7`              | `#1E1E1E` | Hovered / elevated surface              |
+| `surface-sunken`     | `#F0F0F0`              | `#0F0F0F` | Input fields, code blocks               |
+| `text`               | `#111111`              | `#FFFFFF` | Default body copy                       |
+| `text-muted`         | `#6F6F6F`              | `#A3A3A3` | Captions, helpers, secondary text       |
+| `text-subtle`        | `#9CA3AF`              | `#6F6F6F` | Disabled / placeholders                 |
+| `text-inverted`      | `#FFFFFF`              | `#000000` | Text on inverse background              |
+| `border`             | `#E5E5E5`              | `#2A2A2A` | Default borders                         |
+| `border-subtle`      | `#F0F0F0`              | `#1F1F1F` | Very faint dividers                     |
+| `success`            | `#3DDC84`              | `#3DDC84` | Success state                           |
+| `warning`            | `#FFB020`              | `#FFB020` | Warning state                           |
+| `error`              | `#FF5252`              | `#FF7B7B` | Validation errors, destructive actions  |
+| `info`               | `#4F8DFF`              | `#4F8DFF` | Informational messages                  |
 
 ## Usage in components
 
@@ -58,9 +58,9 @@ respond to, repainting every component that uses token-named utilities at once.
 ### Inline / style props
 
 ```tsx
-import { colorTokens } from '@/theme/colors';
+import { colorTokens } from "@/theme/colors";
 
-<div style={{ borderColor: colorTokens.border.default }} />
+<div style={{ borderColor: colorTokens.border.default }} />;
 ```
 
 ### Charts / canvas

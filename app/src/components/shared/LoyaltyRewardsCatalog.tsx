@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { FanLoyaltyProgram, LoyaltyProgramConfig } from '@/types';
-import { useLoyaltyProgram } from '@/hooks/useLoyaltyProgram';
-import { useI18n } from '@/context/I18nContext';
-import { Gift, Star } from 'lucide-react';
+import { FanLoyaltyProgram, LoyaltyProgramConfig } from "@/types";
+import { useLoyaltyProgram } from "@/hooks/useLoyaltyProgram";
+import { useI18n } from "@/context/I18nContext";
+import { Gift, Star } from "lucide-react";
 
 interface LoyaltyRewardsCatalogProps {
   loyaltyProgram: FanLoyaltyProgram | null;
@@ -54,8 +54,8 @@ export default function LoyaltyRewardsCatalog({
               key={reward.id}
               className={`rounded-xl border p-5 transition-all ${
                 isRedeemable
-                  ? 'border-[#D2045B] bg-[#111111] hover:bg-[#161616]'
-                  : 'border-[#2A2A2A] bg-[#0F0F0F] opacity-60'
+                  ? "border-[#D2045B] bg-[#111111] hover:bg-[#161616]"
+                  : "border-[#2A2A2A] bg-[#0F0F0F] opacity-60"
               }`}
             >
               {/* Icon and Title */}
@@ -102,9 +102,7 @@ export default function LoyaltyRewardsCatalog({
                 ) : (
                   <div className="text-right">
                     <p className="text-xs text-[#A3A3A3] mb-1">Need</p>
-                    <p className="font-semibold text-[#D2045B]">
-                      +{formatPoints(pointsShortfall)}
-                    </p>
+                    <p className="font-semibold text-[#D2045B]">+{formatPoints(pointsShortfall)}</p>
                   </div>
                 )}
               </div>

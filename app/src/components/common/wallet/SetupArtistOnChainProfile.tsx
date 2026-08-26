@@ -9,7 +9,16 @@ import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { toast } from "sonner";
 import { ApiEnvelope, SubmitArtistSetupResponse } from "@/types/api";
 
-type SetupStatus = 'idle' | 'not_installed' | 'preparing' | 'awaiting_signature' | 'submitting' | 'success' | 'rejected' | 'timeout' | 'failed';
+type SetupStatus =
+  | "idle"
+  | "not_installed"
+  | "preparing"
+  | "awaiting_signature"
+  | "submitting"
+  | "success"
+  | "rejected"
+  | "timeout"
+  | "failed";
 
 const COOLDOWN_DURATION = 5;
 const GAS_COST_ESTIMATE = "~0.001 XLM";
@@ -21,21 +30,25 @@ export default function SetupArtistOnChainProfile() {
   const prepareMutation = usePrepareArtistSetup();
   const submitMutation = useSubmitArtistSetup();
 
-  const [status, setStatus] = useState<SetupStatus>('idle');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [txHash, setTxHash] = useState('');
+  const [status, setStatus] = useState<SetupStatus>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [txHash, setTxHash] = useState("");
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
 
-  const isBusy = prepareMutation.isPending || submitMutation.isPending || ['preparing', 'awaiting_signature', 'submitting'].includes(status) || cooldownActive;
+  const isBusy =
+    prepareMutation.isPending ||
+    submitMutation.isPending ||
+    ["preparing", "awaiting_signature", "submitting"].includes(status) ||
+    cooldownActive;
 
   useEffect(() => {
     if (!cooldownActive) return;
     if (cooldownRemaining <= 0) {
       setCooldownActive(false);
-      setStatus('idle');
-      setTxHash('');
-      setErrorMsg('');
+      setStatus("idle");
+      setTxHash("");
+      setErrorMsg("");
       return;
     }
     const timer = setTimeout(() => {
@@ -46,57 +59,66 @@ export default function SetupArtistOnChainProfile() {
 
   const handleSetup = async () => {
     if (!cid.trim() || !address) return;
-    
+
     const available = await isFreighterAvailable();
     if (!available) {
-      setStatus('not_installed');
+      setStatus("not_installed");
       return;
     }
 
-    setStatus('preparing');
-    setErrorMsg('');
-    analytics.mintStarted({ songId: 'artist-profile', walletAddress: address });
+    setStatus("preparing");
+    setErrorMsg("");
+    analytics.mintStarted({ songId: "artist-profile", walletAddress: address });
 
     try {
       const prepared = await prepareMutation.mutateAsync({ cid: cid.trim() });
-      
-      setStatus('awaiting_signature');
+
+      setStatus("awaiting_signature");
       let signedXdr: string;
       try {
-        signedXdr = await signTransactionXdr(prepared.data.xdr, prepared.data.networkPassphrase, address);
+        signedXdr = await signTransactionXdr(
+          prepared.data.xdr,
+          prepared.data.networkPassphrase,
+          address
+        );
       } catch (signErr: unknown) {
         const error = signErr as Error;
-        if (error?.message?.toLowerCase().includes("rejected") || error?.message?.toLowerCase().includes("user rejected")) {
-          setStatus('rejected');
-          analytics.mintFailed({ songId: 'artist-profile', reason: "user rejected signature" });
+        if (
+          error?.message?.toLowerCase().includes("rejected") ||
+          error?.message?.toLowerCase().includes("user rejected")
+        ) {
+          setStatus("rejected");
+          analytics.mintFailed({ songId: "artist-profile", reason: "user rejected signature" });
           return;
         }
         throw error;
       }
 
-      setStatus('submitting');
-      const result: ApiEnvelope<SubmitArtistSetupResponse> = await submitMutation.mutateAsync({ signedXdr });
+      setStatus("submitting");
+      const result: ApiEnvelope<SubmitArtistSetupResponse> = await submitMutation.mutateAsync({
+        signedXdr,
+      });
 
-      const hash = result?.data?.txHash ?? '';
+      const hash = result?.data?.txHash ?? "";
       setTxHash(hash);
-      setStatus('success');
+      setStatus("success");
       setCooldownActive(true);
       setCooldownRemaining(COOLDOWN_DURATION);
       analytics.mintSucceeded({
-        songId: 'artist-profile',
+        songId: "artist-profile",
         txHash: hash,
-        tokenId: result?.data?.tokenId ?? '',
+        tokenId: result?.data?.tokenId ?? "",
       });
       toast.success("Profile setup succeeded on-chain!");
     } catch (err: unknown) {
       const error = err as Error;
       const reason = error?.message ?? "unknown";
-      analytics.mintFailed({ songId: 'artist-profile', reason });
-      
+      analytics.mintFailed({ songId: "artist-profile", reason });
+
       if (reason.toLowerCase().includes("timeout") || reason.toLowerCase().includes("network")) {
-        setStatus('timeout');
+        setStatus("timeout");
       } else {
-        setStatus('failed');
+        setStatus("failed");
       }
       setErrorMsg(reason);
     }
@@ -107,19 +129,19 @@ export default function SetupArtistOnChainProfile() {
       <div>
         <h3 className="text-white font-semibold mb-1">On-chain artist profile</h3>
         <p className="text-sm text-[#A3A3A3]">
-          Connect your Stellar wallet and mint your artist profile on-chain. You&apos;ll be asked
-          to sign the transaction in Freighter — the platform never holds your wallet key.
+          Connect your Stellar wallet and mint your artist profile on-chain. You&apos;ll be asked to
+          sign the transaction in Freighter — the platform never holds your wallet key.
         </p>
       </div>
 
       <ConnectStellarWalletButton />
 
-      {status === 'not_installed' && (
+      {status === "not_installed" && (
         <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-yellow-600/30 rounded-lg">
           <p className="text-xs text-yellow-500 font-medium">Freighter wallet not detected.</p>
-          <a 
-            href="https://www.freighter.app" 
-            target="_blank" 
+          <a
+            href="https://www.freighter.app"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-center rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs w-fit"
           >
@@ -128,7 +150,7 @@ export default function SetupArtistOnChainProfile() {
         </div>
       )}
 
-      {status === 'rejected' && (
+      {status === "rejected" && (
         <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg">
           <p className="text-xs text-red-500 font-medium">Signature rejected by user.</p>
           <button
@@ -140,7 +162,7 @@ export default function SetupArtistOnChainProfile() {
         </div>
       )}
 
-      {status === 'timeout' && (
+      {status === "timeout" && (
         <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg">
           <p className="text-xs text-red-500 font-medium">Request timed out or network error.</p>
           <button
@@ -152,7 +174,7 @@ export default function SetupArtistOnChainProfile() {
         </div>
       )}
 
-      {status === 'failed' && (
+      {status === "failed" && (
         <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg">
           <p className="text-xs text-red-500 font-medium">Setup failed: {errorMsg}</p>
           <button
@@ -164,9 +186,11 @@ export default function SetupArtistOnChainProfile() {
         </div>
       )}
 
-      {status === 'success' && (
+      {status === "success" && (
         <div className="flex flex-col gap-2 p-3 bg-green-950/20 border border-green-600/30 rounded-lg">
-          <p className="text-xs text-green-400 font-medium">Profile setup completed on-chain successfully!</p>
+          <p className="text-xs text-green-400 font-medium">
+            Profile setup completed on-chain successfully!
+          </p>
           {txHash && (
             <a
               href={`https://stellar.expert/explorer/public/tx/${txHash}`}
@@ -185,7 +209,7 @@ export default function SetupArtistOnChainProfile() {
         </div>
       )}
 
-      {address && status !== 'success' && (
+      {address && status !== "success" && (
         <div className="flex flex-col gap-3">
           <input
             value={cid}
@@ -199,10 +223,10 @@ export default function SetupArtistOnChainProfile() {
             disabled={isBusy || !cid.trim()}
             className={`${isBusy || !cid.trim() ? "opacity-70 cursor-not-allowed" : ""} w-fit rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-6 py-2 transition-colors text-sm`}
           >
-            {status === 'preparing' && "Preparing..."}
-            {status === 'awaiting_signature' && "Awaiting Signature..."}
-            {status === 'submitting' && "Setting up Profile..."}
-            {status === 'idle' && "Set up on-chain profile"}
+            {status === "preparing" && "Preparing..."}
+            {status === "awaiting_signature" && "Awaiting Signature..."}
+            {status === "submitting" && "Setting up Profile..."}
+            {status === "idle" && "Set up on-chain profile"}
           </button>
           <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
         </div>

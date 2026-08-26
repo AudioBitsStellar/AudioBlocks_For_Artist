@@ -1,73 +1,73 @@
 // API Response types
 export interface AxiosResponse<T = any> {
-	success: boolean;
-	data?: T;
-	message?: string;
-	error?: string;
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
 }
 
 export interface updateProfilePayload {
-	username: string;
-	bio: string;
-	website: string;
-	profileImage?: File | string;
-	pageCover?: string;
-	twitter: string;
+  username: string;
+  bio: string;
+  website: string;
+  profileImage?: File | string;
+  pageCover?: string;
+  twitter: string;
 }
 
 export interface UploadSong {
-	fileId: string;
-	totalChunks: number;
-	title: string;
-	coverArtPath: string;
-	description: string;
-	genre: string;
-	composer: string;
+  fileId: string;
+  totalChunks: number;
+  title: string;
+  coverArtPath: string;
+  description: string;
+  genre: string;
+  composer: string;
 }
 export interface UploadCoverResponse {
-	cover: File | string;
-	fileId: string;
+  cover: File | string;
+  fileId: string;
 }
 
 export interface UploadChunkResponse {
-	chunkIndex: number;
-	fileId: string;
-	chunk: number | string;
+  chunkIndex: number;
+  fileId: string;
+  chunk: number | string;
 }
 
 export interface MusicFormValues {
-	songTitle: string;
-	albumTitle: string;
-	genre: string;
-	releaseDate: string;
-	marketPrice: string;
-	purchasePrice: string;
+  songTitle: string;
+  albumTitle: string;
+  genre: string;
+  releaseDate: string;
+  marketPrice: string;
+  purchasePrice: string;
 }
 
 export interface RegisterEmailPayload {
-	email: string;
-	password: string;
-	role: "artist" | "listener" | "admin";
-	username?: string;
-	name?: string;
+  email: string;
+  password: string;
+  role: "artist" | "listener" | "admin";
+  username?: string;
+  name?: string;
 }
 
 export interface LoginEmailPayload {
-	email: string;
-	password: string;
+  email: string;
+  password: string;
 }
 
 export interface AuthUser {
-	id: string;
-	email?: string;
-	role: string;
-	username?: string;
-	name?: string;
+  id: string;
+  email?: string;
+  role: string;
+  username?: string;
+  name?: string;
 }
 
 export interface AuthResponse {
-	user: AuthUser;
-	token: string;
+  user: AuthUser;
+  token: string;
 }
 
 export interface EarningsDataPoint {
@@ -85,6 +85,23 @@ export interface EarningsSummary {
 export interface EarningsResponse {
   success: boolean;
   data: EarningsSummary;
+}
+
+export interface PlatformRevenue {
+  platform: string;
+  revenue: number;
+  percentage: number;
+  streams: number;
+}
+
+export interface PlatformRevenueSummary {
+  totalRevenue: number;
+  platforms: PlatformRevenue[];
+}
+
+export interface PlatformRevenueResponse {
+  success: boolean;
+  data: PlatformRevenueSummary;
 }
 
 export interface OverviewKpi {
@@ -133,7 +150,7 @@ export interface RecentActivityResponse {
 }
 
 // Multilingual content support for music metadata
-export type SupportedLanguage = 'en' | 'es';
+export type SupportedLanguage = "en" | "es";
 
 export interface MultilingualText {
   [lang: string]: string;
@@ -166,7 +183,7 @@ export interface MultilingualMusicItem {
 }
 
 // Fan Rewards & Loyalty Program types
-export type RewardTier = 'bronze' | 'silver' | 'gold' | 'platinum';
+export type RewardTier = "bronze" | "silver" | "gold" | "platinum";
 
 export interface RewardTierConfig {
   tier: RewardTier;
@@ -188,7 +205,7 @@ export interface ExclusiveContent {
   id: string;
   title: string;
   description: string;
-  type: 'song' | 'video' | 'behind-the-scenes' | 'merch' | 'event';
+  type: "song" | "video" | "behind-the-scenes" | "merch" | "event";
   unlockRequiredPoints: number;
   currentTier?: RewardTier;
   isUnlocked: boolean;
@@ -203,7 +220,7 @@ export interface Reward {
   name: string;
   description: string;
   pointsCost: number;
-  category: 'discount' | 'exclusive' | 'experience' | 'merchandise';
+  category: "discount" | "exclusive" | "experience" | "merchandise";
   expiresAt?: string;
   isRedeemable: boolean;
   redemptionCode?: string;

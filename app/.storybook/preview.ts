@@ -1,5 +1,5 @@
-import type { Preview } from '@storybook/react';
-import '@storybook/theming';
+import type { Preview } from "@storybook/react";
+import "@storybook/theming";
 
 const preview: Preview = {
   parameters: {
@@ -12,16 +12,16 @@ const preview: Preview = {
     viewport: {
       viewports: {
         mobile: {
-          name: 'Mobile',
-          styles: { width: '375px', height: '667px' },
+          name: "Mobile",
+          styles: { width: "375px", height: "667px" },
         },
         tablet: {
-          name: 'Tablet',
-          styles: { width: '768px', height: '1024px' },
+          name: "Tablet",
+          styles: { width: "768px", height: "1024px" },
         },
         desktop: {
-          name: 'Desktop',
-          styles: { width: '1440px', height: '900px' },
+          name: "Desktop",
+          styles: { width: "1440px", height: "900px" },
         },
       },
     },

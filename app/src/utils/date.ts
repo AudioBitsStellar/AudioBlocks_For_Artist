@@ -13,9 +13,9 @@
  *   formatDate(new Date(), 'datetime');           // "Jul 24, 2026, 3:14 PM"
  */
 
-export type DatePreset = 'relative' | 'short' | 'full' | 'datetime';
+export type DatePreset = "relative" | "short" | "full" | "datetime";
 
-const DEFAULT_LOCALE = 'en-US';
+const DEFAULT_LOCALE = "en-US";
 
 /**
  * Internal helpers – each preset is implemented with the appropriate
@@ -24,26 +24,26 @@ const DEFAULT_LOCALE = 'en-US';
 
 function formatShort(date: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
-    month: 'short',
-    day: 'numeric',
+    month: "short",
+    day: "numeric",
   }).format(date);
 }
 
 function formatFull(date: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   }).format(date);
 }
 
 function formatDateTime(date: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(date);
 }
 
@@ -63,17 +63,17 @@ function formatRelative(date: Date, locale: string, now: Date = new Date()): str
   const diffSeconds = Math.round((date.getTime() - now.getTime()) / 1000);
   const absSeconds = Math.abs(diffSeconds);
 
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
-  if (absSeconds < 45) return 'just now';
+  if (absSeconds < 45) return "just now";
   if (absSeconds < 60 * 60) {
-    return rtf.format(Math.round(diffSeconds / 60), 'minute');
+    return rtf.format(Math.round(diffSeconds / 60), "minute");
   }
   if (absSeconds < 60 * 60 * 24) {
-    return rtf.format(Math.round(diffSeconds / 3600), 'hour');
+    return rtf.format(Math.round(diffSeconds / 3600), "hour");
   }
   if (absSeconds < 60 * 60 * 24 * 7) {
-    return rtf.format(Math.round(diffSeconds / 86400), 'day');
+    return rtf.format(Math.round(diffSeconds / 86400), "day");
   }
   // Older than a week – show absolute short date instead.
   return formatShort(date, locale);
@@ -88,31 +88,31 @@ function formatRelative(date: Date, locale: string, now: Date = new Date()): str
  */
 export function formatDate(
   value: Date | string | number,
-  preset: DatePreset = 'short',
-  locale: string = DEFAULT_LOCALE,
+  preset: DatePreset = "short",
+  locale: string = DEFAULT_LOCALE
 ): string {
   const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return '';
+    return "";
   }
 
   switch (preset) {
-    case 'relative':
+    case "relative":
       return formatRelative(date, locale);
-    case 'full':
+    case "full":
       return formatFull(date, locale);
-    case 'datetime':
+    case "datetime":
       return formatDateTime(date, locale);
-    case 'short':
+    case "short":
     default:
       return formatShort(date, locale);
   }
 }
 
 export const DateFormats = {
-  relative: 'relative',
-  short: 'short',
-  full: 'full',
-  datetime: 'datetime',
+  relative: "relative",
+  short: "short",
+  full: "full",
+  datetime: "datetime",
 } as const satisfies Record<DatePreset, DatePreset>;

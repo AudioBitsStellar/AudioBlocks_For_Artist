@@ -45,110 +45,106 @@ function normalizeError(error: unknown): ApiError {
 }
 
 const useArtistServices = () => {
-	const handleSuccess = useHandleSuccess();
-	const handleError = useHandleError();
+  const handleSuccess = useHandleSuccess();
+  const handleError = useHandleError();
 
-	/**
-	 * Fetches the signed-in artist's profile. Not cached (`staleTime: 0`) — the
-	 * profile is refetched on every mount since it may change from other tabs/devices.
-	 *
-	 * Errors from the GET are normalized to the `ApiError` shape produced by
-	 * `normalizeError` (issue #104) and surfaced through `useHandleError`,
-	 * which maps HTTP status codes to user-friendly messages. To avoid spamming
-	 * toasts on every background refetch (e.g. on window focus), the error
-	 * toast fires at most once per failed response value.
-	 *
-	 * @param enabled - Whether the query should run.
-	 * @returns A React Query result: `{ data: { user: AuthUser } | undefined, isLoading, isError, error, refetch, ... }`.
-	 * @throws Never throws directly — failures surface via the returned `error`/`isError` fields and a single toast per failure.
-	 */
-	const useGetArtistProfile = (enabled: boolean) => {
-		const query = useGet<{ user: AuthUser }>(
-			["get-artist-profile"],
-			`${USER_ENDPOINTS.PROFILE}`,
-			{
-				enabled,
-				staleTime: 0,
-			},
-		);
+  /**
+   * Fetches the signed-in artist's profile. Not cached (`staleTime: 0`) — the
+   * profile is refetched on every mount since it may change from other tabs/devices.
+   *
+   * Errors from the GET are normalized to the `ApiError` shape produced by
+   * `normalizeError` (issue #104) and surfaced through `useHandleError`,
+   * which maps HTTP status codes to user-friendly messages. To avoid spamming
+   * toasts on every background refetch (e.g. on window focus), the error
+   * toast fires at most once per failed response value.
+   *
+   * @param enabled - Whether the query should run.
+   * @returns A React Query result: `{ data: { user: AuthUser } | undefined, isLoading, isError, error, refetch, ... }`.
+   * @throws Never throws directly — failures surface via the returned `error`/`isError` fields and a single toast per failure.
+   */
+  const useGetArtistProfile = (enabled: boolean) => {
+    const query = useGet<{ user: AuthUser }>(["get-artist-profile"], `${USER_ENDPOINTS.PROFILE}`, {
+      enabled,
+      staleTime: 0,
+    });
 
-		// Track the last error fingerprint we already toasted so React Query
-		// background refetches (window focus / mount) for the same failure
-		// don't re-fire the same toast. A genuine new failure has a different
-		// `.status`/`.message` and passes this guard.
-		const lastErrorRef = useRef<string | null>(null);
+    // Track the last error fingerprint we already toasted so React Query
+    // background refetches (window focus / mount) for the same failure
+    // don't re-fire the same toast. A genuine new failure has a different
+    // `.status`/`.message` and passes this guard.
+    const lastErrorRef = useRef<string | null>(null);
 
-		useEffect(() => {
-			// Only clear the dedup fingerprint when the error genuinely
-			// resolves (a successful recovery or a fresh refetch resets the
-			// error back to a successful or pending state). We deliberately
-			// do NOT clear on `!query.isError` alone while `query.error` is
-			// still set: that would cause the same toast to re-fire on every
-			// query transition.
-			if (!query.error) {
-				lastErrorRef.current = null;
-			}
-			if (!query.isError) return;
+    useEffect(() => {
+      // Only clear the dedup fingerprint when the error genuinely
+      // resolves (a successful recovery or a fresh refetch resets the
+      // error back to a successful or pending state). We deliberately
+      // do NOT clear on `!query.isError` alone while `query.error` is
+      // still set: that would cause the same toast to re-fire on every
+      // query transition.
+      if (!query.error) {
+        lastErrorRef.current = null;
+      }
+      if (!query.isError) return;
 
-			let apiError: ApiError;
-			try {
-				apiError = normalizeError(query.error);
-			} catch {
-				// Last-resort fallback so a broken normalizer never produces
-				// an unhandled error in artist-related flows.
-				apiError = {
-					status: 0,
-					message: "An unexpected error occurred while loading your profile.",
-				};
-			}
+      let apiError: ApiError;
+      try {
+        apiError = normalizeError(query.error);
+      } catch {
+        // Last-resort fallback so a broken normalizer never produces
+        // an unhandled error in artist-related flows.
+        apiError = {
+          status: 0,
+          message: "An unexpected error occurred while loading your profile.",
+        };
+      }
 
-			const fingerprint = `${apiError.status}:${apiError.message}`;
-			if (lastErrorRef.current === fingerprint) return;
-			lastErrorRef.current = fingerprint;
+      const fingerprint = `${apiError.status}:${apiError.message}`;
+      if (lastErrorRef.current === fingerprint) return;
+      lastErrorRef.current = fingerprint;
 
-			handleError(apiError);
-		}, [query.isError, query.error, handleError]);
+      handleError(apiError);
+    }, [query.isError, query.error, handleError]);
 
-		return query;
-	};
+    return query;
+  };
 
-	/**
-	 * Updates the signed-in artist's profile. Shows a success/error toast
-	 * automatically. Failure errors are normalized through `normalizeError`
-	 * so the status-aware switch inside `useHandleError` works (issue #104).
-	 *
-	 * Note: unlike `useGetArtistProfile`, this mutation intentionally does NOT
-	 * dedupe the error toast. Each `.mutate()`/`mutateAsync()` call is a
-	 * deliberate, user-initiated retry, so a fresh toast on each failure gives
-	 * the user immediate feedback for their most recent attempt.
-	 *
-	 * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with an `updateProfilePayload`.
-	 * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
-	 */
-	const useUpdateArtistProfile = () => {
-		return usePut<updateProfilePayload>(USER_ENDPOINTS.UPDATE_PROFILE, {
-			onSuccess(response: { message?: string }) {
-				handleSuccess(response?.message || "Profile updated successfully!");
-			},
-			onError(error: unknown) {
-				let apiError: ApiError;
-				try {
-					apiError = normalizeError(error);
-				} catch {
-					apiError = {
-						status: 0,
-						message: "An unexpected error occurred while updating your profile.",
-					};
-				}
-				handleError(apiError);
-			},
-		});
-	};
+  /**
+   * Updates the signed-in artist's profile. Shows a success/error toast
+   * automatically. Failure errors are normalized through `normalizeError`
+   * so the status-aware switch inside `useHandleError` works (issue #104).
+   *
+   * Note: unlike `useGetArtistProfile`, this mutation intentionally does NOT
+   * dedupe the error toast. Each `.mutate()`/`mutateAsync()` call is a
+   * deliberate, user-initiated retry, so a fresh toast on each failure gives
+   * the user immediate feedback for their most recent attempt.
+   *
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with an `updateProfilePayload`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
+  const useUpdateArtistProfile = () => {
+    return usePut<updateProfilePayload>(USER_ENDPOINTS.UPDATE_PROFILE, {
+      onSuccess(response: { message?: string }) {
+        handleSuccess(response?.message || "Profile updated successfully!");
+      },
+      onError(error: unknown) {
+        let apiError: ApiError;
+        try {
+          apiError = normalizeError(error);
+        } catch {
+          apiError = {
+            status: 0,
+            message: "An unexpected error occurred while updating your profile.",
+          };
+        }
+        handleError(apiError);
+      },
+    });
+  };
 
-	return {
-		useGetArtistProfile,
-		useUpdateArtistProfile,
-	};
+  return {
+    useGetArtistProfile,
+    useUpdateArtistProfile,
+  };
 };
 
 export default useArtistServices;

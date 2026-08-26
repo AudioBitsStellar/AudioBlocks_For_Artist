@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import MyAlbums from './MyAlbums';
+import type { Meta, StoryObj } from "@storybook/react";
+import MyAlbums from "./MyAlbums";
 
 const meta: Meta<typeof MyAlbums> = {
-  title: 'Dashboard/MyAlbums',
+  title: "Dashboard/MyAlbums",
   component: MyAlbums,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   parameters: {
-    layout: 'padded',
+    layout: "padded",
   },
 };
 

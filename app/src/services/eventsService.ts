@@ -59,8 +59,7 @@ const useEventsService = () => {
    * @returns A React Query result: `{ data: EventListResponse | undefined, isLoading, isError, error, refetch, ... }`.
    * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
    */
-  const useGetEvents = () =>
-    useGet<EventListResponse>(EVENTS_QUERY_KEY, EVENTS_ENDPOINTS.LIST);
+  const useGetEvents = () => useGet<EventListResponse>(EVENTS_QUERY_KEY, EVENTS_ENDPOINTS.LIST);
 
   /**
    * Creates a new event. Invalidates the events cache and shows a success/error toast on completion.

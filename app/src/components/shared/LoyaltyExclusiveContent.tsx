@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { FanLoyaltyProgram, LoyaltyProgramConfig } from '@/types';
-import { useLoyaltyProgram, useExclusiveContent } from '@/hooks/useLoyaltyProgram';
-import { useI18n } from '@/context/I18nContext';
-import { Lock, Unlock } from 'lucide-react';
-import Image from 'next/image';
+import { FanLoyaltyProgram, LoyaltyProgramConfig } from "@/types";
+import { useLoyaltyProgram, useExclusiveContent } from "@/hooks/useLoyaltyProgram";
+import { useI18n } from "@/context/I18nContext";
+import { Lock, Unlock } from "lucide-react";
+import Image from "next/image";
 
 interface LoyaltyExclusiveContentProps {
   loyaltyProgram: FanLoyaltyProgram | null;
@@ -38,9 +38,7 @@ export default function LoyaltyExclusiveContent({
       {/* Unlocked Content */}
       {unlockedContent.length > 0 && (
         <div className="rounded-2xl border border-[#2A2A2A] bg-[#161616] p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            {t.rewards.unlockedContent}
-          </h3>
+          <h3 className="text-lg font-semibold text-white mb-4">{t.rewards.unlockedContent}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {unlockedContent.map((content) => (
               <div
@@ -63,9 +61,7 @@ export default function LoyaltyExclusiveContent({
                 )}
                 <div className="p-4">
                   <h4 className="font-semibold text-white mb-1">{content.title}</h4>
-                  <p className="text-xs text-[#A3A3A3] mb-3 line-clamp-2">
-                    {content.description}
-                  </p>
+                  <p className="text-xs text-[#A3A3A3] mb-3 line-clamp-2">{content.description}</p>
                   <span className="inline-block text-xs font-medium px-2 py-1 rounded bg-[#D2045B]/20 text-[#D2045B]">
                     {content.type}
                   </span>
@@ -79,9 +75,7 @@ export default function LoyaltyExclusiveContent({
       {/* Locked Content */}
       {lockedContent.length > 0 && (
         <div className="rounded-2xl border border-[#2A2A2A] bg-[#161616] p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            {t.rewards.lockedContent}
-          </h3>
+          <h3 className="text-lg font-semibold text-white mb-4">{t.rewards.lockedContent}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {lockedContent.map((content) => {
               const pointsNeeded = getPointsNeededToUnlock(content.unlockRequiredPoints);
@@ -117,9 +111,7 @@ export default function LoyaltyExclusiveContent({
                         disabled={pointsNeeded > 0}
                         className="text-xs font-semibold px-3 py-1 rounded bg-[#D2045B]/30 text-[#D2045B] hover:bg-[#D2045B]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        {pointsNeeded > 0
-                          ? `+${formatPoints(pointsNeeded)}`
-                          : t.rewards.unlock}
+                        {pointsNeeded > 0 ? `+${formatPoints(pointsNeeded)}` : t.rewards.unlock}
                       </button>
                     </div>
                   </div>

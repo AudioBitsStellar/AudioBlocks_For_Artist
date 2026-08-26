@@ -2,7 +2,13 @@ import { ApiError } from "@/api/axios";
 
 // Network / server errors that are safe to retry
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 499, 502, 503, 504]);
-const RETRYABLE_MESSAGES = ["network error", "timeout", "econnreset", "econnrefused", "socket hang up"];
+const RETRYABLE_MESSAGES = [
+  "network error",
+  "timeout",
+  "econnreset",
+  "econnrefused",
+  "socket hang up",
+];
 
 export function isRetryableError(error: unknown): boolean {
   if (isApiError(error)) {
@@ -21,10 +27,5 @@ export function getErrorMessage(error: unknown): string {
 }
 
 function isApiError(error: unknown): error is ApiError {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    "message" in error
-  );
+  return typeof error === "object" && error !== null && "status" in error && "message" in error;
 }

@@ -1,29 +1,29 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { Upload, Music } from 'lucide-react';
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import Modal from '@/components/shared/Modal';
+import Image from "next/image";
+import { Upload, Music } from "lucide-react";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Modal from "@/components/shared/Modal";
 
 interface AddMusicModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type Mode = 'song' | 'album';
+type Mode = "song" | "album";
 
 const DEFAULT_FORM = {
-  songTitle: '',
-  albumTitle: '',
-  genre: '',
-  releaseDate: '',
-  marketPrice: '',
+  songTitle: "",
+  albumTitle: "",
+  genre: "",
+  releaseDate: "",
+  marketPrice: "",
 };
 
 export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>('song');
+  const [mode, setMode] = useState<Mode>("song");
   const [form, setForm] = useState(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -31,9 +31,10 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFieldChange = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-  };
+  const handleFieldChange =
+    (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    };
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,27 +68,27 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
 
   const handleSubmit = () => {
     const newErrors: Record<string, string> = {};
-    if (mode === 'song' && !form.songTitle.trim()) {
-      newErrors.songTitle = 'Song title is required';
+    if (mode === "song" && !form.songTitle.trim()) {
+      newErrors.songTitle = "Song title is required";
     }
-    if (mode === 'album' && !form.albumTitle.trim()) {
-      newErrors.albumTitle = 'Album title is required';
+    if (mode === "album" && !form.albumTitle.trim()) {
+      newErrors.albumTitle = "Album title is required";
     }
     if (!form.genre.trim()) {
-      newErrors.genre = 'Genre is required';
+      newErrors.genre = "Genre is required";
     }
     if (!form.releaseDate.trim()) {
-      newErrors.releaseDate = 'Release date is required';
+      newErrors.releaseDate = "Release date is required";
     } else if (!/^\d{2}-\d{2}-\d{4}$/.test(form.releaseDate.trim())) {
-      newErrors.releaseDate = 'Release date must be in DD-MM-YYYY format';
+      newErrors.releaseDate = "Release date must be in DD-MM-YYYY format";
     }
     if (!form.marketPrice.trim()) {
-      newErrors.marketPrice = 'Market price is required';
+      newErrors.marketPrice = "Market price is required";
     } else if (isNaN(Number(form.marketPrice.trim()))) {
-      newErrors.marketPrice = 'Market price must be a valid number';
+      newErrors.marketPrice = "Market price must be a valid number";
     }
-    if (mode === 'song' && !uploadedFile) {
-      newErrors.uploadedFile = 'Audio file is required';
+    if (mode === "song" && !uploadedFile) {
+      newErrors.uploadedFile = "Audio file is required";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -96,9 +97,9 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
     }
 
     setErrors({});
-    console.log('Form submitted:', { mode, form, coverImage, uploadedFile });
+    console.log("Form submitted:", { mode, form, coverImage, uploadedFile });
     onOpenChange(false);
-    
+
     // Redirect to the Song.tsx or Album.tsx flow based on selection (which are rendered inside /dashboard/upload-music)
     router.push(`/dashboard/upload-music?mode=${mode}`);
 
@@ -120,201 +121,203 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
         {/* Mode Selection */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setMode('album')}
+            onClick={() => setMode("album")}
             className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-              mode === 'album'
-                ? 'bg-[#D2045B] text-white'
-                : 'bg-transparent text-white hover:bg-white/5'
+              mode === "album"
+                ? "bg-[#D2045B] text-white"
+                : "bg-transparent text-white hover:bg-white/5"
             }`}
           >
             Add Album
           </button>
           <button
-            onClick={() => setMode('song')}
+            onClick={() => setMode("song")}
             className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-              mode === 'song'
-                ? 'bg-[#D2045B] text-white'
-                : 'bg-transparent text-white hover:bg-white/5'
+              mode === "song"
+                ? "bg-[#D2045B] text-white"
+                : "bg-transparent text-white hover:bg-white/5"
             }`}
           >
             Add Song
           </button>
         </div>
 
-            {/* Main Content - Two Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column - Form Fields */}
-              <div className="space-y-5">
-                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">
-                    Song Title <span className="text-[#D2045B]">*</span>
-                  </label>
-                  <input
-                    value={form.songTitle}
-                    onChange={handleFieldChange('songTitle')}
-                    placeholder="Add Song Title"
-                    maxLength={100}
-                    className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
-                  />
-                  {errors.songTitle && <p className="text-red-500 text-xs">{errors.songTitle}</p>}
-                  {form.songTitle.length >= 90 && (
-                    <p className={`text-xs text-right ${form.songTitle.length >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
-                      {form.songTitle.length}/100
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">
-                    Album Title <span className="text-[#D2045B]">*</span>
-                  </label>
-                  <input
-                    value={form.albumTitle}
-                    onChange={handleFieldChange('albumTitle')}
-                    placeholder="Enter Album Title"
-                    maxLength={100}
-                    className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
-                  />
-                  {errors.albumTitle && <p className="text-red-500 text-xs">{errors.albumTitle}</p>}
-                  {form.albumTitle.length >= 90 && (
-                    <p className={`text-xs text-right ${form.albumTitle.length >= 100 ? 'text-red-500' : 'text-yellow-500'}`}>
-                      {form.albumTitle.length}/100
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">
-                    Genre <span className="text-[#D2045B]">*</span>
-                  </label>
-                  <input
-                    value={form.genre}
-                    onChange={handleFieldChange('genre')}
-                    placeholder="Add Genre of song"
-                    maxLength={50}
-                    className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
-                  />
-                  {errors.genre && <p className="text-red-500 text-xs">{errors.genre}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">
-                    Song Release Date <span className="text-[#D2045B]">*</span>
-                  </label>
-                  <input
-                    value={form.releaseDate}
-                    onChange={handleFieldChange('releaseDate')}
-                    placeholder="DD-MM-YYYY"
-                    maxLength={10}
-                    className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
-                  />
-                  {errors.releaseDate && <p className="text-red-500 text-xs">{errors.releaseDate}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">
-                    Market Price <span className="text-[#D2045B]">*</span>
-                  </label>
-                  <input
-                    value={form.marketPrice}
-                    onChange={handleFieldChange('marketPrice')}
-                    placeholder="Add Price of Song"
-                    maxLength={20}
-                    className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
-                  />
-                  {errors.marketPrice && <p className="text-red-500 text-xs">{errors.marketPrice}</p>}
-                </div>
-
-                <button
-                  onClick={handleSubmit}
-                  className="w-full rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-6 py-3 transition-colors mt-6"
+        {/* Main Content - Two Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Form Fields */}
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">
+                Song Title <span className="text-[#D2045B]">*</span>
+              </label>
+              <input
+                value={form.songTitle}
+                onChange={handleFieldChange("songTitle")}
+                placeholder="Add Song Title"
+                maxLength={100}
+                className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+              />
+              {errors.songTitle && <p className="text-red-500 text-xs">{errors.songTitle}</p>}
+              {form.songTitle.length >= 90 && (
+                <p
+                  className={`text-xs text-right ${form.songTitle.length >= 100 ? "text-red-500" : "text-yellow-500"}`}
                 >
-                  Add Music
-                </button>
-              </div>
+                  {form.songTitle.length}/100
+                </p>
+              )}
+            </div>
 
-              {/* Right Column - Media Uploads */}
-              <div className="space-y-6">
-                {/* Add Music Cover Section */}
-                <div className="rounded-lg border border-[#2A2A2A] bg-[#161616] p-6">
-                  <h3 className="text-white font-semibold mb-2">Add Music Cover</h3>
-                  <p className="text-sm text-[#A3A3A3] mb-4">Make your song stand out with a striking cover image</p>
-                  
-                  {coverImage ? (
-                    <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
-                      <Image
-                        src={coverImage}
-                        alt="Music cover"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-square rounded-lg bg-[#111111] border border-[#2A2A2A] mb-4 flex items-center justify-center">
-                      <Music className="h-16 w-16 text-[#6F6F6F]" />
-                    </div>
-                  )}
-                  
-                  <input
-                    ref={coverInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverUpload}
-                    className="hidden"
-                  />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">
+                Album Title <span className="text-[#D2045B]">*</span>
+              </label>
+              <input
+                value={form.albumTitle}
+                onChange={handleFieldChange("albumTitle")}
+                placeholder="Enter Album Title"
+                maxLength={100}
+                className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+              />
+              {errors.albumTitle && <p className="text-red-500 text-xs">{errors.albumTitle}</p>}
+              {form.albumTitle.length >= 90 && (
+                <p
+                  className={`text-xs text-right ${form.albumTitle.length >= 100 ? "text-red-500" : "text-yellow-500"}`}
+                >
+                  {form.albumTitle.length}/100
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">
+                Genre <span className="text-[#D2045B]">*</span>
+              </label>
+              <input
+                value={form.genre}
+                onChange={handleFieldChange("genre")}
+                placeholder="Add Genre of song"
+                maxLength={50}
+                className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+              />
+              {errors.genre && <p className="text-red-500 text-xs">{errors.genre}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">
+                Song Release Date <span className="text-[#D2045B]">*</span>
+              </label>
+              <input
+                value={form.releaseDate}
+                onChange={handleFieldChange("releaseDate")}
+                placeholder="DD-MM-YYYY"
+                maxLength={10}
+                className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+              />
+              {errors.releaseDate && <p className="text-red-500 text-xs">{errors.releaseDate}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">
+                Market Price <span className="text-[#D2045B]">*</span>
+              </label>
+              <input
+                value={form.marketPrice}
+                onChange={handleFieldChange("marketPrice")}
+                placeholder="Add Price of Song"
+                maxLength={20}
+                className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+              />
+              {errors.marketPrice && <p className="text-red-500 text-xs">{errors.marketPrice}</p>}
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              className="w-full rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-6 py-3 transition-colors mt-6"
+            >
+              Add Music
+            </button>
+          </div>
+
+          {/* Right Column - Media Uploads */}
+          <div className="space-y-6">
+            {/* Add Music Cover Section */}
+            <div className="rounded-lg border border-[#2A2A2A] bg-[#161616] p-6">
+              <h3 className="text-white font-semibold mb-2">Add Music Cover</h3>
+              <p className="text-sm text-[#A3A3A3] mb-4">
+                Make your song stand out with a striking cover image
+              </p>
+
+              {coverImage ? (
+                <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
+                  <Image src={coverImage} alt="Music cover" fill className="object-cover" />
+                </div>
+              ) : (
+                <div className="w-full aspect-square rounded-lg bg-[#111111] border border-[#2A2A2A] mb-4 flex items-center justify-center">
+                  <Music className="h-16 w-16 text-[#6F6F6F]" />
+                </div>
+              )}
+
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCoverUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => coverInputRef.current?.click()}
+                className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors"
+              >
+                Add Cover
+              </button>
+            </div>
+
+            {/* Upload Music Section */}
+            <div className="rounded-lg border border-[#2A2A2A] bg-[#161616] p-6">
+              <h3 className="text-white font-semibold mb-4">Upload Music</h3>
+
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-8 text-center mb-4"
+              >
+                <Upload className="h-8 w-8 text-[#6F6F6F] mx-auto mb-2" />
+                <p className="text-sm text-[#A3A3A3] mb-2">
+                  Drag & drop your files here or{" "}
                   <button
-                    onClick={() => coverInputRef.current?.click()}
-                    className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-white underline hover:text-[#D2045B]"
                   >
-                    Add Cover
+                    Choose files
                   </button>
-                </div>
-
-                {/* Upload Music Section */}
-                <div className="rounded-lg border border-[#2A2A2A] bg-[#161616] p-6">
-                  <h3 className="text-white font-semibold mb-4">Upload Music</h3>
-                  
-                  <div
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-8 text-center mb-4"
-                  >
-                    <Upload className="h-8 w-8 text-[#6F6F6F] mx-auto mb-2" />
-                    <p className="text-sm text-[#A3A3A3] mb-2">
-                      Drag & drop your files here or{' '}
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="text-white underline hover:text-[#D2045B]"
-                      >
-                        Choose files
-                      </button>
-                    </p>
-                  </div>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="audio/*"
-                    onChange={handleMusicUpload}
-                    className="hidden"
-                  />
-
-                  {uploadedFile && (
-                    <div className="mb-2">
-                      <p className="text-sm text-white">Uploaded</p>
-                      <p className="text-xs text-[#A3A3A3]">{uploadedFile}</p>
-                    </div>
-                  )}
-                  
-                  {!uploadedFile && (
-                    <p className="text-xs text-[#A3A3A3]">No uploads added to the queue</p>
-                  )}
-                  {errors.uploadedFile && <p className="text-red-500 text-xs mt-2">{errors.uploadedFile}</p>}
-                </div>
+                </p>
               </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*"
+                onChange={handleMusicUpload}
+                className="hidden"
+              />
+
+              {uploadedFile && (
+                <div className="mb-2">
+                  <p className="text-sm text-white">Uploaded</p>
+                  <p className="text-xs text-[#A3A3A3]">{uploadedFile}</p>
+                </div>
+              )}
+
+              {!uploadedFile && (
+                <p className="text-xs text-[#A3A3A3]">No uploads added to the queue</p>
+              )}
+              {errors.uploadedFile && (
+                <p className="text-red-500 text-xs mt-2">{errors.uploadedFile}</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </Modal>
   );
 }
-
-export { AddMusicModal };

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
+import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 
 const ArtistFeatures = () => {
   return (
@@ -75,13 +75,17 @@ const ArtistFeatures = () => {
                   Creative Milestones
                 </h3>
               </div>
-              
+
               {/* Description */}
               <p className="font-['Inter'] font-medium text-[16px] leading-[150%] text-[#A3A3A3] mb-8">
-                Introducing the Artist Milestone System, a clear path from first upload to joining the <span className="font-bold text-white">AudioBlocks</span> Collective. Progress as an artist isn't guesswork anymore, with <span className="font-bold text-white">AudioBlocks</span>, every step you take toward growth is recorded and celebrated.
+                Introducing the Artist Milestone System, a clear path from first upload to joining
+                the <span className="font-bold text-white">AudioBlocks</span> Collective. Progress
+                as an artist isn't guesswork anymore, with{" "}
+                <span className="font-bold text-white">AudioBlocks</span>, every step you take
+                toward growth is recorded and celebrated.
               </p>
             </div>
-            
+
             {/* CTA Button */}
             <div className="mt-auto">
               <button className="bg-[#D2045B] hover:bg-[#B8043F] text-white font-bold px-6 py-3 rounded-full flex items-center gap-3 transition-all duration-200">
@@ -99,5 +103,3 @@ const ArtistFeatures = () => {
 };
 
 export default ArtistFeatures;
-
-export { ArtistFeatures };

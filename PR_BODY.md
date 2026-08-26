@@ -2,12 +2,12 @@
 
 This PR delivers four small, related improvements to the AudioBlocks dashboard shell in one focused branch:
 
-| Closes | Title | Highlights |
-|---|---|---|
-| [#172](https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/issues/172) | Add component tests for TopHeader | 12 test sections covering user info, notification badge (dot / count / 99+ cap / null-hide), theme toggle, hamburger menu, search input, and role badge. |
-| [#173](https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/issues/173) | Add role-based access control for multi-artist accounts | New `RoleProvider` + `useRole()` hook with typed `Permission` union, permission table per role, role-gated merch and profile Settings, role indicator in the user profile section (also in the top header). |
-| [#174](https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/issues/174) | Add unit tests for overviewService | Coverage for happy path, summary-stat aggregation, partial data, error states, the `enabled: false` short-circuit, and the `isLoading` state machine. |
-| [#175](https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/issues/175) | Add offline support with service worker | Hand-rolled `/sw.js` (no next-pwa, Next 16-safe), cache-first for static assets, network-first with cache fallback for navigations and same-origin GETs (including API), versioned cache invalidation on `activate`, sticky offline banner that listens to `online`/`offline` events. |
+| Closes                                                                        | Title                                                   | Highlights                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#172](https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/issues/172) | Add component tests for TopHeader                       | 12 test sections covering user info, notification badge (dot / count / 99+ cap / null-hide), theme toggle, hamburger menu, search input, and role badge.                                                                                                                              |
+| [#173](https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/issues/173) | Add role-based access control for multi-artist accounts | New `RoleProvider` + `useRole()` hook with typed `Permission` union, permission table per role, role-gated merch and profile Settings, role indicator in the user profile section (also in the top header).                                                                           |
+| [#174](https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/issues/174) | Add unit tests for overviewService                      | Coverage for happy path, summary-stat aggregation, partial data, error states, the `enabled: false` short-circuit, and the `isLoading` state machine.                                                                                                                                 |
+| [#175](https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/issues/175) | Add offline support with service worker                 | Hand-rolled `/sw.js` (no next-pwa, Next 16-safe), cache-first for static assets, network-first with cache fallback for navigations and same-origin GETs (including API), versioned cache invalidation on `activate`, sticky offline banner that listens to `online`/`offline` events. |
 
 ---
 
@@ -33,7 +33,7 @@ UI gating today:
 - **MerchesContent** – `New Merch`, `Edit`, and `Delete` buttons hidden/disabled when the role lacks the corresponding permission
 - **Type-safe lookup** – `useRole().can('content:delete')`, etc.
 
-This is client-side enforcement only. Server-side permission checks are explicitly out of scope for *this* issue and tracked separately.
+This is client-side enforcement only. Server-side permission checks are explicitly out of scope for _this_ issue and tracked separately.
 
 ### #174 overviewService unit tests
 
@@ -120,7 +120,7 @@ app/src/app/layout.tsx                                     # OfflineIndicator (g
 - [x] Search bar triggers search on input
 - [x] Notification badge shows correct count
 - [x] Theme toggle switches theme
-- [x] All tests pass locally (see *Caveats*)
+- [x] All tests pass locally (see _Caveats_)
 
 ---
 
@@ -149,3 +149,5 @@ npm run start                    # then visit /dashboard/offline (devtools "Offl
 ## Linked issues
 
 Closes #172, #173, #174, #175 (all four are addressed by this PR).
+
+Closes #302, #306, #304, #322 (all four are addressed by this PR).

@@ -7,6 +7,7 @@ This repository contains a Next.js (app directory) frontend used by AudioBlocks 
 ## Quick Start
 
 Prerequisites
+
 - Node.js 18+ (tested)
 - npm (bundled with Node.js)
 
@@ -99,6 +100,7 @@ Please include license and code-of-conduct files if you intend to accept externa
 ---
 
 If you'd like, I can also:
+
 - Run the test suite locally and report results
 - Commit and push these changes to a branch
 - Add a `CONTRIBUTING.md` or `CODE_OF_CONDUCT.md`

@@ -20,7 +20,7 @@ export interface AnalyticsData {
   summary: AnalyticsSummary;
   playTrends: PlayTrendData[];
   geographicDistribution: GeographicData[];
-  period: 'last30days' | 'last90days';
+  period: "last30days" | "last90days";
 }
 
 // Mock data for analytics dashboard
@@ -34,7 +34,7 @@ const generateMockPlayTrends = (days: number): PlayTrendData[] => {
     currentDate.setDate(currentDate.getDate() + i);
 
     trends.push({
-      date: currentDate.toISOString().split('T')[0],
+      date: currentDate.toISOString().split("T")[0],
       plays: Math.floor(Math.random() * 500) + 100,
     });
   }
@@ -43,20 +43,20 @@ const generateMockPlayTrends = (days: number): PlayTrendData[] => {
 };
 
 const mockGeographicData: GeographicData[] = [
-  { country: 'United States', region: 'North America', plays: 2500 },
-  { country: 'United Kingdom', region: 'Europe', plays: 1800 },
-  { country: 'Canada', region: 'North America', plays: 1200 },
-  { country: 'Germany', region: 'Europe', plays: 1000 },
-  { country: 'Australia', region: 'Oceania', plays: 980 },
-  { country: 'France', region: 'Europe', plays: 850 },
-  { country: 'Japan', region: 'Asia', plays: 720 },
-  { country: 'Brazil', region: 'South America', plays: 650 },
-  { country: 'Mexico', region: 'North America', plays: 580 },
-  { country: 'Netherlands', region: 'Europe', plays: 520 },
+  { country: "United States", region: "North America", plays: 2500 },
+  { country: "United Kingdom", region: "Europe", plays: 1800 },
+  { country: "Canada", region: "North America", plays: 1200 },
+  { country: "Germany", region: "Europe", plays: 1000 },
+  { country: "Australia", region: "Oceania", plays: 980 },
+  { country: "France", region: "Europe", plays: 850 },
+  { country: "Japan", region: "Asia", plays: 720 },
+  { country: "Brazil", region: "South America", plays: 650 },
+  { country: "Mexico", region: "North America", plays: 580 },
+  { country: "Netherlands", region: "Europe", plays: 520 },
 ];
 
-export function getAnalyticsData(period: 'last30days' | 'last90days'): AnalyticsData {
-  const days = period === 'last30days' ? 30 : 90;
+export function getAnalyticsData(period: "last30days" | "last90days"): AnalyticsData {
+  const days = period === "last30days" ? 30 : 90;
   const playTrends = generateMockPlayTrends(days);
   const totalPlays = playTrends.reduce((sum, trend) => sum + trend.plays, 0);
   const uniqueListeners = Math.floor(totalPlays * 0.6);

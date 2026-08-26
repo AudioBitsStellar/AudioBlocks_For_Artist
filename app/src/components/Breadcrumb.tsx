@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
-import { ReactNode } from 'react';
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { ReactNode } from "react";
 
 interface BreadcrumbItem {
   label: string;
@@ -23,7 +23,9 @@ export default function Breadcrumb({ items, action }: BreadcrumbProps) {
         <ol className="flex min-w-max items-center gap-2 text-sm">
           {items.map((item, index) => (
             <li key={`${item.label}-${index}`} className="flex shrink-0 items-center gap-2">
-              {index > 0 && <ChevronRight size={16} className="shrink-0 text-gray-400" aria-hidden="true" />}
+              {index > 0 && (
+                <ChevronRight size={16} className="shrink-0 text-gray-400" aria-hidden="true" />
+              )}
               {item.href ? (
                 <Link
                   href={item.href}
@@ -35,18 +37,18 @@ export default function Breadcrumb({ items, action }: BreadcrumbProps) {
                 <button
                   onClick={item.onClick}
                   className={`max-w-[8rem] truncate transition-colors sm:max-w-none ${
-                    item.isActive ? 'font-medium text-white' : 'text-gray-400 hover:text-white'
+                    item.isActive ? "font-medium text-white" : "text-gray-400 hover:text-white"
                   }`}
-                  aria-current={item.isActive ? 'page' : undefined}
+                  aria-current={item.isActive ? "page" : undefined}
                 >
                   {item.label}
                 </button>
               ) : (
                 <span
                   className={`max-w-[8rem] truncate sm:max-w-none ${
-                    item.isActive ? 'font-medium text-white' : 'text-gray-400'
+                    item.isActive ? "font-medium text-white" : "text-gray-400"
                   }`}
-                  aria-current={item.isActive ? 'page' : undefined}
+                  aria-current={item.isActive ? "page" : undefined}
                 >
                   {item.label}
                 </span>

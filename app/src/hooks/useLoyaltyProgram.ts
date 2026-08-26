@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from "react";
 import {
   FanLoyaltyProgram,
   LoyaltyProgramConfig,
   RewardTier,
   RewardTierConfig,
   Reward,
-} from '@/types';
+} from "@/types";
 
 // Default loyalty program configuration
 const DEFAULT_LOYALTY_CONFIG: LoyaltyProgramConfig = {
@@ -19,42 +19,42 @@ const DEFAULT_LOYALTY_CONFIG: LoyaltyProgramConfig = {
   referralBonusPoints: 50,
   tiers: [
     {
-      tier: 'bronze',
+      tier: "bronze",
       minPoints: 0,
       maxPoints: 499,
-      benefits: ['Standard rewards', 'Member discounts'],
+      benefits: ["Standard rewards", "Member discounts"],
       bonusMultiplier: 1,
-      color: '#CD7F32',
+      color: "#CD7F32",
     },
     {
-      tier: 'silver',
+      tier: "silver",
       minPoints: 500,
       maxPoints: 1499,
-      benefits: ['Exclusive content', '15% bonus points', 'Priority support'],
+      benefits: ["Exclusive content", "15% bonus points", "Priority support"],
       bonusMultiplier: 1.15,
-      color: '#C0C0C0',
+      color: "#C0C0C0",
     },
     {
-      tier: 'gold',
+      tier: "gold",
       minPoints: 1500,
       maxPoints: 4999,
-      benefits: ['VIP access', '30% bonus points', 'Early releases', 'Dedicated support'],
+      benefits: ["VIP access", "30% bonus points", "Early releases", "Dedicated support"],
       bonusMultiplier: 1.3,
-      color: '#FFD700',
+      color: "#FFD700",
     },
     {
-      tier: 'platinum',
+      tier: "platinum",
       minPoints: 5000,
       maxPoints: Infinity,
       benefits: [
-        'All-access pass',
-        '50% bonus points',
-        'Exclusive events',
-        'Personal artist connection',
-        'Premium support',
+        "All-access pass",
+        "50% bonus points",
+        "Exclusive events",
+        "Personal artist connection",
+        "Premium support",
       ],
       bonusMultiplier: 1.5,
-      color: '#E5E4E2',
+      color: "#E5E4E2",
     },
   ],
 };
@@ -88,7 +88,7 @@ export function useLoyaltyProgram(
           return tier.tier;
         }
       }
-      return 'bronze';
+      return "bronze";
     },
     [config.tiers]
   );
@@ -97,7 +97,7 @@ export function useLoyaltyProgram(
    * Get current tier info
    */
   const currentTierInfo = useMemo(() => {
-    if (!loyaltyProgram) return getTierConfig('bronze');
+    if (!loyaltyProgram) return getTierConfig("bronze");
     return getTierConfig(loyaltyProgram.currentTier);
   }, [loyaltyProgram, getTierConfig]);
 
@@ -124,7 +124,7 @@ export function useLoyaltyProgram(
    * Calculate points with bonus multiplier
    */
   const calculatePointsWithBonus = useCallback(
-    (basePoints: number, tier: RewardTier = 'bronze'): number => {
+    (basePoints: number, tier: RewardTier = "bronze"): number => {
       const tierConfig = getTierConfig(tier);
       return Math.floor(basePoints * tierConfig.bonusMultiplier);
     },
@@ -135,7 +135,10 @@ export function useLoyaltyProgram(
    * Calculate points earned from action
    */
   const calculatePointsEarned = useCallback(
-    (action: 'stream' | 'purchase' | 'share' | 'review' | 'event', tier: RewardTier = 'bronze'): number => {
+    (
+      action: "stream" | "purchase" | "share" | "review" | "event",
+      tier: RewardTier = "bronze"
+    ): number => {
       const basePoints: Record<string, number> = {
         stream: config.pointsPerStream,
         purchase: config.pointsPerPurchase,
@@ -239,7 +242,8 @@ export function useExclusiveContent(loyaltyProgram: FanLoyaltyProgram | null) {
       if (!loyaltyProgram) return [];
       const tierConfig = getTierConfig(tier);
       return loyaltyProgram.exclusiveContent.filter(
-        (content) => content.unlockRequiredPoints >= tierConfig.minPoints &&
+        (content) =>
+          content.unlockRequiredPoints >= tierConfig.minPoints &&
           content.unlockRequiredPoints < tierConfig.maxPoints
       );
     },

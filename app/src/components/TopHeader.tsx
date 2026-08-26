@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { Search, Bell, Menu, Sun, Moon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { formatDate } from '@/utils/date';
-import { useRole } from '@/hooks/useRole';
-import { ROLE_BADGE_STYLES, type Role } from '@/types/role';
+import { Search, Bell, Menu, Sun, Moon } from "lucide-react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { formatDate } from "@/utils/date";
+import { useRole } from "@/hooks/useRole";
+import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
 
 interface TopHeaderProps {
   onMenuClick: () => void;
@@ -25,46 +25,46 @@ interface TopHeaderProps {
 }
 
 function getInitialDarkMode(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
 
-  const savedTheme = window.localStorage.getItem('theme');
-  if (savedTheme === 'dark') return true;
-  if (savedTheme === 'light') return false;
+  const savedTheme = window.localStorage.getItem("theme");
+  if (savedTheme === "dark") return true;
+  if (savedTheme === "light") return false;
 
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 }
 
 function applyThemeVariables(isDark: boolean): void {
   const root = document.documentElement;
-  root.classList.toggle('dark', isDark);
-  root.dataset.theme = isDark ? 'dark' : 'light';
+  root.classList.toggle("dark", isDark);
+  root.dataset.theme = isDark ? "dark" : "light";
 
   const variables = isDark
     ? {
-        '--background': '#111111',
-        '--surface': '#171717',
-        '--surface-raised': '#222222',
-        '--border': '#3f3f46',
-        '--border-subtle': '#27272a',
-        '--text': '#f4f4f5',
-        '--text-muted': '#a1a1aa',
-        '--text-subtle': '#71717a',
-        '--text-inverted': '#ffffff',
-        '--secondary': '#27272a',
-        '--primary': '#d2045b',
+        "--background": "#111111",
+        "--surface": "#171717",
+        "--surface-raised": "#222222",
+        "--border": "#3f3f46",
+        "--border-subtle": "#27272a",
+        "--text": "#f4f4f5",
+        "--text-muted": "#a1a1aa",
+        "--text-subtle": "#71717a",
+        "--text-inverted": "#ffffff",
+        "--secondary": "#27272a",
+        "--primary": "#d2045b",
       }
     : {
-        '--background': '#ffffff',
-        '--surface': '#ffffff',
-        '--surface-raised': '#f4f4f5',
-        '--border': '#d4d4d8',
-        '--border-subtle': '#e4e4e7',
-        '--text': '#18181b',
-        '--text-muted': '#52525b',
-        '--text-subtle': '#71717a',
-        '--text-inverted': '#ffffff',
-        '--secondary': '#52525b',
-        '--primary': '#b0004b',
+        "--background": "#ffffff",
+        "--surface": "#ffffff",
+        "--surface-raised": "#f4f4f5",
+        "--border": "#d4d4d8",
+        "--border-subtle": "#e4e4e7",
+        "--text": "#18181b",
+        "--text-muted": "#52525b",
+        "--text-subtle": "#71717a",
+        "--text-inverted": "#ffffff",
+        "--secondary": "#52525b",
+        "--primary": "#b0004b",
       };
 
   Object.entries(variables).forEach(([name, value]) => {
@@ -80,15 +80,15 @@ export default function TopHeader({
   notificationCount,
 }: TopHeaderProps) {
   const { info: roleInfo, role: contextRole } = useRole();
-  const [currentDate, setCurrentDate] = useState('');
-  const [currentTime, setCurrentTime] = useState('');
+  const [currentDate, setCurrentDate] = useState("");
+  const [currentTime, setCurrentTime] = useState("");
   const [isDark, setIsDark] = useState(getInitialDarkMode);
 
   const activeRole: Role = userRole ?? contextRole ?? roleInfo.role;
 
   useEffect(() => {
     applyThemeVariables(isDark);
-    window.localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    window.localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
   const toggleTheme = () => {
@@ -98,14 +98,14 @@ export default function TopHeader({
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
-      setCurrentDate(formatDate(now, 'full'));
+      setCurrentDate(formatDate(now, "full"));
       setCurrentTime(
-        new Intl.DateTimeFormat('en-GB', {
-          hour: '2-digit',
-          minute: '2-digit',
+        new Intl.DateTimeFormat("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
           hour12: true,
-          timeZoneName: 'short',
-        }).format(now),
+          timeZoneName: "short",
+        }).format(now)
       );
     };
 
@@ -115,9 +115,9 @@ export default function TopHeader({
   }, []);
 
   const notifLabel =
-    typeof notificationCount === 'number' && notificationCount > 0
+    typeof notificationCount === "number" && notificationCount > 0
       ? `Notifications and settings (${notificationCount} new)`
-      : 'Notifications and settings';
+      : "Notifications and settings";
 
   return (
     <header className="sticky top-0 z-30 bg-[var(--surface)] flex-shrink-0 border-b border-[var(--border-subtle)]">
@@ -135,7 +135,7 @@ export default function TopHeader({
 
           <div>
             <h2 className="text-[var(--text)] text-base sm:text-lg md:text-xl font-bold leading-tight">
-              {userName ? `Welcome, ${userName}` : 'Welcome, Pete Lisk'}
+              {userName ? `Welcome, ${userName}` : "Welcome, Pete Lisk"}
             </h2>
             <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-0.5">
               {currentDate} | {currentTime}
@@ -171,9 +171,9 @@ export default function TopHeader({
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
             aria-pressed={isDark}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             className="text-[var(--text)] hover:text-[var(--text-muted)] transition-colors rounded p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
           >
             {isDark ? <Sun size={22} aria-hidden="true" /> : <Moon size={22} aria-hidden="true" />}
@@ -186,12 +186,12 @@ export default function TopHeader({
           >
             <Bell size={24} strokeWidth={2} aria-hidden="true" />
             {notificationCount !== null &&
-              (typeof notificationCount === 'number' && notificationCount > 0 ? (
+              (typeof notificationCount === "number" && notificationCount > 0 ? (
                 <span
                   data-testid="notification-count"
                   className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 bg-[var(--primary)] rounded-full border-2 border-[var(--surface)] text-[10px] font-bold text-[var(--text-inverted)] flex items-center justify-center"
                 >
-                  {notificationCount > 99 ? '99+' : notificationCount}
+                  {notificationCount > 99 ? "99+" : notificationCount}
                 </span>
               ) : (
                 <span

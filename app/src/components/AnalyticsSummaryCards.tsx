@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { AnalyticsSummary } from '@/services/analyticsService';
-import { TrendingUp, Users, Activity, Target } from 'lucide-react';
+import { AnalyticsSummary } from "@/services/analyticsService";
+import { TrendingUp, Users, Activity, Target } from "lucide-react";
 
 interface AnalyticsSummaryCardsProps {
   summary: AnalyticsSummary;
@@ -34,8 +34,9 @@ const SummaryCard = ({
       <div className="text-pink-500">{Icon}</div>
     </div>
     {trend !== undefined && (
-      <div className={`text-sm font-medium ${trendColor || 'text-green-500'}`}>
-        {trend > 0 ? '+' : ''}{trend}% from last period
+      <div className={`text-sm font-medium ${trendColor || "text-green-500"}`}>
+        {trend > 0 ? "+" : ""}
+        {trend}% from last period
       </div>
     )}
   </div>

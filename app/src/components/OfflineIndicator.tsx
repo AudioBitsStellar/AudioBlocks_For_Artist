@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { WifiOff } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { WifiOff } from "lucide-react";
 
 /**
  * Renders a compact banner whenever the browser is offline so users know
@@ -10,23 +10,23 @@ import { WifiOff } from 'lucide-react';
  */
 export default function OfflineIndicator() {
   const [online, setOnline] = useState<boolean>(
-    typeof navigator === 'undefined' ? true : navigator.onLine,
+    typeof navigator === "undefined" ? true : navigator.onLine
   );
 
   useEffect(() => {
     const handleOnline = () => setOnline(true);
     const handleOffline = () => setOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     const onVisibility = () => setOnline(navigator.onLine);
-    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 

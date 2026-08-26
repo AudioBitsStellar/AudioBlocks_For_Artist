@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import * as Dialog from '@radix-ui/react-dialog';
-import { X, Search, Check } from 'lucide-react';
-import { useState, useEffect, memo } from 'react';
-import { useRouter } from 'next/navigation';
+import * as Dialog from "@radix-ui/react-dialog";
+import { X, Search, Check } from "lucide-react";
+import { useState, useEffect, memo } from "react";
+import { useRouter } from "next/navigation";
 
 interface ClaimArtistNameModalProps {
   open: boolean;
@@ -12,7 +12,7 @@ interface ClaimArtistNameModalProps {
 
 const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalProps) => {
   const [step, setStep] = useState(1);
-  const [artistName, setArtistName] = useState('');
+  const [artistName, setArtistName] = useState("");
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [connectedServices, setConnectedServices] = useState({
@@ -23,7 +23,6 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
   });
   const router = useRouter();
 
-
   // Check username availability with debounce
   useEffect(() => {
     if (artistName.length > 0) {
@@ -33,7 +32,7 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
         setIsAvailable(true); // For demo, always available
         setIsChecking(false);
       }, 500);
-      
+
       return () => clearTimeout(timeoutId);
     } else {
       setIsAvailable(null);
@@ -56,7 +55,7 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
       onOpenChange(false);
       // Reset modal state
       setStep(1);
-      setArtistName('');
+      setArtistName("");
       setIsAvailable(null);
       setConnectedServices({
         twitter: false,
@@ -65,11 +64,11 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
         wallet: false,
       });
       // Redirect to dashboard after completion
-      router.push('/dashboard/overview');
+      router.push("/dashboard/overview");
     }, 2000);
   };
 
-  const handleConnect = (service: 'twitter' | 'facebook' | 'distrokid' | 'wallet') => {
+  const handleConnect = (service: "twitter" | "facebook" | "distrokid" | "wallet") => {
     // UI only - just toggle the connection state
     setConnectedServices((prev) => ({ ...prev, [service]: !prev[service] }));
   };
@@ -78,7 +77,7 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
     onOpenChange(false);
     // Reset state when closing
     setStep(1);
-    setArtistName('');
+    setArtistName("");
     setIsAvailable(null);
     setIsChecking(false);
     setConnectedServices({
@@ -97,11 +96,11 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange} modal={true}>
       <Dialog.Portal>
-        <Dialog.Overlay 
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm" 
+        <Dialog.Overlay
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm"
           style={{ zIndex: 99999 }}
         />
-        <Dialog.Content 
+        <Dialog.Content
           className="fixed top-1/2 left-1/2 w-[90%] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#0F0F0F] border border-[#2E2E2E] p-8 shadow-xl focus:outline-none text-white"
           style={{ zIndex: 100000 }}
           onEscapeKeyDown={() => {
@@ -228,56 +227,56 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
                 <div className="flex items-center justify-between p-4 rounded-lg bg-[#1E1E1E] border border-[#2E2E2E]">
                   <span className="text-white">X (Twitter)</span>
                   <button
-                    onClick={() => handleConnect('twitter')}
+                    onClick={() => handleConnect("twitter")}
                     className={`px-4 py-2 rounded-lg text-sm ${
                       connectedServices.twitter
-                        ? 'bg-green-600 text-white'
-                        : 'bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]'
+                        ? "bg-green-600 text-white"
+                        : "bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]"
                     }`}
                   >
-                    {connectedServices.twitter ? 'Connected' : 'Connect'}
+                    {connectedServices.twitter ? "Connected" : "Connect"}
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-[#1E1E1E] border border-[#2E2E2E]">
                   <span className="text-white">Facebook</span>
                   <button
-                    onClick={() => handleConnect('facebook')}
+                    onClick={() => handleConnect("facebook")}
                     className={`px-4 py-2 rounded-lg text-sm ${
                       connectedServices.facebook
-                        ? 'bg-green-600 text-white'
-                        : 'bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]'
+                        ? "bg-green-600 text-white"
+                        : "bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]"
                     }`}
                   >
-                    {connectedServices.facebook ? 'Connected' : 'Connect'}
+                    {connectedServices.facebook ? "Connected" : "Connect"}
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-[#1E1E1E] border border-[#2E2E2E]">
                   <span className="text-white">Distrokid</span>
                   <button
-                    onClick={() => handleConnect('distrokid')}
+                    onClick={() => handleConnect("distrokid")}
                     className={`px-4 py-2 rounded-lg text-sm ${
                       connectedServices.distrokid
-                        ? 'bg-green-600 text-white'
-                        : 'bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]'
+                        ? "bg-green-600 text-white"
+                        : "bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]"
                     }`}
                   >
-                    {connectedServices.distrokid ? 'Connected' : 'Connect'}
+                    {connectedServices.distrokid ? "Connected" : "Connect"}
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-[#1E1E1E] border border-[#2E2E2E]">
                   <span className="text-white">Wallet Address</span>
                   <button
-                    onClick={() => handleConnect('wallet')}
+                    onClick={() => handleConnect("wallet")}
                     className={`px-4 py-2 rounded-lg text-sm ${
                       connectedServices.wallet
-                        ? 'bg-green-600 text-white'
-                        : 'bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]'
+                        ? "bg-green-600 text-white"
+                        : "bg-[#2E2E2E] text-white hover:bg-[#3E3E3E]"
                     }`}
                   >
-                    {connectedServices.wallet ? 'Connected' : 'Connect'}
+                    {connectedServices.wallet ? "Connected" : "Connect"}
                   </button>
                 </div>
               </div>
@@ -319,8 +318,6 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
   );
 });
 
-ClaimArtistNameModal.displayName = 'ClaimArtistNameModal';
+ClaimArtistNameModal.displayName = "ClaimArtistNameModal";
 
 export default ClaimArtistNameModal;
-
-export { ClaimArtistNameModal };
