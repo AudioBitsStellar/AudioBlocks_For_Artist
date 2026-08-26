@@ -96,3 +96,5 @@ export default function Modal({
     </Dialog.Root>
   );
 }
+
+export { Modal };

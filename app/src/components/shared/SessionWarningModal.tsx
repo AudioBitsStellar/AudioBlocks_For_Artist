@@ -78,3 +78,5 @@ export default function SessionWarningModal({
     </div>
   );
 }
+
+export { SessionWarningModal };

@@ -61,3 +61,5 @@ export default function Breadcrumb({ items, action }: BreadcrumbProps) {
     </div>
   );
 }
+
+export { Breadcrumb };

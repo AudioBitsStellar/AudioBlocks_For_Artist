@@ -74,3 +74,5 @@ export default function AnalyticsSummaryCards({ summary }: AnalyticsSummaryCards
     </div>
   );
 }
+
+export { AnalyticsSummaryCards };

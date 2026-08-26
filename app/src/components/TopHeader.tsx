@@ -222,3 +222,5 @@ export default function TopHeader({
     </header>
   );
 }
+
+export { TopHeader };

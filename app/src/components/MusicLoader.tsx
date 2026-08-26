@@ -11,3 +11,5 @@ export default function MusicLoader({ small = false }) {
     </div>
   );
 }
+
+export { MusicLoader };

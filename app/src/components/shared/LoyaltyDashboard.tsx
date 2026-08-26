@@ -92,3 +92,5 @@ export default function LoyaltyDashboard({
     </div>
   );
 }
+
+export { LoyaltyDashboard };

@@ -34,3 +34,5 @@ export default function PathBreadcrumb() {
 
   return <Breadcrumb items={items} />;
 }
+
+export { PathBreadcrumb };

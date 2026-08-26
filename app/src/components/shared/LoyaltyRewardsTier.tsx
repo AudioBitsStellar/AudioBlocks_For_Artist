@@ -90,3 +90,5 @@ export default function LoyaltyRewardsTier({ loyaltyProgram, config }: LoyaltyRe
     </div>
   );
 }
+
+export { LoyaltyRewardsTier };

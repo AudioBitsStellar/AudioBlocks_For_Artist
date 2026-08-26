@@ -234,3 +234,5 @@ export default function SetupArtistOnChainProfile() {
     </div>
   );
 }
+
+export { SetupArtistOnChainProfile };

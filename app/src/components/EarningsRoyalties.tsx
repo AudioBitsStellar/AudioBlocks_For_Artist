@@ -387,3 +387,5 @@ export default function EarningsRoyalties() {
     </div>
   );
 }
+
+export { EarningsRoyalties };

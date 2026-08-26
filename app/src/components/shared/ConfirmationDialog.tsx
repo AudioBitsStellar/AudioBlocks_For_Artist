@@ -110,3 +110,5 @@ export default function ConfirmationDialog({
     </div>
   );
 }
+
+export { ConfirmationDialog };

@@ -131,3 +131,5 @@ export default function LoyaltyExclusiveContent({
     </div>
   );
 }
+
+export { LoyaltyExclusiveContent };

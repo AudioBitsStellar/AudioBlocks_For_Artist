@@ -138,3 +138,5 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
 FileUpload.displayName = "FileUpload";
 
 export default FileUpload;
+
+export { FileUpload };

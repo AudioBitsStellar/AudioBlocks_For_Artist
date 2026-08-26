@@ -555,3 +555,5 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
     </div>
   );
 }
+
+export { MyMusicContent };

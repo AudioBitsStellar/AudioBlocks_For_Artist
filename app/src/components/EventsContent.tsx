@@ -343,3 +343,5 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
     </div>
   );
 }
+
+export { EventsContent };
