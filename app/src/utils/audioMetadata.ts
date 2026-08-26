@@ -35,3 +35,21 @@ export function formatDuration(seconds: number): string {
   const secs = Math.round(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
+
+/**
+ * Calculates the linear gain multiplier needed to normalize an audio
+ * buffer's peak amplitude to a target level (default -1 dBFS), without
+ * clipping. Returns 1 (no-op) for silent or already-normalized audio.
+ */
+export function calculatePeakGain(buffer: AudioBuffer, targetPeak = 0.891): number {
+  let peak = 0;
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const data = buffer.getChannelData(channel);
+    for (let i = 0; i < data.length; i++) {
+      const abs = Math.abs(data[i]);
+      if (abs > peak) peak = abs;
+    }
+  }
+  if (peak === 0) return 1;
+  return Math.min(targetPeak / peak, 1);
+}
