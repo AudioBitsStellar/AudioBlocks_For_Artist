@@ -19,6 +19,16 @@ export interface PlaybackState {
   seekPosition: number;
   playlist: Track[];
   error: string | null;
+  /** Crossfade enabled toggle. */
+  crossfadeEnabled: boolean;
+  /** Crossfade duration in seconds (0 = instant switch). */
+  crossfadeDuration: number;
+  /** Whether a crossfade transition is currently in progress. */
+  isCrossfading: boolean;
+  /** Fade-out volume for outgoing track during crossfade (0-1). */
+  fadeOutVolume: number;
+  /** Fade-in volume for incoming track during crossfade (0-1). */
+  fadeInVolume: number;
 }
 
 export type PlaybackAction =
@@ -31,7 +41,12 @@ export type PlaybackAction =
   | { type: "NEXT_TRACK" }
   | { type: "PREV_TRACK" }
   | { type: "SET_ERROR"; error: string }
-  | { type: "CLEAR_ERROR" };
+  | { type: "CLEAR_ERROR" }
+  | { type: "SET_CROSSFADE_ENABLED"; enabled: boolean }
+  | { type: "SET_CROSSFADE_DURATION"; duration: number }
+  | { type: "START_CROSSFADE" }
+  | { type: "UPDATE_CROSSFADE"; fadeOutVolume: number; fadeInVolume: number }
+  | { type: "END_CROSSFADE"; track: Track };
 
 export const initialPlaybackState: PlaybackState = {
   currentTrack: null,
@@ -41,6 +56,11 @@ export const initialPlaybackState: PlaybackState = {
   playlist: [],
   queue: [],
   error: null,
+  crossfadeEnabled: false,
+  crossfadeDuration: 3,
+  isCrossfading: false,
+  fadeOutVolume: 1,
+  fadeInVolume: 0,
 };
 
 export function playbackReducer(state: PlaybackState, action: PlaybackAction): PlaybackState {
@@ -86,6 +106,37 @@ export function playbackReducer(state: PlaybackState, action: PlaybackAction): P
 
     case "CLEAR_ERROR":
       return { ...state, error: null };
+
+    case "SET_CROSSFADE_ENABLED":
+      return { ...state, crossfadeEnabled: action.enabled };
+
+    case "SET_CROSSFADE_DURATION":
+      return { ...state, crossfadeDuration: Math.max(0, Math.min(12, action.duration)) };
+
+    case "START_CROSSFADE":
+      return {
+        ...state,
+        isCrossfading: true,
+        fadeOutVolume: 1,
+        fadeInVolume: 0,
+      };
+
+    case "UPDATE_CROSSFADE":
+      return {
+        ...state,
+        fadeOutVolume: Math.max(0, Math.min(1, action.fadeOutVolume)),
+        fadeInVolume: Math.max(0, Math.min(1, action.fadeInVolume)),
+      };
+
+    case "END_CROSSFADE":
+      return {
+        ...state,
+        currentTrack: action.track,
+        isCrossfading: false,
+        fadeOutVolume: 1,
+        fadeInVolume: 0,
+        seekPosition: 0,
+      };
 
     default:
       return state;
