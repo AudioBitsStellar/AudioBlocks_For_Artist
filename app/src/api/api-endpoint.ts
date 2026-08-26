@@ -57,4 +57,14 @@ export const EVENTS_ENDPOINTS = {
   CREATE: "/artist/events",
   UPDATE: (id: string | number) => `/artist/events/${id}`,
   DELETE: (id: string | number) => `/artist/events/${id}`,
+  CHECK_IN: (id: string | number) => `/artist/events/${id}/check-in`,
+  TICKETS: (id: string | number) => `/artist/events/${id}/tickets`,
+  VALIDATE_TICKET: (id: string | number) => `/artist/events/${id}/validate`,
+};
+
+export const MERCH_INVENTORY_ENDPOINTS = {
+  LIST: "/artist/merches/inventory",
+  UPDATE_STOCK: (id: number) => `/artist/merches/${id}/stock`,
+  ORDERS: "/artist/merches/orders",
+  ORDER_STATUS: (orderId: number) => `/artist/merches/orders/${orderId}`,
 };
