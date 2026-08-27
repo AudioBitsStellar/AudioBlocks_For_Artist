@@ -8,7 +8,7 @@ function truncate(address: string) {
 }
 
 export default function ConnectStellarWalletButton() {
-  const { address, isConnecting, connect, restore } = useStellarWallet();
+  const { address, isConnecting, connect, restore, disconnect } = useStellarWallet();
 
   useEffect(() => {
     restore();
@@ -19,6 +19,13 @@ export default function ConnectStellarWalletButton() {
       <div className="flex items-center gap-2 rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-2 text-sm text-white">
         <span className="h-2 w-2 rounded-full bg-green-500" />
         Stellar wallet connected: {truncate(address)}
+        <button
+          onClick={disconnect}
+          aria-label="Disconnect Stellar wallet"
+          className="ml-1 text-xs text-white/60 underline hover:text-white transition-colors"
+        >
+          Disconnect
+        </button>
       </div>
     );
   }
