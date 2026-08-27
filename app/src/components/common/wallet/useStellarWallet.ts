@@ -42,6 +42,22 @@ export function useStellarWallet() {
     }
   }, [connectWalletMutation, handleSuccess, handleError]);
 
+  /**
+   * Clears this app's active wallet session.
+   *
+   * Freighter's extension API has no page-level "revoke" call — the
+   * browser extension itself is what remembers this origin is authorized,
+   * and only the user can revoke that from within the extension. This
+   * matches the disconnect UX of other browser-wallet dApps (e.g.
+   * MetaMask): "disconnect" ends the app's session so the UI reverts to
+   * "Connect" and `signAndSubmit` requires reconnecting, without pretending
+   * to revoke the extension-side grant it has no API to touch (#296).
+   */
+  const disconnect = useCallback(() => {
+    setAddress(null);
+    handleSuccess("Stellar wallet disconnected.");
+  }, [handleSuccess]);
+
   const signAndSubmit = useCallback(
     async (
       prepared: { xdr: string; networkPassphrase: string },
@@ -54,5 +70,5 @@ export function useStellarWallet() {
     [address]
   );
 
-  return { address, isConnecting, connect, restore, signAndSubmit };
+  return { address, isConnecting, connect, restore, disconnect, signAndSubmit };
 }
