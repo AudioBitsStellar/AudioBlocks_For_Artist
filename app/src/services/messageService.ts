@@ -1,3 +1,5 @@
+export type ConversationType = "fan" | "artist";
+
 export interface Message {
   id: number;
   senderId: string;
@@ -9,9 +11,10 @@ export interface Message {
 
 export interface Conversation {
   id: number;
-  fanId: string;
-  fanName: string;
-  fanAvatar?: string;
+  type: ConversationType;
+  participantId: string;
+  participantName: string;
+  participantAvatar?: string;
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: number;
@@ -23,11 +26,12 @@ export interface SendMessagePayload {
   content: string;
 }
 
-const MOCK_CONVERSATIONS: Conversation[] = [
+const MOCK_FAN_CONVERSATIONS: Conversation[] = [
   {
     id: 1,
-    fanId: "fan_001",
-    fanName: "Tomothy Nguyen",
+    type: "fan",
+    participantId: "fan_001",
+    participantName: "Tomothy Nguyen",
     lastMessage: "Love your latest track! When is the next album dropping?",
     lastMessageAt: "2025-07-20T18:30:00Z",
     unreadCount: 2,
@@ -52,8 +56,9 @@ const MOCK_CONVERSATIONS: Conversation[] = [
   },
   {
     id: 2,
-    fanId: "fan_002",
-    fanName: "Evan Howard",
+    type: "fan",
+    participantId: "fan_002",
+    participantName: "Evan Howard",
     lastMessage: "Thanks for the shoutout at the concert!",
     lastMessageAt: "2025-07-19T14:15:00Z",
     unreadCount: 0,
@@ -86,8 +91,9 @@ const MOCK_CONVERSATIONS: Conversation[] = [
   },
   {
     id: 3,
-    fanId: "fan_003",
-    fanName: "Victoria Robertson",
+    type: "fan",
+    participantId: "fan_003",
+    participantName: "Victoria Robertson",
     lastMessage: "Will you be touring near Lagos?",
     lastMessageAt: "2025-07-18T09:45:00Z",
     unreadCount: 1,
@@ -104,16 +110,110 @@ const MOCK_CONVERSATIONS: Conversation[] = [
   },
 ];
 
-export function getConversations(): Conversation[] {
-  return MOCK_CONVERSATIONS;
+const MOCK_ARTIST_CONVERSATIONS: Conversation[] = [
+  {
+    id: 101,
+    type: "artist",
+    participantId: "artist_001",
+    participantName: "Jaden Cole",
+    lastMessage: "I've got a verse ready whenever you want to link up on the collab.",
+    lastMessageAt: "2025-07-21T16:20:00Z",
+    unreadCount: 1,
+    messages: [
+      {
+        id: 101,
+        senderId: "artist_001",
+        senderName: "Jaden Cole",
+        content: "Hey! Loved the new single. Any interest in a collab?",
+        timestamp: "2025-07-21T15:50:00Z",
+        isFromArtist: false,
+      },
+      {
+        id: 102,
+        senderId: "artist",
+        senderName: "You",
+        content: "Definitely, I've been wanting to work with you for a while.",
+        timestamp: "2025-07-21T16:05:00Z",
+        isFromArtist: true,
+      },
+      {
+        id: 103,
+        senderId: "artist_001",
+        senderName: "Jaden Cole",
+        content: "I've got a verse ready whenever you want to link up on the collab.",
+        timestamp: "2025-07-21T16:20:00Z",
+        isFromArtist: false,
+      },
+    ],
+  },
+  {
+    id: 102,
+    type: "artist",
+    participantId: "artist_002",
+    participantName: "Mara Voss",
+    lastMessage: "Sent over the stems for the remix, let me know what you think.",
+    lastMessageAt: "2025-07-20T11:05:00Z",
+    unreadCount: 0,
+    messages: [
+      {
+        id: 104,
+        senderId: "artist_002",
+        senderName: "Mara Voss",
+        content: "Would you be open to featuring on my next EP?",
+        timestamp: "2025-07-20T10:40:00Z",
+        isFromArtist: false,
+      },
+      {
+        id: 105,
+        senderId: "artist",
+        senderName: "You",
+        content: "For sure, send over what you've got and I'll take a listen.",
+        timestamp: "2025-07-20T10:55:00Z",
+        isFromArtist: true,
+      },
+      {
+        id: 106,
+        senderId: "artist_002",
+        senderName: "Mara Voss",
+        content: "Sent over the stems for the remix, let me know what you think.",
+        timestamp: "2025-07-20T11:05:00Z",
+        isFromArtist: false,
+      },
+    ],
+  },
+  {
+    id: 103,
+    type: "artist",
+    participantId: "artist_003",
+    participantName: "Dexter Alaba",
+    lastMessage: "Are you playing the Lagos showcase next month?",
+    lastMessageAt: "2025-07-17T08:30:00Z",
+    unreadCount: 1,
+    messages: [
+      {
+        id: 107,
+        senderId: "artist_003",
+        senderName: "Dexter Alaba",
+        content: "Are you playing the Lagos showcase next month?",
+        timestamp: "2025-07-17T08:30:00Z",
+        isFromArtist: false,
+      },
+    ],
+  },
+];
+
+const ALL_CONVERSATIONS: Conversation[] = [...MOCK_FAN_CONVERSATIONS, ...MOCK_ARTIST_CONVERSATIONS];
+
+export function getConversations(type: ConversationType): Conversation[] {
+  return ALL_CONVERSATIONS.filter((c) => c.type === type);
 }
 
 export function getConversation(id: number): Conversation | undefined {
-  return MOCK_CONVERSATIONS.find((c) => c.id === id);
+  return ALL_CONVERSATIONS.find((c) => c.id === id);
 }
 
 export function getTotalUnreadCount(): number {
-  return MOCK_CONVERSATIONS.reduce((sum, c) => sum + c.unreadCount, 0);
+  return ALL_CONVERSATIONS.reduce((sum, c) => sum + c.unreadCount, 0);
 }
 
 export function sendMessage(payload: SendMessagePayload): Message {
@@ -125,7 +225,7 @@ export function sendMessage(payload: SendMessagePayload): Message {
     timestamp: new Date().toISOString(),
     isFromArtist: true,
   };
-  const conversation = MOCK_CONVERSATIONS.find((c) => c.id === payload.conversationId);
+  const conversation = ALL_CONVERSATIONS.find((c) => c.id === payload.conversationId);
   if (conversation) {
     conversation.messages.push(newMessage);
     conversation.lastMessage = payload.content;

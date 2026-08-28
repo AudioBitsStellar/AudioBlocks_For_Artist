@@ -9,23 +9,26 @@ import {
   formatMessageTime,
   formatConversationDate,
   type Conversation,
+  type ConversationType,
 } from "@/services/messageService";
 
 function ConversationList({
   conversations,
   selectedId,
   onSelect,
+  emptyMessage,
 }: {
   conversations: Conversation[];
   selectedId: number | null;
   onSelect: (c: Conversation) => void;
+  emptyMessage: string;
 }) {
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
         <MessageSquare className="h-10 w-10 text-[#A3A3A3] mb-3" />
         <p className="text-white font-semibold">No messages yet</p>
-        <p className="text-[#A3A3A3] text-sm mt-1">Fan messages will appear here.</p>
+        <p className="text-[#A3A3A3] text-sm mt-1">{emptyMessage}</p>
       </div>
     );
   }
@@ -45,7 +48,9 @@ function ConversationList({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-white text-sm font-semibold truncate">{c.fanName}</span>
+                <span className="text-white text-sm font-semibold truncate">
+                  {c.participantName}
+                </span>
                 <span className="text-[#A3A3A3] text-xs flex-shrink-0 ml-2">
                   {formatConversationDate(c.lastMessageAt)}
                 </span>
@@ -101,7 +106,7 @@ function MessageThread({ conversation }: { conversation: Conversation }) {
         <div className="h-9 w-9 rounded-full bg-[#2A2A2A] flex items-center justify-center">
           <User className="h-4 w-4 text-[#A3A3A3]" />
         </div>
-        <span className="text-white font-semibold">{conversation.fanName}</span>
+        <span className="text-white font-semibold">{conversation.participantName}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
@@ -154,11 +159,23 @@ function MessageThread({ conversation }: { conversation: Conversation }) {
   );
 }
 
+const TABS: { type: ConversationType; label: string }[] = [
+  { type: "fan", label: "Fans" },
+  { type: "artist", label: "Artists" },
+];
+
 export default function MessagesPage() {
-  const conversations = getConversations();
+  const [tab, setTab] = useState<ConversationType>("fan");
+  const conversations = getConversations(tab);
   const [selected, setSelected] = useState<Conversation | null>(
     conversations.length > 0 ? conversations[0] : null
   );
+
+  const handleTabChange = (type: ConversationType) => {
+    setTab(type);
+    const nextConversations = getConversations(type);
+    setSelected(nextConversations.length > 0 ? nextConversations[0] : null);
+  };
 
   return (
     <div className="space-y-6">
@@ -169,12 +186,33 @@ export default function MessagesPage() {
         <h1 className="text-3xl font-bold text-white">Messages</h1>
       </div>
 
+      <div className="flex items-center gap-2 border-b border-[#2A2A2A]" role="tablist">
+        {TABS.map(({ type, label }) => (
+          <button
+            key={type}
+            onClick={() => handleTabChange(type)}
+            role="tab"
+            aria-selected={tab === type}
+            className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${
+              tab === type
+                ? "bg-[#D2045B] text-white"
+                : "bg-transparent text-gray-400 hover:text-white"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex h-[600px] overflow-hidden rounded-2xl border border-[#1F1F1F] bg-[#111111]">
         <div className="w-72 flex-shrink-0 border-r border-[#1F1F1F] overflow-y-auto">
           <ConversationList
             conversations={conversations}
             selectedId={selected?.id ?? null}
             onSelect={setSelected}
+            emptyMessage={
+              tab === "fan" ? "Fan messages will appear here." : "Artist messages will appear here."
+            }
           />
         </div>
 
@@ -186,7 +224,7 @@ export default function MessagesPage() {
               <MessageSquare className="h-12 w-12 text-[#A3A3A3] mb-3" />
               <p className="text-white font-semibold">Select a conversation</p>
               <p className="text-[#A3A3A3] text-sm mt-1">
-                Choose a fan from the list to read their messages.
+                Choose a {tab === "fan" ? "fan" : "artist"} from the list to read their messages.
               </p>
             </div>
           )}
