@@ -10,6 +10,7 @@ import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { useState, useEffect } from "react";
 import { Loader2, Check, AlertCircle } from "lucide-react";
 import { ApiEnvelope, SubmitSongMintResponse } from "@/types/api";
+import { useEstimatedFee } from "@/hooks/useEstimatedFee";
 
 interface MintSongButtonProps {
   songId: string;
@@ -33,13 +34,13 @@ interface MintTransactionDetails {
 }
 
 const COOLDOWN_DURATION = 5;
-const GAS_COST_ESTIMATE = "~0.001 XLM";
 
 export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonProps) {
   const { address } = useStellarWallet();
   const { usePrepareSongMint, useSubmitSongMint } = useOnchainServices();
   const prepareMutation = usePrepareSongMint(songId);
   const submitMutation = useSubmitSongMint(songId);
+  const { estimate: gasEstimate } = useEstimatedFee();
 
   const [status, setStatus] = useState<MintStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -153,7 +154,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
           <span className="text-xs text-blue-400 font-medium">Preparing transaction...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
+        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
       </div>
     );
   }
@@ -169,7 +170,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           <Loader2 className="h-4 w-4 animate-spin text-yellow-500" />
           <span className="text-xs text-yellow-400 font-medium">Awaiting wallet signature...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
+        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
       </div>
     );
   }
@@ -185,7 +186,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
           <span className="text-xs text-purple-400 font-medium">Broadcasting to network...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
+        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
       </div>
     );
   }
@@ -304,7 +305,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
       >
         Mint on-chain
       </button>
-      <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
+      <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
     </div>
   );
 }

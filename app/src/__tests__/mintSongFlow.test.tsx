@@ -47,6 +47,10 @@ vi.mock("@/hooks/useToastHandler", () => ({
   useHandleError: () => vi.fn(),
 }));
 
+vi.mock("@/hooks/useEstimatedFee", () => ({
+  useEstimatedFee: () => ({ estimate: "~0.0000500 XLM", isLoading: false }),
+}));
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const MOCK_ADDRESS = "GTEST_ADDRESS_MOCK_1234";
