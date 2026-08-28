@@ -8,6 +8,7 @@ import { analytics } from "@/lib/analytics";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { toast } from "sonner";
 import { ApiEnvelope, SubmitArtistSetupResponse } from "@/types/api";
+import { useEstimatedFee } from "@/hooks/useEstimatedFee";
 
 type SetupStatus =
   | "idle"
@@ -21,7 +22,6 @@ type SetupStatus =
   | "failed";
 
 const COOLDOWN_DURATION = 5;
-const GAS_COST_ESTIMATE = "~0.001 XLM";
 
 export default function SetupArtistOnChainProfile() {
   const [cid, setCid] = useState("");
@@ -29,6 +29,7 @@ export default function SetupArtistOnChainProfile() {
   const { usePrepareArtistSetup, useSubmitArtistSetup } = useOnchainServices();
   const prepareMutation = usePrepareArtistSetup();
   const submitMutation = useSubmitArtistSetup();
+  const { estimate: gasEstimate } = useEstimatedFee();
 
   const [status, setStatus] = useState<SetupStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -228,7 +229,7 @@ export default function SetupArtistOnChainProfile() {
             {status === "submitting" && "Setting up Profile..."}
             {status === "idle" && "Set up on-chain profile"}
           </button>
-          <p className="text-[10px] text-gray-500">Est. gas: {GAS_COST_ESTIMATE}</p>
+          <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
         </div>
       )}
     </div>

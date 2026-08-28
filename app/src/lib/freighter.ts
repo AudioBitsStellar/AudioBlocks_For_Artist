@@ -31,6 +31,26 @@ export async function getFreighterAddress(): Promise<string | null> {
   return address;
 }
 
+export interface FreighterNetworkDetails {
+  network: string;
+  networkPassphrase: string;
+}
+
+/**
+ * Returns the network Freighter itself is currently connected to (set inside
+ * the extension, independent of this app's testnet/mainnet switcher — see
+ * `src/lib/stellarNetwork.ts` and #282). Returns `null` if Freighter isn't
+ * installed/authorized or the lookup fails, so callers can treat "unknown"
+ * and "not connected" the same way.
+ */
+export async function getFreighterNetworkDetails(): Promise<FreighterNetworkDetails | null> {
+  if (!(await isFreighterAvailable())) return null;
+
+  const { network, networkPassphrase, error } = await freighterApi.getNetworkDetails();
+  if (error || !networkPassphrase) return null;
+  return { network, networkPassphrase };
+}
+
 /**
  * Signs a Soroban transaction XDR built by the backend (see
  * ArtistService.prepareArtistOnChainSetup / SongService.prepareSongMintTx).

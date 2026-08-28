@@ -45,6 +45,12 @@ vi.mock("@/components/common/wallet/MintSongButton", () => ({
   ),
 }));
 
+vi.mock("@/components/common/wallet/TransferSongButton", () => ({
+  default: ({ songId }: { songId: string }) => (
+    <button data-testid="transfer-song-btn">Transfer Song {songId}</button>
+  ),
+}));
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;

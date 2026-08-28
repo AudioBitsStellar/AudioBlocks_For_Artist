@@ -1,23 +1,30 @@
 "use client";
 
+/**
+ * TransferSongButton — transfers a minted song's on-chain token to another
+ * Stellar address (#291). Mints already exist (`MintSongButton.tsx`); this
+ * drives the equivalent prepare → sign → submit flow for `transfer_song`
+ * (see `services/onchainService.ts` and
+ * docs/adr/0002-soroban-prepare-sign-submit-split.md), gated on the song
+ * already having a `tokenId` — i.e. already minted.
+ */
+
 import { useStellarWallet } from "./useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
-import { isRetryableError } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
+import { useEstimatedFee } from "@/hooks/useEstimatedFee";
 import { useState, useEffect } from "react";
 import { Loader2, Check, AlertCircle } from "lucide-react";
-import { ApiEnvelope, SubmitSongMintResponse } from "@/types/api";
-import { useEstimatedFee } from "@/hooks/useEstimatedFee";
+import { ApiEnvelope, SubmitSongTransferResponse } from "@/types/api";
 
-interface MintSongButtonProps {
+interface TransferSongButtonProps {
   songId: string;
-  albumId?: number;
 }
 
-type MintStatus =
+type TransferStatus =
   | "idle"
   | "not_installed"
   | "preparing"
@@ -28,25 +35,26 @@ type MintStatus =
   | "timeout"
   | "failed";
 
-interface MintTransactionDetails {
-  txHash?: string;
-  tokenId?: string;
-}
-
 const COOLDOWN_DURATION = 5;
+const STELLAR_ADDRESS_RE = /^G[A-Z2-7]{55}$/;
 
-export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonProps) {
+export default function TransferSongButton({ songId }: TransferSongButtonProps) {
   const { address } = useStellarWallet();
-  const { usePrepareSongMint, useSubmitSongMint } = useOnchainServices();
-  const prepareMutation = usePrepareSongMint(songId);
-  const submitMutation = useSubmitSongMint(songId);
+  const { usePrepareSongTransfer, useSubmitSongTransfer } = useOnchainServices();
+  const prepareMutation = usePrepareSongTransfer(songId);
+  const submitMutation = useSubmitSongTransfer(songId);
   const { estimate: gasEstimate } = useEstimatedFee();
 
-  const [status, setStatus] = useState<MintStatus>("idle");
+  const [toAddress, setToAddress] = useState("");
+  const [status, setStatus] = useState<TransferStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [txDetails, setTxDetails] = useState<MintTransactionDetails>({});
+  const [txHash, setTxHash] = useState("");
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
+
+  const trimmedAddress = toAddress.trim();
+  const isValidAddress = STELLAR_ADDRESS_RE.test(trimmedAddress);
+  const isSelfTransfer = isValidAddress && trimmedAddress === address;
 
   const isBusy =
     prepareMutation.isPending ||
@@ -56,21 +64,29 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   useEffect(() => {
     if (!cooldownActive) return;
-    if (cooldownRemaining <= 0) {
-      setCooldownActive(false);
-      setStatus("idle");
-      setTxDetails({});
-      setErrorMsg("");
-      return;
-    }
+
+    // Ticks itself via a self-rescheduling timeout (rather than depending on
+    // `cooldownRemaining` and resetting state synchronously in the effect
+    // body) so every state update here happens inside a callback, not
+    // directly in the effect's synchronous execution.
     const timer = setTimeout(() => {
-      setCooldownRemaining((prev) => prev - 1);
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          setCooldownActive(false);
+          setStatus("idle");
+          setTxHash("");
+          setErrorMsg("");
+          setToAddress("");
+          return COOLDOWN_DURATION;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearTimeout(timer);
   }, [cooldownActive, cooldownRemaining]);
 
-  const handleMint = async () => {
-    if (!address) return;
+  const handleTransfer = async () => {
+    if (!address || !isValidAddress || isSelfTransfer) return;
 
     const available = await isFreighterAvailable();
     if (!available) {
@@ -80,11 +96,10 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
     setStatus("preparing");
     setErrorMsg("");
-    setTxDetails({});
     analytics.mintStarted({ songId, walletAddress: address });
 
     try {
-      const prepared = await prepareMutation.mutateAsync({ albumId });
+      const prepared = await prepareMutation.mutateAsync({ toAddress: trimmedAddress });
 
       setStatus("awaiting_signature");
       let signedXdr: string;
@@ -108,23 +123,21 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
       }
 
       setStatus("submitting");
-      const result: ApiEnvelope<SubmitSongMintResponse> = await submitMutation.mutateAsync({
+      const result: ApiEnvelope<SubmitSongTransferResponse> = await submitMutation.mutateAsync({
         signedXdr,
       });
 
+      const hash = result?.data?.txHash ?? "";
+      setTxHash(hash);
       setStatus("success");
-      setTxDetails({
-        txHash: result?.data?.txHash ?? "",
-        tokenId: result?.data?.tokenId ?? "",
-      });
       setCooldownActive(true);
       setCooldownRemaining(COOLDOWN_DURATION);
       analytics.mintSucceeded({
         songId,
-        txHash: result?.data?.txHash ?? "",
-        tokenId: result?.data?.tokenId ?? "",
+        txHash: hash,
+        tokenId: result?.data?.toAddress ?? "",
       });
-      toast.success("Minting succeeded!");
+      toast.success("Song transferred!");
     } catch (err: unknown) {
       const error = err as Error;
       const reason = error?.message ?? "unknown";
@@ -152,7 +165,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           aria-live="polite"
         >
           <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-          <span className="text-xs text-blue-400 font-medium">Preparing transaction...</span>
+          <span className="text-xs text-blue-400 font-medium">Preparing transfer...</span>
         </div>
         <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
       </div>
@@ -199,7 +212,7 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           href="https://www.freighter.app"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-center rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
+          className="text-center rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs w-fit"
         >
           Install Freighter
         </a>
@@ -219,8 +232,8 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           <p className="text-xs text-red-500 font-medium">Signature rejected by user.</p>
         </div>
         <button
-          onClick={handleMint}
-          className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
+          onClick={handleTransfer}
+          className="w-fit rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
           Retry Signing
         </button>
@@ -240,8 +253,8 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           <p className="text-xs text-red-500 font-medium">Request timed out or network error.</p>
         </div>
         <button
-          onClick={handleMint}
-          className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
+          onClick={handleTransfer}
+          className="w-fit rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
           Retry Submission
         </button>
@@ -258,13 +271,13 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
       >
         <div className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-red-500" />
-          <p className="text-xs text-red-500 font-medium">Mint failed: {errorMsg}</p>
+          <p className="text-xs text-red-500 font-medium">Transfer failed: {errorMsg}</p>
         </div>
         <button
-          onClick={handleMint}
-          className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
+          onClick={handleTransfer}
+          className="w-fit rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
-          Retry Minting
+          Retry Transfer
         </button>
       </div>
     );
@@ -279,17 +292,14 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
       >
         <div className="flex items-center gap-2">
           <Check className="h-4 w-4 text-green-500" />
-          <p className="text-xs text-green-400 font-medium">Minted successfully!</p>
+          <p className="text-xs text-green-400 font-medium">Transferred successfully!</p>
         </div>
-        {txDetails.txHash && (
-          <p className="text-[10px] text-gray-400 font-mono truncate">Tx: {txDetails.txHash}</p>
-        )}
-        {txDetails.tokenId && (
-          <p className="text-[10px] text-gray-400">Token ID: {txDetails.tokenId}</p>
+        {txHash && (
+          <p className="text-[10px] text-gray-400 font-mono truncate">Tx: {txHash}</p>
         )}
         {cooldownActive && (
           <p className="text-[10px] text-gray-400">
-            Cooldown: {cooldownRemaining}s — new mint available shortly
+            Cooldown: {cooldownRemaining}s — new transfer available shortly
           </p>
         )}
       </div>
@@ -298,14 +308,39 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
   return (
     <div className="flex flex-col gap-1">
+      <label htmlFor={`transfer-to-${songId}`} className="sr-only">
+        Recipient Stellar address
+      </label>
+      <input
+        id={`transfer-to-${songId}`}
+        value={toAddress}
+        onChange={(e) => setToAddress(e.target.value)}
+        placeholder="Recipient G... address"
+        aria-invalid={toAddress.length > 0 && !isValidAddress ? "true" : "false"}
+        aria-describedby={`transfer-to-${songId}-error`}
+        className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-10 rounded-lg text-sm"
+        style={{ background: "#FFFFFF0A", border: "1px solid #2A2A2A" }}
+      />
+      {toAddress.length > 0 && !isValidAddress && (
+        <p id={`transfer-to-${songId}-error`} className="text-[10px] text-red-500" role="alert">
+          Enter a valid Stellar address (starts with G, 56 characters).
+        </p>
+      )}
+      {isSelfTransfer && (
+        <p id={`transfer-to-${songId}-error`} className="text-[10px] text-red-500" role="alert">
+          You can&apos;t transfer a song to your own wallet.
+        </p>
+      )}
       <button
-        onClick={handleMint}
-        disabled={isBusy}
-        className={`${isBusy ? "opacity-70 cursor-not-allowed" : ""} rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
+        onClick={handleTransfer}
+        disabled={isBusy || !isValidAddress || isSelfTransfer}
+        className={`${isBusy || !isValidAddress || isSelfTransfer ? "opacity-70 cursor-not-allowed" : ""} w-fit rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
       >
-        Mint on-chain
+        Transfer song
       </button>
       <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
     </div>
   );
 }
+
+export { TransferSongButton };
