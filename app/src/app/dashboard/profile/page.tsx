@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Breadcrumb from "@/components/Breadcrumb";
 import Image from "next/image";
@@ -20,6 +20,13 @@ import { useRole } from "@/hooks/useRole";
 import { ROLE_BADGE_STYLES, getSettingsRestrictionReason } from "@/types/role";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { encodeHtmlEntities } from "@/utils/textEncoder";
+import VerifiedBadge from "@/components/common/VerifiedBadge";
+import VerificationApplicationModal from "@/components/common/modals/VerificationApplicationModal";
+import {
+  getVerificationStatus,
+  approveVerification,
+  type VerificationStatus,
+} from "@/services/verificationService";
 
 const ImageCropper = dynamic(() => import("@/components/ImageCropper"));
 
@@ -82,6 +89,16 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("unverified");
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+
+  useEffect(() => {
+    setVerificationStatus(getVerificationStatus());
+  }, []);
+
+  const handleSimulateApproval = () => {
+    setVerificationStatus(approveVerification());
+  };
   const [notifications, setNotifications] = useState({
     commentsOnSongs: false,
     salesAndRoyalties: true,
@@ -168,6 +185,54 @@ export default function ProfilePage() {
           </span>
         )}
       </div>
+
+      {/* Verification – issue #313 */}
+      <div
+        data-testid="profile-verification"
+        className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#2A2A2A] bg-[#161616] px-4 py-3"
+      >
+        <div className="flex items-center gap-3">
+          {verificationStatus === "verified" && <VerifiedBadge />}
+          <p className="text-xs text-[#A3A3A3]">
+            {verificationStatus === "verified" && (
+              <span className="text-white font-medium">Your artist profile is verified.</span>
+            )}
+            {verificationStatus === "pending" && (
+              <span className="text-white font-medium">
+                Verification application under review.
+              </span>
+            )}
+            {verificationStatus === "unverified" && (
+              <>
+                <span className="text-white font-medium">Not verified.</span> Apply to get a
+                verified badge on your profile.
+              </>
+            )}
+          </p>
+        </div>
+        {verificationStatus === "unverified" && (
+          <button
+            onClick={() => setIsVerificationModalOpen(true)}
+            className="rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white text-sm font-semibold px-4 py-2 transition-colors"
+          >
+            Apply for Verification
+          </button>
+        )}
+        {verificationStatus === "pending" && process.env.NODE_ENV !== "production" && (
+          <button
+            onClick={handleSimulateApproval}
+            className="rounded-lg border border-[#2A2A2A] text-white text-xs font-semibold px-3 py-1.5 hover:bg-[#1E1E1E] transition-colors"
+          >
+            Simulate approval (dev)
+          </button>
+        )}
+      </div>
+
+      <VerificationApplicationModal
+        open={isVerificationModalOpen}
+        onOpenChange={setIsVerificationModalOpen}
+        onSubmitted={() => setVerificationStatus("pending")}
+      />
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-[#2A2A2A]" role="tablist">
