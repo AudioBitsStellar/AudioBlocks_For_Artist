@@ -1,10 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { Upload, Music } from "lucide-react";
-import { useState, useRef } from "react";
+import { Upload, Music, Clock, CheckCircle2 } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import Modal from "@/components/shared/Modal";
+import {
+  formatScheduledAt,
+  getScheduledReleases,
+  publishDueReleases,
+  scheduleRelease,
+  type ScheduledRelease,
+} from "@/services/scheduledReleaseService";
 
 interface AddMusicModalProps {
   open: boolean;
@@ -12,6 +20,7 @@ interface AddMusicModalProps {
 }
 
 type Mode = "song" | "album";
+type PublishMode = "now" | "schedule";
 
 const DEFAULT_FORM = {
   songTitle: "",
@@ -21,15 +30,60 @@ const DEFAULT_FORM = {
   marketPrice: "",
 };
 
+function ScheduledReleasesList({ releases }: { releases: ScheduledRelease[] }) {
+  if (releases.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-[#2A2A2A] bg-[#161616] p-6">
+      <h3 className="text-white font-semibold mb-4">Scheduled Releases</h3>
+      <ul className="space-y-3">
+        {releases.map((release) => (
+          <li
+            key={release.id}
+            className="flex items-center justify-between gap-3 rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-3"
+          >
+            <div>
+              <p className="text-sm text-white font-medium">{release.title}</p>
+              <p className="text-xs text-[#A3A3A3]">{formatScheduledAt(release.scheduledAt)}</p>
+            </div>
+            {release.status === "published" ? (
+              <span className="flex items-center gap-1.5 text-xs text-green-400">
+                <CheckCircle2 className="h-4 w-4" /> Published
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs text-[#A3A3A3]">
+                <Clock className="h-4 w-4" /> Scheduled
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("song");
+  const [publishMode, setPublishMode] = useState<PublishMode>("now");
   const [form, setForm] = useState(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [scheduledReleases, setScheduledReleases] = useState<ScheduledRelease[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const sync = () => {
+      publishDueReleases();
+      setScheduledReleases([...getScheduledReleases()]);
+    };
+    sync();
+    const intervalId = setInterval(sync, 5000);
+    return () => clearInterval(intervalId);
+  }, [open]);
 
   const handleFieldChange =
     (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,10 +131,18 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
     if (!form.genre.trim()) {
       newErrors.genre = "Genre is required";
     }
-    if (!form.releaseDate.trim()) {
-      newErrors.releaseDate = "Release date is required";
-    } else if (!/^\d{2}-\d{2}-\d{4}$/.test(form.releaseDate.trim())) {
-      newErrors.releaseDate = "Release date must be in DD-MM-YYYY format";
+    if (publishMode === "now") {
+      if (!form.releaseDate.trim()) {
+        newErrors.releaseDate = "Release date is required";
+      } else if (!/^\d{2}-\d{2}-\d{4}$/.test(form.releaseDate.trim())) {
+        newErrors.releaseDate = "Release date must be in DD-MM-YYYY format";
+      }
+    } else {
+      if (!form.releaseDate.trim()) {
+        newErrors.releaseDate = "Scheduled date & time is required";
+      } else if (new Date(form.releaseDate).getTime() <= Date.now()) {
+        newErrors.releaseDate = "Scheduled date & time must be in the future";
+      }
     }
     if (!form.marketPrice.trim()) {
       newErrors.marketPrice = "Market price is required";
@@ -97,6 +159,25 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
     }
 
     setErrors({});
+
+    if (publishMode === "schedule") {
+      const scheduledAt = new Date(form.releaseDate).toISOString();
+      scheduleRelease({
+        title: mode === "song" ? form.songTitle.trim() : form.albumTitle.trim(),
+        mode,
+        genre: form.genre.trim(),
+        scheduledAt,
+      });
+      setScheduledReleases([...getScheduledReleases()]);
+      toast.success(`Release scheduled for ${formatScheduledAt(scheduledAt)}`);
+      onOpenChange(false);
+      setForm(DEFAULT_FORM);
+      setPublishMode("now");
+      setCoverImage(null);
+      setUploadedFile(null);
+      return;
+    }
+
     console.log("Form submitted:", { mode, form, coverImage, uploadedFile });
     onOpenChange(false);
 
@@ -203,16 +284,62 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium text-white">Publish</label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPublishMode("now");
+                    setForm((prev) => ({ ...prev, releaseDate: "" }));
+                    setErrors((prev) => ({ ...prev, releaseDate: "" }));
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    publishMode === "now"
+                      ? "bg-[#D2045B] text-white"
+                      : "bg-transparent text-white border border-[#2A2A2A] hover:bg-white/5"
+                  }`}
+                >
+                  Publish Now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPublishMode("schedule");
+                    setForm((prev) => ({ ...prev, releaseDate: "" }));
+                    setErrors((prev) => ({ ...prev, releaseDate: "" }));
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    publishMode === "schedule"
+                      ? "bg-[#D2045B] text-white"
+                      : "bg-transparent text-white border border-[#2A2A2A] hover:bg-white/5"
+                  }`}
+                >
+                  Schedule for Later
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-white">
-                Song Release Date <span className="text-[#D2045B]">*</span>
+                {publishMode === "now" ? "Song Release Date" : "Scheduled Publish Date & Time"}{" "}
+                <span className="text-[#D2045B]">*</span>
               </label>
-              <input
-                value={form.releaseDate}
-                onChange={handleFieldChange("releaseDate")}
-                placeholder="DD-MM-YYYY"
-                maxLength={10}
-                className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
-              />
+              {publishMode === "now" ? (
+                <input
+                  value={form.releaseDate}
+                  onChange={handleFieldChange("releaseDate")}
+                  placeholder="DD-MM-YYYY"
+                  maxLength={10}
+                  className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                />
+              ) : (
+                <input
+                  type="datetime-local"
+                  value={form.releaseDate}
+                  onChange={handleFieldChange("releaseDate")}
+                  className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                />
+              )}
               {errors.releaseDate && <p className="text-red-500 text-xs">{errors.releaseDate}</p>}
             </div>
 
@@ -234,7 +361,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
               onClick={handleSubmit}
               className="w-full rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-6 py-3 transition-colors mt-6"
             >
-              Add Music
+              {publishMode === "schedule" ? "Schedule Release" : "Add Music"}
             </button>
           </div>
 
@@ -317,6 +444,8 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
             </div>
           </div>
         </div>
+
+        <ScheduledReleasesList releases={scheduledReleases} />
       </div>
     </Modal>
   );
