@@ -2,19 +2,16 @@
  * Minimal Horizon REST client for read-only account queries (#283, #284).
  *
  * Horizon is a public, unauthenticated API — these calls go straight from
- * the browser to `NEXT_PUBLIC_STELLAR_RPC_URL`, no backend round-trip
- * needed, matching how the rest of the wallet UI already treats Freighter
+ * the browser to the active network's Horizon URL (testnet or mainnet, see
+ * `src/lib/stellarNetwork.ts` and #282), no backend round-trip needed,
+ * matching how the rest of the wallet UI already treats Freighter
  * (client-only, see `useStellarWallet.ts`).
  */
 
+import { getActiveNetwork, getActiveNetworkId } from "./stellarNetwork";
+
 function horizonBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_STELLAR_RPC_URL;
-  if (!url) {
-    throw new Error(
-      "NEXT_PUBLIC_STELLAR_RPC_URL is not set — required for on-chain wallet features.",
-    );
-  }
-  return url.replace(/\/+$/, "");
+  return getActiveNetwork().horizonUrl.replace(/\/+$/, "");
 }
 
 export interface HorizonBalance {
@@ -43,6 +40,19 @@ export interface HorizonTransaction {
 interface HorizonTransactionsPage {
   _embedded: { records: HorizonTransaction[] };
 }
+
+/** Per-operation fee percentiles, in stroops, as returned by Horizon's `/fee_stats`. */
+export interface HorizonFeeStats {
+  fee_charged: {
+    min: string;
+    mode: string;
+    p50: string;
+    p95: string;
+    max: string;
+  };
+}
+
+const STROOPS_PER_XLM = 10_000_000;
 
 /** Fetches an account's balances. Returns `null` if the account doesn't exist on-chain yet (unfunded). */
 export async function fetchAccountBalances(address: string): Promise<HorizonBalance[] | null> {
@@ -81,7 +91,31 @@ export async function fetchAccountTransactions(
 
 /** Builds a stellar.expert explorer link for a transaction hash, network-aware. */
 export function explorerTxUrl(hash: string): string {
-  const passphrase = process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE ?? "";
-  const network = passphrase.includes("Test") ? "testnet" : "public";
+  const network = getActiveNetworkId() === "testnet" ? "testnet" : "public";
   return `https://stellar.expert/explorer/${network}/tx/${hash}`;
+}
+
+/** Fetches Horizon's live network-wide fee percentiles (in stroops per operation). */
+export async function fetchFeeStats(): Promise<HorizonFeeStats> {
+  const res = await fetch(`${horizonBaseUrl()}/fee_stats`);
+  if (!res.ok) {
+    throw new Error(`Horizon returned ${res.status} fetching fee stats`);
+  }
+  return (await res.json()) as HorizonFeeStats;
+}
+
+/**
+ * Estimates the network fee for a transaction with `operationCount`
+ * operations, in XLM, using Horizon's live `/fee_stats` (the median
+ * fee actually charged per operation) instead of a hardcoded guess (#289).
+ */
+export async function estimateOperationFeeXlm(operationCount = 1): Promise<string> {
+  const stats = await fetchFeeStats();
+  const perOperationStroops = Number(stats.fee_charged.p50);
+  if (!Number.isFinite(perOperationStroops) || perOperationStroops <= 0) {
+    throw new Error("Horizon returned an invalid fee estimate");
+  }
+  const totalXlm = (perOperationStroops * operationCount) / STROOPS_PER_XLM;
+  const formatted = totalXlm.toFixed(7).replace(/0+$/, "").replace(/\.$/, "");
+  return `~${formatted} XLM`;
 }

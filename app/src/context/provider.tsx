@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useEffect, useState } from "react";
+import { StellarNetworkProvider } from "./StellarNetworkContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,7 +81,11 @@ const Provider = ({ children }: { children: ReactNode }) => {
     window.localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <StellarNetworkProvider>{children}</StellarNetworkProvider>
+    </QueryClientProvider>
+  );
 };
 
 export { applyTheme, getInitialTheme };
