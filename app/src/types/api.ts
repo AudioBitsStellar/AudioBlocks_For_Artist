@@ -346,6 +346,20 @@ export interface SubmitSongMintResponse {
   tokenId: string;
 }
 
+export interface PrepareSongTransferRequest {
+  toAddress: string;
+}
+
+export interface SubmitSongTransferRequest {
+  signedXdr: string;
+}
+
+export interface SubmitSongTransferResponse {
+  txHash: string;
+  songId: string;
+  toAddress: string;
+}
+
 // ── Notification preferences ──────────────────────────────────────────────────
 
 export type NotificationEventKey = "newFan" | "earnings" | "eventReminder";
