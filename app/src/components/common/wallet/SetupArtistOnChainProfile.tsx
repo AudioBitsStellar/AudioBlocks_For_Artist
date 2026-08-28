@@ -8,6 +8,7 @@ import { analytics } from "@/lib/analytics";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { toast } from "sonner";
 import { ApiEnvelope, SubmitArtistSetupResponse } from "@/types/api";
+import { explorerTxUrl } from "@/lib/horizon";
 
 type SetupStatus =
   | "idle"
@@ -193,7 +194,7 @@ export default function SetupArtistOnChainProfile() {
           </p>
           {txHash && (
             <a
-              href={`https://stellar.expert/explorer/public/tx/${txHash}`}
+              href={explorerTxUrl(txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-green-400 underline hover:text-green-300 w-fit"
