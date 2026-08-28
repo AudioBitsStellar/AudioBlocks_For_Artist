@@ -25,6 +25,8 @@ export const ARTIST_ONCHAIN_ENDPOINTS = {
 export const SONG_ONCHAIN_ENDPOINTS = {
   prepareMint: (songId: string) => `/song/${songId}/onchain/prepare-mint`,
   submitMint: (songId: string) => `/song/${songId}/onchain/submit-mint`,
+  prepareTransfer: (songId: string) => `/song/${songId}/onchain/prepare-transfer`,
+  submitTransfer: (songId: string) => `/song/${songId}/onchain/submit-transfer`,
 };
 
 export const MERCH_ENDPOINTS = {

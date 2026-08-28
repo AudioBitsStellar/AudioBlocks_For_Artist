@@ -13,6 +13,7 @@ import MusicLoader from "../MusicLoader";
 import { useToast } from "@/hooks/useToastHandler";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import MintSongButton from "@/components/common/wallet/MintSongButton";
+import TransferSongButton from "@/components/common/wallet/TransferSongButton";
 import { analytics } from "@/lib/analytics";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { sanitize } from "@/utils/sanitize";
@@ -742,11 +743,19 @@ const Song = () => {
           )}
 
           {mintableSongId && (
-            <div className="mt-3 bg-[#1a1a1a] rounded-lg p-3 flex items-center justify-between gap-2">
-              <p className="text-xs text-[#A3A3A3]">
-                Song uploaded. Once it&apos;s finished processing, mint it on-chain:
-              </p>
-              <MintSongButton songId={mintableSongId} />
+            <div className="mt-3 space-y-3">
+              <div className="bg-[#1a1a1a] rounded-lg p-3 flex items-center justify-between gap-2">
+                <p className="text-xs text-[#A3A3A3]">
+                  Song uploaded. Once it&apos;s finished processing, mint it on-chain:
+                </p>
+                <MintSongButton songId={mintableSongId} />
+              </div>
+              <div className="bg-[#1a1a1a] rounded-lg p-3 space-y-2">
+                <p className="text-xs text-[#A3A3A3]">
+                  Already minted? Transfer this song&apos;s token to another wallet:
+                </p>
+                <TransferSongButton songId={mintableSongId} />
+              </div>
             </div>
           )}
         </div>

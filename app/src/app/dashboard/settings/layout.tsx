@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, User } from "lucide-react";
+import { Bell, Globe, User } from "lucide-react";
 
 const settingsNav = [
   { name: "Profile", icon: User, href: "/dashboard/profile" },
   { name: "Notifications", icon: Bell, href: "/dashboard/settings/notifications" },
+  { name: "Network", icon: Globe, href: "/dashboard/settings/network" },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

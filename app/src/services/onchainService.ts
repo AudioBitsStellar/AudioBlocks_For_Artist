@@ -101,6 +101,34 @@ interface SubmitSongMintResponse {
   tokenId: string;
 }
 
+/**
+ * POST /song/:songId/onchain/prepare-transfer
+ * Builds the `transfer_song` Soroban invocation XDR.
+ *
+ * Contract: `catalog` — method `transfer_song(song_id: String, to: Address)`
+ * `toAddress` must be the recipient's Stellar `G...` account address.
+ */
+interface PrepareSongTransferRequest {
+  toAddress: string;
+}
+
+/**
+ * POST /song/:songId/onchain/submit-transfer
+ * Relays the signed XDR to the Stellar network.
+ *
+ * Returns the on-chain transaction hash and the recipient the token was
+ * transferred to.
+ */
+interface SubmitSongTransferRequest {
+  signedXdr: string;
+}
+
+interface SubmitSongTransferResponse {
+  txHash: string;
+  songId: string;
+  toAddress: string;
+}
+
 // ── Service hook ──────────────────────────────────────────────────────────────
 
 const useOnchainServices = () => {
@@ -184,12 +212,45 @@ const useOnchainServices = () => {
       }
     );
 
+  /**
+   * Builds the `transfer_song` Soroban transaction XDR for the artist to sign with Freighter.
+   *
+   * @param songId - The id of the song to transfer.
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with a `PrepareSongTransferRequest` (the recipient address); resolves to a `PreparedTransaction`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
+  const usePrepareSongTransfer = (songId: string) =>
+    usePost<ApiEnvelope<PreparedTransaction>, PrepareSongTransferRequest>(
+      SONG_ONCHAIN_ENDPOINTS.prepareTransfer(songId),
+      {
+        onError: (error) => handleError(error.message || "Failed to prepare song transfer."),
+      }
+    );
+
+  /**
+   * Relays the Freighter-signed `transfer_song` XDR to the Stellar network.
+   *
+   * @param songId - The id of the song being transferred.
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with a `SubmitSongTransferRequest` (the signed XDR); resolves to `{ txHash, songId, toAddress }`.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
+  const useSubmitSongTransfer = (songId: string) =>
+    usePost<ApiEnvelope<SubmitSongTransferResponse>, SubmitSongTransferRequest>(
+      SONG_ONCHAIN_ENDPOINTS.submitTransfer(songId),
+      {
+        onSuccess: () => handleSuccess("Song transferred on-chain!"),
+        onError: (error) => handleError(error.message || "Failed to submit song transfer."),
+      }
+    );
+
   return {
     useConnectWallet,
     usePrepareArtistSetup,
     useSubmitArtistSetup,
     usePrepareSongMint,
     useSubmitSongMint,
+    usePrepareSongTransfer,
+    useSubmitSongTransfer,
   };
 };
 
