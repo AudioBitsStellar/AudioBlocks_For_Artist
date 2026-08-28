@@ -282,7 +282,14 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           <p className="text-xs text-green-400 font-medium">Minted successfully!</p>
         </div>
         {txDetails.txHash && (
-          <p className="text-[10px] text-gray-400 font-mono truncate">Tx: {txDetails.txHash}</p>
+          <a
+            href={explorerTxUrl(txDetails.txHash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-gray-400 font-mono truncate underline hover:text-gray-300 w-fit"
+          >
+            Tx: {txDetails.txHash}
+          </a>
         )}
         {txDetails.tokenId && (
           <p className="text-[10px] text-gray-400">Token ID: {txDetails.tokenId}</p>
