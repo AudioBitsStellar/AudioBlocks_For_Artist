@@ -20,6 +20,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import ConfirmationDialog from "./shared/ConfirmationDialog";
 import EmptyState from "./shared/EmptyState";
+import useAlbumServices from "@/services/albumService";
+import { featureFlags } from "@/lib/featureFlags";
 
 const SONG_ORDER_STORAGE_KEY = "my-music-track-order";
 
@@ -216,7 +218,6 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const [songs, setSongs] = useState<Song[]>(initialSongs);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
   const [draggedSongId, setDraggedSongId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [reorderMessage, setReorderMessage] = useState("");
@@ -228,10 +229,23 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
     songId: null,
   });
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, []);
+  const { useGetAlbums } = useAlbumServices();
+  const { data: albumsData, isLoading: isAlbumsLoading } = useGetAlbums(!featureFlags.useMockAlbums);
+
+  const isLoading = featureFlags.useMockAlbums ? false : isAlbumsLoading;
+
+  const displayAlbums = useMemo(() => {
+    if (!featureFlags.useMockAlbums && albumsData?.data && albumsData.data.length > 0) {
+      return albumsData.data.map((album, index) => ({
+        id: typeof album.id === "number" ? album.id : index + 1,
+        title: album.title,
+        artist: album.artistName || album.artist || "Artist",
+        type: album.type || "Album",
+        image: album.coverArtUrl || albums[index % albums.length].image,
+      }));
+    }
+    return albums;
+  }, [albumsData]);
 
   useEffect(() => {
     try {
@@ -335,7 +349,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
           <AlbumSkeletonRow />
         ) : (
           <div ref={scrollContainerRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
-            {albums.map((album) => (
+            {displayAlbums.map((album) => (
               <button
                 type="button"
                 key={album.id}

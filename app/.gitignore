@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# mimo
+.mimo
+.mimo/
+*.mimo
+mimo
+

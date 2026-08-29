@@ -1,0 +1,25 @@
+# dependencies
+/node_modules
+app/node_modules
+/.pnp
+.pnp.*
+
+# testing & build
+/coverage
+app/coverage
+/.next/
+app/.next/
+/out/
+/build
+
+# env & debug
+.env*
+*.log*
+*.tsbuildinfo
+.DS_Store
+
+# Mimo
+.mimo
+.mimo/
+*.mimo
+mimo
