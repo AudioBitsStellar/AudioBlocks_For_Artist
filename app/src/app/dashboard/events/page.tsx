@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Breadcrumb from "@/components/Breadcrumb";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import dynamic from "next/dynamic";
 
 const EventsContent = dynamic(() => import("@/components/EventsContent"));
@@ -13,7 +14,9 @@ export default function EventsPage() {
   return (
     <>
       <Breadcrumb items={[{ label: "Events", isActive: true }]} />
-      <EventsContent onNewEvent={() => setIsNewEventOpen(true)} />
+      <ErrorBoundary fallbackTitle="Failed to load Events section">
+        <EventsContent onNewEvent={() => setIsNewEventOpen(true)} />
+      </ErrorBoundary>
 
       <NewEventModal open={isNewEventOpen} onOpenChange={setIsNewEventOpen} />
     </>
