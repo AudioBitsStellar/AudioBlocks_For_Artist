@@ -4,6 +4,9 @@ A single source of truth for all color values used in the AudioBlocks artist
 dashboard. Hardcoded hex values in component files are replaced by semantic
 tokens that switch automatically when the user toggles light/dark mode.
 
+> **Comprehensive Reference**: For detailed token specifications, architecture, 
+> and maintenance guidelines, see [`docs/theme-tokens.md`](../../../docs/theme-tokens.md).
+
 ## How it works
 
 The tokens are defined in two places that must stay in sync:
