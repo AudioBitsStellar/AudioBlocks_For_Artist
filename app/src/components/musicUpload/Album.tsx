@@ -14,7 +14,6 @@ import {
   Upload,
   Music,
   Trash2,
-  RotateCw,
   Plus,
 } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
@@ -25,28 +24,27 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { albumFormSchema } from "@/types/formValidation";
 import { MUSIC_GENRES } from "../shared/music_genre";
 import { useAutoSave } from "@/hooks/useAutoSave";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/useToastHandler";
+import useAlbumServices from "@/services/albumService";
 
 const Album = () => {
+  const toast = useToast();
   const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<{
-    name: string;
-    size: string;
-    status: "uploading" | "success" | "failed";
-  } | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [albumMusicFiles, setAlbumMusicFiles] = useState<
     Array<{
       id: number;
       name: string;
       size: string;
-      progress: number;
-      timeLeft: number;
-      status: "uploading" | "success" | "failed";
+      file: File | null;
     }>
   >([]);
   const albumFileInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const coverInputRef = useRef<HTMLInputElement>(null);
   const nextFileId = useRef(1);
+
+  const { useCreateAlbum } = useAlbumServices();
+  const createAlbum = useCreateAlbum();
 
   const {
     register,
@@ -63,7 +61,7 @@ const Album = () => {
   const { restore, clearSavedData } = useAutoSave(
     "upload-album",
     watchedValues as Record<string, unknown>,
-    isSubmitting
+    isSubmitting || createAlbum.isPending
   );
 
   useEffect(() => {
@@ -74,9 +72,12 @@ const Album = () => {
     }
   }, []);
 
+  const isBusy = isSubmitting || createAlbum.isPending;
+
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setCoverFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setCoverImage(reader.result as string);
@@ -91,54 +92,6 @@ const Album = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + " mb";
   };
 
-  const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const fileSize = formatFileSize(file.size);
-      setUploadedFile({ name: file.name, size: fileSize, status: "uploading" });
-
-      // Simulate upload process
-      setTimeout(() => {
-        // Randomly set to success or failed for demo
-        const success = Math.random() > 0.3;
-        setUploadedFile({
-          name: file.name,
-          size: fileSize,
-          status: success ? "success" : "failed",
-        });
-      }, 2000);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      const fileSize = formatFileSize(file.size);
-      setUploadedFile({ name: file.name, size: fileSize, status: "uploading" });
-
-      // Simulate upload process
-      setTimeout(() => {
-        const success = Math.random() > 0.3;
-        setUploadedFile({
-          name: file.name,
-          size: fileSize,
-          status: success ? "success" : "failed",
-        });
-      }, 2000);
-    }
-  };
-
-  const handleRetry = () => {
-    if (uploadedFile) {
-      setUploadedFile({ ...uploadedFile, status: "uploading" });
-      setTimeout(() => {
-        const success = Math.random() > 0.3;
-        setUploadedFile({ ...uploadedFile, status: success ? "success" : "failed" });
-      }, 2000);
-    }
-  };
-
   const handleAddAnotherMusic = () => {
     const newId = nextFileId.current++;
     setAlbumMusicFiles([
@@ -147,82 +100,57 @@ const Album = () => {
         id: newId,
         name: "",
         size: "",
-        progress: 0,
-        timeLeft: 0,
-        status: "uploading",
+        file: null,
       },
     ]);
   };
 
   const handleAlbumFileUpload = (id: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const fileSize = formatFileSize(file.size);
-      setAlbumMusicFiles((prev) => {
-        const existing = prev.find((f) => f.id === id);
-        if (existing) {
-          return prev.map((f) =>
-            f.id === id
-              ? {
-                  ...f,
-                  name: file.name,
-                  size: fileSize,
-                  progress: 0,
-                  timeLeft: 15,
-                  status: "uploading",
-                }
-              : f
-          );
-        } else {
-          return [
-            ...prev,
-            { id, name: file.name, size: fileSize, progress: 0, timeLeft: 15, status: "uploading" },
-          ];
-        }
-      });
+    if (!file) return;
 
-      // Simulate upload progress
-      let progress = 0;
-      let timeLeft = 15;
-      const interval = setInterval(() => {
-        progress += Math.random() * 15;
-        timeLeft = Math.max(0, timeLeft - 1);
-
-        if (progress >= 100) {
-          progress = 100;
-          timeLeft = 0;
-          clearInterval(interval);
-          setAlbumMusicFiles((prev) =>
-            prev.map((f) =>
-              f.id === id ? { ...f, progress: 100, timeLeft: 0, status: "success" } : f
-            )
-          );
-        } else {
-          setAlbumMusicFiles((prev) =>
-            prev.map((f) =>
-              f.id === id ? { ...f, progress: Math.min(100, progress), timeLeft } : f
-            )
-          );
-        }
-      }, 500);
-    }
+    const fileSize = formatFileSize(file.size);
+    setAlbumMusicFiles((prev) => {
+      const existing = prev.find((f) => f.id === id);
+      if (existing) {
+        return prev.map((f) => (f.id === id ? { ...f, name: file.name, size: fileSize, file } : f));
+      }
+      return [...prev, { id, name: file.name, size: fileSize, file }];
+    });
   };
 
   const handleDeleteAlbumFile = (id: number) => {
     setAlbumMusicFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const onSubmit = (data: MusicFormValues) => {
-    console.log("Form submitted:", {
-      ...data,
-      coverImage,
-      uploadedFile,
-    });
+  const onSubmit = async (data: MusicFormValues) => {
+    const songFiles = albumMusicFiles.filter((f): f is typeof f & { file: File } => !!f.file);
 
-    clearSavedData();
-    reset();
-    setCoverImage(null);
-    setUploadedFile(null);
+    if (!coverFile || songFiles.length === 0) {
+      toast.error("Please add a cover image and at least one song file");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("albumTitle", data.albumTitle);
+    formData.append("genre", data.genre);
+    formData.append("songTitle", data.songTitle);
+    formData.append("purchasePrice", data.purchasePrice);
+    formData.append("cover", coverFile);
+    songFiles.forEach(({ file }) => formData.append("songs", file));
+
+    try {
+      await createAlbum.mutateAsync(formData);
+
+      clearSavedData();
+      toast.success("Album uploaded successfully!");
+      reset();
+      setCoverImage(null);
+      setCoverFile(null);
+      setAlbumMusicFiles([]);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -351,7 +279,7 @@ const Album = () => {
                 <button
                   onClick={() => albumFileInputRefs.current.get(0)?.click()}
                   className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white hover:bg-[#1a1a1a] transition-colors text-left text-sm"
-                  disabled={isSubmitting}
+                  disabled={isBusy}
                 >
                   Choose file
                 </button>
@@ -372,22 +300,7 @@ const Album = () => {
                           {file.name && (
                             <div className="flex items-center gap-2 mt-1">
                               <p className="text-[10px] text-[#A3A3A3]">{file.size}</p>
-                              {file.status === "uploading" && (
-                                <span className="text-[10px] text-[#A3A3A3]">
-                                  {Math.round(file.progress)}%{" "}
-                                  {file.timeLeft > 0 && `(${file.timeLeft} sec left)`}
-                                </span>
-                              )}
-                              {file.status === "success" && (
-                                <span className="text-[10px] text-green-500 font-medium">
-                                  Upload finished
-                                </span>
-                              )}
-                              {file.status === "failed" && (
-                                <span className="text-[10px] text-red-500 font-medium">
-                                  Upload failed
-                                </span>
-                              )}
+                              <span className="text-[10px] text-[#A3A3A3]">Ready to upload</span>
                             </div>
                           )}
                         </div>
@@ -398,21 +311,12 @@ const Album = () => {
                           className="p-1 text-[#A3A3A3] hover:text-white transition-colors shrink-0"
                           title="Delete file"
                           aria-label="Delete file"
+                          disabled={isBusy}
                         >
                           <Trash2 size={14} />
                         </button>
                       )}
                     </div>
-                    {file.status === "uploading" && file.name && (
-                      <div className="mt-2">
-                        <div className="w-full h-1.5 bg-[#2A2A2A] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
-                            style={{ width: `${file.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
                     {!file.name && (
                       <div>
                         <input
@@ -428,7 +332,7 @@ const Album = () => {
                         <button
                           onClick={() => albumFileInputRefs.current.get(file.id)?.click()}
                           className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-2 text-white hover:bg-[#1a1a1a] transition-colors text-left text-xs mt-2"
-                          disabled={isSubmitting}
+                          disabled={isBusy}
                         >
                           Choose file
                         </button>
@@ -446,7 +350,7 @@ const Album = () => {
             onClick={handleAddAnotherMusic}
             className="w-8 h-8 rounded-full bg-[#2A2A2A] flex items-center justify-center hover:bg-[#3A3A3A] transition-colors"
             aria-label="Add another music track"
-            disabled={isSubmitting}
+            disabled={isBusy}
           >
             <Plus size={16} className="text-white" />
           </button>
@@ -454,7 +358,7 @@ const Album = () => {
           <button
             onClick={handleAddAnotherMusic}
             className="px-4 py-1.5 rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white text-sm font-medium transition-colors"
-            disabled={isSubmitting}
+            disabled={isBusy}
           >
             Add
           </button>
@@ -462,10 +366,10 @@ const Album = () => {
 
         <button
           onClick={handleSubmit(onSubmit)}
-          disabled={isSubmitting || !isValid}
-          className={`w-[131px] rounded-lg font-semibold px-6 py-3 transition-colors mt-6 ${isSubmitting || !isValid ? "opacity-70 cursor-not-allowed bg-[#8a8a8a]" : "bg-[#D2045B] hover:bg-[#B8043F]"} text-white`}
+          disabled={isBusy || !isValid}
+          className={`w-[131px] rounded-lg font-semibold px-6 py-3 transition-colors mt-6 ${isBusy || !isValid ? "opacity-70 cursor-not-allowed bg-[#8a8a8a]" : "bg-[#D2045B] hover:bg-[#B8043F]"} text-white`}
         >
-          Add Album
+          {isBusy ? "Uploading..." : "Add Album"}
         </button>
       </div>
 
@@ -505,7 +409,7 @@ const Album = () => {
           />
           <button
             onClick={() => coverInputRef.current?.click()}
-            disabled={isSubmitting}
+            disabled={isBusy}
             className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add Cover

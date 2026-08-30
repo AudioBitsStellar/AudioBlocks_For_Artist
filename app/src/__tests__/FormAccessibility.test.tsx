@@ -51,7 +51,7 @@ vi.mock("@/services/authService", () => ({
   }),
 }));
 
-vi.mock("@/services/uploadSerive", () => ({
+vi.mock("@/services/uploadService", () => ({
   default: () => ({
     useFinalizeUpload: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useUploadChunk: () => ({ mutateAsync: vi.fn(), isPending: false }),
