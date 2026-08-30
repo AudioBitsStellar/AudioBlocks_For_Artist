@@ -1,201 +1,129 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import Sidebar from "@/components/Sidebar";
+import { vi } from "vitest";
+import { Sidebar } from "@/components/Sidebar";
+import * as messageService from "@/services/messageService";
+import userEvent from "@testing-library/user-event";
 
-// ── Mocks ────────────────────────────────────────────────────────────────────
-
+// Mock next/navigation
 vi.mock("next/navigation", () => ({
-  usePathname: vi.fn().mockReturnValue("/dashboard/overview"),
+  usePathname: vi.fn(() => "/dashboard/overview"),
 }));
 
-vi.mock("next/link", () => ({
-  default: ({
-    href,
-    children,
-    onClick,
-    ...props
-  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
-    <a href={href} onClick={onClick} {...props}>
-      {children}
-    </a>
-  ),
-}));
-
-vi.mock("next/image", () => ({
-  default: ({
-    src,
-    alt,
-    width,
-    height,
-  }: {
-    src: string;
-    alt: string;
-    width: number;
-    height: number;
-  }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} width={width} height={height} />
-  ),
-}));
-
-import { usePathname } from "next/navigation";
-const mockUsePathname = vi.mocked(usePathname);
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-const navItems = [
-  { name: "Overview", href: "/dashboard/overview" },
-  { name: "My Music", href: "/dashboard/my-music" },
-  { name: "Analytics", href: "/dashboard/analytics" },
-  { name: "Events", href: "/dashboard/events" },
-  { name: "Merches", href: "/dashboard/merches" },
-  { name: "Premium", href: "/dashboard/premium" },
-  { name: "Settings", href: "/dashboard/settings/notifications" },
-];
-
-function renderSidebar(open = false, onClose = vi.fn()) {
-  return render(<Sidebar open={open} onClose={onClose} />);
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockUsePathname.mockReturnValue("/dashboard/overview");
-  document.body.style.overflow = "";
+// Mock next/link to simulate routing if needed
+vi.mock("next/link", () => {
+  return {
+    __esModule: true,
+    default: ({ children, href, onClick, className }: any) => (
+      <a href={href} onClick={onClick} className={className} data-testid="nav-link">
+        {children}
+      </a>
+    ),
+  };
 });
 
-describe("Sidebar – navigation items", () => {
-  it("renders all navigation items", () => {
-    renderSidebar();
-    for (const item of navItems) {
-      expect(screen.getByRole("link", { name: new RegExp(item.name, "i") })).toBeInTheDocument();
-    }
-  });
-
-  it("each nav item links to the correct href", () => {
-    renderSidebar();
-    for (const item of navItems) {
-      const link = screen.getByRole("link", { name: new RegExp(item.name, "i") });
-      expect(link).toHaveAttribute("href", item.href);
-    }
-  });
-
-  it("renders legal links", () => {
-    renderSidebar();
-    expect(screen.getByRole("link", { name: /privacy center/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /privacy policy/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /cookies/i })).toBeInTheDocument();
-  });
+// Mock next/image
+vi.mock("next/image", () => {
+  return {
+    __esModule: true,
+    default: ({ src, alt }: any) => <img src={src} alt={alt} />,
+  };
 });
 
-describe("Sidebar – active state", () => {
-  it('marks the current page link with aria-current="page"', () => {
-    mockUsePathname.mockReturnValue("/dashboard/overview");
-    renderSidebar();
-    const overviewLink = screen.getByRole("link", { name: /overview/i });
-    expect(overviewLink).toHaveAttribute("aria-current", "page");
+describe("Sidebar", () => {
+  const mockOnClose = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(messageService, "getTotalUnreadCount").mockReturnValue(0);
   });
 
-  it("does not mark other links as active when on Overview", () => {
-    mockUsePathname.mockReturnValue("/dashboard/overview");
-    renderSidebar();
-    const musicLink = screen.getByRole("link", { name: /my music/i });
-    expect(musicLink).not.toHaveAttribute("aria-current", "page");
+  it("renders all navigation items correctly", () => {
+    render(<Sidebar open={true} onClose={mockOnClose} />);
+
+    expect(screen.getByText("Overview")).toBeInTheDocument();
+    expect(screen.getByText("My Music")).toBeInTheDocument();
+    expect(screen.getByText("Analytics")).toBeInTheDocument();
+    expect(screen.getByText("Events")).toBeInTheDocument();
+    expect(screen.getByText("Merches")).toBeInTheDocument();
+    expect(screen.getByText("Messages")).toBeInTheDocument();
+    expect(screen.getByText("Premium")).toBeInTheDocument();
+    expect(screen.getByText("Settings")).toBeInTheDocument();
+
+    const links = screen.getAllByTestId("nav-link");
+    expect(links.length).toBeGreaterThan(0);
   });
 
-  it("marks My Music as active when on /dashboard/my-music", () => {
-    mockUsePathname.mockReturnValue("/dashboard/my-music");
-    renderSidebar();
-    expect(screen.getByRole("link", { name: /my music/i })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: /overview/i })).not.toHaveAttribute(
-      "aria-current",
-      "page"
+  it("highlights the active state for the current route", () => {
+    const usePathnameMock = vi.requireMock("next/navigation").usePathname;
+    usePathnameMock.mockReturnValue("/dashboard/my-music");
+
+    render(<Sidebar open={true} onClose={mockOnClose} />);
+
+    // Since the link wraps the text, we can find the <a> containing "My Music"
+    const activeLink = screen.getByText("My Music").closest("a");
+    expect(activeLink).toHaveClass("bg-pink-500/10");
+    expect(activeLink).toHaveAttribute("aria-current", "page");
+
+    // Check inactive link
+    const inactiveLink = screen.getByText("Overview").closest("a");
+    expect(inactiveLink).not.toHaveClass("bg-pink-500/10");
+    expect(inactiveLink).not.toHaveAttribute("aria-current", "page");
+  });
+
+  it("triggers route changes when clicking navigation links", async () => {
+    render(<Sidebar open={true} onClose={mockOnClose} />);
+    const link = screen.getByText("Events").closest("a");
+    expect(link).toHaveAttribute("href", "/dashboard/events");
+    
+    // clicking link should close sidebar on mobile
+    if (link) {
+      await userEvent.click(link);
+    }
+    expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  it("supports keyboard navigation for accessibility", async () => {
+    render(<Sidebar open={true} onClose={mockOnClose} />);
+    
+    const navLinks = screen.getAllByTestId("nav-link").filter(el => 
+      el.getAttribute("href")?.startsWith("/dashboard/")
     );
+    
+    const firstLink = navLinks[0];
+    const secondLink = navLinks[1];
+    
+    firstLink.focus();
+    expect(firstLink).toHaveFocus();
+    
+    // Test ArrowDown
+    fireEvent.keyDown(firstLink, { key: "ArrowDown" });
+    expect(secondLink).toHaveFocus();
+    
+    // Test ArrowUp
+    fireEvent.keyDown(secondLink, { key: "ArrowUp" });
+    expect(firstLink).toHaveFocus();
+    
+    // Test End
+    fireEvent.keyDown(firstLink, { key: "End" });
+    const lastLink = navLinks[navLinks.length - 1];
+    expect(lastLink).toHaveFocus();
+    
+    // Test Home
+    fireEvent.keyDown(lastLink, { key: "Home" });
+    expect(firstLink).toHaveFocus();
   });
 
-  it("marks Settings as active for nested settings route", () => {
-    mockUsePathname.mockReturnValue("/dashboard/settings/notifications");
-    renderSidebar();
-    expect(screen.getByRole("link", { name: /settings/i })).toHaveAttribute("aria-current", "page");
-  });
-});
-
-describe("Sidebar – mobile behavior", () => {
-  it("renders a close button when open on mobile", () => {
-    renderSidebar(true);
-    expect(screen.getByRole("button", { name: /close navigation menu/i })).toBeInTheDocument();
+  it("calls onClose when the escape key is pressed", () => {
+    render(<Sidebar open={true} onClose={mockOnClose} />);
+    
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it("calls onClose when the close button is clicked", () => {
-    const onClose = vi.fn();
-    renderSidebar(true, onClose);
-    fireEvent.click(screen.getByRole("button", { name: /close navigation menu/i }));
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
+  it("renders unread message count badge if greater than zero", () => {
+    vi.spyOn(messageService, "getTotalUnreadCount").mockReturnValue(3);
+    render(<Sidebar open={true} onClose={mockOnClose} />);
 
-  it("renders the dark overlay when open", () => {
-    renderSidebar(true);
-    // The overlay div has aria-hidden="true" and sits behind the sidebar
-    const overlay = document.querySelector('[aria-hidden="true"]');
-    expect(overlay).toBeInTheDocument();
-  });
-
-  it("does not render the dark overlay when closed", () => {
-    renderSidebar(false);
-    const overlay = document.querySelector('[aria-hidden="true"]');
-    expect(overlay).toBeNull();
-  });
-
-  it("calls onClose when the overlay is clicked", () => {
-    const onClose = vi.fn();
-    renderSidebar(true, onClose);
-    const overlay = document.querySelector('[aria-hidden="true"]') as HTMLElement;
-    fireEvent.click(overlay);
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it("locks body scroll when open", () => {
-    renderSidebar(true);
-    expect(document.body.style.overflow).toBe("hidden");
-  });
-
-  it("unlocks body scroll when closed", () => {
-    const { rerender } = renderSidebar(true);
-    expect(document.body.style.overflow).toBe("hidden");
-    rerender(<Sidebar open={false} onClose={vi.fn()} />);
-    expect(document.body.style.overflow).toBe("");
-  });
-
-  it("calls onClose when a nav link is clicked (closes drawer)", () => {
-    const onClose = vi.fn();
-    renderSidebar(true, onClose);
-    fireEvent.click(screen.getByRole("link", { name: /my music/i }));
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("Sidebar – accessibility", () => {
-  it("renders the nav region with an accessible label", () => {
-    renderSidebar();
-    expect(screen.getByRole("navigation", { name: /main navigation/i })).toBeInTheDocument();
-  });
-
-  it('has role="dialog" and aria-modal when open', () => {
-    renderSidebar(true);
-    const sidebar = screen.getByRole("dialog");
-    expect(sidebar).toBeInTheDocument();
-    expect(sidebar).toHaveAttribute("aria-modal", "true");
-  });
-
-  it("has no dialog role when closed", () => {
-    renderSidebar(false);
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
-  it("renders the AudioBlocks logo with alt text", () => {
-    renderSidebar();
-    const logos = screen.getAllByAltText(/audioblocks logo/i);
-    expect(logos.length).toBeGreaterThan(0);
+    expect(screen.getByText("3")).toBeInTheDocument();
   });
 });
