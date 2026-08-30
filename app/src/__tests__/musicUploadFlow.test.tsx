@@ -9,7 +9,7 @@ const mockMutateCover = vi.fn().mockResolvedValue({ data: { cover: "ipfs://cover
 const mockMutateFinalize = vi.fn().mockResolvedValue({ data: { id: "song123" } });
 
 // Mock dependencies
-vi.mock("@/services/uploadSerive", () => ({
+vi.mock("@/services/uploadService", () => ({
   default: () => ({
     useUploadChunk: () => ({ mutateAsync: mockMutateChunk, isPending: false }),
     useUploadCover: () => ({ mutateAsync: mockMutateCover, isPending: false }),
