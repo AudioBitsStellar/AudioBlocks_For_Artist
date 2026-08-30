@@ -1,13 +1,17 @@
 "use client";
 
-import { useI18n, type Locale } from "@/context/I18nContext";
+import { useOptionalI18n, type Locale } from "@/context/I18nContext";
 
 /**
  * Dropdown that lets users switch between supported locales — closes #159.
  * Language preference is persisted to localStorage via I18nContext.
  */
 export default function LanguageSwitcher() {
-  const { locale, setLocale, t, availableLocales } = useI18n();
+  const i18n = useOptionalI18n();
+  // Nothing to switch without a provider; render nothing rather than throw.
+  if (!i18n) return null;
+
+  const { locale, setLocale, t, availableLocales } = i18n;
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLocale(e.target.value as Locale);

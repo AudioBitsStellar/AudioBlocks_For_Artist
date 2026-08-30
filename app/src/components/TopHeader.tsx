@@ -6,6 +6,7 @@ import Link from "next/link";
 import { formatDate } from "@/utils/date";
 import { useRole } from "@/hooks/useRole";
 import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface TopHeaderProps {
   onMenuClick: () => void;
@@ -159,6 +160,8 @@ export default function TopHeader({
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4">
+          <LanguageSwitcher />
+
           <span
             data-testid="role-badge"
             data-role={activeRole}
