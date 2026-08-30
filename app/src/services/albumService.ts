@@ -32,7 +32,7 @@ const useAlbumServices = () => {
    */
   const useCreateAlbum = () => {
     return usePost<AlbumCreateResponse, FormData>(ALBUM_ENDPOINTS.CREATE, {
-      onSuccess(response: { message?: string }) {
+      onSuccess(response: AlbumCreateResponse & { message?: string }) {
         handleSuccess(response.message || "Album uploaded successfully!");
       },
       onError(error: Error) {
