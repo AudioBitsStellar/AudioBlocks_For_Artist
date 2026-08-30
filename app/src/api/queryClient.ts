@@ -2,7 +2,14 @@ import { useQuery, useMutation, useQueryClient, QueryKey } from "@tanstack/react
 import { createApiClient } from "./axios";
 // import { ApiResponse } from "@/types";
 
-const apiClient = await createApiClient();
+let apiClient: Awaited<ReturnType<typeof createApiClient>> | null = null;
+
+const getApiClient = async () => {
+  if (!apiClient) {
+    apiClient = await createApiClient();
+  }
+  return apiClient;
+};
 
 /* =========================
    GENERIC GET
@@ -20,7 +27,8 @@ export function useGet<T>(
   return useQuery<T>({
     queryKey,
     queryFn: async () => {
-      const res = await apiClient.get<T>(endpoint);
+      const client = await getApiClient();
+      const res = await client.get<T>(endpoint);
       return res.data; // 🔑 FIX: return data, not AxiosResponse
     },
     enabled: options?.enabled ?? true,
@@ -45,7 +53,8 @@ export function usePost<TData, TVariables = unknown>(
 
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      const res = await apiClient.post<TData>(endpoint, variables);
+      const client = await getApiClient();
+      const res = await client.post<TData>(endpoint, variables);
       return res.data;
     },
     onSuccess: (data, variables) => {
@@ -77,7 +86,8 @@ export function usePut<TData, TVariables = unknown>(
 
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      const res = await apiClient.put<TData>(endpoint, variables);
+      const client = await getApiClient();
+      const res = await client.put<TData>(endpoint, variables);
       return res.data;
     },
     onSuccess: (data) => {
@@ -109,7 +119,8 @@ export function usePatch<TData, TVariables = unknown>(
 
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      const res = await apiClient.patch<TData>(endpoint, variables);
+      const client = await getApiClient();
+      const res = await client.patch<TData>(endpoint, variables);
       return res.data;
     },
     onSuccess: (data) => {
@@ -141,7 +152,8 @@ export function useDelete<TData = unknown>(
 
   return useMutation<TData, Error, void>({
     mutationFn: async () => {
-      const res = await apiClient.delete<TData>(endpoint);
+      const client = await getApiClient();
+      const res = await client.delete<TData>(endpoint);
       return res.data;
     },
     onSuccess: (data) => {

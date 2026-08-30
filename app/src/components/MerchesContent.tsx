@@ -180,7 +180,7 @@ export default function MerchesContent() {
     const item = deleteConfirmation.item;
     if (!item) return;
     setDeleteId(item.id);
-    deleteMutation.mutate(undefined as any, { onSuccess: () => setDeleteId(null) });
+    deleteMutation.mutate(void 0, { onSuccess: () => setDeleteId(null) });
   };
 
   return (
