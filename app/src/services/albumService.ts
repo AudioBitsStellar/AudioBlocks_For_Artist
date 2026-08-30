@@ -1,8 +1,14 @@
 import { ALBUM_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet } from "@/api/queryClient";
-import { AlbumsResponse } from "@/types";
+import { useGet, usePost } from "@/api/queryClient";
+import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
+import { AlbumCreateResponse, AlbumsResponse } from "@/types";
+
+export const ALBUMS_QUERY_KEY = ["get-artist-albums"];
 
 const useAlbumServices = () => {
+  const handleSuccess = useHandleSuccess();
+  const handleError = useHandleError();
+
   /**
    * Fetches the artist's albums, cached for 2 minutes.
    *
@@ -11,13 +17,32 @@ const useAlbumServices = () => {
    * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
    */
   const useGetAlbums = (enabled: boolean = true) => {
-    return useGet<AlbumsResponse>(["get-artist-albums"], ALBUM_ENDPOINTS.LIST, {
+    return useGet<AlbumsResponse>(ALBUMS_QUERY_KEY, ALBUM_ENDPOINTS.LIST, {
       enabled,
       staleTime: 1000 * 60 * 2,
     });
   };
 
-  return { useGetAlbums };
+  /**
+   * Creates a new album, uploading its cover art and song files as multipart
+   * form data.
+   *
+   * @returns A React Query mutation: call `.mutate(formData)` or `.mutateAsync(formData)` with a `FormData` containing `albumTitle`, `genre`, `songTitle`, `purchasePrice`, `cover`, and one or more `songs` entries.
+   * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
+   */
+  const useCreateAlbum = () => {
+    return usePost<AlbumCreateResponse, FormData>(ALBUM_ENDPOINTS.CREATE, {
+      onSuccess(response: { message?: string }) {
+        handleSuccess(response.message || "Album uploaded successfully!");
+      },
+      onError(error: Error) {
+        handleError(error.message || "Failed to upload album.");
+      },
+      invalidateQueries: [ALBUMS_QUERY_KEY],
+    });
+  };
+
+  return { useGetAlbums, useCreateAlbum };
 };
 
 export default useAlbumServices;

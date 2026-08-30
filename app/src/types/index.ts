@@ -137,6 +137,47 @@ export interface StatisticsResponse {
   data: Statistic[];
 }
 
+export interface TopSong {
+  rank: number;
+  name: string;
+  listenings: number;
+}
+
+export interface StreamingRegion {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface TopStreamer {
+  rank: number;
+  name: string;
+  duration: string;
+}
+
+export interface FansEngagementData {
+  topSongs: TopSong[];
+  streamingRegions: StreamingRegion[];
+  topStreamers: TopStreamer[];
+}
+
+export interface FansEngagementResponse {
+  success: boolean;
+  data: FansEngagementData;
+}
+
+export interface CreateAlbumPayload {
+  albumTitle: string;
+  genre: string;
+  songTitle: string;
+  purchasePrice: string;
+}
+
+export interface AlbumCreateResponse {
+  success: boolean;
+  data: Album;
+}
+
 export interface RecentActivity {
   id: string;
   action: string;

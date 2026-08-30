@@ -49,6 +49,10 @@ export const OVERVIEW_ENDPOINTS = {
   GET_RECENT_ACTIVITY: "/artist/recent-activity",
 };
 
+export const FANS_ENGAGEMENT_ENDPOINTS = {
+  GET_FANS_ENGAGEMENT: "/artist/fans-engagement",
+};
+
 export const ALBUM_ENDPOINTS = {
   LIST: "/artist/albums",
   CREATE: "/artist/albums",
