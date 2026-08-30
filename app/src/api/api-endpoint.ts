@@ -49,6 +49,20 @@ export const OVERVIEW_ENDPOINTS = {
   GET_RECENT_ACTIVITY: "/artist/recent-activity",
 };
 
+export const DASHBOARD_TRANSACTION_ENDPOINTS = {
+  LIST: "/artist/transactions",
+};
+
+export const DASHBOARD_COMMENT_ENDPOINTS = {
+  LIST: "/artist/comments",
+  CREATE: "/artist/comments",
+};
+
+export const ANALYTICS_ENDPOINTS = {
+  SUMMARY: "/artist/analytics/summary",
+  DATA: (period: "last30days" | "last90days") => `/artist/analytics?period=${period}`,
+};
+
 export const FANS_ENGAGEMENT_ENDPOINTS = {
   GET_FANS_ENGAGEMENT: "/artist/fans-engagement",
 };
