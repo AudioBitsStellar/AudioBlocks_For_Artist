@@ -53,7 +53,17 @@ function createEarningsCsv(data: EarningsDataPoint[]): string {
   return [CSV_HEADERS.join(","), ...rows].join("\r\n");
 }
 
-const CustomTooltip = ({ active, payload, coordinate }: TooltipProps<number, string>) => {
+type CustomTooltipProps = TooltipProps<number, string> & {
+  active?: boolean;
+  payload?: Array<{ payload: EarningsDataPoint }>;
+  coordinate?: { x: number; y: number };
+};
+
+function highlightedMonth(payload: EarningsDataPoint): string {
+  return payload.month;
+}
+
+const CustomTooltip = ({ active, payload, coordinate }: CustomTooltipProps) => {
   if (active && payload && payload.length && coordinate) {
     const data: EarningsDataPoint = payload[0].payload as EarningsDataPoint;
     const isHighlighted = data.month === highlightedMonth(payload[0].payload as EarningsDataPoint);
@@ -84,10 +94,6 @@ const CustomTooltip = ({ active, payload, coordinate }: TooltipProps<number, str
   }
   return null;
 };
-
-function highlightedMonth(payload: EarningsDataPoint): string {
-  return payload.month;
-}
 
 const CustomDot = ({
   cx,

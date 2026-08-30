@@ -103,6 +103,10 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
           redirecting = true;
           clearSession();
           window.location.href = "/login";
+          // Reset flag after redirect attempt
+          setTimeout(() => {
+            redirecting = false;
+          }, 0);
         }
       }
 
