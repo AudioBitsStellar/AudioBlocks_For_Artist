@@ -48,6 +48,7 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@storybook/addon-essentials": "^8.0.0",
     "@storybook/addon-interactions": "^8.0.0",
     "@storybook/nextjs-vite": "^9.0.0",
@@ -76,6 +77,6 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.0.0",
-    "@playwright/test": "^1.49.0"
+    "vitest-axe": "^0.1.0"
   }
 }
