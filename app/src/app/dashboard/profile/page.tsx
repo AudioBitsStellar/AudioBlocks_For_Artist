@@ -150,7 +150,14 @@ export default function ProfilePage() {
         });
       },
       onError: (err: unknown) => {
-        // Handled by service
+        // Route through the shared error-recovery helpers so profile save
+        // behaves like the upload / mint flows (see utils/ERROR_RECOVERY.md).
+        const message = getErrorMessage(err);
+        toast.error(
+          isRetryableError(err)
+            ? `Couldn't save your profile — check your connection and try again. (${message})`
+            : message || "Couldn't save your profile."
+        );
       },
     });
   };

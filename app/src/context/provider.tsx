@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useEffect, useState } from "react";
 import { StellarNetworkProvider } from "./StellarNetworkContext";
+import { PlaybackProvider } from "./PlaybackContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,7 +84,9 @@ const Provider = ({ children }: { children: ReactNode }) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StellarNetworkProvider>{children}</StellarNetworkProvider>
+      <StellarNetworkProvider>
+        <PlaybackProvider>{children}</PlaybackProvider>
+      </StellarNetworkProvider>
     </QueryClientProvider>
   );
 };

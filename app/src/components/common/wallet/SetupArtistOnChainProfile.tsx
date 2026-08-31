@@ -6,6 +6,8 @@ import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
+import { explorerTxUrl } from "@/lib/horizon";
+import { classifyError, isUserRejection } from "@/utils/errorRecovery";
 import { toast } from "sonner";
 import { ApiEnvelope, SubmitArtistSetupResponse } from "@/types/api";
 import { useEstimatedFee } from "@/hooks/useEstimatedFee";
@@ -83,16 +85,14 @@ export default function SetupArtistOnChainProfile() {
           address
         );
       } catch (signErr: unknown) {
-        const error = signErr as Error;
-        if (
-          error?.message?.toLowerCase().includes("rejected") ||
-          error?.message?.toLowerCase().includes("user rejected")
-        ) {
+        // A declined signature is a normal outcome, not a failure — see
+        // app/src/utils/ERROR_RECOVERY.md.
+        if (isUserRejection(signErr)) {
           setStatus("rejected");
           analytics.mintFailed({ songId: "artist-profile", reason: "user rejected signature" });
           return;
         }
-        throw error;
+        throw signErr;
       }
 
       setStatus("submitting");
@@ -112,16 +112,17 @@ export default function SetupArtistOnChainProfile() {
       });
       toast.success("Profile setup succeeded on-chain!");
     } catch (err: unknown) {
-      const error = err as Error;
-      const reason = error?.message ?? "unknown";
-      analytics.mintFailed({ songId: "artist-profile", reason });
+      const plan = classifyError(err);
+      analytics.mintFailed({ songId: "artist-profile", reason: plan.message });
 
-      if (reason.toLowerCase().includes("timeout") || reason.toLowerCase().includes("network")) {
-        setStatus("timeout");
-      } else {
-        setStatus("failed");
+      if (plan.userRejected) {
+        setStatus("rejected");
+        return;
       }
-      setErrorMsg(reason);
+      // Retryable transport failures get the "timeout" surface (a plain retry
+      // button); anything terminal gets "failed" with the message.
+      setStatus(plan.retryable ? "timeout" : "failed");
+      setErrorMsg(plan.message);
     }
   };
 
