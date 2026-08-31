@@ -7,46 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18.x]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-
-      - name: Install dependencies
-        working-directory: app
-        run: npm install
-
-      - name: Lint
-        working-directory: app
-        run: npm run lint --silent
-
-      - name: Type check
-        working-directory: app
-        run: npx tsc --noEmit -p tsconfig.json
-
-      - name: Run tests
-        working-directory: app
-        run: npm run test --silent
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
   unit-and-accessibility:
     name: Unit tests + Accessibility audit
     runs-on: ubuntu-latest
@@ -64,7 +24,10 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
+
+      - name: Install accessibility testing dependencies
+        run: npm install --save-dev vitest-axe axe-core --legacy-peer-deps
 
       - name: Type check
         run: npm run type-check || npx tsc --noEmit
@@ -72,7 +35,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit tests (including accessibility audits)
+      - name: Run unit tests with accessibility audits
         run: npx vitest run --reporter=verbose --reporter=json --outputFile=test-results/results.json
         env:
           CI: true
@@ -84,3 +47,16 @@ jobs:
           name: test-results
           path: app/test-results/
           retention-days: 14
+
+      - name: Check for critical accessibility violations
+        if: always()
+        run: |
+          if [ -f test-results/results.json ]; then
+            echo "Checking for critical accessibility violations..."
+            if grep -q "\"numFailedTests\":[1-9]" test-results/results.json; then
+              echo "❌ Tests failed - including accessibility tests"
+              exit 1
+            fi
+            echo "✅ All tests passed"
+          fi
+
