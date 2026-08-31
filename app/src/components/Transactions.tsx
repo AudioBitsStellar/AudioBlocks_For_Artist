@@ -3,36 +3,11 @@
 import { Calendar, ChevronDown, ArrowUpDown } from "lucide-react";
 import { formatDate } from "@/utils/date";
 import EmptyState from "./shared/EmptyState";
+import useTransactionServices from "@/services/transactionService";
 
 export default function Transactions() {
-  // Dates are real Date objects so we exercise Intl.DateTimeFormat end-to-end.
-  // They render with the user's locale via the date utility (issue #177).
-  const transactions = [
-    {
-      type: "Royalty",
-      song: "Midnight Vibes",
-      value: "$2,340.32",
-      date: new Date("2025-06-03T00:00:00Z"),
-    },
-    {
-      type: "Royalty",
-      song: "Midnight Vibes",
-      value: "$2,340.32",
-      date: new Date("2025-06-03T00:00:00Z"),
-    },
-    {
-      type: "Royalty",
-      song: "Midnight Vibes",
-      value: "$2,340.32",
-      date: new Date("2025-06-03T00:00:00Z"),
-    },
-    {
-      type: "Royalty",
-      song: "Midnight Vibes",
-      value: "$2,340.32",
-      date: new Date("2025-06-03T00:00:00Z"),
-    },
-  ];
+  const { data, isLoading, isError, refetch } = useTransactionServices().useGetTransactions();
+  const transactions = data?.data ?? [];
 
   return (
     <div className="bg-surface-raised rounded-lg p-6">
@@ -73,7 +48,19 @@ export default function Transactions() {
         </div>
       </div>
 
-      {transactions.length === 0 ? (
+      {isLoading ? (
+        <div className="py-16 text-center text-text-muted" role="status">
+          Loading transactions...
+        </div>
+      ) : isError ? (
+        <EmptyState
+          icon={ArrowUpDown}
+          title="Unable to load transactions"
+          description="We could not fetch your latest royalty payments and earnings."
+          ctaLabel="Retry"
+          onCta={() => refetch()}
+        />
+      ) : transactions.length === 0 ? (
         <EmptyState
           icon={ArrowUpDown}
           title="No transactions yet"
@@ -83,9 +70,9 @@ export default function Transactions() {
         <>
           {/* Mobile card layout — hidden on md and above */}
           <ul className="flex flex-col gap-3 md:hidden" aria-label="Transactions list">
-            {transactions.map((transaction, index) => (
+            {transactions.map((transaction) => (
               <li
-                key={index}
+                key={transaction.id}
                 className="bg-surface-sunken border border-border-subtle rounded-lg p-4 flex flex-col gap-2"
               >
                 <div className="flex items-center justify-between">
@@ -95,12 +82,17 @@ export default function Transactions() {
                 <div className="flex items-center justify-between">
                   <span className="text-text-muted text-sm">{transaction.song}</span>
                   <span className="text-text-muted text-sm">
-                    {formatDate(transaction.date, "short")}
+                    {formatDate(new Date(transaction.date), "short")}
                   </span>
                 </div>
-                <button className="text-primary hover:text-primary-hover text-sm underline transition-colors self-start">
-                  view
-                </button>
+                {transaction.receiptUrl ? (
+                  <a
+                    href={transaction.receiptUrl}
+                    className="text-primary hover:text-primary-hover text-sm underline transition-colors self-start"
+                  >
+                    view
+                  </a>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -128,19 +120,26 @@ export default function Transactions() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((transaction, index) => (
-                  <tr key={index} className="border-b border-border-subtle">
+                {transactions.map((transaction) => (
+                  <tr key={transaction.id} className="border-b border-border-subtle">
                     <td className="text-text py-3 text-sm">{transaction.type}</td>
                     <td className="text-text py-3 text-sm">{transaction.song}</td>
                     <td className="text-text py-3 text-sm">{transaction.value}</td>
                     <td className="text-text-muted py-3 text-sm">
                       {/* Issue #177: shared locale-aware date util. */}
-                      {formatDate(transaction.date, "short")}
+                      {formatDate(new Date(transaction.date), "short")}
                     </td>
                     <td className="py-3">
-                      <button className="text-primary hover:text-primary-hover text-sm underline transition-colors">
-                        view
-                      </button>
+                      {transaction.receiptUrl ? (
+                        <a
+                          href={transaction.receiptUrl}
+                          className="text-primary hover:text-primary-hover text-sm underline transition-colors"
+                        >
+                          view
+                        </a>
+                      ) : (
+                        <span className="text-text-muted text-sm">-</span>
+                      )}
                     </td>
                   </tr>
                 ))}
