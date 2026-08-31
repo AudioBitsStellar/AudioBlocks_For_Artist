@@ -109,24 +109,18 @@ describe("overviewService", () => {
     });
 
     it("exposes isLoading while in flight and clears it on completion", async () => {
-      let resolvePromise!: (v: unknown) => void;
-      mockGet.mockImplementation(
-        () =>
-          new Promise((res) => {
-            resolvePromise = res;
-          })
-      );
+      mockGet.mockReturnValue({ isLoading: true, isSuccess: false });
 
-      const { result } = renderHook(() => useOverviewServices().useGetOverviewKpi(), {
+      const { result, rerender } = renderHook(() => useOverviewServices().useGetOverviewKpi(), {
         wrapper: Wrapper,
       });
 
       expect(result.current.isLoading).toBe(true);
 
-      await waitFor(() => {
-        resolvePromise({ data: successResponse });
-        expect(result.current.isSuccess).toBe(true);
-      });
+      mockGet.mockReturnValue({ isLoading: false, isSuccess: true, data: successResponse });
+      rerender();
+      
+      expect(result.current.isSuccess).toBe(true);
       expect(result.current.isLoading).toBe(false);
     });
   });

@@ -14,26 +14,31 @@ export function clearSession(): void {
 }
 
 // Normalized error shape exposed to callers / React Query
-export interface ApiError {
+export class ApiError extends Error {
   status: number;
-  message: string;
   code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
 }
 
 export function extractApiError(error: unknown): ApiError {
   if (axios.isAxiosError(error)) {
     const axErr = error as AxiosError<{ message?: string; error?: string; code?: string }>;
     const data = axErr.response?.data;
-    return {
-      status: axErr.response?.status ?? 0,
-      message: data?.message ?? data?.error ?? axErr.message,
-      code: data?.code,
-    };
+    const status = axErr.response?.status ?? 0;
+    const message = data?.message ?? data?.error ?? axErr.message;
+    const code = data?.code;
+    return new ApiError(message, status, code);
   }
   if (error instanceof Error) {
-    return { status: 0, message: error.message };
+    return new ApiError(error.message, 0);
   }
-  return { status: 0, message: "Unknown error" };
+  return new ApiError("Unknown error", 0);
 }
 
 // Guard against firing concurrent redirects / clears for 401
