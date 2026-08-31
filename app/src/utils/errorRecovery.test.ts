@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { isRetryableError, getErrorMessage } from "./errorRecovery";
+import { isRetryableError, isUserRejection, getErrorMessage, classifyError } from "./errorRecovery";
 import type { ApiError } from "@/api/axios";
 
 function makeApiError(status: number, message = "error"): ApiError {
-  return { status, message };
+  return { status, message } as ApiError;
 }
 
 describe("isRetryableError", () => {
@@ -34,6 +34,28 @@ describe("isRetryableError", () => {
   it("treats non-Error strings as terminal", () => {
     expect(isRetryableError("something went wrong")).toBe(false);
   });
+
+  it("reads the status from an axios-style { response: { status } } error", () => {
+    expect(isRetryableError({ response: { status: 503 }, message: "boom" })).toBe(true);
+    expect(isRetryableError({ response: { status: 400 }, message: "bad" })).toBe(false);
+  });
+});
+
+describe("isUserRejection", () => {
+  it.each([
+    "User rejected the request",
+    "Request rejected",
+    "User declined to sign",
+    "Transaction was denied",
+    "The user cancelled the operation",
+  ])("recognises %j as a wallet rejection", (message) => {
+    expect(isUserRejection(new Error(message))).toBe(true);
+  });
+
+  it("does not flag an ordinary failure as a rejection", () => {
+    expect(isUserRejection(new Error("network error"))).toBe(false);
+    expect(isUserRejection(makeApiError(500, "Internal Server Error"))).toBe(false);
+  });
 });
 
 describe("getErrorMessage", () => {
@@ -55,5 +77,36 @@ describe("getErrorMessage", () => {
     expect(getErrorMessage(null)).toBe("An unexpected error occurred");
     expect(getErrorMessage(undefined)).toBe("An unexpected error occurred");
     expect(getErrorMessage(42)).toBe("An unexpected error occurred");
+  });
+});
+
+describe("classifyError", () => {
+  it("classifies a wallet rejection as user-rejected (and not retryable)", () => {
+    const plan = classifyError(new Error("User rejected the transaction"));
+    expect(plan.kind).toBe("user-rejected");
+    expect(plan.userRejected).toBe(true);
+    expect(plan.retryable).toBe(false);
+    expect(plan.message).toBe("User rejected the transaction");
+  });
+
+  it("classifies a transient transport failure as retryable", () => {
+    const plan = classifyError(makeApiError(503, "Service Unavailable"));
+    expect(plan.kind).toBe("retryable");
+    expect(plan.retryable).toBe(true);
+    expect(plan.userRejected).toBe(false);
+  });
+
+  it("classifies a 4xx validation failure as terminal", () => {
+    const plan = classifyError(makeApiError(422, "Validation failed"));
+    expect(plan.kind).toBe("terminal");
+    expect(plan.retryable).toBe(false);
+    expect(plan.userRejected).toBe(false);
+    expect(plan.message).toBe("Validation failed");
+  });
+
+  it("classifies an unknown value as terminal with a safe fallback message", () => {
+    const plan = classifyError(null);
+    expect(plan.kind).toBe("terminal");
+    expect(plan.message).toBe("An unexpected error occurred");
   });
 });
