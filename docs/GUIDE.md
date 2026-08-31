@@ -272,7 +272,7 @@ app/src/
 
 Deeper background lives in `app/README.md` (architecture, the on-chain
 sign/submit flow, the chunked song-upload pipeline) and the topic docs:
-`app/TESTING.md`, `app/src/context/RBAC.md`, `app/src/lib/ANALYTICS.md`,
+`docs/i18n.md`, `app/TESTING.md`, `app/src/context/RBAC.md`, `app/src/lib/ANALYTICS.md`,
 `app/public/SERVICE_WORKER.md`, and the accessibility reports
 (`app/ACCESSIBILITY_ISSUES.md`, `app/WCAG_2.1_AA_AUDIT_REPORT.md`).
 
