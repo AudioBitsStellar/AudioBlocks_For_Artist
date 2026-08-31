@@ -95,7 +95,9 @@ This project aims to meet WCAG 2.1 AA where practical. Toast notifications are a
 
 ## License & Code of Conduct
 
-Please include license and code-of-conduct files if you intend to accept external contributions. If you would like, I can add suggested `LICENSE` and `CODE_OF_CONDUCT.md` files.
+This project is released under the [ISC License](LICENSE), matching the
+license used across the AudioBits repositories. Contributor expectations are
+in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ---
 

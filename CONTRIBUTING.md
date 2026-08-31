@@ -101,12 +101,14 @@ reviewable commits over one large one when a PR touches more than one thing.
 
 ## Reporting bugs / requesting features
 
-Open a GitHub issue. Include:
+Open a GitHub issue and pick a template:
 
-- What you expected vs. what actually happened (for bugs).
-- Steps to reproduce, if applicable.
-- Which part of the app is affected (page/route or component name) so it's
-  easy to locate in `app/src/`.
+- **Bug report**
+  ([`.github/ISSUE_TEMPLATE/bug_report.yml`](.github/ISSUE_TEMPLATE/bug_report.yml))
+  — what you expected vs. what happened, steps to reproduce, and which
+  page/route or component is affected so it's easy to locate in `app/src/`.
+- **Feature request**
+  ([`.github/ISSUE_TEMPLATE/feature_request.yml`](.github/ISSUE_TEMPLATE/feature_request.yml))
+  — the problem you're trying to solve, then a proposed solution.
 
-There's no formal issue template in this repo yet — a clear description is
-enough.
+Blank issues are still allowed for anything that doesn't fit either form.

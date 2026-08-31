@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contributing guide
+    url: https://github.com/AudioBitsStellar/AudioBlocks_For_Artist/blob/main/CONTRIBUTING.md
+    about: Development setup, branch/commit conventions, and the testing bar for PRs.
+  - name: Backend repository
+    url: https://github.com/AudioBitsStellar/AudioBlock_Backend
+    about: For issues with the API this dashboard talks to (auth, uploads, on-chain actions).

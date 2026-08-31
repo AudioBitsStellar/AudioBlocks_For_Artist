@@ -15,6 +15,14 @@ export type Role = "owner" | "manager" | "viewer";
 export const ROLES: ReadonlyArray<Role> = ["owner", "manager", "viewer"];
 
 /**
+ * Runtime type guard for {@link Role}. Use it when narrowing an untrusted
+ * value (e.g. a JWT claim or a query param) to a known role.
+ */
+export function isRole(value: unknown): value is Role {
+  return typeof value === "string" && (ROLES as ReadonlyArray<string>).includes(value);
+}
+
+/**
  * Granular permission keys. Each role has a static set of allowed permissions,
  * defined in {@link ROLE_PERMISSION_TABLE}.
  */

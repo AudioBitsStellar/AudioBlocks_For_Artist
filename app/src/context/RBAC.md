@@ -9,6 +9,21 @@ Members of an artist workspace can have one of three roles, defined in
 > shows/enables — there is no corresponding backend enforcement in this
 > repo. Treat `can()`/`cannot()` as UX guidance, not a security boundary.
 
+## Where the role comes from
+
+`RoleProvider` resolves the active role in this order:
+
+1. An explicit `initialRole` prop — for tests, Storybook, and demo UIs.
+2. The `role` claim on the authenticated session JWT (`role`, `user_role`, or
+   a nested `user.role`), read via `getRoleFromToken()` in
+   `src/utils/jwt.ts`. The JWT signature is **not** verified client-side, so
+   this only decides what the UI offers; the backend stays the real check.
+3. `viewer` — the least-privileged role — for a session with no usable role
+   claim. An unknown session is never treated as the workspace `owner`.
+
+`setRole()` still exists for demo UIs and tests but is not how production
+code changes roles.
+
 ## Roles
 
 | Role      | Description                                                                 |
@@ -58,8 +73,8 @@ function DeleteMerchButton() {
 - `can(permission)` / `cannot(permission)` — boolean checks against
   `permissions`.
 - `setRole(role)` — switches the active role. Intended for demo UIs and
-  tests, not a real permission grant flow (in production the role would be
-  derived from the authenticated session, not set client-side).
+  tests, not a real permission grant flow — production derives the role from
+  the authenticated session (see "Where the role comes from" above).
 
 **No-provider fallback:** if `useRole()` is called without a `RoleProvider`
 mounted above it, it returns a safe default of `role: "viewer"` with
