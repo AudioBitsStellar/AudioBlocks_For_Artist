@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { vi } from "vitest";
 import { Sidebar } from "@/components/Sidebar";
@@ -5,19 +6,33 @@ import * as messageService from "@/services/messageService";
 import userEvent from "@testing-library/user-event";
 
 // Mock next/navigation
+const mockUsePathname = vi.fn(() => "/dashboard/overview");
 vi.mock("next/navigation", () => ({
-  usePathname: vi.fn(() => "/dashboard/overview"),
+  usePathname: () => mockUsePathname(),
 }));
 
-// Mock next/link to simulate routing if needed
+// Mock next/link to pass ref and props
 vi.mock("next/link", () => {
   return {
     __esModule: true,
-    default: ({ children, href, onClick, className }: any) => (
-      <a href={href} onClick={onClick} className={className} data-testid="nav-link">
-        {children}
-      </a>
-    ),
+    default: React.forwardRef(function MockLink(
+      { children, href, onClick, className, onKeyDown, ...props }: any,
+      ref: any
+    ) {
+      return (
+        <a
+          ref={ref}
+          href={href}
+          onClick={onClick}
+          onKeyDown={onKeyDown}
+          className={className}
+          data-testid="nav-link"
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    }),
   };
 });
 
@@ -34,6 +49,7 @@ describe("Sidebar", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUsePathname.mockReturnValue("/dashboard/overview");
     vi.spyOn(messageService, "getTotalUnreadCount").mockReturnValue(0);
   });
 
@@ -54,8 +70,7 @@ describe("Sidebar", () => {
   });
 
   it("highlights the active state for the current route", () => {
-    const usePathnameMock = vi.requireMock("next/navigation").usePathname;
-    usePathnameMock.mockReturnValue("/dashboard/my-music");
+    mockUsePathname.mockReturnValue("/dashboard/my-music");
 
     render(<Sidebar open={true} onClose={mockOnClose} />);
 
