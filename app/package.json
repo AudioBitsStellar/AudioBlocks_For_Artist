@@ -49,6 +49,7 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@storybook/addon-essentials": "^8.0.0",
     "@storybook/addon-interactions": "^8.0.0",
     "@storybook/nextjs-vite": "^9.0.0",
@@ -64,6 +65,7 @@
     "@types/react-dom": "^19",
     "@types/react-slick": "^0.23.13",
     "@vitejs/plugin-react": "^4.4.1",
+    "axe-core": "^4.13.0",
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.9.18",
     "chromatic": "^10.0.0",
@@ -77,6 +79,6 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.0.0",
-    "@playwright/test": "^1.49.0"
+    "vitest-axe": "^0.1.0"
   }
 }

@@ -6,6 +6,7 @@ import "slick-carousel/slick/slick-theme.css";
 import Provider from "@/context/provider";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { Toaster } from "sonner";
+import { defaultMetadata } from "@/utils/metadata";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,31 +24,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export const metadata: Metadata = {
-  title: "AudioBlocks - Artist Dashboard",
-  description: "AudioBlocks artist dashboard for managing music, earnings, and fan engagement",
-  openGraph: {
-    title: "AudioBlocks - Artist Dashboard",
-    description: "AudioBlocks artist dashboard for managing music, earnings, and fan engagement",
-    url: "https://audioblocks.io",
-    siteName: "AudioBlocks",
-    images: [
-      {
-        url: "/og-default.png",
-        width: 1200,
-        height: 630,
-        alt: "AudioBlocks – Artist Dashboard",
-      },
-    ],
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "AudioBlocks - Artist Dashboard",
-    description: "AudioBlocks artist dashboard for managing music, earnings, and fan engagement",
-    images: ["/og-default.png"],
-  },
-};
+export const metadata: Metadata = defaultMetadata;
 
 const REQUIRED_ENV_VARS = ["NEXT_PUBLIC_API_BASE_URL", "NEXT_PUBLIC_API_URL"];
 

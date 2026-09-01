@@ -5,17 +5,14 @@ import ArtistUpgrade from "@/components/common/artist-hub/ArtistUpgrade";
 import Navbar from "@/layouts/navbar";
 import Footer from "@/layouts/footer";
 import GoToTopButton from "@/components/common/home/GoToTopButton";
+import { generateMetadata } from "@/utils/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = generateMetadata({
   title: "AudioBlocks for Artists — Mint, Distribute & Earn Royalties on Stellar",
   description:
     "AudioBlocks is the artist-first platform for minting music NFTs, distributing tracks, and earning transparent on-chain royalties on the Stellar network.",
-  openGraph: {
-    title: "AudioBlocks for Artists",
-    description: "Mint your music, distribute globally, and earn transparent royalties on Stellar.",
-    type: "website",
-  },
-};
+  url: "/",
+});
 
 export default function Home() {
   return (
