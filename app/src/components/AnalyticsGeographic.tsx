@@ -11,6 +11,18 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
   const maxPlays = Math.max(...data.map((d) => d.plays));
   const sortedData = [...data].sort((a, b) => b.plays - a.plays);
 
+  if (data.length === 0) {
+    return (
+      <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Globe size={20} className="text-pink-500" />
+          <h3 className="text-white text-lg font-semibold">Geographic Distribution (Top 10)</h3>
+        </div>
+        <p className="text-gray-400 text-sm">No geographic data available yet.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6">
       <div className="flex items-center gap-2 mb-6">

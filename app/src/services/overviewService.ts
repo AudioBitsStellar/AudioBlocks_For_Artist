@@ -5,7 +5,7 @@ import { OverviewResponse, StatisticsResponse, RecentActivityResponse } from "@/
 /**
  * Query key for the artist overview KPI cache (issue #121).
  * Exported so mutations that change overview-affecting data (e.g. finalizing
- * a song upload, see `uploadSerive.ts`) can invalidate it via
+ * a song upload, see `uploadService.ts`) can invalidate it via
  * `queryClient.invalidateQueries({ queryKey: OVERVIEW_QUERY_KEY })`.
  */
 export const OVERVIEW_QUERY_KEY = ["get-artist-overview"];

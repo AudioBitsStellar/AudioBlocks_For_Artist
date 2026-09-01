@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a new capability or an improvement to the artist dashboard
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Describing the problem first (not just the
+        solution) helps us find the best fit.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do, and what makes it hard today?
+      placeholder: |
+        As my catalog grows, finding a specific track means scrolling through
+        a long list.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What you would like to see. Rough ideas are fine.
+    validations:
+      required: true
+  - type: input
+    id: area
+    attributes:
+      label: Affected area
+      description: The route or component this would most likely touch.
+      placeholder: TopHeader.tsx  or  /dashboard/my-music
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

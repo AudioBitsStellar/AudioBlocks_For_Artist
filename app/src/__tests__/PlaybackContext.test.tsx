@@ -312,3 +312,93 @@ describe("PlaybackProvider + usePlayback hook", () => {
     spy.mockRestore();
   });
 });
+
+// ── Crossfade transitions ────────────────────────────────────────────────────
+
+describe("playbackReducer — crossfade", () => {
+  it("has sane crossfade defaults in the initial state", () => {
+    expect(initialPlaybackState.crossfadeEnabled).toBe(false);
+    expect(initialPlaybackState.crossfadeDuration).toBe(3);
+    expect(initialPlaybackState.isCrossfading).toBe(false);
+    expect(initialPlaybackState.fadeOutVolume).toBe(1);
+    expect(initialPlaybackState.fadeInVolume).toBe(0);
+  });
+
+  it("SET_CROSSFADE_ENABLED toggles the flag", () => {
+    const on = playbackReducer(initialPlaybackState, {
+      type: "SET_CROSSFADE_ENABLED",
+      enabled: true,
+    });
+    expect(on.crossfadeEnabled).toBe(true);
+    const off = playbackReducer(on, { type: "SET_CROSSFADE_ENABLED", enabled: false });
+    expect(off.crossfadeEnabled).toBe(false);
+  });
+
+  it("SET_CROSSFADE_DURATION clamps to [0, 12] seconds", () => {
+    expect(
+      playbackReducer(initialPlaybackState, { type: "SET_CROSSFADE_DURATION", duration: 6 })
+        .crossfadeDuration
+    ).toBe(6);
+    expect(
+      playbackReducer(initialPlaybackState, { type: "SET_CROSSFADE_DURATION", duration: 99 })
+        .crossfadeDuration
+    ).toBe(12);
+    expect(
+      playbackReducer(initialPlaybackState, { type: "SET_CROSSFADE_DURATION", duration: -5 })
+        .crossfadeDuration
+    ).toBe(0);
+  });
+
+  it("START_CROSSFADE marks a transition in progress and resets the fade volumes", () => {
+    const s = playbackReducer(
+      { ...initialPlaybackState, fadeOutVolume: 0.2, fadeInVolume: 0.8 },
+      { type: "START_CROSSFADE" }
+    );
+    expect(s.isCrossfading).toBe(true);
+    expect(s.fadeOutVolume).toBe(1);
+    expect(s.fadeInVolume).toBe(0);
+  });
+
+  it("UPDATE_CROSSFADE clamps both fade volumes to [0, 1]", () => {
+    const s = playbackReducer(
+      { ...initialPlaybackState, isCrossfading: true },
+      { type: "UPDATE_CROSSFADE", fadeOutVolume: -0.5, fadeInVolume: 1.5 }
+    );
+    expect(s.fadeOutVolume).toBe(0);
+    expect(s.fadeInVolume).toBe(1);
+  });
+
+  it("END_CROSSFADE swaps in the incoming track and clears the transition", () => {
+    const s = playbackReducer(
+      {
+        ...initialPlaybackState,
+        currentTrack: mockTrack,
+        isCrossfading: true,
+        fadeOutVolume: 0.1,
+        fadeInVolume: 0.9,
+        seekPosition: 55,
+      },
+      { type: "END_CROSSFADE", track: mockTrack2 }
+    );
+    expect(s.currentTrack).toEqual(mockTrack2);
+    expect(s.isCrossfading).toBe(false);
+    expect(s.fadeOutVolume).toBe(1);
+    expect(s.fadeInVolume).toBe(0);
+    expect(s.seekPosition).toBe(0);
+  });
+});
+
+describe("playbackReducer — unknown action", () => {
+  it("returns the same state reference for an unrecognised action", () => {
+    const s = playbackReducer(initialPlaybackState, {
+      // @ts-expect-error — exercising the default branch
+      type: "NOPE",
+    });
+    expect(s).toBe(initialPlaybackState);
+  });
+});
+
+// The app tree mounts <PlaybackProvider> in `app/src/context/provider.tsx`
+// (alongside QueryClientProvider / StellarNetworkProvider), so the audio
+// components that call usePlayback() — SeekBar, VolumeSlider, LyricsDisplay,
+// useCrossfade — resolve a context value instead of throwing.

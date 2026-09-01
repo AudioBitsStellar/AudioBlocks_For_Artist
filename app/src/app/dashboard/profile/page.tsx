@@ -42,16 +42,15 @@ function ProfileFormSkeleton() {
           <div key={i} className="flex flex-col mt-7">
             <div className="h-4 w-32 rounded bg-[#2A2A2A] animate-pulse mb-2" />
             <div
-              className="rounded-2xl bg-[#FFFFFF0A] animate-pulse"
-              style={{ width: "660px", height: `${height}px`, maxWidth: "100%" }}
+              className="rounded-2xl bg-[#FFFFFF0A] animate-pulse w-full max-w-[660px]"
+              style={{ height: `${height}px` }}
             />
           </div>
         ))}
         <div className="h-11 w-[131px] rounded-lg bg-[#2A2A2A] animate-pulse mt-6" />
       </div>
       <div
-        className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col"
-        style={{ width: "244px", height: "321px", borderRadius: "16px" }}
+        className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col w-full max-w-[244px] h-[321px] rounded-2xl"
       >
         <div className="w-full aspect-square rounded-lg bg-[#2A2A2A] animate-pulse mb-4" />
         <div className="h-4 w-20 rounded bg-[#2A2A2A] animate-pulse mb-2" />
@@ -151,7 +150,14 @@ export default function ProfilePage() {
         });
       },
       onError: (err: unknown) => {
-        // Handled by service
+        // Route through the shared error-recovery helpers so profile save
+        // behaves like the upload / mint flows (see utils/ERROR_RECOVERY.md).
+        const message = getErrorMessage(err);
+        toast.error(
+          isRetryableError(err)
+            ? `Couldn't save your profile — check your connection and try again. (${message})`
+            : message || "Couldn't save your profile."
+        );
       },
     });
   };
@@ -294,11 +300,8 @@ export default function ProfilePage() {
                 maxLength={50}
                 aria-invalid={errors.username ? "true" : "false"}
                 aria-describedby={errors.username ? "username-error" : undefined}
-                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
+                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 w-full max-w-[660px] h-12 rounded-2xl"
                 style={{
-                  width: "660px",
-                  height: "48px",
-                  borderRadius: "16px",
                   background: "#FFFFFF0A",
                   backdropFilter: "blur(40px)",
                   border: errors.username ? "1px solid #ef4444" : "none",
@@ -322,11 +325,8 @@ export default function ProfilePage() {
                 maxLength={500}
                 aria-invalid={errors.bio ? "true" : "false"}
                 aria-describedby={errors.bio ? "bio-error" : undefined}
-                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 py-3 resize-none"
+                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 py-3 resize-none w-full max-w-[660px] h-[120px] rounded-2xl"
                 style={{
-                  width: "660px",
-                  height: "120px",
-                  borderRadius: "16px",
                   background: "#FFFFFF0A",
                   backdropFilter: "blur(40px)",
                   border: errors.bio ? "1px solid #ef4444" : "none",
@@ -361,11 +361,8 @@ export default function ProfilePage() {
                 maxLength={500}
                 aria-invalid={errors.website ? "true" : "false"}
                 aria-describedby={errors.website ? "website-error" : undefined}
-                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
+                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 w-full max-w-[660px] h-12 rounded-2xl"
                 style={{
-                  width: "660px",
-                  height: "48px",
-                  borderRadius: "16px",
                   background: "#FFFFFF0A",
                   backdropFilter: "blur(40px)",
                   border: errors.website ? "1px solid #ef4444" : "none",
@@ -389,11 +386,8 @@ export default function ProfilePage() {
                 maxLength={50}
                 aria-invalid={errors.twitter ? "true" : "false"}
                 aria-describedby={errors.twitter ? "twitter-error" : undefined}
-                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4"
+                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 w-full max-w-[660px] h-12 rounded-2xl"
                 style={{
-                  width: "660px",
-                  height: "48px",
-                  borderRadius: "16px",
                   background: "#FFFFFF0A",
                   backdropFilter: "blur(40px)",
                   border: errors.twitter ? "1px solid #ef4444" : "none",
@@ -419,12 +413,7 @@ export default function ProfilePage() {
 
           {/* Right Column - Profile Image */}
           <div
-            className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col"
-            style={{
-              width: "244px",
-              height: "321px",
-              borderRadius: "16px",
-            }}
+            className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col w-full max-w-[244px] h-[321px] rounded-2xl"
           >
             {profileImage ? (
               <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">

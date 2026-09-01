@@ -26,7 +26,7 @@ const useUploadServices = () => {
         handleSuccess(response.message || "Chunk uploaded successfully!");
         return response;
       },
-      onError(error) {
+      onError(error: Error) {
         handleError(error.message || "Failed to upload chunk.");
       },
     });
@@ -44,7 +44,7 @@ const useUploadServices = () => {
         handleSuccess(response.message || "Cover uploaded successfully!");
         return response;
       },
-      onError(error) {
+      onError(error: Error) {
         handleError(error.message || "Failed to upload cover.");
       },
     });
@@ -64,7 +64,7 @@ const useUploadServices = () => {
       onSuccess(response: { message?: string }) {
         handleSuccess(response.message || "Song uploaded successfully!");
       },
-      onError(error) {
+      onError(error: Error) {
         handleError(error.message || "Failed to finalize upload.");
       },
       // A newly-published song changes songsPublished/totalEarnings on

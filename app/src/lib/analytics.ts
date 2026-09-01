@@ -18,13 +18,31 @@ type EventName =
 
 type EventProperties = Record<string, string | number | boolean | undefined>;
 
+/**
+ * Segment Analytics API interface
+ * @see https://segment.com/docs/connections/sources/catalog/libraries/website/javascript/
+ */
+interface SegmentAnalytics {
+  track: (event: string, properties?: Record<string, unknown>) => void;
+  identify?: (userId: string, traits?: Record<string, unknown>) => void;
+  page?: (category?: string, name?: string, properties?: Record<string, unknown>) => void;
+  group?: (groupId: string, traits?: Record<string, unknown>) => void;
+}
+
+/**
+ * Extended Window interface with Segment analytics
+ */
+interface WindowWithAnalytics extends Window {
+  analytics?: SegmentAnalytics;
+}
+
 function send(event: EventName, props?: EventProperties): void {
   if (typeof window === "undefined") return;
   if (!process.env.NEXT_PUBLIC_ANALYTICS_WRITE_KEY) return;
 
   // Segment-compatible analytics.track call — works with PostHog, Mixpanel, and
   // any window.analytics shim that follows the Segment spec.
-  const win = window as any;
+  const win = window as WindowWithAnalytics;
   if (typeof win.analytics?.track === "function") {
     win.analytics.track(event, props ?? {});
   }

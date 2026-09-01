@@ -55,14 +55,14 @@ export default function AnalyticsSummaryCards({ summary }: AnalyticsSummaryCards
         icon={<Users size={24} />}
         label="Unique Listeners"
         value={summary.uniqueListeners.toLocaleString()}
-        trend={Math.floor(summary.growthPercentage * 0.8)}
+        trend={summary.listenerGrowthPercentage ?? Math.round(summary.growthPercentage * 0.8)}
       />
       <SummaryCard
         icon={<Activity size={24} />}
         label="Engagement Rate"
         value={summary.engagementRate.toFixed(2)}
         unit="%"
-        trend={parseFloat((Math.random() * 10 - 5).toFixed(2))}
+        trend={summary.engagementTrendPercentage ?? 0}
       />
       <SummaryCard
         icon={<Target size={24} />}

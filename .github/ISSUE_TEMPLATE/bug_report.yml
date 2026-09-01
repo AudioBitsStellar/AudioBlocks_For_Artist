@@ -1,0 +1,56 @@
+name: Bug report
+description: Something in the artist dashboard is broken or behaves unexpectedly
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please fill in the sections below so it is
+        easy to reproduce and locate in `app/src/`.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected vs. what actually happened.
+      placeholder: |
+        Expected: clicking "Delete" opens a confirmation dialog.
+        Actual: the item is deleted immediately with no prompt.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to Dashboard → My Music → Albums
+        2. Click the "..." menu on an album
+        3. Click "Delete"
+    validations:
+      required: true
+  - type: input
+    id: area
+    attributes:
+      label: Affected area
+      description: The route or component name, so it is easy to find in `app/src/`.
+      placeholder: /dashboard/my-music/albums  or  MyAlbums.tsx
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where did you see this
+      options:
+        - Local dev (npm run dev)
+        - Deployed preview
+        - Production
+        - Not sure
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Console errors / screenshots / anything else
+      description: Paste any relevant console output or attach screenshots.
+    validations:
+      required: false

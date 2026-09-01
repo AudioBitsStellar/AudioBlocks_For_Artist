@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { songFormSchema } from "@/types/formValidation";
 import { MUSIC_GENRES } from "../shared/music_genre";
-import useUploadServices from "@/services/uploadSerive";
+import useUploadServices from "@/services/uploadService";
 import { splitFile, generateFileId } from "@/utils/chunkUploader";
 import MusicLoader from "../MusicLoader";
 import { useToast } from "@/hooks/useToastHandler";

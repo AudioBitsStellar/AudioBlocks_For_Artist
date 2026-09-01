@@ -1,7 +1,16 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  ReactNode,
+} from "react";
 import { Permission, Role, ROLE_INFO, ROLE_PERMISSION_TABLE } from "@/types/role";
+import { getRoleFromToken } from "@/utils/jwt";
 
 export interface RoleContextValue {
   role: Role;
@@ -17,25 +26,53 @@ export interface RoleContextValue {
   cannot: (permission: Permission) => boolean;
   /**
    * Programmatically switch the active role. Mainly useful for demo UIs and
-   * acceptance tests; in a real backend this would be derived from the session.
+   * acceptance tests; production code should let the role come from the
+   * session (see {@link resolveSessionRole}).
    */
   setRole: (role: Role) => void;
 }
 
-const DEFAULT_ROLE: Role = "owner";
+/**
+ * Role used when the caller gives no explicit `initialRole` and the session
+ * JWT carries no usable `role` claim. Deliberately the least-privileged role:
+ * an unknown session must not be treated as the workspace owner. Mirrors the
+ * no-provider fallback in `useRole()`.
+ */
+const FALLBACK_ROLE: Role = "viewer";
+
+/**
+ * Resolve the role to start from: an explicit `initialRole` (tests, Storybook,
+ * demo UIs) always wins; otherwise the role claim on the authenticated
+ * session JWT; otherwise {@link FALLBACK_ROLE}.
+ */
+export function resolveSessionRole(explicit?: Role): Role {
+  return explicit ?? getRoleFromToken() ?? FALLBACK_ROLE;
+}
 
 export const RoleContext = createContext<RoleContextValue | undefined>(undefined);
 
 export interface RoleProviderProps {
   /**
-   * Optional initial role. Defaults to `'owner'`.
+   * Explicit role override for tests, Storybook, and demo UIs. When omitted,
+   * the provider derives the role from the authenticated session JWT and
+   * falls back to `'viewer'` for an unknown session.
    */
   initialRole?: Role;
   children: ReactNode;
 }
 
-export function RoleProvider({ initialRole = DEFAULT_ROLE, children }: RoleProviderProps) {
-  const [role, setRoleState] = useState<Role>(initialRole);
+export function RoleProvider({ initialRole, children }: RoleProviderProps) {
+  const [role, setRoleState] = useState<Role>(() => resolveSessionRole(initialRole));
+
+  // If the provider mounted before the session token was readable, adopt the
+  // session role once it is. An explicit `initialRole` is never overridden.
+  useEffect(() => {
+    if (initialRole) return;
+    const sessionRole = getRoleFromToken();
+    if (sessionRole && sessionRole !== role) {
+      setRoleState(sessionRole);
+    }
+  }, [initialRole, role]);
 
   const permissions = useMemo(() => ROLE_PERMISSION_TABLE[role], [role]);
 

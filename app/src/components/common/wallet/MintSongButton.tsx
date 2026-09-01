@@ -5,8 +5,9 @@ import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
-import { isRetryableError } from "@/utils/errorRecovery";
+import { classifyError, isUserRejection } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
+import { explorerTxUrl } from "@/lib/horizon";
 import { useState, useEffect } from "react";
 import { Loader2, Check, AlertCircle } from "lucide-react";
 import { ApiEnvelope, SubmitSongMintResponse } from "@/types/api";
@@ -95,16 +96,14 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
           address
         );
       } catch (signErr: unknown) {
-        const error = signErr as Error;
-        if (
-          error?.message?.toLowerCase().includes("rejected") ||
-          error?.message?.toLowerCase().includes("user rejected")
-        ) {
+        // A declined signature is a normal outcome, not a failure — see
+        // app/src/utils/ERROR_RECOVERY.md.
+        if (isUserRejection(signErr)) {
           setStatus("rejected");
           analytics.mintFailed({ songId, reason: "user rejected signature" });
           return;
         }
-        throw error;
+        throw signErr;
       }
 
       setStatus("submitting");
@@ -126,16 +125,15 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
       });
       toast.success("Minting succeeded!");
     } catch (err: unknown) {
-      const error = err as Error;
-      const reason = error?.message ?? "unknown";
-      analytics.mintFailed({ songId, reason });
+      const plan = classifyError(err);
+      analytics.mintFailed({ songId, reason: plan.message });
 
-      if (reason.toLowerCase().includes("timeout") || reason.toLowerCase().includes("network")) {
-        setStatus("timeout");
-      } else {
-        setStatus("failed");
+      if (plan.userRejected) {
+        setStatus("rejected");
+        return;
       }
-      setErrorMsg(reason);
+      setStatus(plan.retryable ? "timeout" : "failed");
+      setErrorMsg(plan.message);
     }
   };
 

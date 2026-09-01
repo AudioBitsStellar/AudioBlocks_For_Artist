@@ -1,6 +1,9 @@
 /** Threshold above which a call is considered slow and logged. */
 export const SLOW_THRESHOLD_MS = 2_000;
 
+/** In development, print a P50/P95/P99 summary every N recorded calls. */
+const DEV_SUMMARY_EVERY = 25;
+
 export interface PerformanceEntry {
   endpoint: string;
   method: string;
@@ -18,33 +21,40 @@ export interface PercentileStats {
 /**
  * Lightweight client-side API performance monitor — closes #163.
  *
- * Usage:
- *   const result = await apiMonitor.measure('/api/albums', 'GET', () => fetchAlbums());
+ * It is wired into `api/axios.ts` as request/response interceptors, so every
+ * service call made through the shared client is timed automatically. Slow
+ * calls (> 2 s) are logged to `console.warn`; in development a P50/P95/P99
+ * summary is printed to the console every 25 calls (and on demand via
+ * `apiMonitor.logSummary()`).
  *
- * Slow calls (> 2 s) are automatically logged to console.warn.
- * Call apiMonitor.logSummary() at any point to print P50/P95/P99 statistics.
+ * The monitor only reads timestamps and pushes to an in-memory array, so it
+ * adds no measurable latency to the wrapped call.
  */
 export class ApiPerformanceMonitor {
   private entries: PerformanceEntry[] = [];
 
   /**
-   * Wraps an async function, records its response time, and returns the result.
-   * Timing is recorded even when the wrapped call throws.
+   * Wraps an async function, records its response time, and returns the
+   * result. Timing is recorded even when the wrapped call throws.
    */
   async measure<T>(endpoint: string, method: string, fn: () => Promise<T>): Promise<T> {
     const start = typeof performance !== "undefined" ? performance.now() : Date.now();
 
     try {
       const result = await fn();
-      this.record(endpoint, method, performance.now() - start);
+      this.record(endpoint, method, this.nowMs() - start);
       return result;
     } catch (err) {
-      this.record(endpoint, method, performance.now() - start);
+      this.record(endpoint, method, this.nowMs() - start);
       throw err;
     }
   }
 
-  private record(endpoint: string, method: string, durationMs: number): void {
+  /**
+   * Records one completed call. Public so the axios interceptors can report
+   * timings they measured themselves.
+   */
+  record(endpoint: string, method: string, durationMs: number): void {
     const slow = durationMs > SLOW_THRESHOLD_MS;
     this.entries.push({
       endpoint,
@@ -58,6 +68,14 @@ export class ApiPerformanceMonitor {
       console.warn(
         `[ApiPerformance] Slow call: ${method} ${endpoint} took ${durationMs.toFixed(0)} ms (threshold: ${SLOW_THRESHOLD_MS} ms)`
       );
+    }
+
+    if (
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV === "development" &&
+      this.entries.length % DEV_SUMMARY_EVERY === 0
+    ) {
+      this.logSummary();
     }
   }
 
@@ -113,7 +131,11 @@ export class ApiPerformanceMonitor {
   get totalCalls(): number {
     return this.entries.length;
   }
+
+  private nowMs(): number {
+    return typeof performance !== "undefined" ? performance.now() : Date.now();
+  }
 }
 
-/** Shared singleton — import this in service files. */
+/** Shared singleton — imported by `api/axios.ts` and available in the console. */
 export const apiMonitor = new ApiPerformanceMonitor();

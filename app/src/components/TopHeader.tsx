@@ -6,7 +6,7 @@ import Link from "next/link";
 import { formatDate } from "@/utils/date";
 import { useRole } from "@/hooks/useRole";
 import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import SearchModal from "./SearchModal";
 
 interface TopHeaderProps {
   onMenuClick: () => void;
@@ -84,6 +84,7 @@ export default function TopHeader({
   const [currentDate, setCurrentDate] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [isDark, setIsDark] = useState(getInitialDarkMode);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const activeRole: Role = userRole ?? contextRole ?? roleInfo.role;
 
@@ -95,6 +96,19 @@ export default function TopHeader({
   const toggleTheme = () => {
     setIsDark((current) => !current);
   };
+
+  // Keyboard shortcut: Cmd/Ctrl + K to open search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -145,18 +159,23 @@ export default function TopHeader({
         </div>
 
         <div className="hidden md:flex flex-1 max-w-xl mx-8">
-          <div className="relative w-full">
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="relative w-full group"
+            aria-label="Open search (Cmd+K or Ctrl+K)"
+          >
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors"
               size={20}
+              aria-hidden="true"
             />
-            <input
-              type="search"
-              placeholder="Search by artists, songs or albums"
-              aria-label="Search"
-              className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded-lg pl-12 pr-4 py-3 text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            />
-          </div>
+            <div className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded-lg pl-12 pr-4 py-3 text-[var(--text-subtle)] text-left group-hover:border-[var(--border)] transition-colors cursor-pointer">
+              Search by artists, songs or albums
+            </div>
+            <kbd className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-1 px-2 py-1 bg-[var(--surface)] border border-[var(--border-subtle)] rounded text-[10px] text-[var(--text-subtle)] font-mono">
+              <span>⌘</span>K
+            </kbd>
+          </button>
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4">
@@ -222,6 +241,9 @@ export default function TopHeader({
           </Link>
         </div>
       </div>
+
+      {/* Search Modal */}
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </header>
   );
 }
