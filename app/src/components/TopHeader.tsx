@@ -179,6 +179,8 @@ export default function TopHeader({
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4">
+          <LanguageSwitcher />
+
           <span
             data-testid="role-badge"
             data-role={activeRole}

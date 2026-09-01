@@ -21,10 +21,22 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function isSupportedLocale(value: string | null): value is Locale {
+  // Object.hasOwn, not `in`: `in` walks the prototype chain, so a stored value
+  // of "constructor" or "toString" would pass and then index `locales` to a
+  // function instead of a translation table, leaving every label undefined.
+  return value !== null && Object.hasOwn(locales, value);
+}
+
 function readPersistedLocale(): Locale {
   if (typeof window === "undefined") return DEFAULT_LOCALE;
-  const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-  return (stored as Locale) in locales ? (stored as Locale) : DEFAULT_LOCALE;
+  try {
+    const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+    return isSupportedLocale(stored) ? stored : DEFAULT_LOCALE;
+  } catch {
+    // Safari private mode and blocked site data both throw here.
+    return DEFAULT_LOCALE;
+  }
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
@@ -35,9 +47,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
+    if (!isSupportedLocale(next)) return;
     setLocaleState(next);
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return;
+    try {
       localStorage.setItem(LOCALE_STORAGE_KEY, next);
+    } catch {
+      // Persisting is a convenience; an unavailable store must not break the
+      // switch itself.
     }
   }, []);
 
@@ -53,6 +70,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       {children}
     </I18nContext.Provider>
   );
+}
+
+/**
+ * The i18n context if one is mounted, otherwise null.
+ *
+ * For components that are merely i18n-aware rather than i18n-dependent — a
+ * language switcher has nothing to switch without a provider, and should not
+ * bring the tree down over it. Anything that genuinely needs translations must
+ * keep using useI18n(), which still throws.
+ */
+export function useOptionalI18n(): I18nContextValue | null {
+  return useContext(I18nContext);
 }
 
 export function useI18n(): I18nContextValue {
