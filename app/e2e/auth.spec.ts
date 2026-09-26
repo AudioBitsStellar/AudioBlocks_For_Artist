@@ -155,6 +155,43 @@ test.describe("Login flow", () => {
   });
 });
 
+test.describe("Email verification gate (#459)", () => {
+  test("bounces an artist with a code still pending back off the dashboard", async ({ page }) => {
+    await page.route("**/api/auth/register-email", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ user: AUTH_USER, token: AUTH_TOKEN }),
+      });
+    });
+
+    await page.goto("/signup");
+    await page.fill("#signup-name", "Gated Artist");
+    await page.fill("#signup-username", "gatedartist");
+    await page.fill("#signup-email", "gated@example.com");
+    await page.fill("#signup-password", "supersecret123");
+    await page.getByRole("button", { name: "Sign up" }).click();
+    await page.waitForURL("**/verify-email");
+
+    // Typing the dashboard address, or following a bookmark, must not get past
+    // the gate — the whole point of #459 is that the gate is not one-way.
+    await page.goto("/dashboard/overview");
+    await page.waitForURL("**/verify-email");
+    await expect(page.getByRole("heading", { name: /confirm your email/i })).toBeVisible();
+
+    const codeText = await page.getByText(/no email backend yet/i).textContent();
+    const code = codeText?.match(/\d{6}/)?.[0];
+    if (!code) throw new Error("verification code was not surfaced for mocked delivery");
+    for (const digit of code.split("")) {
+      await page.keyboard.press(digit);
+    }
+    await page.getByRole("button", { name: "Verify email" }).click();
+
+    // Confirming releases the gate, and the artist keeps the page they aimed at.
+    await page.waitForURL("**/dashboard/overview");
+  });
+});
+
 // #129's acceptance criteria also ask for a logout test ("click logout,
 // verify redirect to login page"). There is no standalone "Log out" button
 // anywhere in the primary navigation (TopHeader/Sidebar) in this codebase —
