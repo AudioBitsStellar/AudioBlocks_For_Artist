@@ -11,10 +11,12 @@ AudioBlocks is a comprehensive artist dashboard for managing music, earnings, an
 - **Event Management**: Create and manage concerts, meet-and-greets, and virtual events
 - **Merchandise Store**: Set up and track merchandise sales
 - **Fan Messaging**: Direct communication with your fanbase
+- **Team & Staff Access**: Invite managers and viewers to the workspace, with an activity log that also records the attempts a role was not allowed to make
 - **Web3 Integration**: Stellar blockchain integration for transparent payments and NFTs
 - **Premium Features**: Enhanced tools for verified artists
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **Dark/Light Mode**: User-preference based theming
+- **Keyboard Shortcuts**: Jump between dashboard sections without leaving the keyboard
 - **Accessibility**: WCAG 2.1 AA compliance with screen reader support
 
 ## 📋 Prerequisites
@@ -111,6 +113,7 @@ AudioBlocks_For_Artist/
 │   │   │   │   ├── events/
 │   │   │   │   ├── merches/
 │   │   │   │   ├── messages/
+│   │   │   │   ├── team/
 │   │   │   │   ├── premium/
 │   │   │   │   └── settings/
 │   │   │   └── layout.tsx   # Root layout
@@ -333,6 +336,22 @@ This project prioritizes accessibility:
 - Toast notifications announced via ARIA live regions
 
 **Note**: Full WCAG compliance requires manual testing with assistive technologies.
+
+### Keyboard shortcuts
+
+Press `?` anywhere in the dashboard to list these in place. Section jumps are
+two-key sequences: tap `g`, then the second key.
+
+- `g o` Overview — `g m` My Music — `g a` Analytics — `g e` Events — `g c` Merches
+- `g i` Messages — `g t` Team — `g u` Upload music — `g p` Profile — `g g` Settings
+- `?` shows or hides the shortcut list, and `Esc` closes it along with any dialog
+- `⌘/Ctrl K` opens the header search box; the shortcut registry advertises it but
+  `TopHeader` answers it, so nothing here duplicates that listener
+
+Shortcuts pause while a text field has focus, so typing a track title never
+moves the page, and ⌘/Ctrl/Alt combinations are always left to the browser. The
+definitions live in `app/src/utils/keyboardShortcuts.ts`; the resolver there is
+pure, so the sequence rules are covered by unit tests without a DOM.
 
 ## 📄 License
 

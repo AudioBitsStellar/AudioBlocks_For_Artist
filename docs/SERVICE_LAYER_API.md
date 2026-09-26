@@ -26,6 +26,7 @@ This document provides complete documentation for the frontend service layer loc
    - [16. Email Verification Service (`emailVerificationService.ts`)](#16-email-verification-service-emailverificationservicets)
    - [17. Audit Log Service (`auditLogService.ts`)](#17-audit-log-service-auditlogservicets)
    - [18. Team Service (`teamService.ts`)](#18-team-service-teamservicets)
+   - [19. Keyboard Shortcuts (`utils/keyboardShortcuts.ts`)](#19-keyboard-shortcuts-utilskeyboardshortcutsts)
 3. [Standard Error Handling & Toast Normalization](#standard-error-handling--toast-normalization)
 
 ---
@@ -656,6 +657,57 @@ Constants: `MAX_TEAM_SEATS` (8, counted including the owner), `ASSIGNABLE_ROLES`
 - `useTeam()` (`@/hooks/useTeam`) — `{ owner, staff, canManage, restrictionReason, seatsUsed, seatsRemaining }`. `staff` is the sorted roster minus the owner row.
 - `/dashboard/team` (`Team & staff`) — invite form, access table with per-row role
   picker and remove action (owner only), and the `AuditTrailPanel` activity log.
+
+---
+
+### 19. Keyboard Shortcuts (`utils/keyboardShortcuts.ts`)
+
+Dashboard keyboard shortcuts (#462). This one is a helper module under `src/utils`
+rather than an API client: there is no backend to talk to, and keeping the
+definitions and the resolver free of React is what makes the sequence rules
+testable without a DOM.
+
+Two rules keep the shortcuts out of the rest of the app's way: nothing fires
+while a text field has focus, and nothing fires while ⌘, Ctrl or Alt is held — so
+`⌘K`, which `TopHeader` answers for the search box, is advertised but not owned
+here.
+
+#### Types
+
+```typescript
+interface GoToShortcut { key: string; label: string; href: string; }
+interface KeyPress { key: string; meta?: boolean; ctrl?: boolean; alt?: boolean; }
+interface ShortcutState { awaitingPrefix: boolean; helpOpen: boolean; }
+type ShortcutEffect =
+  | { type: "navigate"; href: string; label: string }
+  | { type: "show-help" } | { type: "hide-help" }
+  | { type: "await-sequence" } | { type: "ignore" };
+```
+
+#### Constants
+
+- `GOTO_PREFIX` (`"g"`), `SHOW_HELP_KEY` (`"?"`), `SEQUENCE_TIMEOUT_MS` (2000).
+- `GOTO_SHORTCUTS` — the ten dashboard sections, one key each; `GENERAL_SHORTCUTS`
+  — the non-navigation rows shown in the list.
+
+#### Functions
+
+##### `resolveKeyPress(press, state): ShortcutEffect`
+- Decides one keystroke given where the sequence stands. Unbound second keys
+  return `ignore`, which ends the sequence rather than letting a stale `g`
+  hijack the next press.
+
+##### `isEditableTarget(target)` / `normalizeKey(key)` / `keysFor(entry)`
+- Field focus check (including a contenteditable host and elements inside it),
+  case folding that rejects named keys such as `Escape`, and the two keystrokes
+  for a destination.
+
+#### Component
+
+- `DashboardShortcuts` (`@/components/DashboardShortcuts`) — mounted once by the
+  dashboard layout, so a half-typed sequence and the shortcut list survive moves
+  between sections. It only listens and applies effects; the `?` overlay renders
+  through the shared `Modal`.
 
 ---
 

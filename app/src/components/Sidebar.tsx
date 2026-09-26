@@ -156,6 +156,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           })}
         </nav>
 
+        <p className="px-4 pb-2 text-xs text-gray-500">
+          Press{" "}
+          <kbd className="rounded border border-white/20 px-1 font-mono text-[11px] text-gray-300">
+            ?
+          </kbd>{" "}
+          for keyboard shortcuts
+        </p>
+
         <div className="space-y-2 p-4" aria-label="Legal links">
           {legalLinks.map((link) => (
             <Link

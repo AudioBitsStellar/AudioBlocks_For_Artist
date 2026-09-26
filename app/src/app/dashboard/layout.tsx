@@ -3,6 +3,7 @@
 import Sidebar from "@/components/Sidebar";
 import TopHeader from "@/components/TopHeader";
 import EmailVerificationGate from "@/components/EmailVerificationGate";
+import DashboardShortcuts from "@/components/DashboardShortcuts";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import RoleProvider from "@/context/RoleContext";
 import { DashboardCustomizationProvider } from "@/context/DashboardCustomizationContext";
@@ -32,6 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         <ServiceWorkerRegister />
+        <DashboardShortcuts />
       </DashboardCustomizationProvider>
     </RoleProvider>
   );
