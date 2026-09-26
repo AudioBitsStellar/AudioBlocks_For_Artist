@@ -24,6 +24,7 @@ This document provides complete documentation for the frontend service layer loc
    - [14. Upload Service (`uploadService.ts`)](#14-upload-service-uploadservicets)
    - [15. Verification Service (`verificationService.ts`)](#15-verification-service-verificationservicets)
    - [16. Email Verification Service (`emailVerificationService.ts`)](#16-email-verification-service-emailverificationservicets)
+   - [17. Audit Log Service (`auditLogService.ts`)](#17-audit-log-service-auditlogservicets)
 3. [Standard Error Handling & Toast Normalization](#standard-error-handling--toast-normalization)
 
 ---
@@ -508,6 +509,83 @@ MAX_ATTEMPTS = 5;                  // then the active code is burnt
 - `/verify-email` — address step, then a 6-box `OtpInput` (`@/components/shared/OtpInput`)
   code step with resend cooldown, attempt countdown, and the mock-delivery panel.
 - `EmailVerificationGate` — wraps the dashboard content and redirects while pending.
+
+---
+
+### 17. Audit Log Service (`auditLogService.ts`)
+
+Trail of team member actions (#461). No audit backend exists yet, so entries are
+persisted in localStorage behind the same call shapes a REST client would use,
+following the repo's stand-in precedent (`notificationPreferences.ts`,
+`emailVerificationService.ts`).
+
+Two rules shape the module:
+
+- **Denied attempts are recorded next to successes.** A trail that only contains
+  the things that worked cannot show an attempted abuse of a shared workspace.
+- **Recording never throws and never blocks the action it describes.** Losing an
+  entry is bad; failing a member removal because the log was full is worse.
+
+The log is a rolling window (`MAX_AUDIT_ENTRIES`, `AUDIT_RETENTION_MS`), not an
+archive — long-term retention belongs to the backend.
+
+#### Types
+
+```typescript
+type AuditAction =
+  | "member.invited" | "member.joined" | "member.invite_revoked"
+  | "member.role_changed" | "member.removed"
+  | "content.created" | "content.updated" | "content.deleted" | "settings.updated";
+type AuditOutcome = "success" | "denied";
+
+interface AuditActor { id: string; name: string; role: Role; }
+interface AuditLogEntry {
+  id: string; at: number; workspace: string;
+  actor: AuditActor; action: AuditAction; outcome: AuditOutcome;
+  targetId?: string; targetName?: string; detail?: string;
+}
+interface AuditLogFilter {
+  actorId?: string; action?: AuditAction | AuditAction[];
+  outcome?: AuditOutcome; from?: number; to?: number; limit?: number;
+}
+```
+
+#### Functions
+
+##### `recordAuditEvent(input: AuditEventInput): AuditLogEntry`
+- Appends an entry (generated `id` + timestamp) and returns it. Never throws.
+
+##### `recordDeniedAttempt(actor, action, targetName?): AuditLogEntry`
+- Records an RBAC refusal under the role the actor actually holds.
+
+##### `getAuditLog()` / `getAuditLogServerSnapshot()`
+- Newest-first entries, malformed rows skipped, retention applied on read. Cached
+  by the stored string so it is safe as a `useSyncExternalStore` snapshot.
+
+##### `subscribeToAuditLog(onChange)`
+- Custom change event plus the `storage` event (other tabs).
+
+##### `queryAuditLog(filter?)`
+- Filtered slice. An empty `action` array means "no action restriction".
+
+##### `describeAuditEntry(entry)`
+- One-line sentence for a feed row; appends `— denied` for refusals.
+
+##### `exportAuditLogCsv(entries?)` / `exportAuditLogJson(entries?)`
+- Serialized exports. CSV cells are quoted, escaped, and leading `= + - @` are
+  neutralised so a member name cannot become a formula when the file is opened in
+  a spreadsheet.
+
+##### `clearAuditLog()`
+- Empties the trail (tests). Unlike email verification, the roster and the log are
+  per-workspace, so `clearSession()` does **not** clear them.
+
+#### Hook & component
+
+- `useAuditLog(filter?)` (`@/hooks/useAuditLog`) — live store-backed view.
+- `AuditTrailPanel` (`@/components/AuditTrailPanel`) — filter by action group and
+  outcome, export the filtered rows, newest-first list. Rendered on
+  `/dashboard/team`.
 
 ---
 

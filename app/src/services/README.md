@@ -12,6 +12,7 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Album Service | `albumService.ts` | Artist album fetching and collection listing |
 | Analytics Service | `analyticsService.ts` | Streaming metrics, listener trends, geographic analytics |
 | Artist Service | `artistServices.ts` | Artist profile retrieval and update mutations |
+| Audit Log Service | `auditLogService.ts` | Rolling trail of team actions, including blocked attempts |
 | Auth Service | `authService.ts` | Login, signup, and logout operations |
 | Earnings Service | `earningsService.ts` | Revenue summaries and payout history |
 | Email Verification Service | `emailVerificationService.ts` | Onboarding email verification codes (issue, resend, confirm) |
