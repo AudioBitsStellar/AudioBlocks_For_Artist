@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/Sidebar";
 import TopHeader from "@/components/TopHeader";
+import EmailVerificationGate from "@/components/EmailVerificationGate";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import RoleProvider from "@/context/RoleContext";
 import { DashboardCustomizationProvider } from "@/context/DashboardCustomizationContext";
@@ -26,7 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               tabIndex={-1}
               className="flex-1 w-11/12 m-auto overflow-y-auto overflow-x-hidden py-8 space-y-8 focus:outline-none"
             >
-              {children}
+              <EmailVerificationGate>{children}</EmailVerificationGate>
             </main>
           </div>
         </div>

@@ -6,8 +6,10 @@
 //   - baseURL: http://localhost:3000/api (NEXT_PUBLIC_API_BASE_URL override)
 //   - POST /auth/register-email  -> { user, token }
 //   - POST /auth/login-email     -> { user, token }
-// On success, both pages store the JWT via js-cookie ("audioblocks_jwt")
-// and redirect to /dashboard.
+// On success, both pages store the JWT via js-cookie ("audioblocks_jwt").
+// Signup continues into the onboarding email verification step (#459) and
+// login only goes straight to /dashboard when the account is already
+// verified.
 //
 // Prerequisites:
 //   npx playwright install chromium
@@ -26,7 +28,7 @@ const AUTH_USER = {
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.fake-signature-for-e2e-tests";
 
 test.describe("Signup flow", () => {
-  test("fills the form, submits, and redirects to the dashboard", async ({ page }) => {
+  test("fills the form, submits, and continues to email verification", async ({ page }) => {
     await page.route("**/api/auth/register-email", async (route) => {
       expect(route.request().method()).toBe("POST");
       const body = route.request().postDataJSON();
@@ -49,8 +51,22 @@ test.describe("Signup flow", () => {
     await page.fill("#signup-password", "supersecret123");
     await page.getByRole("button", { name: "Sign up" }).click();
 
-    await page.waitForURL("**/dashboard");
-    await expect(page).toHaveURL(/\/dashboard/);
+    // Signup no longer ends on the dashboard: the artist lands on the email
+    // verification step (#459), which holds the code until it is confirmed.
+    await page.waitForURL("**/verify-email");
+    await expect(page.getByRole("heading", { name: /confirm your email/i })).toBeVisible();
+
+    const dashboard = page.waitForURL("**/dashboard/**");
+    const code = (await page.getByText(/no email backend yet/i).textContent())?.match(/\d{6}/)?.[0];
+    if (!code) throw new Error("verification code was not surfaced for mocked delivery");
+    for (const digit of code.split("")) {
+      await page.keyboard.press(digit);
+    }
+    await page.getByRole("button", { name: "Verify email" }).click();
+    await dashboard;
+
+    // Past the gate, the dashboard renders.
+    await expect(page.getByRole("main")).toBeVisible();
   });
 
   test("shows an error message when signing up with an existing email", async ({ page }) => {
@@ -95,6 +111,27 @@ test.describe("Login flow", () => {
 
     await page.waitForURL("**/dashboard");
     await expect(page).toHaveURL(/\/dashboard/);
+  });
+
+  test("sends an unverified account to the verification step instead", async ({ page }) => {
+    await page.route("**/api/auth/login-email", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          user: { ...AUTH_USER, emailVerified: false },
+          token: AUTH_TOKEN,
+        }),
+      });
+    });
+
+    await page.goto("/login");
+    await page.fill("#login-email", "artist@example.com");
+    await page.fill("#login-password", "correct-password");
+    await page.getByRole("button", { name: "Log in" }).click();
+
+    await page.waitForURL("**/verify-email");
+    await expect(page.getByRole("heading", { name: /^verify your email$/i })).toBeVisible();
   });
 
   test("shows an error message for an invalid password and stays on the login page", async ({

@@ -3,6 +3,7 @@ import Cookies from "js-cookie";
 import { getCSRFToken, getCSRFTokenHeader, refreshCSRFToken } from "@/utils/csrfToken";
 import { isRetryableError, calculateBackoff } from "@/utils/retry";
 import { apiMonitor } from "@/utils/apiPerformanceMonitor";
+import { clearEmailVerification } from "@/services/emailVerificationService";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -12,6 +13,10 @@ export function getToken(): string | null {
 export function clearSession(): void {
   Cookies.remove("audioblocks_jwt");
   localStorage.removeItem("token");
+  // Onboarding state is per-artist: leaving a pending code behind would show
+  // the previous artist's address (and gate the dashboard) for whoever signs in
+  // next on this browser.
+  clearEmailVerification();
 }
 
 // Normalized error shape exposed to callers / React Query

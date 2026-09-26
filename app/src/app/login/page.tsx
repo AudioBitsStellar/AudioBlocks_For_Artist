@@ -7,6 +7,7 @@ import Cookies from "js-cookie";
 import { toast } from "sonner";
 import MusicLoader from "@/components/MusicLoader";
 import useAuthServices from "@/services/authService";
+import { requiresEmailVerification } from "@/services/emailVerificationService";
 import { LoginEmailPayload } from "@/types";
 
 export default function LoginPage() {
@@ -25,7 +26,12 @@ export default function LoginPage() {
       const result = await loginMutation.mutateAsync(data);
       Cookies.set("audioblocks_jwt", result.token);
       toast.success("Logged in successfully!");
-      router.push("/dashboard");
+      // Two ways an artist can still owe verification (#459): the backend says
+      // so, or a code is pending locally from an unfinished signup. A session
+      // with no opinion on the matter lands on the dashboard, so accounts that
+      // predate this step are never locked out.
+      const owedVerification = result.user?.emailVerified === false || requiresEmailVerification();
+      router.push(owedVerification ? "/verify-email" : "/dashboard");
     } catch (err) {
       // onError on the mutation already toasts the message
     }

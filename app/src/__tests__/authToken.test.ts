@@ -7,6 +7,7 @@ import {
   clearTokens,
   refreshAccessToken,
 } from "@/services/authService";
+import { getEmailVerificationStatus, startVerification } from "@/services/emailVerificationService";
 
 // A syntactically well-formed (but unsigned/fake) JWT: header.payload.signature.
 const FAKE_TOKEN = "header.payload.signature";
@@ -90,6 +91,19 @@ describe("authService — token management", () => {
     it("is safe to call when nothing was ever stored", () => {
       expect(() => clearTokens()).not.toThrow();
       expect(getStoredToken()).toBeNull();
+    });
+
+    it("also drops an outstanding email verification code (#459)", () => {
+      storeToken(FAKE_TOKEN, 3600);
+      const issued = startVerification("artist@example.com");
+      if (!issued.ok) throw new Error("issuance should succeed");
+      expect(getEmailVerificationStatus()).toBe("pending");
+
+      clearTokens();
+
+      // Otherwise the next artist on this browser would be gated on a code
+      // that was sent to someone else's address.
+      expect(getEmailVerificationStatus()).toBe("unverified");
     });
   });
 

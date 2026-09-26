@@ -23,6 +23,7 @@ This document provides complete documentation for the frontend service layer loc
    - [13. Scheduled Release Service (`scheduledReleaseService.ts`)](#13-scheduled-release-service-scheduledreleaseservicets)
    - [14. Upload Service (`uploadService.ts`)](#14-upload-service-uploadservicets)
    - [15. Verification Service (`verificationService.ts`)](#15-verification-service-verificationservicets)
+   - [16. Email Verification Service (`emailVerificationService.ts`)](#16-email-verification-service-emailverificationservicets)
 3. [Standard Error Handling & Toast Normalization](#standard-error-handling--toast-normalization)
 
 ---
@@ -412,6 +413,101 @@ Handles artist identity and account verification requests.
 ##### `useSubmitVerification()`
 - **Endpoint**: `POST /api/v1/verification/apply`
 - **Payload**: `{ legalName: string; documentType: string; documentUrl: string }`
+
+---
+
+### 16. Email Verification Service (`emailVerificationService.ts`)
+
+Artist onboarding email verification (#459). Unrelated to section 15, which handles
+blue-badge profile verification applications.
+
+There is no verification backend yet, so this service follows the repo's existing
+localStorage-backed stand-in pattern (`verificationService.ts`-adjacent precedent set by
+`notificationPreferences.ts`). Because delivery can't be simulated over the network,
+issuance functions return the code to the caller so the UI can surface it while
+`featureFlags.useMockEmailVerification` is on. Only the FNV-1a digest of the code is
+persisted, never the digits.
+
+This is a pure module — no React Query hooks and no React imports, so it is unit-testable
+in isolation. `clearSession()` in `@/api/axios` calls `clearEmailVerification()` on
+session teardown so a pending code never carries over to the next artist on a shared
+browser.
+
+#### State & constants
+
+```typescript
+type EmailVerificationStatus = "unverified" | "pending" | "verified";
+interface EmailVerificationState {
+  status: EmailVerificationStatus;
+  email?: string;        // lower-cased address the code was issued to
+  codeDigest?: number;   // cleared once spent or invalidated
+  expiresAt?: number;    // epoch ms
+  attempts: number;      // wrong submissions against the active code
+  lastSentAt?: number;   // drives the resend cooldown
+}
+type VerificationError =
+  | "no_active_code" | "expired" | "invalid_code" | "too_many_attempts" | "cooldown_active";
+type IssuedCode = { ok: true; code: string } | { ok: false; error: VerificationError; retryAfterMs?: number };
+
+CODE_LENGTH = 6;
+CODE_TTL_MS = 10 * 60 * 1000;      // codes expire after 10 minutes
+RESEND_COOLDOWN_MS = 60 * 1000;    // one resend per minute
+MAX_ATTEMPTS = 5;                  // then the active code is burnt
+```
+
+#### Functions
+
+##### `getEmailVerificationState()` / `getEmailVerificationServerState()`
+- Read (and repair) the persisted record. The server snapshot is the `"unverified"` default;
+  reads are cached by identity for `useSyncExternalStore`.
+
+##### `subscribeToEmailVerification(onChange)`
+- Subscribes to the internal change event plus `storage`, returning an unsubscribe fn.
+
+##### `getEmailVerificationStatus()` / `getVerifiedEmail()`
+- Convenience reads over the stored state.
+
+##### `requiresEmailVerification()`
+- `true` only while `status === "pending"`. Deliberately `false` for the `"unverified"`
+  default so artists who registered before this step shipped are never locked out.
+
+##### `msUntilResend(now?)`
+- Milliseconds before another code may be requested (`0` when ready).
+
+##### `sanitizeCodeInput(value)`
+- Normalises free-typed input to exactly `CODE_LENGTH` digits, else `null`.
+
+##### `startVerification(email, now?)`
+- Issues the first code for an address. Bypasses the resend cooldown by design — a
+  leftover record from an earlier address must not stop a new artist from ever getting
+  a code.
+
+##### `resendVerificationCode(now?)`
+- Reissues for the stored address; enforces the cooldown (`retryAfterMs` carries the wait)
+  and resets the attempt counter.
+
+##### `verifyEmailCode(input, now?)`
+- Checks a submitted code. Wrong attempts increment; expiry and `MAX_ATTEMPTS` burn the
+  active code. Success sets `status: "verified"`.
+
+##### `clearEmailVerification()`
+- Removes the record and notifies subscribers (logout, tests).
+
+#### Hook
+
+##### `useEmailVerification()` (`@/hooks/useEmailVerification`)
+- `useSyncExternalStore` wrapper returning `{ state, status, requiresVerification }`.
+- `useHasHydrated()` from the same module distinguishes the server render from the
+  client one, so storage-backed UI never mismatches during SSR.
+
+#### Call sites
+
+- `/signup` — issues the first code and routes to `/verify-email`.
+- `/login` — routes to `/verify-email` when the API says `emailVerified === false` or a
+  code is outstanding.
+- `/verify-email` — address step, then a 6-box `OtpInput` (`@/components/shared/OtpInput`)
+  code step with resend cooldown, attempt countdown, and the mock-delivery panel.
+- `EmailVerificationGate` — wraps the dashboard content and redirects while pending.
 
 ---
 

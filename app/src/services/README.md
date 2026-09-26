@@ -14,6 +14,7 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Artist Service | `artistServices.ts` | Artist profile retrieval and update mutations |
 | Auth Service | `authService.ts` | Login, signup, and logout operations |
 | Earnings Service | `earningsService.ts` | Revenue summaries and payout history |
+| Email Verification Service | `emailVerificationService.ts` | Onboarding email verification codes (issue, resend, confirm) |
 | Events Service | `eventsService.ts` | Event management, creation, and updates |
 | Merch Service | `merchService.ts` | Merch inventory and drop lifecycle management |
 | Message Service | `messageService.ts` | Direct messaging and fan interaction chats |
@@ -23,4 +24,4 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Royalty Distribution | `royaltyDistributionService.ts` | Multi-party royalty splitting |
 | Scheduled Release | `scheduledReleaseService.ts` | Release scheduling |
 | Upload Service | `uploadService.ts` | Chunked audio uploads, cover art, and finalization |
-| Verification Service | `verificationService.ts` | Artist verification requests |
+| Verification Service | `verificationService.ts` | Artist profile verification applications (blue badge) - unrelated to email verification |

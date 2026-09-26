@@ -50,6 +50,19 @@ export function getDisplayNameFromToken(fallback = "Artist"): string {
 }
 
 /**
+ * Best-effort, unverified read of the session account's email address from the
+ * stored JWT, used to prefill the onboarding verification step. Returns `null`
+ * when the claim is absent.
+ *
+ * Same caveat as {@link getDisplayNameFromToken}: the signature is not checked,
+ * so this is display/prefill material only, never an authorization input.
+ */
+export function getEmailFromToken(): string | null {
+  const claims = readTokenClaims();
+  return typeof claims?.email === "string" && claims.email ? claims.email : null;
+}
+
+/**
  * Best-effort, unverified read of the `role` claim from the stored session
  * JWT (checking `role`, `user_role`, then a nested `user.role`). Returns
  * `null` when there is no token, the claim is absent, or its value is not one
