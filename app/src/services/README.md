@@ -24,5 +24,6 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Overview Service | `overviewService.ts` | Dashboard metrics and activity feeds |
 | Royalty Distribution | `royaltyDistributionService.ts` | Multi-party royalty splitting |
 | Scheduled Release | `scheduledReleaseService.ts` | Release scheduling |
+| Team Service | `teamService.ts` | Artist team/staff invites, roles, and removals |
 | Upload Service | `uploadService.ts` | Chunked audio uploads, cover art, and finalization |
 | Verification Service | `verificationService.ts` | Artist profile verification applications (blue badge) - unrelated to email verification |

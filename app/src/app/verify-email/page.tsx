@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import MusicLoader from "@/components/MusicLoader";
 import OtpInput from "@/components/shared/OtpInput";
-import { useEmailVerification, useHasHydrated } from "@/hooks/useEmailVerification";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { featureFlags } from "@/lib/featureFlags";
 import {
   CODE_LENGTH,

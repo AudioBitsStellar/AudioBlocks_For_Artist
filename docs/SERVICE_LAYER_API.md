@@ -25,6 +25,7 @@ This document provides complete documentation for the frontend service layer loc
    - [15. Verification Service (`verificationService.ts`)](#15-verification-service-verificationservicets)
    - [16. Email Verification Service (`emailVerificationService.ts`)](#16-email-verification-service-emailverificationservicets)
    - [17. Audit Log Service (`auditLogService.ts`)](#17-audit-log-service-auditlogservicets)
+   - [18. Team Service (`teamService.ts`)](#18-team-service-teamservicets)
 3. [Standard Error Handling & Toast Normalization](#standard-error-handling--toast-normalization)
 
 ---
@@ -586,6 +587,75 @@ interface AuditLogFilter {
 - `AuditTrailPanel` (`@/components/AuditTrailPanel`) — filter by action group and
   outcome, export the filtered rows, newest-first list. Rendered on
   `/dashboard/team`.
+
+---
+
+### 18. Team Service (`teamService.ts`)
+
+Artist team / staff access management (#460): invites, role changes and removals
+for a multi-user artist workspace.
+
+Roles and permissions are **not** redefined here — the service consumes
+`ROLE_PERMISSION_TABLE` from `@/types/role`, and `roles:manage` (previously
+declared but unused) is what gates every mutation. The roster is a localStorage
+stand-in until `/api/v1/team` ships. Every accepted *and* refused mutation is
+written to the audit trail (#461).
+
+#### Types
+
+```typescript
+type TeamMemberStatus = "invited" | "active";
+interface TeamMember {
+  id: string; name: string; email: string; role: Role; status: TeamMemberStatus;
+  addedAt: number; addedBy: string; lastActiveAt?: number;
+}
+type WorkspaceOwner = AuditActor & { email: string };
+type TeamErrorCode =
+  | "forbidden" | "invalid_email" | "invalid_name" | "invalid_role"
+  | "duplicate_email" | "seats_exhausted" | "not_found" | "immutable_member";
+type TeamResult<T> = { ok: true; value: T } | { ok: false; error: TeamErrorCode; message: string };
+```
+
+Constants: `MAX_TEAM_SEATS` (8, counted including the owner), `ASSIGNABLE_ROLES`
+(`manager`, `viewer` — never `owner`), `OWNER_MEMBER_ID` (`"self"`).
+
+#### Functions
+
+##### `canManageTeam(role)` / `getTeamRestrictionReason(role)`
+- Permission check against `roles:manage`, and the copy shown on disabled controls.
+
+##### `listTeamMembers(owner, roster?)` / `getTeamRoster()` / `countSeatsUsed()`
+- Owner row first (derived from the session, never stored), then staff, newest
+  first. Malformed stored rows are skipped.
+
+##### `subscribeToTeamRoster(onChange)` / `getTeamRosterServerSnapshot()`
+- Store subscription for `useSyncExternalStore`.
+
+##### `inviteTeamMember(payload, actor): TeamResult<TeamMember>`
+- Validates name, email, assignable role, duplicate address (case-insensitive) and
+  seats; creates the row as `status: "invited"`.
+
+##### `updateTeamMemberRole(id, role, actor): TeamResult<TeamMember>`
+- Takes effect immediately. Refuses to change the owner row or grant `owner`;
+  records `viewer -> manager` style detail. Same-role calls succeed without
+  writing an audit entry.
+
+##### `removeTeamMember(id, actor): TeamResult<TeamMember>`
+- Audits as `member.removed` for someone who had access, `member.invite_revoked`
+  for an accept-alternative that never did.
+
+##### `acceptTeamInvitation(email): TeamResult<TeamMember>`
+- Flips an invite to `active` (a real backend does this through a signed link), and
+  records `member.joined`. Idempotent once active.
+
+##### `clearTeamRoster()`
+- Empties the roster (tests).
+
+#### Hook & page
+
+- `useTeam()` (`@/hooks/useTeam`) — `{ owner, staff, canManage, restrictionReason, seatsUsed, seatsRemaining }`. `staff` is the sorted roster minus the owner row.
+- `/dashboard/team` (`Team & staff`) — invite form, access table with per-row role
+  picker and remove action (owner only), and the `AuditTrailPanel` activity log.
 
 ---
 

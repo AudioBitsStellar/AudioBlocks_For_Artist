@@ -2,7 +2,8 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { useEmailVerification, useHasHydrated } from "@/hooks/useEmailVerification";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { useHasHydrated } from "@/hooks/useHasHydrated";
 
 /**
  * Holds the dashboard back until an artist has confirmed their email address
