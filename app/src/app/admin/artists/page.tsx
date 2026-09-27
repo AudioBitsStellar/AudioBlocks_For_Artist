@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ArtistSearch from "@/components/admin/ArtistSearch";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "Artist search · Admin",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function AdminArtistsPage() {
-  return <ArtistSearch />;
+  return (
+    <ErrorBoundary fallbackTitle="Artist search couldn't be loaded">
+      <ArtistSearch />
+    </ErrorBoundary>
+  );
 }
