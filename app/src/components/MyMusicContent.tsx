@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Disc3,
   Download,
   Filter,
   FolderSearch,
@@ -13,6 +14,7 @@ import {
   Heart,
   MessageCircle,
   MoreVertical,
+  Music,
   Pencil,
   Play,
   Search,
@@ -21,12 +23,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import ConfirmationDialog from "./shared/ConfirmationDialog";
 import EmptyState from "./shared/EmptyState";
+import ErrorState from "./shared/ErrorState";
+import ErrorBoundary from "./ErrorBoundary";
+import Pagination from "./shared/Pagination";
 import EditTrackModal, { EditableTrackFields } from "./common/modals/EditTrackModal";
 import useAlbumServices from "@/services/albumService";
 import useTrackServices, { applyTrackEdit } from "@/services/trackService";
 import { featureFlags } from "@/lib/featureFlags";
 
 const SONG_ORDER_STORAGE_KEY = "my-music-track-order";
+
+/** Tracks listed per page (issue #427). */
+const TRACKS_PER_PAGE = 10;
+
+const UPLOAD_MUSIC_HREF = "/dashboard/upload-music";
+
+/** `1 track` / `8 tracks`. */
+const pluralize = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
 
 interface Album {
   id: number;
@@ -193,6 +206,54 @@ const initialSongs: Song[] = [
     downloads: 38,
     thumbnail: albums[3].image,
   },
+  {
+    id: 9,
+    title: "Paper Planes",
+    albumName: "Midnight Vibes",
+    artist: "Alex Johnson",
+    duration: "3:31",
+    value: "$8.00",
+    likes: 92,
+    comments: 10,
+    downloads: 61,
+    thumbnail: albums[1].image,
+  },
+  {
+    id: 10,
+    title: "Slow Burn",
+    albumName: "Serenity Falls",
+    artist: "Marcus Chen",
+    duration: "4:58",
+    value: "$14.00",
+    likes: 58,
+    comments: 6,
+    downloads: 31,
+    thumbnail: albums[3].image,
+  },
+  {
+    id: 11,
+    title: "Velvet Sky",
+    albumName: "Cosmic Journey",
+    artist: "Elena Martinez",
+    duration: "3:47",
+    value: "$10.50",
+    likes: 174,
+    comments: 26,
+    downloads: 121,
+    thumbnail: albums[4].image,
+  },
+  {
+    id: 12,
+    title: "Last Train Home",
+    albumName: "Electric Dreams",
+    artist: "Sarah Williams",
+    duration: "4:05",
+    value: "$9.00",
+    likes: 143,
+    comments: 19,
+    downloads: 97,
+    thumbnail: albums[2].image,
+  },
 ];
 
 function AlbumSkeletonRow() {
@@ -221,6 +282,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const [songs, setSongs] = useState<Song[]>(initialSongs);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [page, setPage] = useState(1);
   const [draggedSongId, setDraggedSongId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [reorderMessage, setReorderMessage] = useState("");
@@ -263,21 +325,31 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   };
 
   const { useGetAlbums } = useAlbumServices();
-  const { data: albumsData, isLoading: isAlbumsLoading } = useGetAlbums(!featureFlags.useMockAlbums);
+  const {
+    data: albumsData,
+    isLoading: isAlbumsLoading,
+    isError: isAlbumsError,
+    refetch: refetchAlbums,
+  } = useGetAlbums(!featureFlags.useMockAlbums);
 
   const isLoading = featureFlags.useMockAlbums ? false : isAlbumsLoading;
 
+  /**
+   * Mock albums are only a mock-mode fallback. With the real list in play an
+   * empty response means the artist genuinely has no albums, and that deserves
+   * the empty state (issue #425) rather than five stock covers (issue #426:
+   * never show sample data as if it were the artist's own).
+   */
   const displayAlbums = useMemo(() => {
-    if (!featureFlags.useMockAlbums && albumsData?.data && albumsData.data.length > 0) {
-      return albumsData.data.map((album, index) => ({
-        id: typeof album.id === "number" ? album.id : index + 1,
-        title: album.title,
-        artist: album.artistName || album.artist || "Artist",
-        type: album.type || "Album",
-        image: album.coverArtUrl || albums[index % albums.length].image,
-      }));
-    }
-    return albums;
+    if (featureFlags.useMockAlbums) return albums;
+    if (!albumsData?.data) return [];
+    return albumsData.data.map((album, index) => ({
+      id: typeof album.id === "number" ? album.id : index + 1,
+      title: album.title,
+      artist: album.artistName || album.artist || "Artist",
+      type: album.type || "Album",
+      image: album.coverArtUrl || albums[index % albums.length].image,
+    }));
   }, [albumsData]);
 
   useEffect(() => {
@@ -324,18 +396,72 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
     moveSong(songId, songs[targetIndex].id);
   };
 
-  const filteredSongs = useMemo(
+  /**
+   * Albums offered by the track filter (issue #428): the albums the artist has
+   * created plus the albums their tracks already sit in, so selecting an album
+   * is always a value the list can answer for — an empty album reports "no
+   * tracks in this album yet" instead of silently falling back to everything.
+   */
+  const albumOptions = useMemo(
     () =>
-      songs.filter((song) => {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          song.title.toLowerCase().includes(query) ||
-          song.albumName.toLowerCase().includes(query) ||
-          song.artist.toLowerCase().includes(query);
-        const matchesFilter = filterType === "all" || song.albumName === filterType;
-        return matchesSearch && matchesFilter;
-      }),
-    [songs, searchQuery, filterType]
+      Array.from(
+        new Set([
+          ...displayAlbums.map((album) => album.title),
+          ...songs.map((song) => song.albumName),
+        ])
+      ).sort(),
+    [displayAlbums, songs]
+  );
+
+  /**
+   * Search across the artist's own catalog (issue #428). Every whitespace
+   * separated word has to match somewhere in the track, so "midnight neon"
+   * narrows instead of behaving like a single literal phrase.
+   */
+  const filteredSongs = useMemo(() => {
+    const words = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return songs.filter((song) => {
+      const haystack = `${song.title} ${song.albumName} ${song.artist}`.toLowerCase();
+      const matchesSearch = words.every((word) => haystack.includes(word));
+      const matchesFilter = filterType === "all" || song.albumName === filterType;
+      return matchesSearch && matchesFilter;
+    });
+  }, [songs, searchQuery, filterType]);
+
+  const isFiltering = searchQuery.trim().length > 0 || filterType !== "all";
+
+  // One line that says what the list currently holds, so search and filter
+  // results are legible at a glance instead of only by counting rows.
+  const resultSummary = isFiltering
+    ? `${pluralize(filteredSongs.length, "track")} of ${pluralize(songs.length, "track")}`
+    : pluralize(songs.length, "track");
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterType("all");
+    setSelectedAlbum(null);
+  };
+
+  // A new query or filter invalidates the current page offset, so every search
+  // starts from the top of the results.
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filterType]);
+
+  // Deleting the last track of an album leaves the filter pointing at an option
+  // that no longer exists, and a <select> with no matching option renders blank.
+  useEffect(() => {
+    if (filterType !== "all" && !albumOptions.includes(filterType)) setFilterType("all");
+  }, [albumOptions, filterType]);
+
+  // Deleting a track can also shrink the catalog below the current page, so the
+  // page actually rendered is clamped to the pages that still exist.
+  const totalPages = Math.max(1, Math.ceil(filteredSongs.length / TRACKS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+
+  const pagedSongs = useMemo(
+    () => filteredSongs.slice((currentPage - 1) * TRACKS_PER_PAGE, currentPage * TRACKS_PER_PAGE),
+    [filteredSongs, currentPage]
   );
 
   const selectAlbum = (album: Album | null) => {
@@ -355,52 +481,74 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
       <section className="mb-10">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold">My Albums</h2>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              aria-label="Scroll albums left"
-              onClick={() =>
-                scrollContainerRef.current?.scrollBy({ left: -300, behavior: "smooth" })
-              }
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-[#885FA8] hover:bg-[#7A4F98]"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              type="button"
-              aria-label="Scroll albums right"
-              onClick={() =>
-                scrollContainerRef.current?.scrollBy({ left: 300, behavior: "smooth" })
-              }
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-[#885FA8] hover:bg-[#7A4F98]"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
+          {!isLoading && !isAlbumsError && displayAlbums.length > 0 && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                aria-label="Scroll albums left"
+                onClick={() =>
+                  scrollContainerRef.current?.scrollBy({ left: -300, behavior: "smooth" })
+                }
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-[#885FA8] hover:bg-[#7A4F98]"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                type="button"
+                aria-label="Scroll albums right"
+                onClick={() =>
+                  scrollContainerRef.current?.scrollBy({ left: 300, behavior: "smooth" })
+                }
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-[#885FA8] hover:bg-[#7A4F98]"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
         </div>
         {isLoading ? (
           <AlbumSkeletonRow />
+        ) : isAlbumsError ? (
+          <ErrorState
+            title="Unable to load your albums"
+            description="Your albums could not be loaded. Check your connection and try again."
+            retryLabel="Retry"
+            onRetry={() => refetchAlbums()}
+          />
+        ) : displayAlbums.length === 0 ? (
+          <EmptyState
+            icon={Disc3}
+            title="No albums yet"
+            description="Group your tracks into an album to give listeners more to explore."
+            ctaLabel="Upload an album"
+            ctaHref={UPLOAD_MUSIC_HREF}
+          />
         ) : (
-          <div ref={scrollContainerRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
-            {displayAlbums.map((album) => (
-              <button
-                type="button"
-                key={album.id}
-                onClick={() => selectAlbum(selectedAlbum?.id === album.id ? null : album)}
-                className={`group w-48 shrink-0 text-center ${selectedAlbum?.id === album.id ? "text-pink-400" : "text-white"}`}
-              >
-                <Image
-                  src={album.image}
-                  alt={album.title}
-                  width={192}
-                  height={192}
-                  className="mb-3 h-48 w-48 rounded-lg object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-                />
-                <span className="block truncate font-medium">{album.title}</span>
-                <span className="block truncate text-sm text-gray-400">{album.artist}</span>
-              </button>
-            ))}
-          </div>
+          <ErrorBoundary fallbackTitle="Your albums couldn't be displayed">
+            <div
+              ref={scrollContainerRef}
+              className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
+            >
+              {displayAlbums.map((album) => (
+                <button
+                  type="button"
+                  key={album.id}
+                  onClick={() => selectAlbum(selectedAlbum?.id === album.id ? null : album)}
+                  className={`group w-48 shrink-0 text-center ${selectedAlbum?.id === album.id ? "text-pink-400" : "text-white"}`}
+                >
+                  <Image
+                    src={album.image}
+                    alt={album.title}
+                    width={192}
+                    height={192}
+                    className="mb-3 h-48 w-48 rounded-lg object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                  />
+                  <span className="block truncate font-medium">{album.title}</span>
+                  <span className="block truncate text-sm text-gray-400">{album.artist}</span>
+                </button>
+              ))}
+            </div>
+          </ErrorBoundary>
         )}
       </section>
 
@@ -410,6 +558,9 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             <h2 className="text-xl font-semibold">My Tracks</h2>
             <p className="mt-1 text-sm text-gray-400">
               Drag tracks to customize their listing order.
+            </p>
+            <p className="mt-1 text-sm text-gray-400" role="status" aria-live="polite">
+              {resultSummary}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -439,9 +590,9 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                 className="bg-transparent py-2.5 outline-none"
               >
                 <option value="all">All albums</option>
-                {albums.map((album) => (
-                  <option key={album.id} value={album.title}>
-                    {album.title}
+                {albumOptions.map((albumTitle) => (
+                  <option key={albumTitle} value={albumTitle}>
+                    {albumTitle}
                   </option>
                 ))}
               </select>
@@ -452,150 +603,175 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
         <div aria-live="polite" className="sr-only">
           {reorderMessage}
         </div>
-        {filteredSongs.length === 0 ? (
+        {songs.length === 0 ? (
+          <EmptyState
+            icon={Music}
+            title="No tracks yet"
+            description="Upload your first track to start building your catalog on AudioBlocks."
+            ctaLabel="Upload your first track"
+            ctaHref={UPLOAD_MUSIC_HREF}
+          />
+        ) : filteredSongs.length === 0 ? (
           <EmptyState
             icon={FolderSearch}
             title="No tracks found"
-            description="Try adjusting your search or album filter."
+            description={
+              searchQuery.trim()
+                ? `No track matches “${searchQuery.trim()}”. Try a different search or album.`
+                : "None of your tracks are in this album yet."
+            }
+            ctaLabel="Clear filters"
+            onCta={clearFilters}
           />
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-800 bg-[#111111]">
-            <div className="hidden grid-cols-[40px_1fr_140px_100px_100px_100px_200px] items-center gap-4 border-b border-gray-800 px-4 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid">
-              <span aria-hidden="true" />
-              <span>Track</span>
-              <span>Duration</span>
-              <span>Likes</span>
-              <span>Comments</span>
-              <span>Downloads</span>
-              <span aria-hidden="true" />
-            </div>
-            {filteredSongs.map((song, index) => {
-              const fullIndex = songs.findIndex((item) => item.id === song.id);
-              const isDragging = draggedSongId === song.id;
-              const isDropTarget = dropTargetId === song.id && draggedSongId !== song.id;
-              return (
-                <div
-                  key={song.id}
-                  draggable
-                  onDragStart={(event) => {
-                    setDraggedSongId(song.id);
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", String(song.id));
-                  }}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setDropTargetId(song.id);
-                  }}
-                  onDragLeave={() => setDropTargetId(null)}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    const sourceId = Number(event.dataTransfer.getData("text/plain"));
-                    moveSong(sourceId, song.id);
-                    setDraggedSongId(null);
-                    setDropTargetId(null);
-                  }}
-                  onDragEnd={() => {
-                    setDraggedSongId(null);
-                    setDropTargetId(null);
-                  }}
-                  className={`grid grid-cols-[40px_1fr_auto] items-center gap-4 border-b border-gray-800 px-4 py-3 transition-all duration-200 last:border-b-0 md:grid-cols-[40px_1fr_140px_100px_100px_100px_200px] ${isDragging ? "scale-[0.99] opacity-40" : ""} ${isDropTarget ? "border-t-2 border-t-pink-500 bg-pink-500/10" : "hover:bg-white/[0.03]"}`}
-                >
-                  <button
-                    type="button"
-                    draggable={false}
-                    aria-label={`Drag ${song.title} to reorder`}
-                    title="Drag to reorder"
-                    className="flex h-10 w-10 cursor-grab items-center justify-center rounded text-gray-500 hover:bg-white/10 hover:text-white active:cursor-grabbing"
+          <ErrorBoundary fallbackTitle="Your track list couldn't be displayed">
+            <div className="overflow-hidden rounded-xl border border-gray-800 bg-[#111111]">
+              <div className="hidden grid-cols-[40px_1fr_140px_100px_100px_100px_200px] items-center gap-4 border-b border-gray-800 px-4 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid">
+                <span aria-hidden="true" />
+                <span>Track</span>
+                <span>Duration</span>
+                <span>Likes</span>
+                <span>Comments</span>
+                <span>Downloads</span>
+                <span aria-hidden="true" />
+              </div>
+              {pagedSongs.map((song, index) => {
+                const fullIndex = songs.findIndex((item) => item.id === song.id);
+                const isDragging = draggedSongId === song.id;
+                const isDropTarget = dropTargetId === song.id && draggedSongId !== song.id;
+                return (
+                  <div
+                    key={song.id}
+                    draggable
+                    onDragStart={(event) => {
+                      setDraggedSongId(song.id);
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", String(song.id));
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setDropTargetId(song.id);
+                    }}
+                    onDragLeave={() => setDropTargetId(null)}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const sourceId = Number(event.dataTransfer.getData("text/plain"));
+                      moveSong(sourceId, song.id);
+                      setDraggedSongId(null);
+                      setDropTargetId(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedSongId(null);
+                      setDropTargetId(null);
+                    }}
+                    className={`grid grid-cols-[40px_1fr_auto] items-center gap-4 border-b border-gray-800 px-4 py-3 transition-all duration-200 last:border-b-0 md:grid-cols-[40px_1fr_140px_100px_100px_100px_200px] ${isDragging ? "scale-[0.99] opacity-40" : ""} ${isDropTarget ? "border-t-2 border-t-pink-500 bg-pink-500/10" : "hover:bg-white/[0.03]"}`}
                   >
-                    <GripVertical size={20} />
-                  </button>
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Image
-                      src={song.thumbnail}
-                      alt=""
-                      width={48}
-                      height={48}
-                      className="h-12 w-12 shrink-0 rounded object-cover"
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{song.title}</p>
-                      <p className="truncate text-sm text-gray-400">
-                        {song.artist} · {song.albumName}
-                      </p>
+                    <button
+                      type="button"
+                      draggable={false}
+                      aria-label={`Drag ${song.title} to reorder`}
+                      title="Drag to reorder"
+                      className="flex h-10 w-10 cursor-grab items-center justify-center rounded text-gray-500 hover:bg-white/10 hover:text-white active:cursor-grabbing"
+                    >
+                      <GripVertical size={20} />
+                    </button>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Image
+                        src={song.thumbnail}
+                        alt=""
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 shrink-0 rounded object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{song.title}</p>
+                        <p className="truncate text-sm text-gray-400">
+                          {song.artist} · {song.albumName}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="hidden text-sm text-gray-400 md:block">
+                      <Clock size={14} className="mr-1 inline" />
+                      {song.duration}
+                    </span>
+                    <span className="hidden text-sm text-gray-400 md:block">
+                      <Heart size={14} className="mr-1 inline" />
+                      {song.likes}
+                    </span>
+                    <span className="hidden text-sm text-gray-400 md:block">
+                      <MessageCircle size={14} className="mr-1 inline" />
+                      {song.comments}
+                    </span>
+                    <span className="hidden text-sm text-gray-400 md:block">
+                      <Download size={14} className="mr-1 inline" />
+                      {song.downloads}
+                    </span>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        aria-label={`Move ${song.title} up`}
+                        disabled={fullIndex === 0}
+                        onClick={() => moveSongBy(song.id, -1)}
+                        className="hidden h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white disabled:invisible md:flex"
+                      >
+                        <ArrowUp size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Move ${song.title} down`}
+                        disabled={fullIndex === songs.length - 1}
+                        onClick={() => moveSongBy(song.id, 1)}
+                        className="hidden h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white disabled:invisible md:flex"
+                      >
+                        <ArrowDown size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Edit ${song.title}`}
+                        onClick={() => setEditingSongId(song.id)}
+                        className="flex h-9 w-9 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Play ${song.title}`}
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-600 hover:bg-pink-500"
+                      >
+                        <Play size={15} fill="currentColor" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`More actions for ${song.title}`}
+                        onClick={() => setDeleteConfirmation({ isOpen: true, songId: song.id })}
+                        className="flex h-9 w-9 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white"
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+                    </div>
+                    <div className="col-span-2 flex gap-2 text-xs text-gray-400 md:hidden">
+                      <span>{song.duration}</span>
+                      <span>·</span>
+                      <span>{song.likes} likes</span>
+                      <span>·</span>
+                      <span>
+                        {(currentPage - 1) * TRACKS_PER_PAGE + index + 1} of {filteredSongs.length}
+                      </span>
                     </div>
                   </div>
-                  <span className="hidden text-sm text-gray-400 md:block">
-                    <Clock size={14} className="mr-1 inline" />
-                    {song.duration}
-                  </span>
-                  <span className="hidden text-sm text-gray-400 md:block">
-                    <Heart size={14} className="mr-1 inline" />
-                    {song.likes}
-                  </span>
-                  <span className="hidden text-sm text-gray-400 md:block">
-                    <MessageCircle size={14} className="mr-1 inline" />
-                    {song.comments}
-                  </span>
-                  <span className="hidden text-sm text-gray-400 md:block">
-                    <Download size={14} className="mr-1 inline" />
-                    {song.downloads}
-                  </span>
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      type="button"
-                      aria-label={`Move ${song.title} up`}
-                      disabled={fullIndex === 0}
-                      onClick={() => moveSongBy(song.id, -1)}
-                      className="hidden h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white disabled:invisible md:flex"
-                    >
-                      <ArrowUp size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Move ${song.title} down`}
-                      disabled={fullIndex === songs.length - 1}
-                      onClick={() => moveSongBy(song.id, 1)}
-                      className="hidden h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white disabled:invisible md:flex"
-                    >
-                      <ArrowDown size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Edit ${song.title}`}
-                      onClick={() => setEditingSongId(song.id)}
-                      className="flex h-9 w-9 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Play ${song.title}`}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-600 hover:bg-pink-500"
-                    >
-                      <Play size={15} fill="currentColor" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`More actions for ${song.title}`}
-                      onClick={() => setDeleteConfirmation({ isOpen: true, songId: song.id })}
-                      className="flex h-9 w-9 items-center justify-center rounded text-gray-400 hover:bg-white/10 hover:text-white"
-                    >
-                      <MoreVertical size={18} />
-                    </button>
-                  </div>
-                  <div className="col-span-2 flex gap-2 text-xs text-gray-400 md:hidden">
-                    <span>{song.duration}</span>
-                    <span>·</span>
-                    <span>{song.likes} likes</span>
-                    <span>·</span>
-                    <span>
-                      {index + 1} of {filteredSongs.length}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            <Pagination
+              page={currentPage}
+              pageSize={TRACKS_PER_PAGE}
+              totalItems={filteredSongs.length}
+              onPageChange={setPage}
+              ariaLabel="Track list pages"
+              itemNoun="tracks"
+            />
+          </ErrorBoundary>
         )}
       </section>
 
@@ -605,7 +781,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
           if (!open) setEditingSongId(null);
         }}
         track={editingSong}
-        albumOptions={albums.map((album) => album.title)}
+        albumOptions={albumOptions}
         onSave={handleEditSave}
       />
 

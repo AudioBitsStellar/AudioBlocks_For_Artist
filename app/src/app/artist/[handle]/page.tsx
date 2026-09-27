@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Disc3, Globe, Music, Radio, Users } from "lucide-react";
+import { Disc3, Globe, LucideIcon, Music, Radio, UserRound, Users } from "lucide-react";
 import {
   displayNameFromHandle,
   fetchPublicArtistProfile,
@@ -10,6 +10,7 @@ import {
 import { generateArtistMetadata, generateArtistStructuredData } from "@/utils/metadata";
 import { formatDate } from "@/utils/date";
 import { VerifiedBadge } from "@/components/common/VerifiedBadge";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 interface ArtistProfilePageProps {
   params: { handle: string };
@@ -74,7 +75,37 @@ const STATS: { key: keyof PublicArtistProfile; label: string; icon: typeof Music
   { key: "songCount", label: "Songs", icon: Music },
   { key: "albumCount", label: "Albums", icon: Disc3 },
   { key: "listenersCount", label: "Listeners", icon: Users },
+  { key: "followersCount", label: "Followers", icon: UserRound },
 ];
+
+/**
+ * Placeholder for a part of the profile that is genuinely empty (issue #425).
+ *
+ * Only a reported `0` renders one: when the profile could not be fetched the
+ * counts are simply absent, and claiming an artist has no tracks because their
+ * API call failed would be a lie.
+ */
+function ProfileEmptyState({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#1F1F1F] bg-[#111111] px-6 py-8 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1E1E1E] text-[#A3A3A3]">
+        <Icon size={22} aria-hidden="true" />
+      </div>
+      <div>
+        <p className="font-semibold text-white">{title}</p>
+        <p className="mt-1 max-w-sm text-sm text-[#A3A3A3]">{description}</p>
+      </div>
+    </div>
+  );
+}
 
 function ProfileHeader({ profile }: { profile: PublicArtistProfile }) {
   return (
@@ -157,6 +188,34 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
   // An unparsable date renders nothing rather than "since Invalid Date".
   const joinedLabel = profile.joinedAt ? formatDate(profile.joinedAt, "full") : "";
 
+  // Only a reported `0` means "nothing here yet". When the profile itself could
+  // not be fetched the counts are absent, and telling visitors an artist has no
+  // tracks because our API call failed would be worse than saying nothing
+  // (the unavailable notice above already covers that case).
+  const emptyStates =
+    result.status === "ok"
+      ? [
+          ...(profile.songCount === 0
+            ? [
+                {
+                  icon: Music,
+                  title: "No tracks yet",
+                  description: `${profile.name} hasn't released any music yet. Check back soon.`,
+                },
+              ]
+            : []),
+          ...(profile.followersCount === 0
+            ? [
+                {
+                  icon: Users,
+                  title: "No followers yet",
+                  description: `Nobody follows ${profile.name} yet — be the first to listen.`,
+                },
+              ]
+            : []),
+        ]
+      : [];
+
   const structuredData = generateArtistStructuredData({
     name: profile.name,
     handle: profile.handle,
@@ -174,67 +233,90 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(structuredData) }} />
 
-      <main
-        id="main-content"
-        tabIndex={-1}
-        className="mx-auto w-full max-w-3xl space-y-10 px-4 py-10 focus:outline-none sm:px-6"
-      >
-        <ProfileHeader profile={profile} />
-
-        {result.status === "unavailable" && (
-          <p role="status" className="rounded-xl border border-[#2A2A2A] bg-[#161616] p-4 text-sm text-[#A3A3A3]">
-            This artist profile is temporarily unavailable. Please try again shortly.
-          </p>
-        )}
-
-        <dl className="grid gap-4 sm:grid-cols-3">
-          {STATS.map(({ key, label, icon: Icon }) => {
-            const value = profile[key];
-            if (typeof value !== "number") return null;
-            return (
-              <div
-                key={key}
-                className="rounded-2xl border border-[#1F1F1F] bg-[#111111] p-6"
-              >
-                <dt className="flex items-center gap-2 text-sm text-[#A3A3A3]">
-                  <Icon size={16} aria-hidden="true" />
-                  {label}
-                </dt>
-                <dd className="mt-2 text-2xl font-bold text-white">
-                  {value.toLocaleString("en-US")}
-                </dd>
-              </div>
-            );
-          })}
-        </dl>
-
-        {profile.genres && profile.genres.length > 0 && (
-          <section aria-labelledby="artist-genres">
-            <h2 id="artist-genres" className="text-lg font-semibold text-white">
-              Genres
-            </h2>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {profile.genres.map((genre) => (
-                <li
-                  key={genre}
-                  className="rounded-full bg-[#1E1E1E] px-3 py-1 text-sm text-[#C9C9C9]"
-                >
-                  {genre}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {joinedLabel && <p className="text-xs text-[#6F6F6F]">On AudioBlocks since {joinedLabel}</p>}
-
-        <Link
-          href="/"
-          className="inline-block text-sm text-[#A3A3A3] underline transition-colors hover:text-white"
+      <ErrorBoundary fallbackTitle="This artist profile couldn't be displayed">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-3xl space-y-10 px-4 py-10 focus:outline-none sm:px-6"
         >
-          Discover more artists on AudioBlocks
-        </Link>
-      </main>
+          <ProfileHeader profile={profile} />
+
+          {result.status === "unavailable" && (
+            <p
+              role="status"
+              className="rounded-xl border border-[#2A2A2A] bg-[#161616] p-4 text-sm text-[#A3A3A3]"
+            >
+              This artist profile is temporarily unavailable. Please try again shortly.
+            </p>
+          )}
+
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {STATS.map(({ key, label, icon: Icon }) => {
+              const value = profile[key];
+              if (typeof value !== "number") return null;
+              return (
+                <div
+                  key={key}
+                  className="rounded-2xl border border-[#1F1F1F] bg-[#111111] p-6"
+                >
+                  <dt className="flex items-center gap-2 text-sm text-[#A3A3A3]">
+                    <Icon size={16} aria-hidden="true" />
+                    {label}
+                  </dt>
+                  <dd className="mt-2 text-2xl font-bold text-white">
+                    {value.toLocaleString("en-US")}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+
+          {emptyStates.length > 0 && (
+            <section
+              aria-label="Nothing to show yet"
+              className="grid gap-4 sm:grid-cols-2"
+            >
+              {emptyStates.map(({ icon: Icon, title, description }) => (
+                <ProfileEmptyState
+                  key={title}
+                  icon={Icon}
+                  title={title}
+                  description={description}
+                />
+              ))}
+            </section>
+          )}
+
+          {profile.genres && profile.genres.length > 0 && (
+            <section aria-labelledby="artist-genres">
+              <h2 id="artist-genres" className="text-lg font-semibold text-white">
+                Genres
+              </h2>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {profile.genres.map((genre) => (
+                  <li
+                    key={genre}
+                    className="rounded-full bg-[#1E1E1E] px-3 py-1 text-sm text-[#C9C9C9]"
+                  >
+                    {genre}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {joinedLabel && (
+            <p className="text-xs text-[#6F6F6F]">On AudioBlocks since {joinedLabel}</p>
+          )}
+
+          <Link
+            href="/"
+            className="inline-block text-sm text-[#A3A3A3] underline transition-colors hover:text-white"
+          >
+            Discover more artists on AudioBlocks
+          </Link>
+        </main>
+      </ErrorBoundary>
     </>
   );
 }

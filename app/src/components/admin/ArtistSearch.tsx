@@ -11,7 +11,7 @@
 
 import { useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpDown, Search, UserRound, X } from "lucide-react";
+import { Search, UserRound, X } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import useArtistDirectoryService, {
   artistDirectoryStatuses,
@@ -21,6 +21,8 @@ import useArtistDirectoryService, {
 import { isAdminSession } from "@/utils/jwt";
 import Breadcrumb from "@/components/Breadcrumb";
 import EmptyState from "@/components/shared/EmptyState";
+import ErrorState from "@/components/shared/ErrorState";
+import Pagination from "@/components/shared/Pagination";
 import { SkeletonList } from "@/components/shared/Skeleton";
 import { formatDate } from "@/utils/date";
 
@@ -69,7 +71,6 @@ export default function ArtistSearch() {
 
   const artists = useMemo(() => toArtistDirectoryEntries(data), [data]);
   const total = data?.meta?.total ?? artists.length;
-  const totalPages = data?.meta?.totalPages ?? 1;
   const isEmpty = isAdmin === true && !isLoading && !isError && artists.length === 0;
   const showSkeleton = isLoading || (isFetching && artists.length === 0);
 
@@ -178,12 +179,11 @@ export default function ArtistSearch() {
           className="rounded-2xl border border-[#1F1F1F] bg-[#111111] p-2"
         />
       ) : isError ? (
-        <EmptyState
-          icon={ArrowUpDown}
+        <ErrorState
           title="Unable to load artists"
           description="We could not reach the artist directory. Please try again."
-          ctaLabel="Retry"
-          onCta={() => refetch()}
+          retryLabel="Retry"
+          onRetry={() => refetch()}
         />
       ) : isEmpty ? (
         <EmptyState
@@ -246,29 +246,14 @@ export default function ArtistSearch() {
         </ul>
       )}
 
-      {totalPages > 1 && (
-        <nav className="flex items-center justify-between gap-4" aria-label="Artist search pages">
-          <button
-            type="button"
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            disabled={page <= 1}
-            className="rounded-lg border border-[#2A2A2A] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1E1E1E] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-[#A3A3A3]">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            type="button"
-            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            disabled={page >= totalPages}
-            className="rounded-lg border border-[#2A2A2A] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1E1E1E] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Next
-          </button>
-        </nav>
-      )}
+      <Pagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalItems={total}
+        onPageChange={setPage}
+        ariaLabel="Artist search pages"
+        itemNoun="artists"
+      />
     </div>
   );
 }
