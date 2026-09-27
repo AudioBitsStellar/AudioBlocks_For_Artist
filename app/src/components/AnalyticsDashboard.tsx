@@ -6,6 +6,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import AnalyticsOnchainStats from "@/components/AnalyticsOnchainStats";
 import useAnalyticsServices from "@/services/analyticsService";
 import { useInView } from "@/hooks/useInView";
+import { Skeleton } from "@/components/shared/Skeleton";
 
 const AnalyticsSummaryCards = dynamic(() => import("@/components/AnalyticsSummaryCards"), {
   loading: () => (
@@ -86,8 +87,14 @@ export default function AnalyticsDashboard() {
       </div>
 
       {isLoading && (
-        <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 text-gray-400">
-          Loading analytics...
+        <div
+          role="status"
+          aria-busy="true"
+          aria-label="Loading analytics"
+          className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6"
+        >
+          <Skeleton className="h-8 w-1/3 rounded mb-6" />
+          <Skeleton className="h-[300px] w-full rounded" />
         </div>
       )}
 

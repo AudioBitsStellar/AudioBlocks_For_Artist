@@ -134,7 +134,7 @@ export default function TopHeader({
   return (
     <header className="sticky top-0 z-30 bg-[var(--surface)] flex-shrink-0 border-b border-[var(--border-subtle)]">
       <div className="h-16 sm:h-20 flex items-center justify-between px-4 md:px-8">
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <button
             onClick={onMenuClick}
             aria-label="Open navigation menu"
@@ -145,12 +145,15 @@ export default function TopHeader({
             <Menu size={26} />
           </button>
 
-          <div>
-            <h2 className="text-[var(--text)] text-base sm:text-lg md:text-xl font-bold leading-tight">
+          <div className="min-w-0">
+            <h2 className="truncate text-[var(--text)] text-base sm:text-lg md:text-xl font-bold leading-tight">
               {userName ? `Welcome, ${userName}` : "Welcome, Pete Lisk"}
             </h2>
-            <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-0.5">
-              {currentDate} | {currentTime}
+            {/* The time is dropped on the narrowest screens so the date never
+                wraps and pushes the header taller than h-16. */}
+            <p className="mt-0.5 truncate text-xs text-[var(--text-muted)] sm:text-sm">
+              {currentDate}
+              <span className="hidden sm:inline"> | {currentTime}</span>
             </p>
           </div>
         </div>
@@ -199,6 +202,20 @@ export default function TopHeader({
           </button>
 
           <NotificationBell notificationCount={notificationCount} />
+
+          {/* The full-width search field is md+, so phones get an icon button
+              (issue #422) to reach the same modal. Deliberately named "Search"
+              rather than "Open search" so the two triggers stay individually
+              addressable by accessible name. */}
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            aria-label="Search"
+            title="Search"
+            className="rounded p-1 text-[var(--text)] transition-colors hover:text-[var(--text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] md:hidden"
+          >
+            <Search size={22} aria-hidden="true" />
+          </button>
 
           <Link
             href="/dashboard/profile"

@@ -11,12 +11,14 @@ import {
   BarChart3,
   MessageSquare,
   Megaphone,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getTotalUnreadCount } from "@/services/messageService";
+import { isAdminSession } from "@/utils/jwt";
 
 const navItems = [
   { name: "Overview", icon: Home, href: "/dashboard/overview" },
@@ -30,6 +32,9 @@ const navItems = [
   { name: "Settings", icon: SettingsIcon, href: "/dashboard/settings/notifications" },
 ];
 
+/** Admin-only surfaces, appended to the nav for admin sessions (#420). */
+const adminNavItems = [{ name: "Artist Search", icon: Search, href: "/admin/artists" }];
+
 const legalLinks = [
   { name: "Privacy Center", href: "/privacy-center" },
   { name: "Privacy Policy", href: "/privacy-policy" },
@@ -39,6 +44,15 @@ const legalLinks = [
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const navItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  // Read after mount: the session token lives in cookies/localStorage, so the
+  // admin role cannot be resolved during SSR.
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    setIsAdmin(isAdminSession());
+  }, []);
+
+  const visibleNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
 
   useEffect(() => {
     if (!open) {
@@ -62,7 +76,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   }, [open, onClose]);
 
   const handleNavKeyDown = (event: React.KeyboardEvent<HTMLElement>, index: number) => {
-    const total = navItems.length;
+    const total = visibleNavItems.length;
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -123,7 +137,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-4" aria-label="Main navigation">
-          {navItems.map((item, index) => {
+          {visibleNavItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const unread = item.href === "/dashboard/messages" ? getTotalUnreadCount() : 0;
