@@ -24,6 +24,7 @@ This document provides complete documentation for the frontend service layer loc
    - [14. Upload Service (`uploadService.ts`)](#14-upload-service-uploadservicets)
    - [15. Verification Service (`verificationService.ts`)](#15-verification-service-verificationservicets)
    - [16. Track Service (`trackService.ts`)](#16-track-service-trackservicets)
+   - [17. Artist Directory Service (`artistDirectoryService.ts`)](#17-artist-directory-service-artistdirectoryservicets)
 3. [Caching Strategy](#caching-strategy)
 4. [Optimistic Updates](#optimistic-updates)
 5. [Standard Error Handling & Toast Normalization](#standard-error-handling--toast-normalization)
@@ -443,6 +444,51 @@ Edits a track's title and album with an optimistic UI update (see [Optimistic Up
 - **Payload**: `{ id: number | string; title: string; albumName: string }`
 - **Behavior**: `onOptimistic(edit)` applies the change to the caller's state immediately and returns an undo function; on failure the undo runs and an error toast explains the edit was reverted.
 - **Mock data**: when `NEXT_PUBLIC_USE_MOCK_DATA=true` (`featureFlags.useMockTracks`) the request is simulated locally instead of calling the API.
+
+### 17. Artist Directory Service (`artistDirectoryService.ts`)
+
+Admin-only artist search/discovery (issue #420). Read-only: it never mutates
+artist data, so it only wraps `useGet`. The `admin` account role is read
+client-side only to decide whether to render the UI (`isAdminSession()` in
+`@/utils/jwt`); the backend remains the real authorization check.
+
+#### Hooks & Endpoints
+
+##### `useSearchArtists(params?: ArtistSearchParams, enabled?: boolean)`
+- **Endpoint**: `GET /admin/artists?q=&page=&limit=&status=` (`ADMIN_ARTIST_ENDPOINTS.SEARCH`)
+- **Params**: `{ query?: string; page?: number; limit?: number; status?: "all" | "verified" | "pending" | "unverified" }`
+- **Cache Stale Time**: `CACHE_TIME.SHORT` (1 minute); the query key is `["admin-artist-directory", params]`.
+- **Response Shape**:
+  ```typescript
+  interface ArtistDirectoryEntry {
+    id: string;
+    name: string;
+    handle: string;
+    email?: string;
+    profileImage?: string;
+    status: "verified" | "pending" | "unverified";
+    joinedAt?: string;
+    songCount?: number;
+    albumCount?: number;
+    totalEarnings?: number;
+  }
+  interface ArtistDirectoryResponse {
+    success: boolean;
+    data: ArtistDirectoryEntry[];
+    meta?: { page: number; limit: number; total: number; totalPages: number };
+  }
+  ```
+- **Notes**: the admin search box debounces its input (`useDebouncedValue`, 300 ms) so typing issues one request per pause, not per keystroke. `toArtistDirectoryEntries()` normalizes the response into a safe array.
+
+### Server-only: Public Artist Profile (`app/src/lib/publicArtistProfile.ts`)
+
+The public `/artist/[handle]` route is server-rendered so its metadata is real
+(issue #421). Because the shared axios client is browser-oriented, this module
+reads the profile with plain `fetch`.
+
+- **Endpoint**: `GET /artist/public/:handle` (`PUBLIC_ARTIST_ENDPOINTS.PROFILE`)
+- **Caching**: `next: { revalidate: 300 }`
+- **Returns**: `{ status: "ok", profile }` · `{ status: "not-found" }` · `{ status: "unavailable" }`, so the route can 404 only on a definitive miss and render a `noindex` shell when the API is down.
 
 ---
 

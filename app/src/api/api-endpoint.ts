@@ -104,3 +104,26 @@ export const NOTIFICATION_ENDPOINTS = {
   MARK_READ: (id: string) => `/artist/notifications/${id}/read`,
   MARK_ALL_READ: "/artist/notifications/read-all",
 };
+
+// Public (unauthenticated) artist profile, read by the server-rendered
+// /artist/[handle] route so its SEO metadata is real rather than a placeholder.
+export const PUBLIC_ARTIST_ENDPOINTS = {
+  PROFILE: (handle: string) => `/artist/public/${encodeURIComponent(handle)}`,
+};
+
+// Admin-only artist discovery. `search` is the free-text query typed by the
+// admin; an empty query lists the directory so the page is useful before any
+// search has been made.
+
+/** Verification state of an artist in the admin directory. */
+export type ArtistDirectoryStatus = "all" | "verified" | "pending" | "unverified";
+
+export const ADMIN_ARTIST_ENDPOINTS = {
+  SEARCH: (search: string, page = 1, limit = 20, status?: ArtistDirectoryStatus) => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    const term = search.trim();
+    if (term) params.set("q", term);
+    if (status && status !== "all") params.set("status", status);
+    return `/admin/artists?${params.toString()}`;
+  },
+};

@@ -184,7 +184,7 @@ export default function ProfilePage() {
       {/* Role indicator – issue #173 acceptance criteria */}
       <div
         data-testid="profile-role-indicator"
-        className="mt-4 inline-flex items-center gap-3 rounded-xl border border-[#2A2A2A] bg-[#161616] px-4 py-3"
+        className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-[#2A2A2A] bg-[#161616] px-4 py-3"
       >
         <span
           data-testid="profile-role-badge"
@@ -256,13 +256,13 @@ export default function ProfilePage() {
       />
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#2A2A2A]" role="tablist">
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-[#2A2A2A]" role="tablist">
         <button
           onClick={() => setActiveTab("profile")}
           role="tab"
           aria-selected={activeTab === "profile"}
           aria-controls="profile-panel"
-          className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${
+          className={`whitespace-nowrap px-4 py-3 font-semibold transition-colors rounded-t-lg sm:px-6 ${
             activeTab === "profile"
               ? "bg-[#D2045B] text-white"
               : "bg-transparent text-gray-400 hover:text-white"
@@ -275,7 +275,7 @@ export default function ProfilePage() {
           role="tab"
           aria-selected={activeTab === "settings"}
           aria-controls="settings-panel"
-          className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${
+          className={`whitespace-nowrap px-4 py-3 font-semibold transition-colors rounded-t-lg sm:px-6 ${
             activeTab === "settings"
               ? "bg-[#D2045B] text-white"
               : "bg-transparent text-gray-400 hover:text-white"
@@ -288,7 +288,7 @@ export default function ProfilePage() {
           role="tab"
           aria-selected={activeTab === "onchain"}
           aria-controls="onchain-panel"
-          className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${
+          className={`whitespace-nowrap px-4 py-3 font-semibold transition-colors rounded-t-lg sm:px-6 ${
             activeTab === "onchain"
               ? "bg-[#D2045B] text-white"
               : "bg-transparent text-gray-400 hover:text-white"
@@ -301,7 +301,11 @@ export default function ProfilePage() {
       {/* Main Content - Two Columns */}
       {activeTab === "profile" && isProfileLoading && <ProfileFormSkeleton />}
       {activeTab === "profile" && !isProfileLoading && (
-        <div id="profile-panel" className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-16 mt-6">
+        <div
+          id="profile-panel"
+          role="tabpanel"
+          className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-16 mt-6"
+        >
           {/* Left Column - Form Fields */}
           <div className="space-y-5">
             <div className="flex flex-col mt-7">
@@ -482,7 +486,7 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "settings" && (
-        <div id="settings-panel" className="mt-6 space-y-6">
+        <div id="settings-panel" role="tabpanel" className="mt-6 space-y-6">
           {/* Comments on songs */}
           <div className="flex items-start justify-between p-6 rounded-lg  ">
             <div className="flex-1 pr-6">
@@ -586,7 +590,7 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "onchain" && (
-        <div id="onchain-panel" className="mt-6">
+        <div id="onchain-panel" role="tabpanel" className="mt-6">
           <ErrorBoundary fallbackTitle="Failed to load on-chain profile">
             <SetupArtistOnChainProfile />
           </ErrorBoundary>
