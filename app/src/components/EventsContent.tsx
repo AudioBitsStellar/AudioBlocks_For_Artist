@@ -6,7 +6,6 @@ import {
   CalendarDays,
   Clock3,
   Trash2,
-  Loader2,
   CalendarPlus,
   TrendingUp,
   Users,
@@ -24,6 +23,7 @@ import {
 import MockDataBadge from "@/components/MockDataBadge";
 import ConfirmationDialog from "./shared/ConfirmationDialog";
 import EmptyState from "./shared/EmptyState";
+import { Skeleton, SkeletonList } from "./shared/Skeleton";
 
 import {
   LineChart,
@@ -105,8 +105,17 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
 
   if (isLoading && !featureFlags.useMockEvents) {
     return (
-      <div className="flex items-center justify-center py-24 text-text-muted">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-10" aria-busy="true">
+        <div role="status" aria-label="Loading events" className="space-y-2">
+          <Skeleton className="h-4 w-24 rounded" />
+          <Skeleton className="h-9 w-56 rounded" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} className="h-28 rounded-3xl" />
+          ))}
+        </div>
+        <SkeletonList items={4} ariaLabel="Loading event list" />
       </div>
     );
   }

@@ -12,10 +12,16 @@ export interface PageMetadata {
   description: string;
   image?: string;
   url?: string;
-  type?: "website" | "article" | "music.song" | "music.album";
+  type?: "website" | "article" | "profile" | "music.song" | "music.album";
   author?: string;
   publishedTime?: string;
   modifiedTime?: string;
+  /** Extra keywords merged with the site-wide defaults (deduplicated). */
+  keywords?: string[];
+  /** Absolute or site-relative canonical URL; defaults to `url`. */
+  canonical?: string;
+  /** When false, the page is served as `noindex` (thin/error pages). */
+  indexable?: boolean;
 }
 
 /**
@@ -63,10 +69,19 @@ export function generateMetadata(page: PageMetadata): Metadata {
   
   const imageUrl = page.image || DEFAULT_OG_IMAGE;
   const fullUrl = page.url ? `${BASE_URL}${page.url}` : BASE_URL;
+  const canonical = page.canonical
+    ? page.canonical.startsWith("http")
+      ? page.canonical
+      : `${BASE_URL}${page.canonical}`
+    : fullUrl;
+  const indexable = page.indexable ?? true;
 
   return {
     title: fullTitle,
     description: page.description,
+    // Guards against the same profile being indexed under several URLs
+    // (query strings, trailing slashes, http/https variants).
+    alternates: { canonical },
     
     // Open Graph
     openGraph: {
@@ -98,26 +113,29 @@ export function generateMetadata(page: PageMetadata): Metadata {
     },
 
     // Additional SEO
-    keywords: [
-      "music",
-      "blockchain",
-      "NFT",
-      "artist dashboard",
-      "Web3",
-      "Stellar",
-      "music rights",
-      "royalties",
-    ],
+    keywords: Array.from(
+      new Set([
+        "music",
+        "blockchain",
+        "NFT",
+        "artist dashboard",
+        "Web3",
+        "Stellar",
+        "music rights",
+        "royalties",
+        ...(page.keywords ?? []),
+      ])
+    ),
     authors: page.author ? [{ name: page.author }] : [{ name: SITE_NAME }],
     creator: SITE_NAME,
     publisher: SITE_NAME,
     
     // Robots
     robots: {
-      index: true,
+      index: indexable,
       follow: true,
       googleBot: {
-        index: true,
+        index: indexable,
         follow: true,
         "max-video-preview": -1,
         "max-image-preview": "large",
@@ -162,30 +180,115 @@ export function generateMusicMetadata(params: {
   });
 }
 
-/**
- * Generates metadata for artist profile pages.
- * 
- * @param params - Artist profile parameters
- * @returns Complete Metadata object for artist profiles
- */
-export function generateArtistMetadata(params: {
+/** Fields an artist public profile contributes to its page metadata. */
+export interface ArtistMetadataParams {
   name: string;
+  /** Public handle, used for the `@handle` keywords and `profile:username`. */
+  handle?: string;
   bio?: string;
   profileImage?: string;
   url?: string;
-}): Metadata {
-  const description =
-    params.bio ||
-    `${params.name}'s official artist profile on AudioBlocks. Discover their music, stats, and more.`;
+  website?: string;
+  twitter?: string;
+  genres?: string[];
+  songCount?: number;
+  albumCount?: number;
+  /** Set to false for degraded/empty profiles so they aren't indexed. */
+  indexable?: boolean;
+}
 
-  return generateMetadata({
-    title: params.name,
+/** Clips text to a length search engines will actually display. */
+function clamp(text: string, max: number): string {
+  const trimmed = text.replace(/\s+/g, " ").trim();
+  return trimmed.length <= max ? trimmed : `${trimmed.slice(0, max - 1).trimEnd()}…`;
+}
+
+/**
+ * Generates metadata for artist public profile pages (issue #421).
+ *
+ * Beyond the shared tags it adds what profile pages specifically need for
+ * search/social: a canonical URL, `og:type: "profile"`, the artist's own name
+ * and handle as keywords, a `profile:username` hint, and a description that
+ * mentions the catalogue when it is known.
+ *
+ * @param params - Artist profile parameters
+ * @returns Complete Metadata object for artist profiles
+ */
+export function generateArtistMetadata(params: ArtistMetadataParams): Metadata {
+  const name = params.name.trim() || "Artist";
+  const handle = params.handle?.trim().replace(/^@/, "");
+  const catalogue = [
+    typeof params.songCount === "number" ? `${params.songCount} song${params.songCount === 1 ? "" : "s"}` : null,
+    typeof params.albumCount === "number" ? `${params.albumCount} album${params.albumCount === 1 ? "" : "s"}` : null,
+  ].filter(Boolean);
+
+  const description = clamp(
+    params.bio?.trim() ||
+      `${name}${handle ? ` (@${handle})` : ""} on AudioBlocks — listen to their music${
+        catalogue.length ? `, explore ${catalogue.join(" and ")}` : ""
+      }, and follow the artist on Stellar.`,
+    160
+  );
+
+  const metadata = generateMetadata({
+    title: name,
     description,
     image: params.profileImage,
     url: params.url,
-    type: "website",
-    author: params.name,
+    type: "profile",
+    author: name,
+    keywords: [name, handle ? `@${handle}` : null, ...(params.genres ?? [])].filter(
+      (keyword): keyword is string => Boolean(keyword)
+    ),
+    indexable: params.indexable,
   });
+
+  return {
+    ...metadata,
+    // Legacy profile hint understood by some crawlers/PBMs.
+    other: handle ? { "profile:username": handle } : undefined,
+  };
+}
+
+/**
+ * Builds the `MusicGroup` JSON-LD graph for an artist public profile
+ * (issue #421). Rendered as a `<script type="application/ld+json">` so
+ * Google can show a rich artist result instead of a bare blue link.
+ *
+ * @returns A plain object ready to be serialized; `null` fields are omitted.
+ */
+export function generateArtistStructuredData(
+  params: ArtistMetadataParams
+): Record<string, unknown> {
+  const name = params.name.trim() || "Artist";
+  const handle = params.handle?.trim().replace(/^@/, "");
+  const url = params.url
+    ? params.url.startsWith("http")
+      ? params.url
+      : `${BASE_URL}${params.url}`
+    : undefined;
+  const image = params.profileImage
+    ? params.profileImage.startsWith("http")
+      ? params.profileImage
+      : `${BASE_URL}${params.profileImage}`
+    : undefined;
+
+  const sameAs = [params.website, params.twitter && `https://x.com/${params.twitter.replace(/^@/, "")}`]
+    .filter((link): link is string => Boolean(link))
+    .map((link) => (link.startsWith("http") ? link : `https://${link}`));
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "MusicGroup",
+    name,
+    ...(handle ? { alternateName: `@${handle}` } : {}),
+    ...(url ? { url } : {}),
+    ...(image ? { image } : {}),
+    ...(params.bio?.trim() ? { description: clamp(params.bio, 300) } : {}),
+    ...(sameAs.length > 0 ? { sameAs } : {}),
+    ...(params.genres?.length ? { genre: params.genres } : {}),
+    ...(typeof params.songCount === "number" ? { numberOfItems: params.songCount } : {}),
+  };
 }
 
 /**
