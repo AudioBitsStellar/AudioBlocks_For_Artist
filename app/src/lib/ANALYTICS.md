@@ -32,6 +32,13 @@ untyped/free-form `track()` escape hatch, so every event below is exhaustive.
 | `mint_succeeded`   | `songId`, `txHash`, `tokenId`                         | Same two components, once the signed transaction is submitted and the backend returns a token ID |
 | `mint_failed`      | `songId`, `reason`                                    | Same two components — covers both a rejected Freighter signature (`reason: "user rejected signature"`) and any other submit/backend failure |
 | `profile_saved`    | `hasImage`, `hasWebsite`, `hasTwitter`                | `src/app/dashboard/profile/page.tsx` — when the artist saves profile edits                       |
+| `upload_mode_selected` | `mode` (`"song"` \| `"album"`)                    | `src/app/dashboard/upload-music/page.tsx` — when the artist switches between the two upload flows  |
+| `nav_item_clicked` | `item`, `href`                                        | `src/components/Sidebar.tsx` — every dashboard nav link, including the mobile drawer               |
+| `analytics_range_changed` | `range` (`"last30days"` \| `"last90days"`)  | `src/components/AnalyticsPlayTrends.tsx` — the 30/90-day toggle on the play-trends card            |
+| `merch_stock_adjusted` | `itemId`, `change`, `newStock`                  | `src/components/MerchInventory.tsx` — after a +/- or typed stock change is applied                 |
+| `notifications_panel_opened` | `unreadCount`                               | `src/components/NotificationBell.tsx` — when the bell dropdown opens                               |
+| `notification_clicked` | `notificationId`, `kind`, `hasLink`             | `src/components/NotificationBell.tsx` — on any notification row, link or not                       |
+| `notifications_all_marked_read` | `unreadCount`                        | `src/components/NotificationBell.tsx` — the "Mark all as read" action                              |
 
 Note that `mint_started` / `mint_succeeded` / `mint_failed` are shared
 between song minting and artist-profile minting (same on-chain

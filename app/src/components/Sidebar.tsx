@@ -15,6 +15,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { analytics } from "@/lib/analytics";
 import { getTotalUnreadCount } from "@/services/messageService";
 
 const navItems = [
@@ -133,7 +134,10 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 ref={(element) => {
                   navItemRefs.current[index] = element;
                 }}
-                onClick={onClose}
+                onClick={() => {
+                  analytics.navItemClicked({ item: item.name, href: item.href });
+                  onClose();
+                }}
                 onKeyDown={(event) => handleNavKeyDown(event, index)}
                 className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black ${
                   isActive

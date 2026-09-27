@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, CalendarClock, CheckCheck, UserPlus, Wallet, type LucideIcon } from "lucide-react";
 import { formatDate } from "@/utils/date";
+import { analytics } from "@/lib/analytics";
 import type { NotificationEventKey } from "@/services/notificationPreferences";
 import { useNotifications, type ArtistNotification } from "@/services/notificationService";
 import MockDataBadge from "./MockDataBadge";
@@ -66,8 +67,24 @@ export default function NotificationBell({ notificationCount }: NotificationBell
       : "Notifications";
 
   const handleSelect = (notification: ArtistNotification) => {
+    analytics.notificationClicked({
+      notificationId: notification.id,
+      kind: notification.kind,
+      hasLink: Boolean(notification.href),
+    });
     if (!notification.read) markAsRead(notification.id);
     if (notification.href) setIsOpen(false);
+  };
+
+  const handleToggleOpen = () => {
+    const nextOpen = !isOpen;
+    if (nextOpen) analytics.notificationsPanelOpened({ unreadCount });
+    setIsOpen(nextOpen);
+  };
+
+  const handleMarkAllRead = () => {
+    analytics.notificationsAllMarkedRead({ unreadCount });
+    markAllAsRead();
   };
 
   return (
@@ -75,7 +92,7 @@ export default function NotificationBell({ notificationCount }: NotificationBell
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={handleToggleOpen}
         aria-label={buttonLabel}
         aria-expanded={isOpen}
         aria-controls={panelId}
@@ -119,7 +136,7 @@ export default function NotificationBell({ notificationCount }: NotificationBell
             </h3>
             <button
               type="button"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllRead}
               disabled={unreadCount === 0}
               className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] rounded px-1 py-0.5 hover:underline disabled:text-[var(--text-subtle)] disabled:no-underline disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
             >

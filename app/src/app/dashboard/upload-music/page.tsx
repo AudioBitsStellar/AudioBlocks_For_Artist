@@ -6,6 +6,7 @@ const Song = dynamic(() => import("@/components/musicUpload/Song"));
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { analytics } from "@/lib/analytics";
 
 type Mode = "song" | "album";
 const Upload_Music = () => {
@@ -29,7 +30,10 @@ const Upload_Music = () => {
       {/* Mode Selection */}
       <div className="mb-6 flex items-center gap-3">
         <button
-          onClick={() => setMode("album")}
+          onClick={() => {
+              setMode("album");
+              analytics.uploadModeSelected({ mode: "album" });
+            }}
           className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
             mode === "album"
               ? "bg-[#D2045B] text-white"
@@ -39,7 +43,10 @@ const Upload_Music = () => {
           Add Album
         </button>
         <button
-          onClick={() => setMode("song")}
+          onClick={() => {
+              setMode("song");
+              analytics.uploadModeSelected({ mode: "song" });
+            }}
           className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
             mode === "song"
               ? "bg-[#D2045B] text-white"

@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useState } from "react";
+import { analytics } from "@/lib/analytics";
 
 interface AnalyticsPlayTrendsProps {
   data: PlayTrendData[];
@@ -37,6 +38,7 @@ export default function AnalyticsPlayTrends({ data, period }: AnalyticsPlayTrend
 
   const handlePeriodChange = (newPeriod: "last30days" | "last90days") => {
     setHoveredPeriod(newPeriod);
+    analytics.analyticsRangeChanged({ range: newPeriod });
   };
 
   const handleKeyDown = (

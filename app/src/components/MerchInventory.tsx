@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { analytics } from "@/lib/analytics";
 import { featureFlags } from "@/lib/featureFlags";
 import MockDataBadge from "@/components/MockDataBadge";
 import useMerchService, {
@@ -78,7 +79,13 @@ export default function MerchInventory() {
   const outOfStockCount = inventory.filter((i) => i.stock === 0).length;
 
   const handleStockAdjust = (id: number, change: number) => {
-    setInventory((prev) => updateStock(prev, id, change));
+    const next = updateStock(inventory, id, change);
+    analytics.merchStockAdjusted({
+      itemId: id,
+      change,
+      newStock: next.find((item) => item.id === id)?.stock ?? 0,
+    });
+    setInventory(next);
     toast.success(`Stock ${change > 0 ? "increased" : "decreased"} successfully`);
   };
 
