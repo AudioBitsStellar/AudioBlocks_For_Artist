@@ -76,12 +76,12 @@ describe("Sidebar", () => {
 
     // Since the link wraps the text, we can find the <a> containing "My Music"
     const activeLink = screen.getByText("My Music").closest("a");
-    expect(activeLink).toHaveClass("bg-pink-500/10");
+    expect(activeLink).toHaveClass("bg-primary/10");
     expect(activeLink).toHaveAttribute("aria-current", "page");
 
     // Check inactive link
     const inactiveLink = screen.getByText("Overview").closest("a");
-    expect(inactiveLink).not.toHaveClass("bg-pink-500/10");
+    expect(inactiveLink).not.toHaveClass("bg-primary/10");
     expect(inactiveLink).not.toHaveAttribute("aria-current", "page");
   });
 

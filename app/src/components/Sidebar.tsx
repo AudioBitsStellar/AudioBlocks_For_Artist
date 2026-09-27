@@ -103,18 +103,18 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           <Image src="/logo.png" alt="AudioBlocks Logo" width={90} height={50} />
           <button
             type="button"
-            className="cursor-pointer rounded-lg p-2 text-white hover:text-pink-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            className="cursor-pointer rounded-lg p-2 text-text hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             onClick={onClose}
             aria-label="Close navigation menu"
           >
-            <X className="text-white" aria-hidden="true" />
+            <X className="text-text" aria-hidden="true" />
           </button>
         </div>
 
         <div className="hidden p-9 md:flex">
           <Link
             href="/"
-            className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-label="AudioBlocks Home"
           >
             <Image src="/logo.png" alt="AudioBlocks Logo" width={99} height={54} />
@@ -139,17 +139,17 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                   onClose();
                 }}
                 onKeyDown={(event) => handleNavKeyDown(event, index)}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black ${
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   isActive
-                    ? "bg-pink-500/10 font-semibold text-pink-500"
-                    : "text-gray-300 hover:bg-white/5 hover:text-white dark:text-gray-400"
+                    ? "bg-primary/10 font-semibold text-primary"
+                    : "text-text-muted hover:bg-surface-raised hover:text-text"
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
                 <Icon size={20} aria-hidden="true" />
                 <span className={`flex-1 ${isActive ? "font-medium" : ""}`}>{item.name}</span>
                 {unread > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D2045B] px-1 text-[10px] font-bold text-white">
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-contrast">
                     {unread}
                   </span>
                 )}
@@ -164,7 +164,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               key={link.name}
               href={link.href}
               onClick={onClose}
-              className="block rounded-lg px-4 py-1 text-xs text-gray-400 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+              className="block rounded-lg px-4 py-1 text-xs text-text-muted transition-colors hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {link.name}
             </Link>
