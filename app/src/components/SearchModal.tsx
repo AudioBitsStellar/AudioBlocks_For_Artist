@@ -137,7 +137,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm pt-20"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm px-4 pt-16 sm:pt-20"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -159,7 +159,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             type="text"
             value={query}
             onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search by artists, songs, albums, events, or merch..."
+            placeholder="Search songs, albums, events or merch…"
             aria-label="Search input"
             className="flex-1 bg-transparent border-none outline-none text-[var(--text)] placeholder:text-[var(--text-subtle)] text-base"
           />

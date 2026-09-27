@@ -60,14 +60,47 @@ export function getDisplayNameFromToken(fallback = "Artist"): string {
  * offers. Backend endpoints remain the real authorization check.
  */
 export function getRoleFromToken(): Role | null {
+  const raw = readRawRoleClaim();
+  return isRole(raw) ? raw : null;
+}
+
+/**
+ * Platform-wide account role carried by the session JWT, as opposed to the
+ * workspace {@link Role} (owner/manager/viewer) read by `getRoleFromToken`.
+ * Mirrors the `role` values the API accepts at registration
+ * (`RegisterEmailPayload.role`).
+ */
+export type AccountRole = "artist" | "listener" | "admin";
+
+const ACCOUNT_ROLES: ReadonlyArray<AccountRole> = ["artist", "listener", "admin"];
+
+function readRawRoleClaim(): unknown {
   const claims = readTokenClaims();
-  if (!claims) return null;
+  if (!claims) return undefined;
 
   const nested =
     claims.user && typeof claims.user === "object"
       ? (claims.user as { role?: unknown }).role
       : undefined;
-  const raw = claims.role ?? claims.user_role ?? nested;
+  return claims.role ?? claims.user_role ?? nested;
+}
 
-  return isRole(raw) ? raw : null;
+/**
+ * Best-effort, unverified read of the platform account role (`admin` unlocks
+ * the admin-only surfaces, e.g. the artist directory from issue #420). Returns
+ * `null` when there is no token, or when the claim is missing/recognised.
+ *
+ * Same caveat as `getRoleFromToken`: this is UX guidance for hiding surfaces,
+ * never an authorization check. The backend still rejects non-admin tokens.
+ */
+export function getAccountRoleFromToken(): AccountRole | null {
+  const raw = readRawRoleClaim();
+  return typeof raw === "string" && (ACCOUNT_ROLES as ReadonlyArray<string>).includes(raw)
+    ? (raw as AccountRole)
+    : null;
+}
+
+/** Whether the signed-in session carries the platform `admin` role. */
+export function isAdminSession(): boolean {
+  return getAccountRoleFromToken() === "admin";
 }

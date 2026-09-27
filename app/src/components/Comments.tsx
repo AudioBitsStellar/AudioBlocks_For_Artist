@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { sanitize } from "@/utils/sanitize";
 import { COMMENT_ATTACHMENT_RULES, toAcceptAttribute, validateFile } from "@/utils/fileValidation";
 import EmptyState from "./shared/EmptyState";
+import { SkeletonList } from "./shared/Skeleton";
 import useCommentServices, { DashboardComment } from "@/services/commentService";
 
 const COMMENT_MAX_LENGTH = 500;
@@ -75,9 +76,7 @@ export default function Comments() {
 
       <div className="space-y-4 mb-6">
         {isLoading ? (
-          <div className="py-10 text-center text-gray-400" role="status">
-            Loading comments...
-          </div>
+          <SkeletonList items={3} ariaLabel="Loading comments" />
         ) : isError ? (
           <EmptyState
             icon={MessageCircle}

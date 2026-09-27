@@ -8,6 +8,7 @@ import { analytics } from "@/lib/analytics";
 import type { NotificationEventKey } from "@/services/notificationPreferences";
 import { useNotifications, type ArtistNotification } from "@/services/notificationService";
 import MockDataBadge from "./MockDataBadge";
+import { Skeleton } from "./shared/Skeleton";
 
 interface NotificationBellProps {
   /**
@@ -148,9 +149,22 @@ export default function NotificationBell({ notificationCount }: NotificationBell
 
           <div className="max-h-96 overflow-y-auto">
             {isLoading ? (
-              <p role="status" className="px-4 py-8 text-center text-sm text-[var(--text-muted)]">
-                Loading notifications…
-              </p>
+              <div
+                role="status"
+                aria-busy="true"
+                aria-label="Loading notifications"
+                className="px-4 py-4"
+              >
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="flex items-start gap-3 py-2">
+                    <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-3 w-3/4 rounded" />
+                      <Skeleton className="h-3 w-1/2 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : isError ? (
               <div role="alert" className="px-4 py-8 text-center text-sm text-[var(--text-muted)]">
                 <p>Couldn&apos;t load notifications.</p>
