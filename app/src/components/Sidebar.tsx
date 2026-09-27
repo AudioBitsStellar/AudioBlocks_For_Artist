@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   Users,
   Search,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -25,6 +26,7 @@ const navItems = [
   { name: "Overview", icon: Home, href: "/dashboard/overview" },
   { name: "My Music", icon: Music, href: "/dashboard/my-music" },
   { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
+  { name: "Payouts", icon: Wallet, href: "/dashboard/payouts" },
   { name: "Events", icon: Calendar, href: "/dashboard/events" },
   { name: "Merches", icon: Tag, href: "/dashboard/merches" },
   { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },
