@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, MessageSquare, User } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, User } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import {
   getConversations,
@@ -71,7 +71,7 @@ function ConversationList({
   );
 }
 
-function MessageThread({ conversation }: { conversation: Conversation }) {
+function MessageThread({ conversation, onBack }: { conversation: Conversation; onBack: () => void }) {
   const [messages, setMessages] = useState(conversation.messages);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -102,14 +102,24 @@ function MessageThread({ conversation }: { conversation: Conversation }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 border-b border-[#1F1F1F] px-6 py-4">
+      <div className="flex items-center gap-3 border-b border-[#1F1F1F] px-4 py-4 sm:px-6">
+        {/* Only reachable on small screens, where the thread takes over the
+            whole pane and the conversation list is hidden (#422). */}
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to conversations"
+          className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D2045B] lg:hidden"
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+        </button>
         <div className="h-9 w-9 rounded-full bg-[#2A2A2A] flex items-center justify-center">
           <User className="h-4 w-4 text-[#A3A3A3]" />
         </div>
         <span className="text-white font-semibold">{conversation.participantName}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 sm:px-6">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -136,7 +146,7 @@ function MessageThread({ conversation }: { conversation: Conversation }) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-[#1F1F1F] px-6 py-4 flex items-end gap-3">
+      <div className="border-t border-[#1F1F1F] px-4 py-4 flex items-end gap-3 sm:px-6">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -170,11 +180,16 @@ export default function MessagesPage() {
   const [selected, setSelected] = useState<Conversation | null>(
     conversations.length > 0 ? conversations[0] : null
   );
+  // Below `lg` the two panes don't fit side by side, so the thread replaces
+  // the list once a conversation is picked (#422). At `lg` and up both panes
+  // are always visible and this flag is irrelevant.
+  const [isThreadOpen, setIsThreadOpen] = useState(false);
 
   const handleTabChange = (type: ConversationType) => {
     setTab(type);
     const nextConversations = getConversations(type);
     setSelected(nextConversations.length > 0 ? nextConversations[0] : null);
+    setIsThreadOpen(false);
   };
 
   return (
@@ -186,14 +201,20 @@ export default function MessagesPage() {
         <h1 className="text-3xl font-bold text-white">Messages</h1>
       </div>
 
-      <div className="flex items-center gap-2 border-b border-[#2A2A2A]" role="tablist">
+      <div
+        className="flex items-center gap-2 overflow-x-auto border-b border-[#2A2A2A]"
+        role="tablist"
+      >
         {TABS.map(({ type, label }) => (
           <button
             key={type}
+            id={`messages-tab-${type}`}
             onClick={() => handleTabChange(type)}
             role="tab"
+            type="button"
             aria-selected={tab === type}
-            className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${
+            aria-controls="messages-panel"
+            className={`shrink-0 px-6 py-3 font-semibold transition-colors rounded-t-lg ${
               tab === type
                 ? "bg-[#D2045B] text-white"
                 : "bg-transparent text-gray-400 hover:text-white"
@@ -204,21 +225,37 @@ export default function MessagesPage() {
         ))}
       </div>
 
-      <div className="flex h-[600px] overflow-hidden rounded-2xl border border-[#1F1F1F] bg-[#111111]">
-        <div className="w-72 flex-shrink-0 border-r border-[#1F1F1F] overflow-y-auto">
+      <div
+        id="messages-panel"
+        role="tabpanel"
+        aria-labelledby={`messages-tab-${tab}`}
+        className="flex h-[70vh] min-h-[420px] overflow-hidden rounded-2xl border border-[#1F1F1F] bg-[#111111] lg:h-[600px] lg:min-h-0"
+      >
+        <div
+          className={`w-full shrink-0 overflow-y-auto border-r border-[#1F1F1F] lg:block lg:w-72 ${
+            isThreadOpen ? "hidden" : "block"
+          }`}
+        >
           <ConversationList
             conversations={conversations}
             selectedId={selected?.id ?? null}
-            onSelect={setSelected}
+            onSelect={(conversation) => {
+              setSelected(conversation);
+              setIsThreadOpen(true);
+            }}
             emptyMessage={
               tab === "fan" ? "Fan messages will appear here." : "Artist messages will appear here."
             }
           />
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className={`min-w-0 flex-1 lg:block ${isThreadOpen ? "block" : "hidden"}`}>
           {selected ? (
-            <MessageThread key={selected.id} conversation={selected} />
+            <MessageThread
+              key={selected.id}
+              conversation={selected}
+              onBack={() => setIsThreadOpen(false)}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center px-6">
               <MessageSquare className="h-12 w-12 text-[#A3A3A3] mb-3" />

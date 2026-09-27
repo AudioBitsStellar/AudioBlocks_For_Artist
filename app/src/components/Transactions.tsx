@@ -3,6 +3,7 @@
 import { Calendar, ChevronDown, ArrowUpDown } from "lucide-react";
 import { formatDate } from "@/utils/date";
 import EmptyState from "./shared/EmptyState";
+import { SkeletonList } from "./shared/Skeleton";
 import useTransactionServices from "@/services/transactionService";
 
 export default function Transactions() {
@@ -49,9 +50,7 @@ export default function Transactions() {
       </div>
 
       {isLoading ? (
-        <div className="py-16 text-center text-text-muted" role="status">
-          Loading transactions...
-        </div>
+        <SkeletonList items={5} ariaLabel="Loading transactions" />
       ) : isError ? (
         <EmptyState
           icon={ArrowUpDown}

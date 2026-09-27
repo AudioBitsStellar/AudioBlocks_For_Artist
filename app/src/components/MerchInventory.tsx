@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Search,
   Filter,
-  Loader2,
   ShoppingCart,
   ArrowUpDown,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import useMerchService, {
   formatPrice,
 } from "@/services/merchService";
 import EmptyState from "./shared/EmptyState";
+import { Skeleton, SkeletonList } from "./shared/Skeleton";
 
 const MOCK_INVENTORY: MerchInventoryItem[] = [
   { id: 1, title: "Echoes of the Soul Tee", stock: 150, reserved: 12 },
@@ -92,8 +92,17 @@ export default function MerchInventory() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-[#D2045B]" />
+      <div className="space-y-10" aria-busy="true">
+        <div role="status" aria-label="Loading merch inventory" className="space-y-2">
+          <Skeleton className="h-4 w-24 rounded" />
+          <Skeleton className="h-9 w-64 rounded" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} className="h-24 rounded-3xl" />
+          ))}
+        </div>
+        <SkeletonList items={5} ariaLabel="Loading inventory rows" />
       </div>
     );
   }
