@@ -8,6 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { songFormSchema } from "@/types/formValidation";
 import { MUSIC_GENRES } from "../shared/music_genre";
 import useUploadServices from "@/services/uploadService";
+import {
+  describeVisibility,
+  NEW_TRACK_DEFAULT_VISIBILITY,
+  TRACK_VISIBILITY_OPTIONS,
+} from "@/services/trackVisibilityService";
 import { splitFile, generateFileId } from "@/utils/chunkUploader";
 import MusicLoader from "../MusicLoader";
 import { useToast } from "@/hooks/useToastHandler";
@@ -318,6 +323,9 @@ const Song = () => {
         genre: data.genre,
         composers: sanitize(data.composer),
         coverArtPath: coverArtPath,
+        // A track the artist has just uploaded has not been heard by anyone
+        // yet, so it starts out of sight until they choose otherwise (#458).
+        visibility: data.visibility ?? NEW_TRACK_DEFAULT_VISIBILITY,
         // marketPrice: data.marketPrice,
       });
 
@@ -481,6 +489,30 @@ const Song = () => {
               {watchedValues.composer?.length ?? 0}/100
             </p>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="song-visibility" className="text-sm font-medium text-white">
+            Visibility <span className="text-[#D2045B]">*</span>
+          </label>
+          <select
+            id="song-visibility"
+            {...register("visibility")}
+            defaultValue={NEW_TRACK_DEFAULT_VISIBILITY}
+            aria-invalid={errors.visibility ? "true" : "false"}
+            aria-describedby="song-visibility-hint"
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.visibility ? "border-red-500" : "border-[#2A2A2A]"}`}
+          >
+            {TRACK_VISIBILITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value} className="bg-[#161616]">
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p id="song-visibility-hint" className="text-[10px] text-gray-400">
+            {describeVisibility(watchedValues.visibility ?? NEW_TRACK_DEFAULT_VISIBILITY)} You can
+            change this later from My Music.
+          </p>
         </div>
 
         {/* <div className="space-y-2">

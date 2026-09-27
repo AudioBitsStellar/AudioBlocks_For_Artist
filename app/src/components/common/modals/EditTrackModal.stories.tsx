@@ -13,7 +13,12 @@ const meta: Meta<typeof EditTrackModal> = {
     onOpenChange: () => {},
     onSave: () => {},
     albumOptions: ["Echoes of the Soul", "Midnight Vibes", "Electric Dreams"],
-    track: { id: 1, title: "Golden Skies", albumName: "Echoes of the Soul" },
+    track: {
+      id: 1,
+      title: "Golden Skies",
+      albumName: "Echoes of the Soul",
+      visibility: "public",
+    },
   },
 };
 
