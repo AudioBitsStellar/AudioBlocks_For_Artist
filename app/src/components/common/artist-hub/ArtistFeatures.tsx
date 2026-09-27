@@ -80,7 +80,7 @@ const ArtistFeatures = () => {
               <p className="font-['Inter'] font-medium text-[16px] leading-[150%] text-[#A3A3A3] mb-8">
                 Introducing the Artist Milestone System, a clear path from first upload to joining
                 the <span className="font-bold text-white">AudioBlocks</span> Collective. Progress
-                as an artist isn't guesswork anymore, with{" "}
+                as an artist isn&apos;t guesswork anymore, with{" "}
                 <span className="font-bold text-white">AudioBlocks</span>, every step you take
                 toward growth is recorded and celebrated.
               </p>

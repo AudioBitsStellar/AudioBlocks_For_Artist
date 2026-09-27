@@ -12,7 +12,10 @@ export interface AudioMetadata {
 export async function extractAudioMetadata(file: File): Promise<AudioMetadata | null> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioCtx =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return null;
     const ctx = new AudioCtx();
     const buffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
     await ctx.close();
