@@ -7,6 +7,7 @@ import { formatDate } from "@/utils/date";
 import { useRole } from "@/hooks/useRole";
 import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
 import SearchModal from "./SearchModal";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 interface TopHeaderProps {
   onMenuClick: () => void;

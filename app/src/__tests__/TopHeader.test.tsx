@@ -4,6 +4,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TopHeader from "@/components/TopHeader";
 import { RoleProvider } from "@/context/RoleContext";
 
+// SearchModal calls useRouter(), which needs a mounted app router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+}));
+
 // ---------- Helpers ----------
 
 function renderTopHeader(
@@ -15,11 +20,13 @@ function renderTopHeader(
     return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
   }
   function withRole(role: "owner" | "manager" | "viewer") {
-    return ({ children }: { children: React.ReactNode }) => (
-      <BaseWrapper>
-        <RoleProvider initialRole={role}>{children}</RoleProvider>
-      </BaseWrapper>
-    );
+    return function RoleWrapper({ children }: { children: React.ReactNode }) {
+      return (
+        <BaseWrapper>
+          <RoleProvider initialRole={role}>{children}</RoleProvider>
+        </BaseWrapper>
+      );
+    };
   }
   const Wrapper =
     opts?.wrapper === "role-owner"
@@ -27,7 +34,8 @@ function renderTopHeader(
       : opts?.wrapper === "role-viewer"
         ? withRole("viewer")
         : BaseWrapper;
-  return render(<Wrapper>{ui}</Wrapper>);
+  // Pass as `wrapper` so rerender() keeps the providers mounted.
+  return render(ui, { wrapper: Wrapper });
 }
 
 beforeEach(() => {
@@ -195,20 +203,19 @@ describe("TopHeader – hamburger menu", () => {
 // ---------- Search bar ----------
 
 describe("TopHeader – search bar", () => {
-  it("renders a desktop search input", () => {
+  it("renders a search trigger button", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} />);
-    expect(screen.getAllByRole("searchbox", { name: /search/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("button", { name: /open search/i })).toBeInTheDocument();
   });
 
-  it("updates as the user types in the search input", () => {
+  it("opens the search modal when the trigger is clicked", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} />);
 
-    const inputs = screen.getAllByRole("searchbox", { name: /search/i });
-    const desktopInput = inputs.find((el) => el.getAttribute("placeholder")?.includes("artists"));
-    expect(desktopInput).toBeTruthy();
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: /open search/i }));
+    });
 
-    fireEvent.change(desktopInput!, { target: { value: "Beatles" } });
-    expect((desktopInput as HTMLInputElement).value).toBe("Beatles");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });
 
