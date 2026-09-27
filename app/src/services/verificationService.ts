@@ -19,6 +19,8 @@ export interface VerificationApplication {
 interface VerificationState {
   status: VerificationStatus;
   application?: VerificationApplication;
+  /** ISO timestamp of the last submission, shown in the request flow. */
+  submittedAt?: string;
 }
 
 const STORAGE_KEY = "audioblocks:verification:v1";
@@ -36,7 +38,11 @@ function loadState(): VerificationState {
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw) as Partial<VerificationState>;
     if (!isVerificationStatus(parsed.status)) return DEFAULT_STATE;
-    return { status: parsed.status, application: parsed.application };
+    return {
+      status: parsed.status,
+      application: parsed.application,
+      submittedAt: typeof parsed.submittedAt === "string" ? parsed.submittedAt : undefined,
+    };
   } catch {
     return DEFAULT_STATE;
   }
@@ -66,8 +72,19 @@ export function getVerificationApplication(): VerificationApplication | undefine
 export function submitVerificationApplication(
   application: VerificationApplication
 ): VerificationStatus {
-  saveState({ status: "pending", application });
+  saveState({ status: "pending", application, submittedAt: new Date().toISOString() });
   return "pending";
+}
+
+/** ISO timestamp of the most recent submission, if there is one. */
+export function getVerificationSubmittedAt(): string | undefined {
+  return loadState().submittedAt;
+}
+
+/** Pulls a pending application back so the artist can edit and re-submit. */
+export function withdrawVerification(): VerificationStatus {
+  saveState(DEFAULT_STATE);
+  return "unverified";
 }
 
 /**
