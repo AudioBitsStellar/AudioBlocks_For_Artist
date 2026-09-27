@@ -9,6 +9,20 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
 }));
 
+// NotificationBell has its own tests; keep the header off the network.
+const mockUnreadCount = vi.hoisted(() => ({ value: 0 }));
+vi.mock("@/services/notificationService", () => ({
+  useNotifications: () => ({
+    notifications: [],
+    unreadCount: mockUnreadCount.value,
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+    markAsRead: vi.fn(),
+    markAllAsRead: vi.fn(),
+  }),
+}));
+
 // ---------- Helpers ----------
 
 function renderTopHeader(
@@ -40,6 +54,7 @@ function renderTopHeader(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUnreadCount.value = 0;
   localStorage.clear();
   document.documentElement.classList.remove("dark");
 });
@@ -75,57 +90,52 @@ describe("TopHeader – user info display", () => {
 // ---------- Notification badge ----------
 
 describe("TopHeader – notification badge", () => {
+  const getBell = () => screen.getByRole("button", { name: /^notifications/i });
+
   it("renders a dot (no count) when notificationCount is 0", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={0} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    expect(within(link).getByTestId("notification-dot")).toBeInTheDocument();
-    expect(within(link).queryByTestId("notification-count")).not.toBeInTheDocument();
+    expect(within(getBell()).getByTestId("notification-dot")).toBeInTheDocument();
+    expect(within(getBell()).queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
   it("renders the correct number when notificationCount is positive", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={3} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    const count = within(link).getByTestId("notification-count");
-    expect(count).toHaveTextContent("3");
+    expect(within(getBell()).getByTestId("notification-count")).toHaveTextContent("3");
   });
 
   it("caps the badge display at 99+ for large counts", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={150} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    const count = within(link).getByTestId("notification-count");
-    expect(count).toHaveTextContent("99+");
+    expect(within(getBell()).getByTestId("notification-count")).toHaveTextContent("99+");
   });
 
   it("hides the badge entirely when notificationCount is null", () => {
+    mockUnreadCount.value = 4;
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={null} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    expect(within(link).queryByTestId("notification-dot")).not.toBeInTheDocument();
-    expect(within(link).queryByTestId("notification-count")).not.toBeInTheDocument();
+    expect(within(getBell()).queryByTestId("notification-dot")).not.toBeInTheDocument();
+    expect(within(getBell()).queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
-  it("renders a dot when notificationCount is omitted (undefined)", () => {
+  it("shows the live unread count when notificationCount is omitted", () => {
+    mockUnreadCount.value = 2;
     renderTopHeader(<TopHeader onMenuClick={() => {}} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    expect(within(link).getByTestId("notification-dot")).toBeInTheDocument();
+    expect(within(getBell()).getByTestId("notification-count")).toHaveTextContent("2");
   });
 
-  it("navigates to /dashboard/settings/notifications when clicked", () => {
-    renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={4} />);
+  it("shows no badge when omitted and nothing is unread", () => {
+    renderTopHeader(<TopHeader onMenuClick={() => {}} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    expect(link).toHaveAttribute("href", "/dashboard/settings/notifications");
+    expect(within(getBell()).queryByTestId("notification-dot")).not.toBeInTheDocument();
+    expect(within(getBell()).queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
-  it("updates the aria-label with the count when present", () => {
+  it("updates the accessible name with the count when present", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={7} />);
-    expect(
-      screen.getByRole("link", { name: /Notifications and settings \(7 new\)/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Notifications (7 unread)" })).toBeInTheDocument();
   });
 });
 
