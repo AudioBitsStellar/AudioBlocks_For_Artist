@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ROLES } from "@/types/role";
 import { MUSIC_GENRES } from "@/components/shared/music_genre";
 
 export const songFormSchema = z.object({
@@ -265,3 +266,23 @@ export const artistNameSchema = z
     /^[\p{L}\p{N} ._'&-]+$/u,
     "Artist name can only contain letters, numbers, spaces and . _ ' & -"
   );
+
+/* ------------------------------------------------------------------ *
+ * Collaborator / co-artist invite (issue #416)
+ * ------------------------------------------------------------------ */
+
+export const collaboratorInviteSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email address is required")
+    .max(254, "Email must be 254 characters or less")
+    .email("Please enter a valid email address"),
+  role: z
+    .string()
+    .trim()
+    .min(1, "Choose a role for this collaborator")
+    .refine((val) => (ROLES as ReadonlyArray<string>).includes(val), "Invalid role selection"),
+  message: z.string().trim().max(300, "Message must be 300 characters or less").optional(),
+});
+

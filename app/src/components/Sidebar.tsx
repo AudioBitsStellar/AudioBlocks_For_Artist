@@ -10,6 +10,8 @@ import {
   X,
   BarChart3,
   MessageSquare,
+  ShieldAlert,
+  Users,
   Search,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +28,8 @@ const navItems = [
   { name: "Events", icon: Calendar, href: "/dashboard/events" },
   { name: "Merches", icon: Tag, href: "/dashboard/merches" },
   { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },
+  { name: "Collaborators", icon: Users, href: "/dashboard/collaborators" },
+  { name: "Moderation", icon: ShieldAlert, href: "/dashboard/moderation" },
   { name: "Premium", icon: Star, href: "/dashboard/premium" },
   { name: "Settings", icon: SettingsIcon, href: "/dashboard/settings/notifications" },
 ];

@@ -1,5 +1,5 @@
 // API Response types
-export interface AxiosResponse<T = any> {
+export interface AxiosResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
