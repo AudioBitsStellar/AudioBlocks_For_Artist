@@ -10,6 +10,7 @@ import {
   X,
   BarChart3,
   MessageSquare,
+  Megaphone,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -25,6 +26,7 @@ const navItems = [
   { name: "Merches", icon: Tag, href: "/dashboard/merches" },
   { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },
   { name: "Premium", icon: Star, href: "/dashboard/premium" },
+  { name: "Release notes", icon: Megaphone, href: "/dashboard/changelog" },
   { name: "Settings", icon: SettingsIcon, href: "/dashboard/settings/notifications" },
 ];
 
