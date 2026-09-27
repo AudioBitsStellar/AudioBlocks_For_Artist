@@ -13,7 +13,7 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 
 | Service | File | Description |
 |---|---|---|
-| Album Service | `albumService.ts` | Artist album fetching and collection listing |
+| Album Service | `albumService.ts` | Artist album/EP fetching, listing and creation (see "Album / EP creation" below) |
 | Analytics Service | `analyticsService.ts` | Streaming metrics, listener trends, geographic analytics |
 | Artist Service | `artistServices.ts` | Artist profile retrieval and update mutations |
 | Auth Service | `authService.ts` | Login, signup, and logout operations |
@@ -30,3 +30,30 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Track Service | `trackService.ts` | Track edits with optimistic UI updates and rollback |
 | Upload Service | `uploadService.ts` | Chunked audio uploads, cover art, and finalization |
 | Verification Service | `verificationService.ts` | Artist verification requests |
+
+## Album / EP creation
+
+The artist upload page (`/dashboard/upload-music` → **Add Album / EP**) uses a
+three-step flow (`components/musicUpload/ReleaseFlow.tsx`): **Details → Tracks →
+Review**. Draft logic lives in `utils/releaseDraft.ts`.
+
+| Type  | Tracks |
+|-------|--------|
+| EP    | 2–6    |
+| Album | 7–30   |
+
+`useCreateAlbum().mutateAsync(formData)` sends `POST /artist/albums` as
+multipart form data built by `buildReleaseFormData`:
+
+| Field           | Notes |
+|-----------------|-------|
+| `releaseType`   | `album` or `ep` |
+| `albumTitle`    | Release title |
+| `genre`         | One of `MUSIC_GENRES` |
+| `purchasePrice` | Optional, non-negative number as a string |
+| `releaseDate`   | Optional `yyyy-mm-dd`, not in the past |
+| `cover`         | Cover image file |
+| `songs`         | One entry per track, in release order |
+| `trackTitles`   | JSON array of track titles, same order as `songs` |
+| `songTitle`     | First track title (kept for backward compatibility) |
+
