@@ -2,6 +2,7 @@ import { AUTH_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { getToken, clearSession } from "@/api/axios";
+import { clearQueryCache } from "@/api/queryClientInstance";
 import { AuthResponse, LoginEmailPayload, RegisterEmailPayload } from "@/types";
 
 interface ApiEnvelope<T> {
@@ -64,7 +65,9 @@ export function isTokenExpired(): boolean {
 }
 
 /**
- * Logout cleanup: clears the token, its expiry, and the auth cookie.
+ * Logout cleanup: clears the token, its expiry, the auth cookie, and the
+ * React Query cache to prevent stale authenticated data from leaking to
+ * the next session.
  *
  * @returns Nothing.
  */
@@ -73,6 +76,9 @@ export function clearTokens(): void {
 
   localStorage.removeItem(TOKEN_EXPIRY_STORAGE_KEY);
   clearSession();
+  // #33 — Clear React Query cache so the next login starts fresh and no
+  // previous session's dashboard data (earnings, messages, etc.) is shown.
+  clearQueryCache();
 }
 
 /**
