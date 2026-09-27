@@ -22,6 +22,8 @@ export const featureFlags = {
   useMockTracks: globalMock,
   /** Fans Engagement widget (top songs, streaming regions, top streamers) — wired to real API when false */
   useMockFansEngagement: globalMock,
+  /** Notification bell dropdown in the top header — read state is kept locally when true */
+  useMockNotifications: globalMock,
   /**
    * EarningsRoyalties is already wired to a real endpoint (#47),
    * so its flag is always false regardless of the global toggle.

@@ -37,6 +37,8 @@ export const DASHBOARD_CACHE = {
   analytics: CACHE_TIME.SHORT,
   transactions: CACHE_TIME.SHORT,
   comments: CACHE_TIME.SHORT,
+  /** New fans, payouts and event reminders arrive at any time. */
+  notifications: CACHE_TIME.SHORT,
   /** Fans can place orders at any time, so order lists stay short-lived. */
   merchOrders: CACHE_TIME.SHORT,
   recentActivity: CACHE_TIME.MEDIUM,
@@ -69,6 +71,7 @@ export const DASHBOARD_QUERY_KEYS = {
   comments: ["get-dashboard-comments"],
   albums: ["get-artist-albums"],
   fansEngagement: ["get-artist-fans-engagement"],
+  notifications: ["get-artist-notifications"],
 } as const;
 
 /** Dashboard summaries that change whenever the artist publishes a song. */

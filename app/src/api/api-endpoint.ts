@@ -98,3 +98,9 @@ export const MERCH_INVENTORY_ENDPOINTS = {
   ORDERS: "/artist/merches/orders",
   ORDER_STATUS: (orderId: number) => `/artist/merches/orders/${orderId}`,
 };
+
+export const NOTIFICATION_ENDPOINTS = {
+  LIST: "/artist/notifications",
+  MARK_READ: (id: string) => `/artist/notifications/${id}/read`,
+  MARK_ALL_READ: "/artist/notifications/read-all",
+};
