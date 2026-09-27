@@ -21,6 +21,17 @@ const clientSchema = z.object({
     .string({ required_error: "is required" })
     .min(1, "must not be empty"),
   NEXT_PUBLIC_USE_MOCK_DATA: booleanString,
+  /**
+   * Optional on purpose: the subgraph powers only the on-chain plays/sales
+   * panel, so a deployment without an indexer URL must still boot (see
+   * `src/lib/subgraph.ts`). An empty string is allowed because that's what an
+   * uncommented line in `.env.local` produces.
+   */
+  NEXT_PUBLIC_SUBGRAPH_URL: z
+    .union([z.literal(""), z.string().url("must be a valid URL")])
+    .optional(),
+  /** Comma-separated rollout overrides, e.g. "artistOnchainAnalytics=true" (#469). */
+  NEXT_PUBLIC_FEATURE_FLAGS: z.string().optional(),
 });
 
 /**
