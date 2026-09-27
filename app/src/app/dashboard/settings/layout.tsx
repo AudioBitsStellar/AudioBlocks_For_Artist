@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgeCheck, Bell, Globe, ShieldCheck, User } from "lucide-react";
+import { BadgeCheck, Bell, DollarSign, Globe, ShieldCheck, Wallet } from "lucide-react";
 
 const settingsNav = [
   { name: "Profile", icon: User, href: "/dashboard/profile" },
   { name: "Notifications", icon: Bell, href: "/dashboard/settings/notifications" },
   { name: "Security", icon: ShieldCheck, href: "/dashboard/settings/security" },
   { name: "Verification", icon: BadgeCheck, href: "/dashboard/settings/verification" },
+  { name: "Wallet", icon: Wallet, href: "/dashboard/settings/wallet" },
+  { name: "Payout", icon: DollarSign, href: "/dashboard/settings/payout" },
   { name: "Network", icon: Globe, href: "/dashboard/settings/network" },
 ];
 
