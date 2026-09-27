@@ -149,7 +149,7 @@ src/
 │   ├── common/artist-hub/          # landing page sections
 │   ├── common/modals/                # claim-name, add-music, new-event modals
 │   └── ...dashboard widgets (charts, tables, sidebar, top header)
-├── services/                   # authService, artistServices, uploadSerive, onchainService
+├── services/                   # authService, artistServices, uploadService, onchainService
 ├── lib/freighter.ts             # thin wrapper over @stellar/freighter-api
 ├── hooks/                       # toast handler hooks
 ├── context/provider.tsx         # React Query provider

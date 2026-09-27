@@ -29,6 +29,12 @@ export const SONG_ONCHAIN_ENDPOINTS = {
   submitTransfer: (songId: string) => `/song/${songId}/onchain/submit-transfer`,
 };
 
+export const CONTRACT_UPGRADE_ENDPOINTS = {
+  PREPARE_UPGRADE: "/contract/onchain/prepare-upgrade",
+  SUBMIT_UPGRADE: "/contract/onchain/submit-upgrade",
+  GET_CONTRACT_INFO: (contractId: string) => `/contract/${contractId}/info`,
+};
+
 export const MERCH_ENDPOINTS = {
   LIST: "/artist/merches",
   CREATE: "/artist/merches",

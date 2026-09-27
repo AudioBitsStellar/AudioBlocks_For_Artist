@@ -17,6 +17,7 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Analytics Service | `analyticsService.ts` | Streaming metrics, listener trends, geographic analytics |
 | Artist Service | `artistServices.ts` | Artist profile retrieval and update mutations |
 | Auth Service | `authService.ts` | Login, signup, and logout operations |
+| Contract Upgrade | `contractUpgradeService.ts` | Soroban smart contract WASM upgrades and contract info |
 | Earnings Service | `earningsService.ts` | Revenue summaries and payout history |
 | Events Service | `eventsService.ts` | Event management, creation, and updates |
 | Merch Service | `merchService.ts` | Merch inventory and drop lifecycle management |

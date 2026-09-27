@@ -24,6 +24,46 @@ export interface ContractErrorInfo {
 // ── Error pattern map ─────────────────────────────────────────────────────────
 
 const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
+  // Contract upgrade (#295) - specific patterns take priority over generic auth/contract
+  {
+    pattern: /upgrade.*unauthorized|unauthorized.*upgrade|only.*admin.*upgrade|upgrade.*forbidden/i,
+    info: {
+      title: "Upgrade Unauthorized",
+      message: "Only the designated contract administrator is authorized to upgrade this Soroban contract.",
+      category: "auth",
+      severity: "error",
+      resolution: [
+        "Connect with the contract admin wallet",
+        "Verify on-chain contract administrator configuration",
+      ],
+    },
+  },
+  {
+    pattern: /wasm.*not.*found|wasm.*not.*installed|invalid.*wasm/i,
+    info: {
+      title: "WASM Bytecode Not Installed",
+      message: "The specified WASM bytecode hash has not been installed on the Soroban network.",
+      category: "contract",
+      severity: "error",
+      resolution: [
+        "Upload and install the WASM bytecode first using 'stellar contract install'",
+        "Verify that the 64-character hexadecimal WASM hash matches the installed bytecode",
+      ],
+    },
+  },
+  {
+    pattern: /already.*upgraded|same.*wasm.*hash|identical.*wasm/i,
+    info: {
+      title: "Identical WASM Hash",
+      message: "The contract is already running the specified WASM bytecode.",
+      category: "validation",
+      severity: "warning",
+      resolution: [
+        "Provide a new WASM hash that differs from the currently deployed contract hash",
+      ],
+    },
+  },
+
   // Authorization
   {
     pattern: /auth|unauthorized|forbidden|not\s*authorized/i,
@@ -119,6 +159,7 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
       ],
     },
   },
+
 
   // Network
   {
