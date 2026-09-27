@@ -75,7 +75,7 @@ describe("analytics façade", () => {
     ["navItemClicked", { item: "Events", href: "/dashboard/events" }, "nav_item_clicked"],
     ["analyticsRangeChanged", { range: "last90days" as const }, "analytics_range_changed"],
     ["merchStockAdjusted", { itemId: 4, change: -2, newStock: 12 }, "merch_stock_adjusted"],
-    ["notificationsPanelOpened", { unreadCount: 3 }, "notifications_panel_opened"],
+    ["notificationsPanelOpened", { unreadCount: 4 }, "notifications_panel_opened"],
     [
       "notificationClicked",
       { notificationId: "notif_1", kind: "earnings", hasLink: true },
@@ -114,7 +114,7 @@ describe("NotificationBell", () => {
       fireEvent.click(screen.getByRole("button", { name: /notifications/i }));
     });
 
-    expect(mockTrack).toHaveBeenCalledWith("notifications_panel_opened", { unreadCount: 3 });
+    expect(mockTrack).toHaveBeenCalledWith("notifications_panel_opened", { unreadCount: 4 });
   });
 
   it("tracks which kind of notification was clicked, without its text", () => {
@@ -144,7 +144,7 @@ describe("NotificationBell", () => {
       fireEvent.click(screen.getByRole("button", { name: /mark all as read/i }));
     });
 
-    expect(mockTrack).toHaveBeenCalledWith("notifications_all_marked_read", { unreadCount: 3 });
+    expect(mockTrack).toHaveBeenCalledWith("notifications_all_marked_read", { unreadCount: 4 });
   });
 });
 

@@ -21,7 +21,8 @@ type EventName =
   | "merch_stock_adjusted"
   | "notifications_panel_opened"
   | "notification_clicked"
-  | "notifications_all_marked_read";
+  | "notifications_all_marked_read"
+  | "quality_check_published";
 
 type EventProperties = Record<string, string | number | boolean | undefined>;
 
@@ -102,5 +103,14 @@ export const analytics = {
   },
   notificationsAllMarkedRead(props: { unreadCount: number }) {
     send("notifications_all_marked_read", props);
+  },
+  /** Fired when an AI quality-check result is recorded for a song (#465). */
+  qualityCheckPublished(props: {
+    songId: string;
+    verdict: "passed" | "review" | "failed";
+    score: number;
+    issueCount: number;
+  }) {
+    send("quality_check_published", props);
   },
 };

@@ -41,7 +41,7 @@ describe("NotificationBell", () => {
   it("shows the unread count from mock notifications and starts closed", () => {
     renderBell();
 
-    expect(getBell()).toHaveAccessibleName("Notifications (3 unread)");
+    expect(getBell()).toHaveAccessibleName("Notifications (4 unread)");
     expect(getBell()).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("region", { name: "Notifications" })).not.toBeInTheDocument();
   });
@@ -53,9 +53,9 @@ describe("NotificationBell", () => {
     expect(getBell()).toHaveAttribute("aria-expanded", "true");
     expect(panel).toHaveFocus();
     const items = within(panel).getAllByRole("listitem");
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(7);
     expect(items[0]).toHaveTextContent("Tomothy Nguyen started following you.");
-    expect(within(panel).getAllByTestId("notification-unread-dot")).toHaveLength(3);
+    expect(within(panel).getAllByTestId("notification-unread-dot")).toHaveLength(4);
   });
 
   it("marks a notification as read when it is selected", () => {
@@ -69,7 +69,7 @@ describe("NotificationBell", () => {
       fireEvent.click(link);
     });
 
-    expect(getBell()).toHaveAccessibleName("Notifications (2 unread)");
+    expect(getBell()).toHaveAccessibleName("Notifications (3 unread)");
   });
 
   it("marks everything as read and disables the action afterwards", () => {
@@ -128,9 +128,9 @@ describe("NotificationBell", () => {
     renderBell();
     const panel = openDropdown();
 
-    expect(within(panel).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(panel).getAllByRole("listitem")).toHaveLength(5);
     expect(within(panel).queryByText(/started following you/i)).not.toBeInTheDocument();
-    expect(getBell()).toHaveAccessibleName("Notifications (2 unread)");
+    expect(getBell()).toHaveAccessibleName("Notifications (3 unread)");
   });
 
   it("shows an empty state when every kind is muted", () => {
@@ -138,6 +138,7 @@ describe("NotificationBell", () => {
       newFan: { email: false, inApp: false },
       earnings: { email: false, inApp: false },
       eventReminder: { email: false, inApp: false },
+      qualityCheck: { email: false, inApp: false },
     });
     renderBell();
     const panel = openDropdown();

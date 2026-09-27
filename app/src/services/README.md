@@ -25,6 +25,7 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Notification Preferences | `notificationPreferences.ts` | User email and push notification settings |
 | On-Chain Service | `onchainService.ts` | Soroban contract calls, song minting, and wallet transfers |
 | Overview Service | `overviewService.ts` | Dashboard metrics and activity feeds |
+| Quality Check Service | `qualityCheckService.ts` | AI master-review scoring, verdicts and result notifications |
 | Royalty Distribution | `royaltyDistributionService.ts` | Multi-party royalty splitting |
 | Scheduled Release | `scheduledReleaseService.ts` | Release scheduling |
 | Track Service | `trackService.ts` | Track edits with optimistic UI updates and rollback |

@@ -39,6 +39,7 @@ untyped/free-form `track()` escape hatch, so every event below is exhaustive.
 | `notifications_panel_opened` | `unreadCount`                               | `src/components/NotificationBell.tsx` — when the bell dropdown opens                               |
 | `notification_clicked` | `notificationId`, `kind`, `hasLink`             | `src/components/NotificationBell.tsx` — on any notification row, link or not                       |
 | `notifications_all_marked_read` | `unreadCount`                        | `src/components/NotificationBell.tsx` — the "Mark all as read" action                              |
+| `quality_check_published` | `songId`, `verdict`, `score`, `issueCount`  | `src/services/qualityCheckService.ts` — when `saveQualityCheck` records an AI master review (#465) |
 
 Note that `mint_started` / `mint_succeeded` / `mint_failed` are shared
 between song minting and artist-profile minting (same on-chain
