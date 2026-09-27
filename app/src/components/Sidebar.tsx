@@ -10,6 +10,7 @@ import {
   X,
   BarChart3,
   MessageSquare,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -22,6 +23,7 @@ const navItems = [
   { name: "Overview", icon: Home, href: "/dashboard/overview" },
   { name: "My Music", icon: Music, href: "/dashboard/my-music" },
   { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
+  { name: "On-Chain", icon: Activity, href: "/dashboard/onchain-stats" },
   { name: "Events", icon: Calendar, href: "/dashboard/events" },
   { name: "Merches", icon: Tag, href: "/dashboard/merches" },
   { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },

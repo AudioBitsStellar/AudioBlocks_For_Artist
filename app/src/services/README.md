@@ -23,7 +23,9 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Merch Service | `merchService.ts` | Merch inventory and drop lifecycle management |
 | Message Service | `messageService.ts` | Direct messaging and fan interaction chats |
 | Notification Preferences | `notificationPreferences.ts` | User email and push notification settings |
+| Notification Service | `notificationService.ts` | Bell feed: listing, sorting, mute filtering and read state |
 | On-Chain Service | `onchainService.ts` | Soroban contract calls, song minting, and wallet transfers |
+| On-Chain Stats Service | `onchainStatsService.ts` | Horizon-derived account activity summary for `/dashboard/onchain-stats` |
 | Overview Service | `overviewService.ts` | Dashboard metrics and activity feeds |
 | Quality Check Service | `qualityCheckService.ts` | AI master-review scoring, verdicts and result notifications |
 | Royalty Distribution | `royaltyDistributionService.ts` | Multi-party royalty splitting |

@@ -24,6 +24,8 @@ export const featureFlags = {
   useMockFansEngagement: globalMock,
   /** Notification bell dropdown in the top header — read state is kept locally when true */
   useMockNotifications: globalMock,
+  /** On-chain activity stats (#466) — read live from Horizon when false */
+  useMockOnChainStats: globalMock,
   /**
    * EarningsRoyalties is already wired to a real endpoint (#47),
    * so its flag is always false regardless of the global toggle.
