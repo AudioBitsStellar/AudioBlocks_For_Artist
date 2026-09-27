@@ -228,6 +228,13 @@ describe("summarizeOnChainActivity", () => {
 });
 
 describe("MOCK_ONCHAIN_SUMMARY", () => {
+  it("uses a structurally valid Stellar account id for the sample", () => {
+    // The fixture's checksum was verified out-of-band against StrKey; a
+    // malformed address would 400 at Horizon and dead-link the explorer
+    // button for anyone demoing the page.
+    expect(MOCK_ONCHAIN_SUMMARY.address).toMatch(/^G[A-Z2-7]{55}$/);
+  });
+
   it("is internally consistent so the demo page can't show impossible numbers", () => {
     const totalOperations = Object.values(MOCK_ONCHAIN_SUMMARY.operationsByType).reduce(
       (sum, count) => sum + count,

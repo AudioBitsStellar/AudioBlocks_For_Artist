@@ -198,8 +198,9 @@ export const MOCK_ONCHAIN_ASSETS: HeldAsset[] = [
   { code: "ABX", balance: "37.0000000" },
 ];
 
+/** A checksum-valid account ID, so the sample's explorer link isn't a dead end. */
 export const MOCK_ONCHAIN_ADDRESS =
-  "GAIH3ULLFQ4DGSECF2AR55WDK7ZVLJPEBVQCBHVWUWEYFKV2GNBPSVBD";
+  "GBQXKZDJN5RGY33DNNZS243BNVYGYZJNMFZHI2LTOQWTAMBQGAYDAOCF";
 
 /** Demo summary for `NEXT_PUBLIC_USE_MOCK_DATA=true` and for signed-out artists. */
 export const MOCK_ONCHAIN_SUMMARY: OnChainActivitySummary = summarizeOnChainActivity({
