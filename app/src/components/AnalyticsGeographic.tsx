@@ -13,12 +13,12 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
 
   if (data.length === 0) {
     return (
-      <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6">
+      <div className="bg-surface border border-border rounded-lg p-6">
         <div className="flex items-center gap-2 mb-6">
-          <Globe size={20} className="text-pink-500" aria-hidden="true" />
-          <h2 className="text-white text-lg font-semibold">Geographic Distribution (Top 10)</h2>
+          <Globe size={20} className="text-primary" aria-hidden="true" />
+          <h2 className="text-text text-lg font-semibold">Geographic Distribution (Top 10)</h2>
         </div>
-        <p className="text-gray-400 text-sm">No geographic data available yet.</p>
+        <p className="text-text-muted text-sm">No geographic data available yet.</p>
       </div>
     );
   }
@@ -26,10 +26,10 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
   const totalPlays = sortedData.reduce((sum, d) => sum + d.plays, 0);
 
   return (
-    <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6">
+    <div className="bg-surface border border-border rounded-lg p-6">
       <div className="flex items-center gap-2 mb-6">
-        <Globe size={20} className="text-pink-500" aria-hidden="true" />
-        <h2 className="text-white text-lg font-semibold">Geographic Distribution (Top 10)</h2>
+        <Globe size={20} className="text-primary" aria-hidden="true" />
+        <h2 className="text-text text-lg font-semibold">Geographic Distribution (Top 10)</h2>
       </div>
 
       <div className="space-y-4" role="region" aria-label="Geographic play distribution">
@@ -40,13 +40,13 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
             <div key={`${item.country}-${index}`} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white font-medium">{item.country}</p>
-                  <p className="text-gray-500 text-sm">{item.region}</p>
+                  <p className="text-text font-medium">{item.country}</p>
+                  <p className="text-text-subtle text-sm">{item.region}</p>
                 </div>
-                <p className="text-pink-500 font-semibold" aria-label={`${item.plays.toLocaleString()} plays`}>{item.plays.toLocaleString()}</p>
+                <p className="text-primary font-semibold" aria-label={`${item.plays.toLocaleString()} plays`}>{item.plays.toLocaleString()}</p>
               </div>
               <div
-                className="w-full bg-[#2d3d2d] rounded-full h-2 overflow-hidden"
+                className="w-full bg-surface-sunken rounded-full h-2 overflow-hidden"
                 role="progressbar"
                 aria-valuenow={Math.round(percentage)}
                 aria-valuemin={0}
@@ -54,7 +54,7 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
                 aria-label={`${item.country} play distribution: ${percentage.toFixed(0)}%`}
               >
                 <div
-                  className="bg-gradient-to-r from-pink-500 to-pink-600 h-full rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-primary to-secondary h-full rounded-full transition-all duration-500"
                   style={{ width: `${percentage}%` }}
                   aria-hidden="true"
                 />
@@ -64,10 +64,10 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
         })}
       </div>
 
-      <div className="mt-6 p-4 bg-[#2d3d2d] rounded-lg border border-[#3d4d3d]">
-        <p className="text-gray-400 text-sm">
+      <div className="mt-6 p-4 bg-surface-sunken rounded-lg border border-border">
+        <p className="text-text-muted text-sm">
           Total Plays from Top 10:{" "}
-          <span className="text-pink-500 font-semibold">{totalPlays.toLocaleString()}</span>
+          <span className="text-primary font-semibold">{totalPlays.toLocaleString()}</span>
         </p>
       </div>
     </div>
