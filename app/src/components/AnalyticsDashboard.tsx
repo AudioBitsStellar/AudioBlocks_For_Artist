@@ -29,6 +29,18 @@ const AnalyticsPlayTrends = dynamic(() => import("@/components/AnalyticsPlayTren
   ),
 });
 
+const ListenerMap = dynamic(() => import("@/components/ListenerMap"), { ssr: false });
+const TopTracksLeaderboard = dynamic(() => import("@/components/TopTracksLeaderboard"), { ssr: false });
+
+// Placeholder until per-track play stats are served by the analytics API.
+const SAMPLE_TOP_TRACKS = [
+  { id: "t1", title: "Midnight Drive", plays: 4200, previousPlays: 3600 },
+  { id: "t2", title: "Golden Hour", plays: 3100, previousPlays: 3400 },
+  { id: "t3", title: "Lagos Nights", plays: 2800 },
+  { id: "t4", title: "Echoes", plays: 1900, previousPlays: 1500 },
+  { id: "t5", title: "Afterglow", plays: 1200, previousPlays: 1200 },
+];
+
 const AnalyticsGeographic = dynamic(() => import("@/components/AnalyticsGeographic"), {
   loading: () => (
     <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 animate-pulse">
@@ -124,6 +136,15 @@ export default function AnalyticsDashboard() {
               <AnalyticsPlayTrends data={analyticsData.playTrends} period={analyticsData.period} />
             </LazyChartSection>
           </ErrorBoundary>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ErrorBoundary fallbackTitle="Failed to load listener map">
+              <ListenerMap data={analyticsData.geographicDistribution} />
+            </ErrorBoundary>
+            <ErrorBoundary fallbackTitle="Failed to load top tracks">
+              <TopTracksLeaderboard tracks={SAMPLE_TOP_TRACKS} />
+            </ErrorBoundary>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ErrorBoundary fallbackTitle="Failed to load geographic data">
