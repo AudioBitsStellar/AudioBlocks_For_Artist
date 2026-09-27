@@ -1,12 +1,65 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Suspense } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import useAnalyticsServices from "@/services/analyticsService";
+import { useInView } from "@/hooks/useInView";
 
-const AnalyticsSummaryCards = dynamic(() => import("@/components/AnalyticsSummaryCards"));
-const AnalyticsPlayTrends = dynamic(() => import("@/components/AnalyticsPlayTrends"));
-const AnalyticsGeographic = dynamic(() => import("@/components/AnalyticsGeographic"));
+const AnalyticsSummaryCards = dynamic(() => import("@/components/AnalyticsSummaryCards"), {
+  loading: () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 animate-pulse">
+          <div className="h-6 bg-[#2d3d2d] rounded mb-4 w-3/4"></div>
+          <div className="h-8 bg-[#2d3d2d] rounded mb-4 w-1/2"></div>
+        </div>
+      ))}
+    </div>
+  ),
+});
+
+const AnalyticsPlayTrends = dynamic(() => import("@/components/AnalyticsPlayTrends"), {
+  loading: () => (
+    <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 mb-8 animate-pulse">
+      <div className="h-8 bg-[#2d3d2d] rounded mb-6 w-1/3"></div>
+      <div className="h-[300px] bg-[#2d3d2d] rounded"></div>
+    </div>
+  ),
+});
+
+const AnalyticsGeographic = dynamic(() => import("@/components/AnalyticsGeographic"), {
+  loading: () => (
+    <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 animate-pulse">
+      <div className="h-8 bg-[#2d3d2d] rounded mb-6 w-1/3"></div>
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-10 bg-[#2d3d2d] rounded"></div>
+        ))}
+      </div>
+    </div>
+  ),
+});
+
+interface ChartSectionProps {
+  children: React.ReactNode;
+}
+
+const LazyChartSection = ({ children }: ChartSectionProps) => {
+  const { ref, isInView } = useInView({ threshold: 0.1 });
+
+  return (
+    <div ref={ref}>
+      {isInView ? (
+        <Suspense fallback={<div className="text-gray-400">Loading chart...</div>}>
+          {children}
+        </Suspense>
+      ) : (
+        <div className="h-96 bg-[#1f2622] border border-[#2d3d2d] rounded-lg"></div>
+      )}
+    </div>
+  );
+};
 
 export default function AnalyticsDashboard() {
   const { data, isLoading, isError, refetch } =
@@ -60,14 +113,16 @@ export default function AnalyticsDashboard() {
           </ErrorBoundary>
 
           <ErrorBoundary fallbackTitle="Failed to load play trends">
-            <AnalyticsPlayTrends data={analyticsData.playTrends} period={analyticsData.period} />
+            <LazyChartSection>
+              <AnalyticsPlayTrends data={analyticsData.playTrends} period={analyticsData.period} />
+            </LazyChartSection>
           </ErrorBoundary>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ErrorBoundary fallbackTitle="Failed to load geographic data">
-              <div>
+              <LazyChartSection>
                 <AnalyticsGeographic data={analyticsData.geographicDistribution} />
-              </div>
+              </LazyChartSection>
             </ErrorBoundary>
 
             <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6">
