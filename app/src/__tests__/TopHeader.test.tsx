@@ -4,6 +4,25 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TopHeader from "@/components/TopHeader";
 import { RoleProvider } from "@/context/RoleContext";
 
+// SearchModal calls useRouter(), which needs a mounted app router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+}));
+
+// NotificationBell has its own tests; keep the header off the network.
+const mockUnreadCount = vi.hoisted(() => ({ value: 0 }));
+vi.mock("@/services/notificationService", () => ({
+  useNotifications: () => ({
+    notifications: [],
+    unreadCount: mockUnreadCount.value,
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+    markAsRead: vi.fn(),
+    markAllAsRead: vi.fn(),
+  }),
+}));
+
 // ---------- Helpers ----------
 
 function renderTopHeader(
@@ -15,11 +34,13 @@ function renderTopHeader(
     return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
   }
   function withRole(role: "owner" | "manager" | "viewer") {
-    return ({ children }: { children: React.ReactNode }) => (
-      <BaseWrapper>
-        <RoleProvider initialRole={role}>{children}</RoleProvider>
-      </BaseWrapper>
-    );
+    return function RoleWrapper({ children }: { children: React.ReactNode }) {
+      return (
+        <BaseWrapper>
+          <RoleProvider initialRole={role}>{children}</RoleProvider>
+        </BaseWrapper>
+      );
+    };
   }
   const Wrapper =
     opts?.wrapper === "role-owner"
@@ -27,11 +48,13 @@ function renderTopHeader(
       : opts?.wrapper === "role-viewer"
         ? withRole("viewer")
         : BaseWrapper;
-  return render(<Wrapper>{ui}</Wrapper>);
+  // Pass as `wrapper` so rerender() keeps the providers mounted.
+  return render(ui, { wrapper: Wrapper });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUnreadCount.value = 0;
   localStorage.clear();
   document.documentElement.classList.remove("dark");
 });
@@ -67,57 +90,52 @@ describe("TopHeader – user info display", () => {
 // ---------- Notification badge ----------
 
 describe("TopHeader – notification badge", () => {
+  const getBell = () => screen.getByRole("button", { name: /^notifications/i });
+
   it("renders a dot (no count) when notificationCount is 0", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={0} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    expect(within(link).getByTestId("notification-dot")).toBeInTheDocument();
-    expect(within(link).queryByTestId("notification-count")).not.toBeInTheDocument();
+    expect(within(getBell()).getByTestId("notification-dot")).toBeInTheDocument();
+    expect(within(getBell()).queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
   it("renders the correct number when notificationCount is positive", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={3} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    const count = within(link).getByTestId("notification-count");
-    expect(count).toHaveTextContent("3");
+    expect(within(getBell()).getByTestId("notification-count")).toHaveTextContent("3");
   });
 
   it("caps the badge display at 99+ for large counts", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={150} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    const count = within(link).getByTestId("notification-count");
-    expect(count).toHaveTextContent("99+");
+    expect(within(getBell()).getByTestId("notification-count")).toHaveTextContent("99+");
   });
 
   it("hides the badge entirely when notificationCount is null", () => {
+    mockUnreadCount.value = 4;
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={null} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    expect(within(link).queryByTestId("notification-dot")).not.toBeInTheDocument();
-    expect(within(link).queryByTestId("notification-count")).not.toBeInTheDocument();
+    expect(within(getBell()).queryByTestId("notification-dot")).not.toBeInTheDocument();
+    expect(within(getBell()).queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
-  it("renders a dot when notificationCount is omitted (undefined)", () => {
+  it("shows the live unread count when notificationCount is omitted", () => {
+    mockUnreadCount.value = 2;
     renderTopHeader(<TopHeader onMenuClick={() => {}} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    expect(within(link).getByTestId("notification-dot")).toBeInTheDocument();
+    expect(within(getBell()).getByTestId("notification-count")).toHaveTextContent("2");
   });
 
-  it("navigates to /dashboard/settings/notifications when clicked", () => {
-    renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={4} />);
+  it("shows no badge when omitted and nothing is unread", () => {
+    renderTopHeader(<TopHeader onMenuClick={() => {}} />);
 
-    const link = screen.getByRole("link", { name: /notifications/i });
-    expect(link).toHaveAttribute("href", "/dashboard/settings/notifications");
+    expect(within(getBell()).queryByTestId("notification-dot")).not.toBeInTheDocument();
+    expect(within(getBell()).queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
-  it("updates the aria-label with the count when present", () => {
+  it("updates the accessible name with the count when present", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} notificationCount={7} />);
-    expect(
-      screen.getByRole("link", { name: /Notifications and settings \(7 new\)/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Notifications (7 unread)" })).toBeInTheDocument();
   });
 });
 
@@ -195,20 +213,19 @@ describe("TopHeader – hamburger menu", () => {
 // ---------- Search bar ----------
 
 describe("TopHeader – search bar", () => {
-  it("renders a desktop search input", () => {
+  it("renders a search trigger button", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} />);
-    expect(screen.getAllByRole("searchbox", { name: /search/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("button", { name: /open search/i })).toBeInTheDocument();
   });
 
-  it("updates as the user types in the search input", () => {
+  it("opens the search modal when the trigger is clicked", () => {
     renderTopHeader(<TopHeader onMenuClick={() => {}} />);
 
-    const inputs = screen.getAllByRole("searchbox", { name: /search/i });
-    const desktopInput = inputs.find((el) => el.getAttribute("placeholder")?.includes("artists"));
-    expect(desktopInput).toBeTruthy();
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: /open search/i }));
+    });
 
-    fireEvent.change(desktopInput!, { target: { value: "Beatles" } });
-    expect((desktopInput as HTMLInputElement).value).toBe("Beatles");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });
 

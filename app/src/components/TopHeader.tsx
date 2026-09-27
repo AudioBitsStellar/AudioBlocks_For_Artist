@@ -1,12 +1,14 @@
 "use client";
 
-import { Search, Bell, Menu, Sun, Moon } from "lucide-react";
+import { Search, Menu, Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/utils/date";
 import { useRole } from "@/hooks/useRole";
 import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
 import SearchModal from "./SearchModal";
+import LanguageSwitcher from "./LanguageSwitcher";
+import NotificationBell from "./NotificationBell";
 
 interface TopHeaderProps {
   onMenuClick: () => void;
@@ -16,11 +18,11 @@ interface TopHeaderProps {
   /** Optional override for the displayed role. Falls back to useRole().role. */
   userRole?: Role;
   /**
-   * Optional notification count (#172).
+   * Optional notification badge override (#172). Defaults to the live unread
+   * count from the notification dropdown.
    *  - `0`            : red dot rendered next to the bell
    *  - `number > 0`   : count badge (capped at `99+`)
    *  - `null`         : no badge at all
-   *  - `undefined`    : red dot (default)
    */
   notificationCount?: number | null;
 }
@@ -129,11 +131,6 @@ export default function TopHeader({
     return () => clearInterval(interval);
   }, []);
 
-  const notifLabel =
-    typeof notificationCount === "number" && notificationCount > 0
-      ? `Notifications and settings (${notificationCount} new)`
-      : "Notifications and settings";
-
   return (
     <header className="sticky top-0 z-30 bg-[var(--surface)] flex-shrink-0 border-b border-[var(--border-subtle)]">
       <div className="h-16 sm:h-20 flex items-center justify-between px-4 md:px-8">
@@ -201,27 +198,7 @@ export default function TopHeader({
             {isDark ? <Sun size={22} aria-hidden="true" /> : <Moon size={22} aria-hidden="true" />}
           </button>
 
-          <Link
-            href="/dashboard/settings/notifications"
-            aria-label={notifLabel}
-            className="relative text-[var(--text)] hover:text-[var(--text-muted)] transition-colors"
-          >
-            <Bell size={24} strokeWidth={2} aria-hidden="true" />
-            {notificationCount !== null &&
-              (typeof notificationCount === "number" && notificationCount > 0 ? (
-                <span
-                  data-testid="notification-count"
-                  className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 bg-[var(--primary)] rounded-full border-2 border-[var(--surface)] text-[10px] font-bold text-[var(--text-inverted)] flex items-center justify-center"
-                >
-                  {notificationCount > 99 ? "99+" : notificationCount}
-                </span>
-              ) : (
-                <span
-                  data-testid="notification-dot"
-                  className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--primary)] rounded-full border-2 border-[var(--surface)]"
-                />
-              ))}
-          </Link>
+          <NotificationBell notificationCount={notificationCount} />
 
           <Link
             href="/dashboard/profile"
