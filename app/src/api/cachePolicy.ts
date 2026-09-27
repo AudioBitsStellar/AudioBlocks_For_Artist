@@ -49,6 +49,8 @@ export const DASHBOARD_CACHE = {
   statistics: CACHE_TIME.LONG,
   earnings: CACHE_TIME.LONG,
   platformRevenue: CACHE_TIME.LONG,
+  /** An indexer trails the chain, so re-reading it more often than every few minutes is noise. */
+  onchainStats: CACHE_TIME.LONG,
 } as const;
 
 /**
@@ -67,6 +69,7 @@ export const DASHBOARD_QUERY_KEYS = {
   platformRevenue: ["get-platform-revenue"],
   analytics: ["get-artist-analytics"],
   analyticsSummary: ["get-artist-analytics-summary"],
+  onchainStats: ["get-artist-onchain-stats"],
   transactions: ["get-dashboard-transactions"],
   comments: ["get-dashboard-comments"],
   albums: ["get-artist-albums"],

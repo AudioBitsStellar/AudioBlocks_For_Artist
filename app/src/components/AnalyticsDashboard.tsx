@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import AnalyticsOnchainStats from "@/components/AnalyticsOnchainStats";
 import useAnalyticsServices from "@/services/analyticsService";
 import { useInView } from "@/hooks/useInView";
 
@@ -162,6 +163,10 @@ export default function AnalyticsDashboard() {
           No analytics data available yet.
         </div>
       )}
+
+      {/* On-chain plays and sales (#467). Deliberately outside the block above:
+          a subgraph or backend outage should only cost you its own section. */}
+      <AnalyticsOnchainStats />
     </>
   );
 }
