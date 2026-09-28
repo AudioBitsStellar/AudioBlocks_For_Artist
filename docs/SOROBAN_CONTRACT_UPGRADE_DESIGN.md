@@ -106,3 +106,38 @@ Frontend implementation:
 ## Status
 
 Implemented in issue #295. Service hooks, types, validation rules, and error handling are live in `app/src/services/contractUpgradeService.ts` and `app/src/lib/contractUpgrade.ts`.
+
+## UI Component: `ContractUpgradePanel`
+
+`app/src/components/ContractUpgradePanel.tsx` provides the admin-facing React panel
+that drives the entire upgrade lifecycle from a single surface:
+
+| Section | Purpose |
+|---|---|
+| Contract info strip | Displays truncated contract ID, admin address, and current on-chain WASM hash (fetched from `GET /contract/:id/info`). |
+| WASM hash input | Text field for the 64-character hex hash of the newly uploaded WASM bytecode. |
+| Advanced options | Optional migration note passed as `migrationData` in the prepare request. |
+| Status badge | Live `aria-live` region reflecting `idle › validating › preparing › signing › submitting › success / error`. |
+| Validation errors | Inline error list rendered when `validateUpgradeParams` returns failures. |
+| Action buttons | **Upgrade Contract** triggers the full prepare-sign-submit flow; **Reset** clears state after terminal outcomes. |
+
+### Usage
+
+```tsx
+import ContractUpgradePanel from "@/components/ContractUpgradePanel";
+import { signTransactionXdr } from "@stellar/freighter-api";
+
+<ContractUpgradePanel
+  contractId="CDLZFC..."
+  adminAddress={connectedPublicKey}
+  onSign={(xdr, { networkPassphrase }) =>
+    signTransactionXdr(xdr, { networkPassphrase })
+  }
+/>
+```
+
+### Storybook
+
+Stories for all panel states are available at `Web3/ContractUpgradePanel` in Storybook
+(`app/src/components/ContractUpgradePanel.stories.tsx`).
+
