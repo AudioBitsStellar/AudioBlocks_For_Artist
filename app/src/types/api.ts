@@ -1,6 +1,8 @@
 // Typed shapes for every API response returned by the AudioBlocks backend.
 // Import from here instead of inlining interface definitions in service files.
 
+import type { TrackVisibility } from "@/services/trackVisibilityService";
+
 // ── Shared envelope ───────────────────────────────────────────────────────────
 
 export interface ApiEnvelope<T = unknown> {
@@ -167,6 +169,12 @@ export interface SongMeta {
   marketPrice?: string;
   purchasePrice?: string;
   albumId?: string;
+  /**
+   * Who may find and play this track (#458). Optional because the field is new
+   * in the API contract: a record without it is treated as `public`, which is
+   * how it behaved before the setting existed.
+   */
+  visibility?: TrackVisibility;
   createdAt: string;
 }
 
@@ -186,6 +194,8 @@ export interface FinalizeSongPayload {
   description: string;
   genre: string;
   composer: string;
+  /** Omitted means the server's default; the upload form sends `private` explicitly. */
+  visibility?: TrackVisibility;
 }
 
 export type FinalizeSongResponse = ApiEnvelope<SongMeta>;

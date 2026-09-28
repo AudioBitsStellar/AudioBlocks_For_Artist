@@ -5,17 +5,29 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Modal from "@/components/shared/Modal";
 import { trackEditSchema } from "@/types/formValidation";
+import {
+  describeVisibility,
+  TRACK_VISIBILITY_OPTIONS,
+  type TrackVisibility,
+} from "@/services/trackVisibilityService";
 
 export interface EditableTrackFields {
   title: string;
   albumName: string;
+  visibility: TrackVisibility;
 }
 
 interface EditTrackModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** The track being edited; the form is re-initialised when the modal opens or the track's id changes. */
-  track: { id: number | string; title: string; albumName: string } | null;
+  track: {
+    id: number | string;
+    title: string;
+    albumName: string;
+    /** Effective visibility, already resolved by the caller. */
+    visibility: TrackVisibility;
+  } | null;
   /** Album names offered in the album picker. */
   albumOptions: string[];
   /** Called with the validated values. The modal closes right after, so callers should apply the edit optimistically. */
@@ -33,11 +45,16 @@ export default function EditTrackModal({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isDirty },
   } = useForm<EditableTrackFields>({
     resolver: zodResolver(trackEditSchema),
     mode: "onChange",
-    defaultValues: { title: track?.title ?? "", albumName: track?.albumName ?? "" },
+    defaultValues: {
+      title: track?.title ?? "",
+      albumName: track?.albumName ?? "",
+      visibility: track?.visibility ?? "private",
+    },
   });
 
   // Re-initialise only on open / a different track — not on every change to `track`
@@ -47,8 +64,16 @@ export default function EditTrackModal({
   const trackId = track?.id;
   useEffect(() => {
     const current = trackRef.current;
-    if (open && current) reset({ title: current.title, albumName: current.albumName });
+    if (open && current) {
+      reset({
+        title: current.title,
+        albumName: current.albumName,
+        visibility: current.visibility,
+      });
+    }
   }, [open, trackId, reset]);
+
+  const selectedVisibility = watch("visibility");
 
   // Keep the track's current album selectable even if it isn't in the list.
   const albums =
@@ -110,6 +135,33 @@ export default function EditTrackModal({
           {errors.albumName && (
             <p id="edit-track-album-error" role="alert" className="text-xs text-red-500">
               {errors.albumName.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="edit-track-visibility" className="text-sm font-medium text-white">
+            Visibility <span className="text-[#D2045B]">*</span>
+          </label>
+          <select
+            id="edit-track-visibility"
+            {...register("visibility")}
+            aria-invalid={errors.visibility ? "true" : "false"}
+            aria-describedby="edit-track-visibility-hint"
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.visibility ? "border-red-500" : "border-[#2A2A2A]"}`}
+          >
+            {TRACK_VISIBILITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p id="edit-track-visibility-hint" className="text-xs text-gray-400">
+            {describeVisibility(selectedVisibility)}
+          </p>
+          {errors.visibility && (
+            <p id="edit-track-visibility-error" role="alert" className="text-xs text-red-500">
+              {errors.visibility.message}
             </p>
           )}
         </div>

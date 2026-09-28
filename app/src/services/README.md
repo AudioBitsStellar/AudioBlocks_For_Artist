@@ -28,6 +28,7 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Royalty Distribution | `royaltyDistributionService.ts` | Multi-party royalty splitting |
 | Scheduled Release | `scheduledReleaseService.ts` | Release scheduling |
 | Track Service | `trackService.ts` | Track edits with optimistic UI updates and rollback |
+| Track Visibility | `trackVisibilityService.ts` | Public/unlisted/private rules, the artist's choice, and catalog filtering |
 | Upload Service | `uploadService.ts` | Chunked audio uploads, cover art, and finalization |
 | Verification Service | `verificationService.ts` | Artist verification requests |
 

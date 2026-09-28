@@ -8,6 +8,7 @@ import {
   Clock,
   Disc3,
   Download,
+  Eye,
   Filter,
   FolderSearch,
   GripVertical,
@@ -29,6 +30,19 @@ import Pagination from "./shared/Pagination";
 import EditTrackModal, { EditableTrackFields } from "./common/modals/EditTrackModal";
 import useAlbumServices from "@/services/albumService";
 import useTrackServices, { applyTrackEdit } from "@/services/trackService";
+import {
+  clearTrackVisibility,
+  describeVisibility,
+  filterCatalog,
+  getStoredVisibility,
+  getTrackVisibility,
+  LEGACY_DEFAULT_VISIBILITY,
+  setTrackVisibility,
+  type TrackVisibility,
+  TRACK_VISIBILITY_OPTIONS,
+  visibilityLabel,
+  visibilityPermissions,
+} from "@/services/trackVisibilityService";
 import { featureFlags } from "@/lib/featureFlags";
 
 const SONG_ORDER_STORAGE_KEY = "my-music-track-order";
@@ -40,6 +54,21 @@ const UPLOAD_MUSIC_HREF = "/dashboard/upload-music";
 
 /** `1 track` / `8 tracks`. */
 const pluralize = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
+
+/**
+ * What a mode actually grants a listener, spelled out for the row's tooltip.
+ * Derived from the rules table rather than written here, so the list can't
+ * describe a visibility differently from how it is enforced.
+ */
+function permissionHint(visibility: TrackVisibility): string {
+  const rules = visibilityPermissions(visibility, "visitor");
+  return [
+    describeVisibility(visibility),
+    `${rules.discoverable ? "Shows" : "Hidden"} in search`,
+    rules.playable ? "playable" : "not playable",
+    rules.shareable ? "link can be shared" : "no shareable link",
+  ].join(" · ");
+}
 
 interface Album {
   id: number;
@@ -60,7 +89,12 @@ interface Song {
   comments: number;
   downloads: number;
   thumbnail: string;
+  /** Absent on fixtures and pre-feature records, which read as public. */
+  visibility?: TrackVisibility;
 }
+
+/** The track list's visibility filter: everything, what a listener would find, or one mode. */
+type VisibilityFilter = "all" | "discoverable" | TrackVisibility;
 
 interface MyMusicContentProps {
   onAlbumSelect?: (album: Album | null) => void;
@@ -282,6 +316,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const [songs, setSongs] = useState<Song[]>(initialSongs);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
   const [page, setPage] = useState(1);
   const [draggedSongId, setDraggedSongId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
@@ -301,8 +336,17 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const updateTrack = useUpdateTrack({
     // Show the edit immediately; if the save fails, put back just this track's
     // previous fields so unrelated edits/reorders made meanwhile are kept.
+    //
+    // Visibility is recorded locally here rather than at the call site,
+    // because every way of changing it (the row picker and the edit dialog)
+    // arrives through this one mutation: one place to persist, one place to
+    // undo. Without the local record a reload would forget a choice the API
+    // does not carry yet; without the undo a failed save would come back as a
+    // setting the artist never kept.
     onOptimistic: (edit) => {
       const previous = songs.find((song) => song.id === edit.id);
+      const previousStored = edit.visibility ? getStoredVisibility(edit.id) : undefined;
+      if (edit.visibility) setTrackVisibility(edit.id, edit.visibility);
       setSongs((current) => applyTrackEdit(current, edit));
       setReorderMessage(`${edit.title} updated`);
       return () => {
@@ -312,8 +356,13 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             id: previous.id,
             title: previous.title,
             albumName: previous.albumName,
+            visibility: previous.visibility,
           })
         );
+        if (edit.visibility) {
+          if (previousStored) setTrackVisibility(edit.id, previousStored);
+          else clearTrackVisibility(edit.id);
+        }
         setReorderMessage(`Couldn't save changes to ${edit.title}. They were reverted.`);
       };
     },
@@ -322,6 +371,21 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const handleEditSave = (values: EditableTrackFields) => {
     if (editingSongId === null) return;
     updateTrack.mutate({ id: editingSongId, ...values });
+  };
+
+  /**
+   * Changing visibility from the row is the same edit as changing it in the
+   * dialog, so it takes the same optimistic save — a failed request reverts
+   * the picker instead of leaving the artist believing a private track is up.
+   */
+  const handleVisibilityChange = (song: Song, visibility: TrackVisibility) => {
+    updateTrack.mutate({
+      id: song.id,
+      title: song.title,
+      albumName: song.albumName,
+      visibility,
+    });
+    setReorderMessage(`${song.title} is now ${visibilityLabel(visibility).toLowerCase()}`);
   };
 
   const { useGetAlbums } = useAlbumServices();
@@ -352,18 +416,27 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
     }));
   }, [albumsData]);
 
+  /**
+   * Hydrate from local storage. Runs after mount rather than in the initial
+   * state so the server render and the first client render agree — the stored
+   * order and the stored visibilities only exist in the browser.
+   */
   useEffect(() => {
     try {
       const savedOrder = window.localStorage.getItem(SONG_ORDER_STORAGE_KEY);
-      if (!savedOrder) return;
-      const order = JSON.parse(savedOrder) as number[];
-      const positions = new Map(order.map((id, index) => [id, index]));
-      setSongs((current) =>
-        [...current].sort(
+      setSongs((current) => {
+        const withVisibility = current.map((song) => ({
+          ...song,
+          visibility: getTrackVisibility(song),
+        }));
+        if (!savedOrder) return withVisibility;
+        const order = JSON.parse(savedOrder) as number[];
+        const positions = new Map(order.map((id, index) => [id, index]));
+        return [...withVisibility].sort(
           (a, b) =>
             (positions.get(a.id) ?? current.length) - (positions.get(b.id) ?? current.length)
-        )
-      );
+        );
+      });
     } catch {
       window.localStorage.removeItem(SONG_ORDER_STORAGE_KEY);
     }
@@ -417,18 +490,29 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
    * Search across the artist's own catalog (issue #428). Every whitespace
    * separated word has to match somewhere in the track, so "midnight neon"
    * narrows instead of behaving like a single literal phrase.
+   *
+   * The visibility filter is applied to the full list first: "What listeners
+   * can see" is the catalog rule from `trackVisibilityService`, not a per-row
+   * string match, so the artist's list can't drift from what a buyer gets.
    */
   const filteredSongs = useMemo(() => {
     const words = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return songs.filter((song) => {
+    const inVisibilityScope =
+      visibilityFilter === "all"
+        ? songs
+        : visibilityFilter === "discoverable"
+          ? filterCatalog(songs, "visitor")
+          : songs.filter((song) => getTrackVisibility(song) === visibilityFilter);
+    return inVisibilityScope.filter((song) => {
       const haystack = `${song.title} ${song.albumName} ${song.artist}`.toLowerCase();
       const matchesSearch = words.every((word) => haystack.includes(word));
       const matchesFilter = filterType === "all" || song.albumName === filterType;
       return matchesSearch && matchesFilter;
     });
-  }, [songs, searchQuery, filterType]);
+  }, [songs, searchQuery, filterType, visibilityFilter]);
 
-  const isFiltering = searchQuery.trim().length > 0 || filterType !== "all";
+  const isFiltering =
+    searchQuery.trim().length > 0 || filterType !== "all" || visibilityFilter !== "all";
 
   // One line that says what the list currently holds, so search and filter
   // results are legible at a glance instead of only by counting rows.
@@ -439,6 +523,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   const clearFilters = () => {
     setSearchQuery("");
     setFilterType("all");
+    setVisibilityFilter("all");
     setSelectedAlbum(null);
   };
 
@@ -446,7 +531,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
   // starts from the top of the results.
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, filterType]);
+  }, [searchQuery, filterType, visibilityFilter]);
 
   // Deleting the last track of an album leaves the filter pointing at an option
   // that no longer exists, and a <select> with no matching option renders blank.
@@ -597,6 +682,25 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                 ))}
               </select>
             </label>
+            <label className="flex items-center gap-2 rounded-lg border border-gray-700 bg-[#161616] px-3 text-sm text-gray-300">
+              <Eye size={16} aria-hidden="true" />
+              <select
+                value={visibilityFilter}
+                onChange={(event) =>
+                  setVisibilityFilter(event.target.value as VisibilityFilter)
+                }
+                aria-label="Filter tracks by visibility"
+                className="bg-transparent py-2.5 outline-none"
+              >
+                <option value="all">Any visibility</option>
+                <option value="discoverable">What listeners can see</option>
+                {TRACK_VISIBILITY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} only
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
@@ -626,9 +730,10 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
         ) : (
           <ErrorBoundary fallbackTitle="Your track list couldn't be displayed">
             <div className="overflow-hidden rounded-xl border border-gray-800 bg-[#111111]">
-              <div className="hidden grid-cols-[40px_1fr_140px_100px_100px_100px_200px] items-center gap-4 border-b border-gray-800 px-4 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid">
+              <div className="hidden grid-cols-[40px_1fr_150px_120px_100px_100px_100px_200px] items-center gap-4 border-b border-gray-800 px-4 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid">
                 <span aria-hidden="true" />
                 <span>Track</span>
+                <span>Visibility</span>
                 <span>Duration</span>
                 <span>Likes</span>
                 <span>Comments</span>
@@ -664,7 +769,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                       setDraggedSongId(null);
                       setDropTargetId(null);
                     }}
-                    className={`grid grid-cols-[40px_1fr_auto] items-center gap-4 border-b border-gray-800 px-4 py-3 transition-all duration-200 last:border-b-0 md:grid-cols-[40px_1fr_140px_100px_100px_100px_200px] ${isDragging ? "scale-[0.99] opacity-40" : ""} ${isDropTarget ? "border-t-2 border-t-pink-500 bg-pink-500/10" : "hover:bg-white/[0.03]"}`}
+                    className={`grid grid-cols-[40px_1fr_auto] items-center gap-4 border-b border-gray-800 px-4 py-3 transition-all duration-200 last:border-b-0 md:grid-cols-[40px_1fr_150px_120px_100px_100px_100px_200px] ${isDragging ? "scale-[0.99] opacity-40" : ""} ${isDropTarget ? "border-t-2 border-t-pink-500 bg-pink-500/10" : "hover:bg-white/[0.03]"}`}
                   >
                     <button
                       type="button"
@@ -690,6 +795,21 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                         </p>
                       </div>
                     </div>
+                    <select
+                      value={song.visibility ?? LEGACY_DEFAULT_VISIBILITY}
+                      onChange={(event) =>
+                        handleVisibilityChange(song, event.target.value as TrackVisibility)
+                      }
+                      aria-label={`Visibility of ${song.title}`}
+                      title={permissionHint(getTrackVisibility(song))}
+                      className="w-full rounded-lg border border-gray-700 bg-[#161616] px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-pink-500"
+                    >
+                      {TRACK_VISIBILITY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                     <span className="hidden text-sm text-gray-400 md:block">
                       <Clock size={14} className="mr-1 inline" />
                       {song.duration}
@@ -780,7 +900,16 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
         onOpenChange={(open) => {
           if (!open) setEditingSongId(null);
         }}
-        track={editingSong}
+        track={
+          editingSong
+            ? {
+                id: editingSong.id,
+                title: editingSong.title,
+                albumName: editingSong.albumName,
+                visibility: editingSong.visibility ?? LEGACY_DEFAULT_VISIBILITY,
+              }
+            : null
+        }
         albumOptions={albumOptions}
         onSave={handleEditSave}
       />
