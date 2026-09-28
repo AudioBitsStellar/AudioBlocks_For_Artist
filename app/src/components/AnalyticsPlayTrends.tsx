@@ -17,6 +17,12 @@ import { analytics } from "@/lib/analytics";
 interface AnalyticsPlayTrendsProps {
   data: PlayTrendData[];
   period: "last30days" | "last90days";
+  /**
+   * When provided, the period is controlled by the parent, which refetches
+   * that period's data (#401). Without it the toggle only re-slices `data`,
+   * which is only correct if `data` already covers 90 days.
+   */
+  onPeriodChange?: (period: "last30days" | "last90days") => void;
 }
 
 const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknown[] }) => {
@@ -31,14 +37,22 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknow
   );
 };
 
-export default function AnalyticsPlayTrends({ data, period }: AnalyticsPlayTrendsProps) {
-  const [hoveredPeriod, setHoveredPeriod] = useState<"last30days" | "last90days">(period);
+export default function AnalyticsPlayTrends({
+  data,
+  period,
+  onPeriodChange,
+}: AnalyticsPlayTrendsProps) {
+  const [localPeriod, setLocalPeriod] = useState<"last30days" | "last90days">(period);
+  const hoveredPeriod = onPeriodChange ? period : localPeriod;
 
   const chartData = hoveredPeriod === "last30days" ? data.slice(-30) : data;
 
   const handlePeriodChange = (newPeriod: "last30days" | "last90days") => {
-    setHoveredPeriod(newPeriod);
-    analytics.analyticsRangeChanged({ range: newPeriod });
+    if (onPeriodChange) {
+      onPeriodChange(newPeriod);
+    } else {
+      setLocalPeriod(newPeriod);
+    }
   };
 
   const handleKeyDown = (

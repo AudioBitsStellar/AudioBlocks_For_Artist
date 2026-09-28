@@ -25,6 +25,7 @@ This document provides complete documentation for the frontend service layer loc
    - [15. Verification Service (`verificationService.ts`)](#15-verification-service-verificationservicets)
    - [16. Track Service (`trackService.ts`)](#16-track-service-trackservicets)
    - [17. Artist Directory Service (`artistDirectoryService.ts`)](#17-artist-directory-service-artistdirectoryservicets)
+   - [Track Visibility (`trackVisibilityService.ts`)](#track-visibility-trackvisibilityservicets)
 3. [Caching Strategy](#caching-strategy)
 4. [Optimistic Updates](#optimistic-updates)
 5. [Standard Error Handling & Toast Normalization](#standard-error-handling--toast-normalization)
@@ -399,7 +400,8 @@ Handles chunked audio file uploads, cover image processing, and IPFS metadata as
 
 ##### `useFinalizeUpload()`
 - **Endpoint**: `POST /api/v1/upload/finalize`
-- **Payload**: `{ fileId: string; totalChunks: number; title: string; description: string; genre: string; composers: string; coverArtPath: string }`
+- **Payload**: `{ fileId: string; totalChunks: number; title: string; description: string; genre: string; composers: string; coverArtPath: string; visibility?: "public" | "unlisted" | "private" }`
+- **Visibility (#458)**: the upload form sends `private` unless the artist picks otherwise — a track nobody has heard yet has no reason to be discoverable. See [Track Visibility](#track-visibility-trackvisibilityservicets).
 - **Response**: `FinalizeSongResponse` `{ data: { id: string; ipfsHash?: string } }`
 - **Cache invalidation**: overview, statistics and recent-activity queries (`SONG_PUBLISHED_INVALIDATIONS`).
 
@@ -435,15 +437,66 @@ Handles artist identity and account verification requests.
 
 ### 16. Track Service (`trackService.ts`)
 
-Edits a track's title and album with an optimistic UI update (see [Optimistic Updates](#optimistic-updates)).
+Edits a track's title, album and visibility with an optimistic UI update (see [Optimistic Updates](#optimistic-updates)).
 
 #### Hooks & Endpoints
 
 ##### `useUpdateTrack({ onOptimistic })`
 - **Endpoint**: `PATCH /song/:id` (`SONG_ENDPOINTS.UPDATE`)
-- **Payload**: `{ id: number | string; title: string; albumName: string }`
+- **Payload**: `{ id: number | string; title: string; albumName: string; visibility?: TrackVisibility }`
 - **Behavior**: `onOptimistic(edit)` applies the change to the caller's state immediately and returns an undo function; on failure the undo runs and an error toast explains the edit was reverted.
+- **`visibility` is optional**: an edit that omits it leaves the track's current visibility alone, and `applyTrackEdit()` writes no `visibility` key at all, so title-only edits stay title-only.
 - **Mock data**: when `NEXT_PUBLIC_USE_MOCK_DATA=true` (`featureFlags.useMockTracks`) the request is simulated locally instead of calling the API.
+
+---
+
+### Track Visibility (`trackVisibilityService.ts`)
+
+Issue #458: an artist decides who can see a track — `public`, `unlisted` or
+`private`. This module holds the *rules* and the artist's *choice*; it is not a
+React Query service and opens no network connection.
+
+Enforcement for listeners belongs to the backend. This console renders no
+buyer-facing track list (`/artist/[handle]` shows a profile and a `songCount`,
+never track rows), so a `private` track cannot be hidden here from someone who
+calls the API directly. What this module fixes is the contract the API has to
+honour: the field name `visibility` and exactly these three values, sent on the
+create and edit payloads.
+
+| Mode | Discoverable | Playable | Shareable |
+|---|---|---|---|
+| `public` | yes | yes | yes |
+| `unlisted` | no | yes, by direct link | yes |
+| `private` | no | no | no |
+
+The artist (`viewer: "owner"`) always has all three.
+
+#### Exports
+
+| Function | Purpose |
+|---|---|
+| `getTrackVisibility({ id, visibility })` | The effective mode: a value carried by the record wins, then the locally stored choice, then `LEGACY_DEFAULT_VISIBILITY`. |
+| `setTrackVisibility(id, mode)` / `clearTrackVisibility(id)` | Record or forget the artist's choice; both return whether storage accepted it. |
+| `getStoredVisibility(id)` / `listVisibilityOverrides()` | Read back what this browser has stored, per track or all at once. |
+| `resolveTrackVisibility(value, fallback?)` / `isTrackVisibility(value)` | Coerce untrusted input (an API field, stored JSON) to a mode. |
+| `visibilityPermissions(mode, viewer)` | What that viewer may do with a track in that mode. |
+| `filterCatalog(tracks, viewer)` | The subset a viewer is allowed to see — every non-owner listing calls this. |
+| `visibilityLabel(mode)` / `describeVisibility(mode)` | The picker label and the one-line explanation shown to the artist. |
+| `TRACK_VISIBILITY_OPTIONS` | The three modes with labels and summaries, in the order the pickers show them. |
+
+**Defaults.** A record with no `visibility` reads as `public`
+(`LEGACY_DEFAULT_VISIBILITY`) — tracks listed before this setting existed must
+not silently disappear. A track being uploaded starts as `private`
+(`NEW_TRACK_DEFAULT_VISIBILITY`); an unheard upload has no reason to be
+discoverable yet.
+
+**Local persistence.** Choices are kept under
+`audioblocks:track-visibility:v1` in `localStorage`, as
+`{ [trackId]: { visibility, updatedAt } }`, because no song endpoint carries the
+field yet. That is the same stand-in `verificationService.ts` and
+`collaboratorService.ts` use. Every entry is validated on read, so a corrupted
+record reads as "no choices" rather than throwing; the `updatedAt` stamp is kept
+so a later sync can tell a local choice from a stale server value.
 
 ### 17. Artist Directory Service (`artistDirectoryService.ts`)
 

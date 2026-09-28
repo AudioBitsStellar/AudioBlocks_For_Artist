@@ -16,8 +16,8 @@ vi.mock("next/link", () => {
   return {
     __esModule: true,
     default: React.forwardRef(function MockLink(
-      { children, href, onClick, className, onKeyDown, ...props }: any,
-      ref: any
+      { children, href, onClick, className, onKeyDown, ...props }: React.ComponentProps<"a">,
+      ref: React.Ref<HTMLAnchorElement>
     ) {
       return (
         <a
@@ -40,7 +40,7 @@ vi.mock("next/link", () => {
 vi.mock("next/image", () => {
   return {
     __esModule: true,
-    default: ({ src, alt }: any) => <img src={src} alt={alt} />,
+    default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
   };
 });
 
@@ -89,7 +89,7 @@ describe("Sidebar", () => {
     render(<Sidebar open={true} onClose={mockOnClose} />);
     const link = screen.getByText("Events").closest("a");
     expect(link).toHaveAttribute("href", "/dashboard/events");
-    
+
     // clicking link should close sidebar on mobile
     if (link) {
       await userEvent.click(link);
@@ -99,30 +99,30 @@ describe("Sidebar", () => {
 
   it("supports keyboard navigation for accessibility", async () => {
     render(<Sidebar open={true} onClose={mockOnClose} />);
-    
-    const navLinks = screen.getAllByTestId("nav-link").filter(el => 
-      el.getAttribute("href")?.startsWith("/dashboard/")
-    );
-    
+
+    const navLinks = screen
+      .getAllByTestId("nav-link")
+      .filter((el) => el.getAttribute("href")?.startsWith("/dashboard/"));
+
     const firstLink = navLinks[0];
     const secondLink = navLinks[1];
-    
+
     firstLink.focus();
     expect(firstLink).toHaveFocus();
-    
+
     // Test ArrowDown
     fireEvent.keyDown(firstLink, { key: "ArrowDown" });
     expect(secondLink).toHaveFocus();
-    
+
     // Test ArrowUp
     fireEvent.keyDown(secondLink, { key: "ArrowUp" });
     expect(firstLink).toHaveFocus();
-    
+
     // Test End
     fireEvent.keyDown(firstLink, { key: "End" });
     const lastLink = navLinks[navLinks.length - 1];
     expect(lastLink).toHaveFocus();
-    
+
     // Test Home
     fireEvent.keyDown(lastLink, { key: "Home" });
     expect(firstLink).toHaveFocus();
@@ -130,7 +130,7 @@ describe("Sidebar", () => {
 
   it("calls onClose when the escape key is pressed", () => {
     render(<Sidebar open={true} onClose={mockOnClose} />);
-    
+
     fireEvent.keyDown(window, { key: "Escape" });
     expect(mockOnClose).toHaveBeenCalled();
   });

@@ -1,7 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 
-const Album = dynamic(() => import("@/components/musicUpload/Album"));
+const ReleaseFlow = dynamic(() => import("@/components/musicUpload/ReleaseFlow"));
 const Song = dynamic(() => import("@/components/musicUpload/Song"));
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -40,7 +40,7 @@ const Upload_Music = () => {
               : "bg-transparent text-white hover:bg-white/5"
           }`}
         >
-          Add Album
+          Add Album / EP
         </button>
         <button
           onClick={() => {
@@ -60,8 +60,8 @@ const Upload_Music = () => {
       {/* Upload Form */}
 
       {mode === "album" ? (
-        // Album Upload Component
-        <Album />
+        // Album / EP creation flow (#398)
+        <ReleaseFlow />
       ) : (
         // Song Upload Component
         <Song />

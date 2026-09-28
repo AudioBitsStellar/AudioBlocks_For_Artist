@@ -283,56 +283,180 @@ Ensure production environment variables are set:
 - Visual regression with Storybook + Chromatic
 - Isolated component development
 
+## 🎨 Storybook
+
+Storybook is set up for isolated component development and visual documentation.
+
+### Start Storybook
+
+```bash
+cd app
+npm run storybook
+# → http://localhost:6006
+```
+
+### Build Static Storybook
+
+```bash
+npm run storybook:build
+# Output: app/storybook-static/
+```
+
+### Component Story Catalogue
+
+| Storybook path | Component |
+|---|---|
+| `Layout/TopHeader` | `TopHeader.tsx` — header bar with notification badge and role chip |
+| `Layout/Sidebar` | `Sidebar.tsx` — collapsible navigation sidebar |
+| `Layout/DashboardLayout` | Full dashboard layout shell |
+| `Dashboard/OverviewCards` | KPI summary card grid |
+| `Dashboard/EarningsRoyalties` | Earnings area chart + platform breakdown |
+| `Dashboard/MyMusicContent` | Music library management surface |
+| `Dashboard/MyAlbums` | Album grid |
+| `Dashboard/MerchesContent` | Merchandise catalog manager |
+| `Web3/ContractUpgradePanel` | Soroban contract upgrade admin panel (#295) |
+
+Stories live alongside their components as `ComponentName.stories.tsx` inside `app/src/components/`.
+
+---
+
+## 🔄 CI/CD
+
+The project uses GitHub Actions for continuous integration (`.github/workflows/ci.yml`).
+
+### Pipeline jobs
+
+| Job | Trigger | Description |
+|---|---|---|
+| **Lint** | Every push / PR | ESLint + Prettier format check |
+| **Type-check** | Every push / PR | `tsc --noEmit` — zero TS errors required |
+| **Unit tests** | Every push / PR | Vitest with verbose reporter |
+| **Build** | After lint + typecheck + tests pass | Next.js production build |
+| **Storybook build** | After lint + typecheck pass | Validates all story files compile correctly |
+
+Concurrent runs for the same branch are automatically cancelled to conserve CI minutes.
+
+---
+
+## 🌐 Web3 / Stellar Wallet Setup
+
+The artist dashboard integrates with Stellar via the [Freighter browser wallet](https://freighter.app/).
+
+### Installing Freighter
+
+1. Install the [Freighter browser extension](https://freighter.app/) (Chrome, Firefox, Brave).
+2. Create or import a Stellar account.
+3. Switch to **Testnet** for local development:
+   - Open Freighter → Settings → Network → Select **Testnet**.
+
+### Funding a Testnet Account
+
+```bash
+# Fund an account on Stellar Testnet via Friendbot
+curl "https://friendbot.stellar.org?addr=<YOUR_G_ADDRESS>"
+```
+
+### Soroban Contract Upgrade (Admin Only)
+
+Admin users can upgrade Soroban smart contracts in-place using the `ContractUpgradePanel`:
+
+```tsx
+import ContractUpgradePanel from "@/components/ContractUpgradePanel";
+import { signTransactionXdr } from "@stellar/freighter-api";
+
+<ContractUpgradePanel
+  contractId="CDLZFC..."           // Target contract (C-address)
+  adminAddress={connectedAddress}  // Must match on-chain admin
+  onSign={(xdr, { networkPassphrase }) =>
+    signTransactionXdr(xdr, { networkPassphrase })
+  }
+/>
+```
+
+See [`docs/SOROBAN_CONTRACT_UPGRADE_DESIGN.md`](docs/SOROBAN_CONTRACT_UPGRADE_DESIGN.md) for the full upgrade flow, Rust contract interface, and API endpoint details.
+
+---
+
+## 🐛 Troubleshooting
+
+### `npm install` peer dependency errors
+
+```bash
+npm install --legacy-peer-deps
+```
+
+The project uses React 19, which some dev tooling packages have not yet published peer-dep ranges for. `--legacy-peer-deps` is the project standard for clean installs.
+
+### Freighter not detected
+
+- Ensure the Freighter extension is installed and unlocked.
+- Allow the extension on `localhost` (Freighter may block non-HTTPS origins by default in some versions — check the extension's site permissions).
+
+### Storybook build fails with missing module
+
+Make sure dependencies are installed first:
+
+```bash
+cd app && npm install --legacy-peer-deps
+```
+
+Then retry `npm run storybook:build`.
+
+### Environment variable not loaded
+
+Next.js only exposes `NEXT_PUBLIC_*` variables to the browser bundle. Variables without this prefix are server-only. Restart the dev server after changing `.env.local`.
+
+### TypeScript errors on `npm run lint`
+
+Run `npx tsc --noEmit` from the `app/` directory to see the full error list, then address them before committing. The CI `typecheck` job requires zero errors.
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions! Please follow these steps:
 
-1. **Fork** the repository
-2. **Create** a feature branch: `feat/your-feature` or `fix/your-bugfix`
-3. **Make** your changes following our code standards
-4. **Test** thoroughly:
+1. **Fork** the repository on GitHub.
+2. **Sync your fork** with the upstream:
    ```bash
-   npm run lint
-   npm run format
-   npm run test
-   npm run test:e2e
+   git remote add upstream https://github.com/AudioBitsStellar/AudioBlocks_For_Artist.git
+   git fetch upstream
+   git merge upstream/main
    ```
-5. **Commit** with clear messages following [Conventional Commits](https://www.conventionalcommits.org/)
-6. **Push** to your fork
-7. **Open** a Pull Request with a detailed description
+3. **Create** a feature branch:
+   ```bash
+   git checkout -b feat/your-feature-name
+   ```
+4. **Make** your changes following our code standards.
+5. **Test** thoroughly:
+   ```bash
+   cd app
+   npm run lint
+   npx tsc --noEmit
+   npm run test -- --run
+   npm run build
+   ```
+6. **Commit** with clear messages following [Conventional Commits](https://www.conventionalcommits.org/):
+   ```bash
+   git commit -m "feat: add subscription tier selector to premium page"
+   ```
+7. **Push** to your fork (not to `upstream/main`):
+   ```bash
+   git push origin feat/your-feature-name
+   ```
+8. **Open** a Pull Request against `AudioBitsStellar/AudioBlocks_For_Artist:main` with a detailed description.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ### Code Standards
 
-- TypeScript strict mode enabled
-- ESLint and Prettier enforced via pre-commit hooks
-- All public functions must have JSDoc comments
-- Components should be accessible (WCAG 2.1 AA)
-- Tests required for new features
+- TypeScript strict mode enabled.
+- ESLint and Prettier enforced via pre-commit hooks (Husky + lint-staged).
+- All exported functions must have JSDoc comments.
+- Components must meet WCAG 2.1 AA accessibility requirements.
+- New features require unit tests and, where applicable, Storybook stories.
 
-## 🔄 CI/CD
-
-The project uses GitHub Actions for continuous integration:
-
-- **On PR & Push to `main`**:
-  - Lint checking
-  - TypeScript compilation
-  - Unit tests
-  - Build verification
-
-Workflow file: `.github/workflows/ci.yml`
-
-## ♿ Accessibility
-
-This project prioritizes accessibility:
-- WCAG 2.1 AA compliance target
-- Screen reader tested
-- Keyboard navigation support
-- Color contrast verified
-- Toast notifications announced via ARIA live regions
-
-**Note**: Full WCAG compliance requires manual testing with assistive technologies.
+---
 
 ## 📄 License
 
@@ -351,3 +475,4 @@ Built with ❤️ by the AudioBits team for artists worldwide.
 ---
 
 **Ready to revolutionize music distribution?** Start building with AudioBlocks today!
+

@@ -1,7 +1,30 @@
 import { z } from "zod";
+import { ROLES } from "@/types/role";
 import { MUSIC_GENRES } from "@/components/shared/music_genre";
+import {
+  NEW_TRACK_DEFAULT_VISIBILITY,
+  TRACK_VISIBILITIES,
+  type TrackVisibility,
+} from "@/services/trackVisibilityService";
+
+/**
+ * The three track visibilities (#458), read from the service so the form can
+ * never accept a mode the rules module doesn't know how to enforce.
+ * The cast is only for zod's non-empty-tuple signature.
+ */
+const trackVisibilityField = z.enum(TRACK_VISIBILITIES as [TrackVisibility, ...TrackVisibility[]], {
+  required_error: "Choose who can see this track",
+  invalid_type_error: "Choose who can see this track",
+});
+
+/**
+ * The upload form's copy additionally defaults, because a draft saved before
+ * #458 has no visibility at all and restoring it must not block the upload.
+ */
+const uploadVisibilityField = trackVisibilityField.default(NEW_TRACK_DEFAULT_VISIBILITY);
 
 export const songFormSchema = z.object({
+  visibility: uploadVisibilityField,
   title: z
     .string()
     .min(1, "Song title is required")
@@ -53,6 +76,7 @@ export const trackEditSchema = z.object({
     .trim()
     .min(1, "Please select an album")
     .max(100, "Album name must be 100 characters or less"),
+  visibility: trackVisibilityField,
 });
 
 export const profileFormSchema = z.object({
@@ -265,3 +289,23 @@ export const artistNameSchema = z
     /^[\p{L}\p{N} ._'&-]+$/u,
     "Artist name can only contain letters, numbers, spaces and . _ ' & -"
   );
+
+/* ------------------------------------------------------------------ *
+ * Collaborator / co-artist invite (issue #416)
+ * ------------------------------------------------------------------ */
+
+export const collaboratorInviteSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email address is required")
+    .max(254, "Email must be 254 characters or less")
+    .email("Please enter a valid email address"),
+  role: z
+    .string()
+    .trim()
+    .min(1, "Choose a role for this collaborator")
+    .refine((val) => (ROLES as ReadonlyArray<string>).includes(val), "Invalid role selection"),
+  message: z.string().trim().max(300, "Message must be 300 characters or less").optional(),
+});
+

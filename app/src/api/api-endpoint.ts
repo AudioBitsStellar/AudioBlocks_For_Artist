@@ -47,6 +47,8 @@ export const MERCH_ENDPOINTS = {
 export const EARNINGS_ENDPOINTS = {
   GET_EARNINGS: "/artist/earnings",
   GET_PLATFORM_REVENUE: "/artist/earnings/platforms",
+  GET_PAYOUTS: "/artist/earnings/payouts",
+  WITHDRAW: "/artist/earnings/withdraw",
 };
 
 export const OVERVIEW_ENDPOINTS = {
@@ -62,6 +64,26 @@ export const DASHBOARD_TRANSACTION_ENDPOINTS = {
 export const DASHBOARD_COMMENT_ENDPOINTS = {
   LIST: "/artist/comments",
   CREATE: "/artist/comments",
+};
+
+export const COMMENT_MODERATION_ENDPOINTS = {
+  UPDATE: (id: string | number) => `/artist/comments/${id}/moderation`,
+  BULK: "/artist/comments/moderation/bulk",
+};
+
+export const COLLABORATOR_ENDPOINTS = {
+  LIST: "/artist/collaborators/invites",
+  CREATE: "/artist/collaborators/invites",
+  RESEND: (id: string) => `/artist/collaborators/invites/${id}/resend`,
+  REVOKE: (id: string) => `/artist/collaborators/invites/${id}`,
+  ACCEPT: "/artist/collaborators/invites/accept",
+};
+
+export const SECURITY_ENDPOINTS = {
+  TWO_FACTOR_STATUS: "/artist/security/2fa",
+  TWO_FACTOR_SETUP: "/artist/security/2fa/setup",
+  TWO_FACTOR_VERIFY: "/artist/security/2fa/verify",
+  TWO_FACTOR_DISABLE: "/artist/security/2fa/disable",
 };
 
 export const ANALYTICS_ENDPOINTS = {
