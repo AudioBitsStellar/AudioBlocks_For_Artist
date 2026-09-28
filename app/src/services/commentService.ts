@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { DASHBOARD_COMMENT_ENDPOINTS } from "@/api/api-endpoint";
 import { createApiClient } from "@/api/axios";
 import { useGet } from "@/api/queryClient";
+import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 
 export interface DashboardComment {
   id: string | number;
@@ -28,7 +29,7 @@ export interface CreateCommentResponse {
   data: DashboardComment;
 }
 
-export const COMMENTS_QUERY_KEY = ["get-dashboard-comments"];
+export const COMMENTS_QUERY_KEY = DASHBOARD_QUERY_KEYS.comments;
 
 const useCommentServices = () => {
   const queryClient = useQueryClient();
@@ -36,7 +37,7 @@ const useCommentServices = () => {
   const useGetComments = (enabled: boolean = true) => {
     return useGet<CommentsResponse>(COMMENTS_QUERY_KEY, DASHBOARD_COMMENT_ENDPOINTS.LIST, {
       enabled,
-      staleTime: 1000 * 60,
+      staleTime: DASHBOARD_CACHE.comments,
     });
   };
 

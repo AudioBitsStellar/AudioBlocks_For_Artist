@@ -1,5 +1,6 @@
 import { ANALYTICS_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
+import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 
 export interface AnalyticsSummary {
   totalPlays: number;
@@ -103,8 +104,8 @@ export function getAnalyticsSummary(): AnalyticsSummary {
   return getAnalyticsData("last30days").summary;
 }
 
-export const ANALYTICS_QUERY_KEY = ["get-artist-analytics"];
-export const ANALYTICS_SUMMARY_QUERY_KEY = ["get-artist-analytics-summary"];
+export const ANALYTICS_QUERY_KEY = DASHBOARD_QUERY_KEYS.analytics;
+export const ANALYTICS_SUMMARY_QUERY_KEY = DASHBOARD_QUERY_KEYS.analyticsSummary;
 
 const useAnalyticsServices = () => {
   const useGetAnalyticsData = (
@@ -116,7 +117,7 @@ const useAnalyticsServices = () => {
       ANALYTICS_ENDPOINTS.DATA(period),
       {
         enabled,
-        staleTime: 1000 * 60,
+        staleTime: DASHBOARD_CACHE.analytics,
       }
     );
   };
@@ -127,7 +128,7 @@ const useAnalyticsServices = () => {
       ANALYTICS_ENDPOINTS.SUMMARY,
       {
         enabled,
-        staleTime: 1000 * 60,
+        staleTime: DASHBOARD_CACHE.analytics,
       }
     );
   };

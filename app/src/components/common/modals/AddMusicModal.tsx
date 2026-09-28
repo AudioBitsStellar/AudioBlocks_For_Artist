@@ -7,6 +7,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Modal from "@/components/shared/Modal";
 import {
+  AUDIO_FILE_RULES,
+  COVER_IMAGE_RULES,
+  toAcceptAttribute,
+  validateFile,
+} from "@/utils/fileValidation";
+import {
   formatScheduledAt,
   getScheduledReleases,
   publishDueReleases,
@@ -90,9 +96,19 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
+  const clearError = (key: string) =>
+    setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== key)));
+
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const { valid, error } = validateFile(file, COVER_IMAGE_RULES);
+      if (!valid) {
+        setErrors((prev) => ({ ...prev, coverImage: error ?? "Invalid cover image" }));
+        e.target.value = "";
+        return;
+      }
+      clearError("coverImage");
       const reader = new FileReader();
       reader.onloadend = () => {
         setCoverImage(reader.result as string);
@@ -101,10 +117,22 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
     }
   };
 
+  const acceptAudioFile = (file: File): boolean => {
+    const { valid, error } = validateFile(file, AUDIO_FILE_RULES);
+    if (!valid) {
+      setUploadedFile(null);
+      setErrors((prev) => ({ ...prev, uploadedFile: error ?? "Invalid audio file" }));
+      return false;
+    }
+    clearError("uploadedFile");
+    setUploadedFile(file.name);
+    return true;
+  };
+
   const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFile(file.name);
+    if (file && !acceptAudioFile(file)) {
+      e.target.value = "";
     }
   };
 
@@ -112,7 +140,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file) {
-      setUploadedFile(file.name);
+      acceptAudioFile(file);
     }
   };
 
@@ -387,10 +415,15 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
               <input
                 ref={coverInputRef}
                 type="file"
-                accept="image/*"
+                accept={toAcceptAttribute(COVER_IMAGE_RULES)}
                 onChange={handleCoverUpload}
                 className="hidden"
               />
+              {errors.coverImage && (
+                <p className="text-red-500 text-xs mb-2" role="alert">
+                  {errors.coverImage}
+                </p>
+              )}
               <button
                 onClick={() => coverInputRef.current?.click()}
                 className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors"
@@ -423,7 +456,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="audio/*"
+                accept={toAcceptAttribute(AUDIO_FILE_RULES)}
                 onChange={handleMusicUpload}
                 className="hidden"
               />

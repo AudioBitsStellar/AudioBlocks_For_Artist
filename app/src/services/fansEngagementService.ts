@@ -1,5 +1,6 @@
 import { FANS_ENGAGEMENT_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
+import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { FansEngagementResponse } from "@/types";
 
 const useFansEngagementServices = () => {
@@ -13,11 +14,11 @@ const useFansEngagementServices = () => {
    */
   const useGetFansEngagement = (enabled: boolean = true) => {
     return useGet<FansEngagementResponse>(
-      ["get-artist-fans-engagement"],
+      DASHBOARD_QUERY_KEYS.fansEngagement,
       FANS_ENGAGEMENT_ENDPOINTS.GET_FANS_ENGAGEMENT,
       {
         enabled,
-        staleTime: 1000 * 60 * 2,
+        staleTime: DASHBOARD_CACHE.fansEngagement,
       }
     );
   };

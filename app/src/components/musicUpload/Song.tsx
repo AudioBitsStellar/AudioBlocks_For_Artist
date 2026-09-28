@@ -8,32 +8,29 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { songFormSchema } from "@/types/formValidation";
 import { MUSIC_GENRES } from "../shared/music_genre";
 import useUploadServices from "@/services/uploadService";
+import {
+  describeVisibility,
+  NEW_TRACK_DEFAULT_VISIBILITY,
+  TRACK_VISIBILITY_OPTIONS,
+} from "@/services/trackVisibilityService";
 import { splitFile, generateFileId } from "@/utils/chunkUploader";
 import MusicLoader from "../MusicLoader";
 import { useToast } from "@/hooks/useToastHandler";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { useFileDrop } from "@/hooks/useFileDrop";
 import MintSongButton from "@/components/common/wallet/MintSongButton";
 import TransferSongButton from "@/components/common/wallet/TransferSongButton";
 import { analytics } from "@/lib/analytics";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { sanitize } from "@/utils/sanitize";
 import { extractAudioMetadata, formatDuration, type AudioMetadata } from "@/utils/audioMetadata";
+import {
+  AUDIO_FILE_RULES,
+  COVER_IMAGE_RULES,
+  toAcceptAttribute,
+  validateFile,
+} from "@/utils/fileValidation";
 
-const ALLOWED_AUDIO_TYPES = new Set([
-  "audio/mpeg",
-  "audio/wav",
-  "audio/wave",
-  "audio/x-wav",
-  "audio/mp4",
-  "audio/m4a",
-  "audio/aac",
-  "audio/ogg",
-  "audio/flac",
-  "audio/x-flac",
-  "audio/webm",
-]);
-
-const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB
 const MAX_RETRY_ATTEMPTS = 3;
 
 const Song = () => {
@@ -56,6 +53,7 @@ const Song = () => {
     status: "uploading" | "success" | "failed" | "cancelled";
   } | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const [audioMetadata, setAudioMetadata] = useState<AudioMetadata | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -110,6 +108,14 @@ const Song = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const { valid, error } = validateFile(file, COVER_IMAGE_RULES);
+    if (!valid) {
+      setCoverError(error);
+      e.target.value = "";
+      return;
+    }
+
+    setCoverError(null);
     setCoverFile(file);
 
     const reader = new FileReader();
@@ -132,23 +138,11 @@ const Song = () => {
     return ext ? ext.toUpperCase() : "Unknown";
   };
 
-  const validateAudioFile = (file: File): string | null => {
-    if (
-      !ALLOWED_AUDIO_TYPES.has(file.type) &&
-      !file.name.match(/\.(mp3|wav|m4a|aac|ogg|flac|webm)$/i)
-    ) {
-      return `Unsupported file type. Please upload an audio file (MP3, WAV, M4A, AAC, OGG, FLAC, WebM).`;
-    }
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      return `File too large. Maximum size is 200 MB, but your file is ${formatFileSize(file.size)}.`;
-    }
-    return null;
-  };
+  const validateAudioFile = (file: File): string | null =>
+    validateFile(file, AUDIO_FILE_RULES).error;
 
-  const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  /** Validate and select an audio file — shared by the file picker and drag-and-drop (#391). */
+  const selectAudioFile = (file: File) => {
     const error = validateAudioFile(file);
     if (error) {
       setValidationError(error);
@@ -174,6 +168,11 @@ const Song = () => {
     });
   };
 
+  const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) selectAudioFile(file);
+  };
+
   const uploadSongInChunks = async (file: File, fileId: string, startChunk = 0) => {
     const chunks = splitFile(file);
 
@@ -197,36 +196,12 @@ const Song = () => {
     return chunks.length;
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      const error = validateAudioFile(file);
-      if (error) {
-        setValidationError(error);
-        setUploadedFile(null);
-        return;
-      }
-
-      setValidationError(null);
-      setAudioFile(file);
-      setFileId(generateFileId());
-      setRetryCount(0);
-      setFailedChunkIndex(0);
-      cancelRequestedRef.current = false;
-      setPreviewUrl(URL.createObjectURL(file));
-      setAudioMetadata(null);
-      extractAudioMetadata(file).then(setAudioMetadata);
-
-      const fileSize = formatFileSize(file.size);
-      setUploadedFile({
-        name: file.name,
-        size: fileSize,
-        type: formatFileType(file),
-        status: "uploading",
-      });
-    }
-  };
+  // Drag-and-drop audio selection (#391). Disabled while submitting or while a
+  // chunked upload is in flight, so a drop can't swap the file mid-upload.
+  const { isDragging, dropHandlers } = useFileDrop({
+    onFiles: ([file]) => selectAudioFile(file),
+    disabled: isBusy || uploadedFile?.status === "uploading",
+  });
 
   const handleRetry = async () => {
     if (!audioFile || !fileId) return;
@@ -267,10 +242,6 @@ const Song = () => {
     setUploadProgress(0);
     setPreviewUrl(null);
     setAudioMetadata(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
   };
 
   const onSubmit = async (data: UploadSong) => {
@@ -328,6 +299,9 @@ const Song = () => {
         genre: data.genre,
         composers: sanitize(data.composer),
         coverArtPath: coverArtPath,
+        // A track the artist has just uploaded has not been heard by anyone
+        // yet, so it starts out of sight until they choose otherwise (#458).
+        visibility: data.visibility ?? NEW_TRACK_DEFAULT_VISIBILITY,
         // marketPrice: data.marketPrice,
       });
 
@@ -493,6 +467,30 @@ const Song = () => {
           )}
         </div>
 
+        <div className="space-y-2">
+          <label htmlFor="song-visibility" className="text-sm font-medium text-white">
+            Visibility <span className="text-[#D2045B]">*</span>
+          </label>
+          <select
+            id="song-visibility"
+            {...register("visibility")}
+            defaultValue={NEW_TRACK_DEFAULT_VISIBILITY}
+            aria-invalid={errors.visibility ? "true" : "false"}
+            aria-describedby="song-visibility-hint"
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.visibility ? "border-red-500" : "border-[#2A2A2A]"}`}
+          >
+            {TRACK_VISIBILITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value} className="bg-[#161616]">
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p id="song-visibility-hint" className="text-[10px] text-gray-400">
+            {describeVisibility(watchedValues.visibility ?? NEW_TRACK_DEFAULT_VISIBILITY)} You can
+            change this later from My Music.
+          </p>
+        </div>
+
         {/* <div className="space-y-2">
                     <label className="text-sm font-medium text-white">
                         Market Price <span className="text-[#D2045B]">*</span>
@@ -555,11 +553,16 @@ const Song = () => {
           <input
             ref={coverInputRef}
             type="file"
-            accept="image/*"
+            accept={toAcceptAttribute(COVER_IMAGE_RULES)}
             onChange={handleCoverUpload}
             className="hidden"
             aria-label="Upload cover image"
           />
+          {coverError && (
+            <p className="text-[10px] text-red-500 mb-2" role="alert">
+              {coverError}
+            </p>
+          )}
 
           <button
             onClick={() => !isBusy && coverInputRef.current?.click()}
@@ -580,14 +583,14 @@ const Song = () => {
 
           {!uploadedFile ? (
             <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0"
+              {...dropHandlers}
+              data-dragging={isDragging}
+              className={`border-2 border-dashed ${isDragging ? "border-[#D2045B] bg-[#D2045B]/10" : "border-[#2A2A2A]"} transition-colors rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0`}
               role="group"
               aria-label="Upload music file - drag and drop here, or use the button to select"
             >
               <p className="text-xs text-[#A3A3A3]">
-                Drag & drop your files here or{" "}
+                {isDragging ? "Drop to upload" : "Drag & drop your files here or"}{" "}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -599,9 +602,9 @@ const Song = () => {
             </div>
           ) : (
             <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0"
+              {...dropHandlers}
+              data-dragging={isDragging}
+              className={`border-2 border-dashed ${isDragging ? "border-[#D2045B] bg-[#D2045B]/10" : "border-[#2A2A2A]"} transition-colors rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0`}
               role="button"
               tabIndex={0}
               aria-label="Replace uploaded file"
@@ -631,7 +634,7 @@ const Song = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="audio/*"
+            accept={toAcceptAttribute(AUDIO_FILE_RULES)}
             onChange={handleMusicUpload}
             className="hidden"
             aria-label="Upload audio file"

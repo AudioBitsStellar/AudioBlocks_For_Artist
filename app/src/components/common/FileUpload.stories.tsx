@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import FileUpload from "./FileUpload";
+import { COVER_IMAGE_RULES } from "@/utils/fileValidation";
 
 const meta: Meta<typeof FileUpload> = {
   title: "Components/Forms/FileUpload",
@@ -32,6 +33,14 @@ export const WithHelperText: Story = {
     label: "Audio File",
     acceptedFormats: "audio/mp3, audio/wav",
     helperText: "Upload a high-quality audio file for your track",
+  },
+};
+
+export const WithValidationRules: Story = {
+  args: {
+    label: "Cover Image",
+    validationRules: COVER_IMAGE_RULES,
+    helperText: "Files over 5 MB or in another format are rejected with an inline error",
   },
 };
 

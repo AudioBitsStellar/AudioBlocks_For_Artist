@@ -1,30 +1,10 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/api/queryClientInstance";
 import { ReactNode, useEffect, useState } from "react";
 import { StellarNetworkProvider } from "./StellarNetworkContext";
 import { PlaybackProvider } from "./PlaybackContext";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: (failureCount, error: Error) => {
-        const httpError = error as { status?: number };
-        if (httpError?.status >= 400 && httpError?.status < 500) {
-          return false;
-        }
-        return failureCount < 3;
-      },
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      refetchOnReconnect: true,
-    },
-    mutations: {
-      retry: 0,
-    },
-  },
-});
 
 function getInitialTheme(): boolean {
   if (typeof window === "undefined") return false;

@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X, Search, Check } from "lucide-react";
 import { useState, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
+import { artistNameSchema } from "@/types/formValidation";
 
 interface ClaimArtistNameModalProps {
   open: boolean;
@@ -23,9 +24,14 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
   });
   const router = useRouter();
 
+  const nameValidation = artistNameSchema.safeParse(artistName);
+  // Only complain once the user has typed something; an empty box just means "not started".
+  const nameError =
+    artistName.length > 0 && !nameValidation.success ? nameValidation.error.issues[0].message : null;
+
   // Check username availability with debounce
   useEffect(() => {
-    if (artistName.length > 0) {
+    if (artistName.length > 0 && artistNameSchema.safeParse(artistName).success) {
       setIsChecking(true);
       // Simulate API call to check availability with debounce
       const timeoutId = setTimeout(() => {
@@ -41,7 +47,7 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
   }, [artistName]);
 
   const handleNext = () => {
-    if (step === 1 && isAvailable) {
+    if (step === 1 && isAvailable && !nameError) {
       setStep(2);
     } else if (step === 2) {
       setStep(3);
@@ -145,9 +151,17 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
                     onChange={(e) => setArtistName(e.target.value)}
                     placeholder="Search artist name"
                     maxLength={100}
-                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-[#1E1E1E] border border-[#2E2E2E] text-white placeholder-[#A3A3A3] focus:outline-none focus:border-[#D2045B]"
+                    aria-label="Artist name"
+                    aria-invalid={nameError ? "true" : "false"}
+                    aria-describedby={nameError ? "artist-name-error" : undefined}
+                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-[#1E1E1E] border text-white placeholder-[#A3A3A3] focus:outline-none focus:border-[#D2045B] ${nameError ? "border-red-500" : "border-[#2E2E2E]"}`}
                   />
                 </div>
+                {nameError && (
+                  <p id="artist-name-error" role="alert" className="text-sm text-red-500 mt-2">
+                    {nameError}
+                  </p>
+                )}
                 {isChecking && (
                   <p className="text-sm text-[#A3A3A3] mt-2">Checking availability...</p>
                 )}

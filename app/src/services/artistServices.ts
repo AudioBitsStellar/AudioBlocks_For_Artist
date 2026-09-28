@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { USER_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet, usePut } from "@/api/queryClient";
+import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { extractApiError, ApiError } from "@/api/axios";
 import { updateProfilePayload, AuthUser } from "@/types";
@@ -63,10 +64,14 @@ const useArtistServices = () => {
    * @throws Never throws directly — failures surface via the returned `error`/`isError` fields and a single toast per failure.
    */
   const useGetArtistProfile = (enabled: boolean) => {
-    const query = useGet<{ user: AuthUser }>(["get-artist-profile"], `${USER_ENDPOINTS.PROFILE}`, {
-      enabled,
-      staleTime: 0,
-    });
+    const query = useGet<{ user: AuthUser }>(
+      DASHBOARD_QUERY_KEYS.profile,
+      `${USER_ENDPOINTS.PROFILE}`,
+      {
+        enabled,
+        staleTime: DASHBOARD_CACHE.profile,
+      }
+    );
 
     // Track the last error fingerprint we already toasted so React Query
     // background refetches (window focus / mount) for the same failure

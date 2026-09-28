@@ -1,5 +1,6 @@
 import { EVENTS_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet, usePost, usePut, useDelete } from "@/api/queryClient";
+import { DASHBOARD_CACHE } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 
 export interface EventMetric {
@@ -54,12 +55,16 @@ const useEventsService = () => {
   const handleError = useHandleError();
 
   /**
-   * Fetches the artist's events (metrics + list).
+   * Fetches the artist's events (metrics + list), cached for 2 minutes and
+   * invalidated by the create/update/delete mutations below.
    *
    * @returns A React Query result: `{ data: EventListResponse | undefined, isLoading, isError, error, refetch, ... }`.
    * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
    */
-  const useGetEvents = () => useGet<EventListResponse>(EVENTS_QUERY_KEY, EVENTS_ENDPOINTS.LIST);
+  const useGetEvents = () =>
+    useGet<EventListResponse>(EVENTS_QUERY_KEY, EVENTS_ENDPOINTS.LIST, {
+      staleTime: DASHBOARD_CACHE.events,
+    });
 
   /**
    * Creates a new event. Invalidates the events cache and shows a success/error toast on completion.

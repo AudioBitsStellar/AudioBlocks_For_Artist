@@ -32,6 +32,22 @@ code changes roles.
 | `manager` | Can create/edit/delete content (songs, merch, events); cannot manage the workspace or its settings/roles. |
 | `viewer`  | Read-only; cannot create, edit, or delete content, nor change settings.     |
 
+### Platform admin is a different axis
+
+The platform `admin` account role is **not** a workspace role and is deliberately
+not part of `ROLE_PERMISSION_TABLE`. A workspace `owner` is not automatically a
+platform admin, and a platform admin does not need a workspace role to reach the
+admin area.
+
+`getAccountRoleFromToken()` / `isAdminSession()` in `src/utils/jwt.ts` read the
+account-level claim using the same precedence as `getRoleFromToken()` (`role`,
+then `user_role`, then a nested `user.role`) and match the `role` values the API
+accepts at registration (`RegisterEmailPayload.role`: `artist` / `listener` /
+`admin`). They are used only to decide whether to render admin UI — `/admin/artists`
+shows an "Admin access required" panel for non-admins, and `Sidebar` hides the
+admin link. The API behind `/admin/artists` is what actually rejects a non-admin
+caller.
+
 ## Permissions
 
 Permissions are static booleans looked up per role (`ROLE_PERMISSION_TABLE`

@@ -1,5 +1,6 @@
 import { DASHBOARD_TRANSACTION_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
+import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 
 export interface DashboardTransaction {
   id: string | number;
@@ -15,7 +16,7 @@ export interface TransactionsResponse {
   data: DashboardTransaction[];
 }
 
-export const TRANSACTIONS_QUERY_KEY = ["get-dashboard-transactions"];
+export const TRANSACTIONS_QUERY_KEY = DASHBOARD_QUERY_KEYS.transactions;
 
 const useTransactionServices = () => {
   const useGetTransactions = (enabled: boolean = true) => {
@@ -24,7 +25,7 @@ const useTransactionServices = () => {
       DASHBOARD_TRANSACTION_ENDPOINTS.LIST,
       {
         enabled,
-        staleTime: 1000 * 60,
+        staleTime: DASHBOARD_CACHE.transactions,
       }
     );
   };

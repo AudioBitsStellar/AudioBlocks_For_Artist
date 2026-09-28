@@ -67,6 +67,18 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
+vi.mock("@/services/notificationService", () => ({
+  useNotifications: () => ({
+    notifications: [],
+    unreadCount: 0,
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+    markAsRead: vi.fn(),
+    markAllAsRead: vi.fn(),
+  }),
+}));
+
 vi.mock("@/services/authService", () => ({
   default: () => ({
     useRegisterEmail: () => ({ mutateAsync: vi.fn(), isPending: false }),

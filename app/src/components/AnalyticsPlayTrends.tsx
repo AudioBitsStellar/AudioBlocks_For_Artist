@@ -1,6 +1,7 @@
 "use client";
 
 import { PlayTrendData } from "@/services/analyticsService";
+import { colorTokens } from "@/theme/colors";
 import {
   LineChart,
   Line,
@@ -11,10 +12,17 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useState } from "react";
+import { analytics } from "@/lib/analytics";
 
 interface AnalyticsPlayTrendsProps {
   data: PlayTrendData[];
   period: "last30days" | "last90days";
+  /**
+   * When provided, the period is controlled by the parent, which refetches
+   * that period's data (#401). Without it the toggle only re-slices `data`,
+   * which is only correct if `data` already covers 90 days.
+   */
+  onPeriodChange?: (period: "last30days" | "last90days") => void;
 }
 
 const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknown[] }) => {
@@ -22,41 +30,67 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknow
 
   const data = payload[0] as { payload: PlayTrendData };
   return (
-    <div className="bg-[#1f2622] border border-[#2d3d2d] rounded p-3">
-      <p className="text-gray-300 text-sm">{data.payload.date}</p>
-      <p className="text-pink-500 font-semibold">{data.payload.plays.toLocaleString()} plays</p>
+    <div className="bg-surface border border-border rounded p-3">
+      <p className="text-text-muted text-sm">{data.payload.date}</p>
+      <p className="text-primary font-semibold">{data.payload.plays.toLocaleString()} plays</p>
     </div>
   );
 };
 
-export default function AnalyticsPlayTrends({ data, period }: AnalyticsPlayTrendsProps) {
-  const [hoveredPeriod, setHoveredPeriod] = useState<"last30days" | "last90days">(period);
+export default function AnalyticsPlayTrends({
+  data,
+  period,
+  onPeriodChange,
+}: AnalyticsPlayTrendsProps) {
+  const [localPeriod, setLocalPeriod] = useState<"last30days" | "last90days">(period);
+  const hoveredPeriod = onPeriodChange ? period : localPeriod;
 
   const chartData = hoveredPeriod === "last30days" ? data.slice(-30) : data;
 
+  const handlePeriodChange = (newPeriod: "last30days" | "last90days") => {
+    if (onPeriodChange) {
+      onPeriodChange(newPeriod);
+    } else {
+      setLocalPeriod(newPeriod);
+    }
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    newPeriod: "last30days" | "last90days"
+  ) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handlePeriodChange(newPeriod);
+    }
+  };
+
+  const periodButtonBase =
+    "px-4 py-2 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface";
+  const periodButtonClass = (active: boolean) =>
+    `${periodButtonBase} ${
+      active ? "bg-primary text-primary-contrast" : "bg-surface-sunken text-text-muted hover:bg-surface-raised"
+    }`;
+
   return (
-    <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 mb-8">
+    <div className="bg-surface border border-border rounded-lg p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-white text-lg font-semibold">Play Trends</h3>
-        <div className="flex gap-2">
+        <h2 className="text-text text-lg font-semibold">Play Trends</h2>
+        <div className="flex gap-2" role="group" aria-label="Time period selection">
           <button
-            onClick={() => setHoveredPeriod("last30days")}
-            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-              hoveredPeriod === "last30days"
-                ? "bg-pink-500 text-white"
-                : "bg-[#2d3d2d] text-gray-300 hover:bg-[#3d4d3d]"
-            }`}
+            onClick={() => handlePeriodChange("last30days")}
+            onKeyDown={(e) => handleKeyDown(e, "last30days")}
+            className={periodButtonClass(hoveredPeriod === "last30days")}
+            aria-pressed={hoveredPeriod === "last30days"}
             aria-label="View last 30 days"
           >
             30 Days
           </button>
           <button
-            onClick={() => setHoveredPeriod("last90days")}
-            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-              hoveredPeriod === "last90days"
-                ? "bg-pink-500 text-white"
-                : "bg-[#2d3d2d] text-gray-300 hover:bg-[#3d4d3d]"
-            }`}
+            onClick={() => handlePeriodChange("last90days")}
+            onKeyDown={(e) => handleKeyDown(e, "last90days")}
+            className={periodButtonClass(hoveredPeriod === "last90days")}
+            aria-pressed={hoveredPeriod === "last90days"}
             aria-label="View last 90 days"
           >
             90 Days
@@ -64,35 +98,44 @@ export default function AnalyticsPlayTrends({ data, period }: AnalyticsPlayTrend
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#2d3d2d" />
-          <XAxis
-            dataKey="date"
-            stroke="#666"
-            style={{ fontSize: "12px" }}
-            tick={{
-              fill: "#999",
-            }}
-          />
-          <YAxis
-            stroke="#666"
-            style={{ fontSize: "12px" }}
-            tick={{
-              fill: "#999",
-            }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Line
-            type="monotone"
-            dataKey="plays"
-            stroke="#ec4899"
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={true}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div role="region" aria-label={`Play trends for ${hoveredPeriod === "last30days" ? "last 30 days" : "last 90 days"}`}>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+            aria-label="Line chart showing play trends over time"
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke={colorTokens.border.subtle} />
+            <XAxis
+              dataKey="date"
+              stroke={colorTokens.text.subtle}
+              style={{ fontSize: "12px" }}
+              tick={{
+                fill: colorTokens.text.muted,
+              }}
+              aria-label="Date"
+            />
+            <YAxis
+              stroke={colorTokens.text.subtle}
+              style={{ fontSize: "12px" }}
+              tick={{
+                fill: colorTokens.text.muted,
+              }}
+              aria-label="Number of plays"
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="plays"
+              stroke={colorTokens.primary.default}
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={true}
+              aria-hidden="true"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

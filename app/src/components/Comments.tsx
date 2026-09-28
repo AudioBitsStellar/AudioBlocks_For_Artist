@@ -4,7 +4,9 @@ import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { Send, Paperclip, User, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { sanitize } from "@/utils/sanitize";
+import { COMMENT_ATTACHMENT_RULES, toAcceptAttribute, validateFile } from "@/utils/fileValidation";
 import EmptyState from "./shared/EmptyState";
+import { SkeletonList } from "./shared/Skeleton";
 import useCommentServices, { DashboardComment } from "@/services/commentService";
 
 const COMMENT_MAX_LENGTH = 500;
@@ -36,7 +38,20 @@ export default function Comments() {
   const isSubmitDisabled = draft.trim().length === 0 || createComment.isPending;
 
   const handleAttachmentChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setAttachment(event.target.files?.[0]);
+    const file = event.target.files?.[0];
+    if (!file) {
+      setAttachment(undefined);
+      return;
+    }
+
+    const { valid, error } = validateFile(file, COMMENT_ATTACHMENT_RULES);
+    if (!valid) {
+      toast.error(error ?? "Invalid attachment");
+      event.target.value = "";
+      setAttachment(undefined);
+      return;
+    }
+    setAttachment(file);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -61,9 +76,7 @@ export default function Comments() {
 
       <div className="space-y-4 mb-6">
         {isLoading ? (
-          <div className="py-10 text-center text-gray-400" role="status">
-            Loading comments...
-          </div>
+          <SkeletonList items={3} ariaLabel="Loading comments" />
         ) : isError ? (
           <EmptyState
             icon={MessageCircle}
@@ -110,6 +123,7 @@ export default function Comments() {
         <input
           ref={fileInputRef}
           type="file"
+          accept={toAcceptAttribute(COMMENT_ATTACHMENT_RULES)}
           className="hidden"
           onChange={handleAttachmentChange}
           aria-label="Comment attachment"

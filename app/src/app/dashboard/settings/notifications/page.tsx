@@ -107,7 +107,7 @@ export default function NotificationPreferencesPage() {
           </h2>
           <p className="text-sm text-text-muted">
             Choose how you want to hear from us for each kind of event. Changes are saved locally so
-            you don't lose them on this device.
+            you don&apos;t lose them on this device.
           </p>
         </div>
 

@@ -1,5 +1,6 @@
 import { MERCH_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet, usePost, usePut, useDelete } from "@/api/queryClient";
+import { DASHBOARD_CACHE } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 
 export interface MerchMetric {
@@ -184,12 +185,16 @@ const useMerchService = () => {
   const handleError = useHandleError();
 
   /**
-   * Fetches the artist's merch (metrics + list).
+   * Fetches the artist's merch (metrics + list), cached for 2 minutes and
+   * invalidated by the merch mutations below.
    *
    * @returns A React Query result: `{ data: MerchListResponse | undefined, isLoading, isError, error, refetch, ... }`.
    * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
    */
-  const useGetMerches = () => useGet<MerchListResponse>(MERCH_QUERY_KEY, MERCH_ENDPOINTS.LIST);
+  const useGetMerches = () =>
+    useGet<MerchListResponse>(MERCH_QUERY_KEY, MERCH_ENDPOINTS.LIST, {
+      staleTime: DASHBOARD_CACHE.merch,
+    });
 
   /**
    * Creates a new merch item. Invalidates the merch cache and shows a success/error toast on completion.
@@ -258,7 +263,9 @@ const useMerchService = () => {
    * @throws Never throws directly — request failures surface via the returned `error`/`isError` fields.
    */
   const useGetMerchOrders = () =>
-    useGet<MerchOrder[]>(['merch-orders'], MERCH_ENDPOINTS.ORDERS);
+    useGet<MerchOrder[]>(["merch-orders"], MERCH_ENDPOINTS.ORDERS, {
+      staleTime: DASHBOARD_CACHE.merchOrders,
+    });
 
   return {
     useGetMerches,

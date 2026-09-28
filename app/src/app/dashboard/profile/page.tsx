@@ -20,6 +20,7 @@ import { useRole } from "@/hooks/useRole";
 import { ROLE_BADGE_STYLES, getSettingsRestrictionReason } from "@/types/role";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { encodeHtmlEntities } from "@/utils/textEncoder";
+import { PROFILE_IMAGE_RULES, toAcceptAttribute, validateFile } from "@/utils/fileValidation";
 import VerifiedBadge from "@/components/common/VerifiedBadge";
 import VerificationApplicationModal from "@/components/common/modals/VerificationApplicationModal";
 import {
@@ -108,6 +109,13 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const { valid, error } = validateFile(file, PROFILE_IMAGE_RULES);
+    if (!valid) {
+      toast.error(error ?? "Invalid profile image");
+      e.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setCropSrc(reader.result as string);
@@ -120,6 +128,13 @@ export default function ProfilePage() {
 
   const handleCropComplete = (blob: Blob) => {
     const croppedFile = new File([blob], "profile-avatar.jpg", { type: "image/jpeg" });
+    // Cropping re-encodes the image, so re-check the size the backend will actually receive.
+    const { valid, error } = validateFile(croppedFile, PROFILE_IMAGE_RULES);
+    if (!valid) {
+      toast.error(error ?? "Invalid profile image");
+      setCropSrc(null);
+      return;
+    }
     setValue("profileImage", croppedFile);
     setProfileImage(URL.createObjectURL(blob));
     setCropSrc(null);
@@ -169,7 +184,7 @@ export default function ProfilePage() {
       {/* Role indicator – issue #173 acceptance criteria */}
       <div
         data-testid="profile-role-indicator"
-        className="mt-4 inline-flex items-center gap-3 rounded-xl border border-[#2A2A2A] bg-[#161616] px-4 py-3"
+        className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-[#2A2A2A] bg-[#161616] px-4 py-3"
       >
         <span
           data-testid="profile-role-badge"
@@ -241,13 +256,13 @@ export default function ProfilePage() {
       />
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#2A2A2A]" role="tablist">
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-[#2A2A2A]" role="tablist">
         <button
           onClick={() => setActiveTab("profile")}
           role="tab"
           aria-selected={activeTab === "profile"}
           aria-controls="profile-panel"
-          className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${
+          className={`whitespace-nowrap px-4 py-3 font-semibold transition-colors rounded-t-lg sm:px-6 ${
             activeTab === "profile"
               ? "bg-[#D2045B] text-white"
               : "bg-transparent text-gray-400 hover:text-white"
@@ -260,7 +275,7 @@ export default function ProfilePage() {
           role="tab"
           aria-selected={activeTab === "settings"}
           aria-controls="settings-panel"
-          className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${
+          className={`whitespace-nowrap px-4 py-3 font-semibold transition-colors rounded-t-lg sm:px-6 ${
             activeTab === "settings"
               ? "bg-[#D2045B] text-white"
               : "bg-transparent text-gray-400 hover:text-white"
@@ -273,7 +288,7 @@ export default function ProfilePage() {
           role="tab"
           aria-selected={activeTab === "onchain"}
           aria-controls="onchain-panel"
-          className={`px-6 py-3 font-semibold transition-colors rounded-t-lg ${
+          className={`whitespace-nowrap px-4 py-3 font-semibold transition-colors rounded-t-lg sm:px-6 ${
             activeTab === "onchain"
               ? "bg-[#D2045B] text-white"
               : "bg-transparent text-gray-400 hover:text-white"
@@ -286,7 +301,11 @@ export default function ProfilePage() {
       {/* Main Content - Two Columns */}
       {activeTab === "profile" && isProfileLoading && <ProfileFormSkeleton />}
       {activeTab === "profile" && !isProfileLoading && (
-        <div id="profile-panel" className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-16 mt-6">
+        <div
+          id="profile-panel"
+          role="tabpanel"
+          className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-16 mt-6"
+        >
           {/* Left Column - Form Fields */}
           <div className="space-y-5">
             <div className="flex flex-col mt-7">
@@ -448,7 +467,7 @@ export default function ProfilePage() {
 
             <input
               type="file"
-              accept="image/*"
+              accept={toAcceptAttribute(PROFILE_IMAGE_RULES)}
               className="hidden"
               {...register("profileImage")}
               ref={profileInputRef}
@@ -467,7 +486,7 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "settings" && (
-        <div id="settings-panel" className="mt-6 space-y-6">
+        <div id="settings-panel" role="tabpanel" className="mt-6 space-y-6">
           {/* Comments on songs */}
           <div className="flex items-start justify-between p-6 rounded-lg  ">
             <div className="flex-1 pr-6">
@@ -571,7 +590,7 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "onchain" && (
-        <div id="onchain-panel" className="mt-6">
+        <div id="onchain-panel" role="tabpanel" className="mt-6">
           <ErrorBoundary fallbackTitle="Failed to load on-chain profile">
             <SetupArtistOnChainProfile />
           </ErrorBoundary>

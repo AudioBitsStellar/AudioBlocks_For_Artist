@@ -1,5 +1,11 @@
 import React, { InputHTMLAttributes, forwardRef, useState, DragEvent } from "react";
 import { UploadCloud, File, X, AlertCircle } from "lucide-react";
+import {
+  FileValidationRules,
+  formatBytes,
+  toAcceptAttribute,
+  validateFile,
+} from "@/utils/fileValidation";
 
 export interface FileUploadProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   label?: string;
@@ -7,15 +13,50 @@ export interface FileUploadProps extends Omit<InputHTMLAttributes<HTMLInputEleme
   helperText?: string;
   onFileSelect?: (file: File | null) => void;
   acceptedFormats?: string;
+  /**
+   * When set, picked/dropped files are checked against these type + size rules
+   * and rejected with an inline error instead of being passed to `onFileSelect`.
+   * Also supplies the `accept` attribute unless `acceptedFormats` is given.
+   */
+  validationRules?: FileValidationRules;
 }
 
 const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
   (
-    { className = "", label, error, helperText, disabled, onFileSelect, acceptedFormats, ...props },
+    {
+      className = "",
+      label,
+      error,
+      helperText,
+      disabled,
+      onFileSelect,
+      acceptedFormats,
+      validationRules,
+      ...props
+    },
     ref
   ) => {
     const [isDragging, setIsDragging] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [validationError, setValidationError] = useState<string | null>(null);
+    const displayedError = error || validationError || undefined;
+
+    /** Returns true if the file was accepted (and reported to the parent). */
+    const acceptFile = (file: File): boolean => {
+      if (validationRules) {
+        const result = validateFile(file, validationRules);
+        if (!result.valid) {
+          setValidationError(result.error);
+          setSelectedFile(null);
+          if (onFileSelect) onFileSelect(null);
+          return false;
+        }
+      }
+      setValidationError(null);
+      setSelectedFile(file);
+      if (onFileSelect) onFileSelect(file);
+      return true;
+    };
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -34,17 +75,13 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
       if (disabled) return;
 
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        setSelectedFile(file);
-        if (onFileSelect) onFileSelect(file);
+        acceptFile(e.dataTransfer.files[0]);
       }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
-        const file = e.target.files[0];
-        setSelectedFile(file);
-        if (onFileSelect) onFileSelect(file);
+        if (!acceptFile(e.target.files[0])) e.target.value = "";
       }
     };
 
@@ -52,6 +89,7 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
       e.stopPropagation();
       e.preventDefault();
       setSelectedFile(null);
+      setValidationError(null);
       if (onFileSelect) onFileSelect(null);
     };
 
@@ -71,7 +109,7 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
             relative w-full border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all
             ${disabled ? "opacity-50 cursor-not-allowed border-gray-700 bg-gray-900/50" : "cursor-pointer hover:bg-gray-800/50 hover:border-blue-500"}
             ${isDragging ? "border-blue-500 bg-blue-500/10" : "border-gray-700 bg-gray-900"}
-            ${error ? "border-red-500 bg-red-500/5" : ""}
+            ${displayedError ? "border-red-500 bg-red-500/5" : ""}
             ${className}
           `}
         >
@@ -80,7 +118,7 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
             ref={ref}
             disabled={disabled}
             onChange={handleFileChange}
-            accept={acceptedFormats}
+            accept={acceptedFormats ?? (validationRules ? toAcceptAttribute(validationRules) : undefined)}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             {...props}
           />
@@ -109,9 +147,9 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
           ) : (
             <>
               <div
-                className={`p-3 rounded-full mb-3 ${error ? "bg-red-500/10 text-red-500" : "bg-gray-800 text-gray-400"}`}
+                className={`p-3 rounded-full mb-3 ${displayedError ? "bg-red-500/10 text-red-500" : "bg-gray-800 text-gray-400"}`}
               >
-                {error ? <AlertCircle size={24} /> : <UploadCloud size={24} />}
+                {displayedError ? <AlertCircle size={24} /> : <UploadCloud size={24} />}
               </div>
               <p className="text-sm font-medium text-gray-200 mb-1">
                 <span className="text-blue-500">Click to upload</span> or drag and drop
@@ -119,15 +157,22 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
               <p className="text-xs text-gray-400">
                 {acceptedFormats
                   ? `Accepted formats: ${acceptedFormats}`
-                  : "SVG, PNG, JPG or MP3 (max. 10MB)"}
+                  : validationRules
+                    ? `${validationRules.allowedExtensions
+                        .map((ext) => ext.slice(1).toUpperCase())
+                        .join(", ")} (max. ${formatBytes(validationRules.maxSizeBytes)})`
+                    : "SVG, PNG, JPG or MP3 (max. 10MB)"}
               </p>
             </>
           )}
         </div>
 
-        {(error || helperText) && (
-          <p className={`text-xs ${error ? "text-red-500" : "text-gray-400"}`}>
-            {error || helperText}
+        {(displayedError || helperText) && (
+          <p
+            role={displayedError ? "alert" : undefined}
+            className={`text-xs ${displayedError ? "text-red-500" : "text-gray-400"}`}
+          >
+            {displayedError || helperText}
           </p>
         )}
       </div>

@@ -64,16 +64,38 @@ export const metadata = generateAlbumMetadata({
 
 ### For Artist Profile Pages
 
+Use `generateArtistMetadata` for the `<head>` and
+`generateArtistStructuredData` for the `MusicGroup` JSON-LD block (issue #421):
+
 ```typescript
-import { generateArtistMetadata } from "@/utils/metadata";
+import { generateArtistMetadata, generateArtistStructuredData } from "@/utils/metadata";
 
 export const metadata = generateArtistMetadata({
   name: "Artist Name",
+  handle: "artist-name",
   bio: "Artist bio goes here...",
   profileImage: "/artists/profile.jpg",
-  url: "/artists/artist-id",
+  genres: ["Afrobeat"],
+  songCount: 12,
+  url: "/artist/artist-name",
 });
+
+// In the page body:
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{ __html: JSON.stringify(generateArtistStructuredData({ ... })) }}
+/>;
 ```
+
+What the artist helper adds on top of the shared tags:
+
+- canonical URL (`alternates.canonical`) so the same profile isn't indexed twice
+- `og:type: "profile"` plus the artist's name/handle/genres as keywords
+- `profile:username` for crawlers and PBMs that understand it
+- a description that mentions the catalogue (songs/albums) when it is known,
+  clamped to 160 characters
+- `indexable: false` for degraded profiles (e.g. the API is unreachable), so a
+  backend outage can't flood the index with thin pages
 
 ## Generated Tags
 

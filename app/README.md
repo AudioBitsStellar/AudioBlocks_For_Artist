@@ -74,6 +74,7 @@ everything — auth, profile, uploads — and to the
 | `/dashboard/events`       | Artist events management                                                                        |
 | `/dashboard/merches`      | Merchandise management                                                                          |
 | `/dashboard/profile`      | Profile editor, notification settings, and the **On-chain** tab (connect wallet + mint profile) |
+| `/dashboard/changelog`    | Release notes, rendered from the repository's `CHANGELOG.md`                                    |
 
 ## Authentication
 
@@ -126,6 +127,10 @@ audio files don't hit request-size limits:
 4. Once finalized, a `MintSongButton` appears so the artist can mint the song
    on-chain whenever they're ready (independent of the upload itself).
 
+Before any of this starts, each file is validated client-side (type and size,
+matching the backend's limits) by `src/utils/fileValidation.ts` — see the
+table in [docs/SERVICE_LAYER_API.md](../docs/SERVICE_LAYER_API.md#client-side-file-validation).
+
 > **Album upload** (`src/components/musicUpload/Album.tsx`) is currently a
 > UI prototype — its progress bars are simulated locally and it is not yet
 > wired to the real upload services that `Song.tsx` uses.
@@ -145,7 +150,7 @@ src/
 │   ├── common/artist-hub/          # landing page sections
 │   ├── common/modals/                # claim-name, add-music, new-event modals
 │   └── ...dashboard widgets (charts, tables, sidebar, top header)
-├── services/                   # authService, artistServices, uploadSerive, onchainService
+├── services/                   # authService, artistServices, uploadService, onchainService
 ├── lib/freighter.ts             # thin wrapper over @stellar/freighter-api
 ├── hooks/                       # toast handler hooks
 ├── context/provider.tsx         # React Query provider
@@ -161,6 +166,37 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api   # AudioBlock_Backend base U
 > No `.env.local` ships by default — without this variable set, the app
 > falls back to `http://localhost:3000/api`, which is almost never the
 > backend's actual port. Set this explicitly.
+
+Two more optional variables are relevant to the Artist Portal surfaces:
+
+| Variable                    | Effect when unset                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUBGRAPH_URL`  | The analytics dashboard omits its on-chain plays/sales section entirely — no request, no error state.   |
+| `NEXT_PUBLIC_FEATURE_FLAGS` | Rollout flags fall back to their configured percentage, e.g. `artistOnchainAnalytics=true` to force on. |
+
+### Feature flags and gradual rollout
+
+Artist-facing features that aren't ready for every artist go through the
+rollout flags in `src/lib/featureFlags.ts` rather than a bare conditional:
+
+- `FEATURE_FLAGS` holds each flag's `rolloutPercentage` and `allowlist`.
+  The percentage buckets on a hash of `flag:subject`, so an artist is in or
+  out consistently instead of flickering between visits.
+- `useFeatureFlag(name, subject)` is how a component asks. Pass the identity
+  the feature is rolled out to (an on-chain address, a user id) and leave it
+  `null` while that identity is still resolving — an unknown subject reads as
+  off, so the feature never appears and then disappears.
+- Precedence, highest first: a per-browser override, then
+  `NEXT_PUBLIC_FEATURE_FLAGS`, then the allowlist, then the percentage.
+- To see a flag on your own browser without changing the rollout — useful on
+  a preview deployment — write the override directly:
+  `localStorage.setItem("audioblocks:feature-flags:v1", JSON.stringify({ artistOnchainAnalytics: true }))`.
+  `setFeatureFlagOverride()` is the same thing for code that wants the mounted
+  components to update immediately.
+
+Adding a flag means one entry in `FEATURE_FLAGS`, one name in the
+`FeatureFlagName` union, and a call site. Removing it means deleting the
+entry and the branch it guarded.
 
 ## Getting Started
 

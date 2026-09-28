@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X, BadgeCheck } from "lucide-react";
 import { useState } from "react";
 import { submitVerificationApplication } from "@/services/verificationService";
+import { getFormErrors, verificationFormSchema } from "@/types/formValidation";
 
 interface VerificationApplicationModalProps {
   open: boolean;
@@ -38,13 +39,7 @@ export default function VerificationApplicationModal({
   };
 
   const handleSubmit = () => {
-    const newErrors: Record<string, string> = {};
-    if (!form.legalName.trim()) {
-      newErrors.legalName = "Legal name is required";
-    }
-    if (!form.proofUrl.trim()) {
-      newErrors.proofUrl = "A link proving your identity is required";
-    }
+    const newErrors = getFormErrors(verificationFormSchema, form);
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -114,10 +109,18 @@ export default function VerificationApplicationModal({
                 onChange={handleFieldChange("legalName")}
                 placeholder="Your full legal name"
                 maxLength={100}
+                aria-invalid={errors.legalName ? "true" : "false"}
+                aria-describedby={errors.legalName ? "verification-legal-name-error" : undefined}
                 className="mt-2 w-full px-4 py-3 rounded-lg bg-[#1E1E1E] border border-[#2E2E2E] text-white placeholder-[#A3A3A3] focus:outline-none focus:border-[#D2045B]"
               />
               {errors.legalName && (
-                <p className="text-red-500 text-xs mt-1">{errors.legalName}</p>
+                <p
+                  id="verification-legal-name-error"
+                  role="alert"
+                  className="text-red-500 text-xs mt-1"
+                >
+                  {errors.legalName}
+                </p>
               )}
             </div>
 
@@ -131,9 +134,19 @@ export default function VerificationApplicationModal({
                 onChange={handleFieldChange("proofUrl")}
                 placeholder="https://..."
                 maxLength={300}
+                aria-invalid={errors.proofUrl ? "true" : "false"}
+                aria-describedby={errors.proofUrl ? "verification-proof-url-error" : undefined}
                 className="mt-2 w-full px-4 py-3 rounded-lg bg-[#1E1E1E] border border-[#2E2E2E] text-white placeholder-[#A3A3A3] focus:outline-none focus:border-[#D2045B]"
               />
-              {errors.proofUrl && <p className="text-red-500 text-xs mt-1">{errors.proofUrl}</p>}
+              {errors.proofUrl && (
+                <p
+                  id="verification-proof-url-error"
+                  role="alert"
+                  className="text-red-500 text-xs mt-1"
+                >
+                  {errors.proofUrl}
+                </p>
+              )}
             </div>
 
             <div>

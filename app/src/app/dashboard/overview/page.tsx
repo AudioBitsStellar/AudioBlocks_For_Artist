@@ -3,14 +3,31 @@
 import dynamic from "next/dynamic";
 import { useDashboardCustomization } from "@/context/DashboardCustomizationContext";
 import DashboardCustomizationPanel from "@/components/DashboardCustomizationPanel";
+import { Skeleton } from "@/components/shared/Skeleton";
 
-const OverviewCards = dynamic(() => import("@/components/OverviewCards"));
-const EarningsRoyalties = dynamic(() => import("@/components/EarningsRoyalties"));
-const PlatformRevenueBreakdown = dynamic(() => import("@/components/PlatformRevenueBreakdown"));
-const MyAlbums = dynamic(() => import("@/components/MyAlbums"));
-const FansEngagement = dynamic(() => import("@/components/FansEngagement"));
-const Transactions = dynamic(() => import("@/components/Transactions"));
-const Comments = dynamic(() => import("@/components/Comments"));
+/**
+ * Placeholder shown while a lazily-loaded widget's chunk (and its data) is on
+ * its way, so the overview keeps its shape instead of flashing empty gaps
+ * (issue #424).
+ */
+const widgetLoading = () => (
+  <div aria-busy="true" role="status" aria-label="Loading widget" className="space-y-4">
+    <Skeleton className="h-6 w-40 rounded" />
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <Skeleton key={index} className="h-28 rounded-lg" />
+      ))}
+    </div>
+  </div>
+);
+
+const OverviewCards = dynamic(() => import("@/components/OverviewCards"), { loading: widgetLoading });
+const EarningsRoyalties = dynamic(() => import("@/components/EarningsRoyalties"), { loading: widgetLoading });
+const PlatformRevenueBreakdown = dynamic(() => import("@/components/PlatformRevenueBreakdown"), { loading: widgetLoading });
+const MyAlbums = dynamic(() => import("@/components/MyAlbums"), { loading: widgetLoading });
+const FansEngagement = dynamic(() => import("@/components/FansEngagement"), { loading: widgetLoading });
+const Transactions = dynamic(() => import("@/components/Transactions"), { loading: widgetLoading });
+const Comments = dynamic(() => import("@/components/Comments"), { loading: widgetLoading });
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 const WIDGET_COMPONENTS: Record<string, React.ComponentType> = {

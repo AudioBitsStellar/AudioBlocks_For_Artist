@@ -1,0 +1,190 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Modal from "@/components/shared/Modal";
+import { trackEditSchema } from "@/types/formValidation";
+import {
+  describeVisibility,
+  TRACK_VISIBILITY_OPTIONS,
+  type TrackVisibility,
+} from "@/services/trackVisibilityService";
+
+export interface EditableTrackFields {
+  title: string;
+  albumName: string;
+  visibility: TrackVisibility;
+}
+
+interface EditTrackModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** The track being edited; the form is re-initialised when the modal opens or the track's id changes. */
+  track: {
+    id: number | string;
+    title: string;
+    albumName: string;
+    /** Effective visibility, already resolved by the caller. */
+    visibility: TrackVisibility;
+  } | null;
+  /** Album names offered in the album picker. */
+  albumOptions: string[];
+  /** Called with the validated values. The modal closes right after, so callers should apply the edit optimistically. */
+  onSave: (values: EditableTrackFields) => void;
+}
+
+export default function EditTrackModal({
+  open,
+  onOpenChange,
+  track,
+  albumOptions,
+  onSave,
+}: EditTrackModalProps) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isDirty },
+  } = useForm<EditableTrackFields>({
+    resolver: zodResolver(trackEditSchema),
+    mode: "onChange",
+    defaultValues: {
+      title: track?.title ?? "",
+      albumName: track?.albumName ?? "",
+      visibility: track?.visibility ?? "private",
+    },
+  });
+
+  // Re-initialise only on open / a different track — not on every change to `track`
+  // (e.g. an optimistic update or rollback landing while the user is typing).
+  const trackRef = useRef(track);
+  trackRef.current = track;
+  const trackId = track?.id;
+  useEffect(() => {
+    const current = trackRef.current;
+    if (open && current) {
+      reset({
+        title: current.title,
+        albumName: current.albumName,
+        visibility: current.visibility,
+      });
+    }
+  }, [open, trackId, reset]);
+
+  const selectedVisibility = watch("visibility");
+
+  // Keep the track's current album selectable even if it isn't in the list.
+  const albums =
+    track && !albumOptions.includes(track.albumName)
+      ? [track.albumName, ...albumOptions]
+      : albumOptions;
+
+  const submit = (values: EditableTrackFields) => {
+    onSave(values);
+    onOpenChange(false);
+  };
+
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Edit track"
+      subtitle="My Music"
+      size="md"
+      closeAriaLabel="Close edit track dialog"
+    >
+      <form onSubmit={handleSubmit(submit)} noValidate className="space-y-5">
+        <div className="space-y-2">
+          <label htmlFor="edit-track-title" className="text-sm font-medium text-white">
+            Track title <span className="text-[#D2045B]">*</span>
+          </label>
+          <input
+            id="edit-track-title"
+            {...register("title")}
+            maxLength={100}
+            aria-invalid={errors.title ? "true" : "false"}
+            aria-describedby={errors.title ? "edit-track-title-error" : undefined}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.title ? "border-red-500" : "border-[#2A2A2A]"}`}
+          />
+          {errors.title && (
+            <p id="edit-track-title-error" role="alert" className="text-xs text-red-500">
+              {errors.title.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="edit-track-album" className="text-sm font-medium text-white">
+            Album <span className="text-[#D2045B]">*</span>
+          </label>
+          <select
+            id="edit-track-album"
+            {...register("albumName")}
+            aria-invalid={errors.albumName ? "true" : "false"}
+            aria-describedby={errors.albumName ? "edit-track-album-error" : undefined}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.albumName ? "border-red-500" : "border-[#2A2A2A]"}`}
+          >
+            {albums.map((album) => (
+              <option key={album} value={album}>
+                {album}
+              </option>
+            ))}
+          </select>
+          {errors.albumName && (
+            <p id="edit-track-album-error" role="alert" className="text-xs text-red-500">
+              {errors.albumName.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="edit-track-visibility" className="text-sm font-medium text-white">
+            Visibility <span className="text-[#D2045B]">*</span>
+          </label>
+          <select
+            id="edit-track-visibility"
+            {...register("visibility")}
+            aria-invalid={errors.visibility ? "true" : "false"}
+            aria-describedby="edit-track-visibility-hint"
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.visibility ? "border-red-500" : "border-[#2A2A2A]"}`}
+          >
+            {TRACK_VISIBILITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p id="edit-track-visibility-hint" className="text-xs text-gray-400">
+            {describeVisibility(selectedVisibility)}
+          </p>
+          {errors.visibility && (
+            <p id="edit-track-visibility-error" role="alert" className="text-xs text-red-500">
+              {errors.visibility.message}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-full border border-transparent px-6 py-2 text-sm font-semibold text-[#A3A3A3] transition hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!isDirty}
+            className="rounded-full bg-[#D2045B] px-8 py-2 text-sm font-semibold text-white transition hover:bg-[#B8043F] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Save changes
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+export { EditTrackModal };

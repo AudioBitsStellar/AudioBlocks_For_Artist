@@ -25,7 +25,7 @@ layer for everything that comes from the backend, wrapped by two generic
 hook factories in `src/api/queryClient.ts` — `useGet` and `usePost` — built
 on top of the shared axios instance in `src/api/axios.ts`. Every
 per-feature service (`src/services/*.ts`, e.g. `onchainService.ts`,
-`uploadSerive.ts`) is a thin hook that calls `useGet`/`usePost` with an
+`uploadService.ts`) is a thin hook that calls `useGet`/`usePost` with an
 endpoint from `src/api/api-endpoint.ts` plus typed request/response shapes
 from `src/types/api.ts`, rather than talking to axios directly.
 

@@ -1,5 +1,6 @@
 import { EARNINGS_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
+import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { EarningsResponse, PlatformRevenueResponse } from "@/types";
 
 const useEarningsServices = () => {
@@ -16,10 +17,14 @@ const useEarningsServices = () => {
    * const totalEarnings = data?.data.totalEarnings ?? 0;
    */
   const useGetEarnings = (enabled: boolean = true) => {
-    return useGet<EarningsResponse>(["get-artist-earnings"], EARNINGS_ENDPOINTS.GET_EARNINGS, {
-      enabled,
-      staleTime: 1000 * 60 * 5, // 5 min cache
-    });
+    return useGet<EarningsResponse>(
+      DASHBOARD_QUERY_KEYS.earnings,
+      EARNINGS_ENDPOINTS.GET_EARNINGS,
+      {
+        enabled,
+        staleTime: DASHBOARD_CACHE.earnings, // 5 min cache
+      }
+    );
   };
 
   /**
@@ -31,11 +36,11 @@ const useEarningsServices = () => {
    */
   const useGetPlatformRevenue = (enabled: boolean = true) => {
     return useGet<PlatformRevenueResponse>(
-      ["get-platform-revenue"],
+      DASHBOARD_QUERY_KEYS.platformRevenue,
       EARNINGS_ENDPOINTS.GET_PLATFORM_REVENUE,
       {
         enabled,
-        staleTime: 1000 * 60 * 5,
+        staleTime: DASHBOARD_CACHE.platformRevenue,
       }
     );
   };

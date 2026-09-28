@@ -24,13 +24,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { albumFormSchema } from "@/types/formValidation";
 import { MUSIC_GENRES } from "../shared/music_genre";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { useFileDrop } from "@/hooks/useFileDrop";
 import { useToast } from "@/hooks/useToastHandler";
 import useAlbumServices from "@/services/albumService";
+import {
+  AUDIO_FILE_RULES,
+  COVER_IMAGE_RULES,
+  toAcceptAttribute,
+  validateFile,
+} from "@/utils/fileValidation";
 
 const Album = () => {
   const toast = useToast();
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const [musicFileError, setMusicFileError] = useState<string | null>(null);
   const [albumMusicFiles, setAlbumMusicFiles] = useState<
     Array<{
       id: number;
@@ -77,6 +86,13 @@ const Album = () => {
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const { valid, error } = validateFile(file, COVER_IMAGE_RULES);
+      if (!valid) {
+        setCoverError(error);
+        e.target.value = "";
+        return;
+      }
+      setCoverError(null);
       setCoverFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -109,6 +125,14 @@ const Album = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const { valid, error } = validateFile(file, AUDIO_FILE_RULES);
+    if (!valid) {
+      setMusicFileError(error);
+      e.target.value = "";
+      return;
+    }
+    setMusicFileError(null);
+
     const fileSize = formatFileSize(file.size);
     setAlbumMusicFiles((prev) => {
       const existing = prev.find((f) => f.id === id);
@@ -118,6 +142,43 @@ const Album = () => {
       return [...prev, { id, name: file.name, size: fileSize, file }];
     });
   };
+
+  /**
+   * Drag-and-drop tracks onto the album (#391). Each dropped file is validated;
+   * valid ones fill empty "Choose file" slots first, then append new rows.
+   * Rejected files are listed in the error message.
+   */
+  const addDroppedAlbumFiles = (files: File[]) => {
+    const accepted: File[] = [];
+    const rejected: string[] = [];
+    for (const file of files) {
+      if (validateFile(file, AUDIO_FILE_RULES).valid) accepted.push(file);
+      else rejected.push(file.name);
+    }
+    setMusicFileError(
+      rejected.length > 0
+        ? `Skipped ${rejected.length} unsupported or oversized file${rejected.length === 1 ? "" : "s"}: ${rejected.join(", ")}`
+        : null
+    );
+    if (accepted.length === 0) return;
+
+    setAlbumMusicFiles((prev) => {
+      const next = [...prev];
+      for (const file of accepted) {
+        const entry = { name: file.name, size: formatFileSize(file.size), file };
+        const emptyIndex = next.findIndex((f) => !f.file);
+        if (emptyIndex !== -1) next[emptyIndex] = { ...next[emptyIndex], ...entry };
+        else next.push({ id: nextFileId.current++, ...entry });
+      }
+      return next;
+    });
+  };
+
+  const { isDragging, dropHandlers } = useFileDrop({
+    onFiles: addDroppedAlbumFiles,
+    disabled: isBusy,
+    multiple: true,
+  });
 
   const handleDeleteAlbumFile = (id: number) => {
     setAlbumMusicFiles((prev) => prev.filter((f) => f.id !== id));
@@ -259,6 +320,19 @@ const Album = () => {
             <label className="text-sm font-medium text-white">
               Upload Music <span className="text-[#D2045B]">*</span>
             </label>
+            <div
+              {...dropHandlers}
+              data-dragging={isDragging}
+              role="group"
+              aria-label="Drag and drop album tracks here"
+              className={`rounded-lg border-2 border-dashed px-4 py-3 text-center text-xs transition-colors ${
+                isDragging
+                  ? "border-[#D2045B] bg-[#D2045B]/10 text-white"
+                  : "border-[#2A2A2A] text-[#A3A3A3]"
+              }`}
+            >
+              {isDragging ? "Drop to add tracks" : "Drag & drop one or more audio files here"}
+            </div>
             {albumMusicFiles.length === 0 ? (
               <div>
                 <input
@@ -266,7 +340,7 @@ const Album = () => {
                     if (el) albumFileInputRefs.current.set(0, el);
                   }}
                   type="file"
-                  accept="audio/*"
+                  accept={toAcceptAttribute(AUDIO_FILE_RULES)}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -324,7 +398,7 @@ const Album = () => {
                             if (el) albumFileInputRefs.current.set(file.id, el);
                           }}
                           type="file"
-                          accept="audio/*"
+                          accept={toAcceptAttribute(AUDIO_FILE_RULES)}
                           onChange={(e) => handleAlbumFileUpload(file.id, e)}
                           className="hidden"
                           aria-label="Upload album music file"
@@ -341,6 +415,11 @@ const Album = () => {
                   </div>
                 ))}
               </div>
+            )}
+            {musicFileError && (
+              <p className="text-xs text-red-500" role="alert">
+                {musicFileError}
+              </p>
             )}
           </div>
         </div>
@@ -402,11 +481,16 @@ const Album = () => {
           <input
             ref={coverInputRef}
             type="file"
-            accept="image/*"
+            accept={toAcceptAttribute(COVER_IMAGE_RULES)}
             onChange={handleCoverUpload}
             className="hidden"
             aria-label="Upload cover image"
           />
+          {coverError && (
+            <p className="text-[10px] text-red-500 mb-2" role="alert">
+              {coverError}
+            </p>
+          )}
           <button
             onClick={() => coverInputRef.current?.click()}
             disabled={isBusy}

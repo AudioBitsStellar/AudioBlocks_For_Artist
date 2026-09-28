@@ -23,11 +23,12 @@ This document provides complete documentation for the frontend service layer loc
    - [13. Scheduled Release Service (`scheduledReleaseService.ts`)](#13-scheduled-release-service-scheduledreleaseservicets)
    - [14. Upload Service (`uploadService.ts`)](#14-upload-service-uploadservicets)
    - [15. Verification Service (`verificationService.ts`)](#15-verification-service-verificationservicets)
-   - [16. Email Verification Service (`emailVerificationService.ts`)](#16-email-verification-service-emailverificationservicets)
-   - [17. Audit Log Service (`auditLogService.ts`)](#17-audit-log-service-auditlogservicets)
-   - [18. Team Service (`teamService.ts`)](#18-team-service-teamservicets)
-   - [19. Keyboard Shortcuts (`utils/keyboardShortcuts.ts`)](#19-keyboard-shortcuts-utilskeyboardshortcutsts)
-3. [Standard Error Handling & Toast Normalization](#standard-error-handling--toast-normalization)
+   - [16. Track Service (`trackService.ts`)](#16-track-service-trackservicets)
+   - [17. Artist Directory Service (`artistDirectoryService.ts`)](#17-artist-directory-service-artistdirectoryservicets)
+   - [Track Visibility (`trackVisibilityService.ts`)](#track-visibility-trackvisibilityservicets)
+3. [Caching Strategy](#caching-strategy)
+4. [Optimistic Updates](#optimistic-updates)
+5. [Standard Error Handling & Toast Normalization](#standard-error-handling--toast-normalization)
 
 ---
 
@@ -35,7 +36,7 @@ This document provides complete documentation for the frontend service layer loc
 
 All services utilize custom React Query abstractions (`useGet`, `usePost`, `usePut`, `useDelete`) built on top of an Axios instance (`@/api/axios`). API endpoint constants are stored in `@/api/api-endpoint.ts`.
 
-- **Caching & Stale Times**: Queries default to cached responses with configurable `staleTime`.
+- **Caching & Stale Times**: Every dashboard read takes its `staleTime` from one central policy — see [Caching Strategy](#caching-strategy).
 - **Mock Data Fallbacks**: Surfaces check `featureFlags` (`@/lib/featureFlags.ts`) when API endpoints are not yet deployed or in preview environments.
 - **Normalization**: Errors are normalized through `normalizeError` to guarantee status code handling (400, 401, 403, 404, 422, 500) and toast notifications.
 
@@ -52,7 +53,7 @@ Manages fetching artist album collections.
 ##### `useGetAlbums(enabled?: boolean)`
 - **Endpoint**: `GET /api/v1/albums`
 - **Params**: `enabled` (boolean, default `true`) — controls query execution.
-- **Cache Stale Time**: 2 minutes (`1000 * 60 * 2`).
+- **Cache Stale Time**: 2 minutes (`DASHBOARD_CACHE.albums`).
 - **Response Shape**: `AlbumsResponse`
   ```typescript
   interface Album {
@@ -399,8 +400,23 @@ Handles chunked audio file uploads, cover image processing, and IPFS metadata as
 
 ##### `useFinalizeUpload()`
 - **Endpoint**: `POST /api/v1/upload/finalize`
-- **Payload**: `{ fileId: string; totalChunks: number; title: string; description: string; genre: string; composers: string; coverArtPath: string }`
+- **Payload**: `{ fileId: string; totalChunks: number; title: string; description: string; genre: string; composers: string; coverArtPath: string; visibility?: "public" | "unlisted" | "private" }`
+- **Visibility (#458)**: the upload form sends `private` unless the artist picks otherwise — a track nobody has heard yet has no reason to be discoverable. See [Track Visibility](#track-visibility-trackvisibilityservicets).
 - **Response**: `FinalizeSongResponse` `{ data: { id: string; ipfsHash?: string } }`
+- **Cache invalidation**: overview, statistics and recent-activity queries (`SONG_PUBLISHED_INVALIDATIONS`).
+
+##### Client-side file validation
+
+Files are checked before any bytes are uploaded, using `validateFile()` from `@/utils/fileValidation`. The limits mirror the backend's multer configuration:
+
+| Input | Allowed types | Max size |
+|---|---|---|
+| Audio (song / album tracks) | MP3, WAV, M4A, AAC, OGG, FLAC, WebM | 200 MB |
+| Cover image | JPG, PNG | 5 MB |
+| Profile image | JPG, PNG | 2 MB |
+| Comment attachment | JPG, PNG, GIF, WebP, PDF, TXT, MP3, WAV | 10 MB |
+
+A rejected file shows an inline `role="alert"` message (or a toast) and is never selected. The shared `FileUpload` component accepts a `validationRules` prop to opt into the same checks.
 
 ---
 
@@ -419,295 +435,143 @@ Handles artist identity and account verification requests.
 
 ---
 
-### 16. Email Verification Service (`emailVerificationService.ts`)
+### 16. Track Service (`trackService.ts`)
 
-Artist onboarding email verification (#459). Unrelated to section 15, which handles
-blue-badge profile verification applications.
+Edits a track's title, album and visibility with an optimistic UI update (see [Optimistic Updates](#optimistic-updates)).
 
-There is no verification backend yet, so this service follows the repo's existing
-localStorage-backed stand-in pattern (`verificationService.ts`-adjacent precedent set by
-`notificationPreferences.ts`). Because delivery can't be simulated over the network,
-issuance functions return the code to the caller so the UI can surface it while
-`featureFlags.useMockEmailVerification` is on. Only the FNV-1a digest of the code is
-persisted, never the digits.
+#### Hooks & Endpoints
 
-This is a pure module — no React Query hooks and no React imports, so it is unit-testable
-in isolation. `clearSession()` in `@/api/axios` calls `clearEmailVerification()` on
-session teardown so a pending code never carries over to the next artist on a shared
-browser.
-
-#### State & constants
-
-```typescript
-type EmailVerificationStatus = "unverified" | "pending" | "verified";
-interface EmailVerificationState {
-  status: EmailVerificationStatus;
-  email?: string;        // lower-cased address the code was issued to
-  codeDigest?: number;   // cleared once spent or invalidated
-  expiresAt?: number;    // epoch ms
-  attempts: number;      // wrong submissions against the active code
-  lastSentAt?: number;   // drives the resend cooldown
-}
-type VerificationError =
-  | "no_active_code" | "expired" | "invalid_code" | "too_many_attempts" | "cooldown_active";
-type IssuedCode = { ok: true; code: string } | { ok: false; error: VerificationError; retryAfterMs?: number };
-
-CODE_LENGTH = 6;
-CODE_TTL_MS = 10 * 60 * 1000;      // codes expire after 10 minutes
-RESEND_COOLDOWN_MS = 60 * 1000;    // one resend per minute
-MAX_ATTEMPTS = 5;                  // then the active code is burnt
-```
-
-#### Functions
-
-##### `getEmailVerificationState()` / `getEmailVerificationServerState()`
-- Read (and repair) the persisted record. The server snapshot is the `"unverified"` default;
-  reads are cached by identity for `useSyncExternalStore`.
-
-##### `subscribeToEmailVerification(onChange)`
-- Subscribes to the internal change event plus `storage`, returning an unsubscribe fn.
-
-##### `getEmailVerificationStatus()` / `getVerifiedEmail()`
-- Convenience reads over the stored state.
-
-##### `requiresEmailVerification()`
-- `true` only while `status === "pending"`. Deliberately `false` for the `"unverified"`
-  default so artists who registered before this step shipped are never locked out.
-
-##### `msUntilResend(now?)`
-- Milliseconds before another code may be requested (`0` when ready).
-
-##### `sanitizeCodeInput(value)`
-- Normalises free-typed input to exactly `CODE_LENGTH` digits, else `null`.
-
-##### `startVerification(email, now?)`
-- Issues the first code for an address. Bypasses the resend cooldown by design — a
-  leftover record from an earlier address must not stop a new artist from ever getting
-  a code.
-
-##### `resendVerificationCode(now?)`
-- Reissues for the stored address; enforces the cooldown (`retryAfterMs` carries the wait)
-  and resets the attempt counter.
-
-##### `verifyEmailCode(input, now?)`
-- Checks a submitted code. Wrong attempts increment; expiry and `MAX_ATTEMPTS` burn the
-  active code. Success sets `status: "verified"`.
-
-##### `clearEmailVerification()`
-- Removes the record and notifies subscribers (logout, tests).
-
-#### Hook
-
-##### `useEmailVerification()` (`@/hooks/useEmailVerification`)
-- `useSyncExternalStore` wrapper returning `{ state, status, requiresVerification }`.
-- `useHasHydrated()` from the same module distinguishes the server render from the
-  client one, so storage-backed UI never mismatches during SSR.
-
-#### Call sites
-
-- `/signup` — issues the first code and routes to `/verify-email`.
-- `/login` — routes to `/verify-email` when the API says `emailVerified === false` or a
-  code is outstanding.
-- `/verify-email` — address step, then a 6-box `OtpInput` (`@/components/shared/OtpInput`)
-  code step with resend cooldown, attempt countdown, and the mock-delivery panel.
-- `EmailVerificationGate` — wraps the dashboard content and redirects while pending.
+##### `useUpdateTrack({ onOptimistic })`
+- **Endpoint**: `PATCH /song/:id` (`SONG_ENDPOINTS.UPDATE`)
+- **Payload**: `{ id: number | string; title: string; albumName: string; visibility?: TrackVisibility }`
+- **Behavior**: `onOptimistic(edit)` applies the change to the caller's state immediately and returns an undo function; on failure the undo runs and an error toast explains the edit was reverted.
+- **`visibility` is optional**: an edit that omits it leaves the track's current visibility alone, and `applyTrackEdit()` writes no `visibility` key at all, so title-only edits stay title-only.
+- **Mock data**: when `NEXT_PUBLIC_USE_MOCK_DATA=true` (`featureFlags.useMockTracks`) the request is simulated locally instead of calling the API.
 
 ---
 
-### 17. Audit Log Service (`auditLogService.ts`)
+### Track Visibility (`trackVisibilityService.ts`)
 
-Trail of team member actions (#461). No audit backend exists yet, so entries are
-persisted in localStorage behind the same call shapes a REST client would use,
-following the repo's stand-in precedent (`notificationPreferences.ts`,
-`emailVerificationService.ts`).
+Issue #458: an artist decides who can see a track — `public`, `unlisted` or
+`private`. This module holds the *rules* and the artist's *choice*; it is not a
+React Query service and opens no network connection.
 
-Two rules shape the module:
+Enforcement for listeners belongs to the backend. This console renders no
+buyer-facing track list (`/artist/[handle]` shows a profile and a `songCount`,
+never track rows), so a `private` track cannot be hidden here from someone who
+calls the API directly. What this module fixes is the contract the API has to
+honour: the field name `visibility` and exactly these three values, sent on the
+create and edit payloads.
 
-- **Denied attempts are recorded next to successes.** A trail that only contains
-  the things that worked cannot show an attempted abuse of a shared workspace.
-- **Recording never throws and never blocks the action it describes.** Losing an
-  entry is bad; failing a member removal because the log was full is worse.
+| Mode | Discoverable | Playable | Shareable |
+|---|---|---|---|
+| `public` | yes | yes | yes |
+| `unlisted` | no | yes, by direct link | yes |
+| `private` | no | no | no |
 
-The log is a rolling window (`MAX_AUDIT_ENTRIES`, `AUDIT_RETENTION_MS`), not an
-archive — long-term retention belongs to the backend.
+The artist (`viewer: "owner"`) always has all three.
 
-#### Types
+#### Exports
 
-```typescript
-type AuditAction =
-  | "member.invited" | "member.joined" | "member.invite_revoked"
-  | "member.role_changed" | "member.removed"
-  | "content.created" | "content.updated" | "content.deleted" | "settings.updated";
-type AuditOutcome = "success" | "denied";
+| Function | Purpose |
+|---|---|
+| `getTrackVisibility({ id, visibility })` | The effective mode: a value carried by the record wins, then the locally stored choice, then `LEGACY_DEFAULT_VISIBILITY`. |
+| `setTrackVisibility(id, mode)` / `clearTrackVisibility(id)` | Record or forget the artist's choice; both return whether storage accepted it. |
+| `getStoredVisibility(id)` / `listVisibilityOverrides()` | Read back what this browser has stored, per track or all at once. |
+| `resolveTrackVisibility(value, fallback?)` / `isTrackVisibility(value)` | Coerce untrusted input (an API field, stored JSON) to a mode. |
+| `visibilityPermissions(mode, viewer)` | What that viewer may do with a track in that mode. |
+| `filterCatalog(tracks, viewer)` | The subset a viewer is allowed to see — every non-owner listing calls this. |
+| `visibilityLabel(mode)` / `describeVisibility(mode)` | The picker label and the one-line explanation shown to the artist. |
+| `TRACK_VISIBILITY_OPTIONS` | The three modes with labels and summaries, in the order the pickers show them. |
 
-interface AuditActor { id: string; name: string; role: Role; }
-interface AuditLogEntry {
-  id: string; at: number; workspace: string;
-  actor: AuditActor; action: AuditAction; outcome: AuditOutcome;
-  targetId?: string; targetName?: string; detail?: string;
-}
-interface AuditLogFilter {
-  actorId?: string; action?: AuditAction | AuditAction[];
-  outcome?: AuditOutcome; from?: number; to?: number; limit?: number;
-}
-```
+**Defaults.** A record with no `visibility` reads as `public`
+(`LEGACY_DEFAULT_VISIBILITY`) — tracks listed before this setting existed must
+not silently disappear. A track being uploaded starts as `private`
+(`NEW_TRACK_DEFAULT_VISIBILITY`); an unheard upload has no reason to be
+discoverable yet.
 
-#### Functions
+**Local persistence.** Choices are kept under
+`audioblocks:track-visibility:v1` in `localStorage`, as
+`{ [trackId]: { visibility, updatedAt } }`, because no song endpoint carries the
+field yet. That is the same stand-in `verificationService.ts` and
+`collaboratorService.ts` use. Every entry is validated on read, so a corrupted
+record reads as "no choices" rather than throwing; the `updatedAt` stamp is kept
+so a later sync can tell a local choice from a stale server value.
 
-##### `recordAuditEvent(input: AuditEventInput): AuditLogEntry`
-- Appends an entry (generated `id` + timestamp) and returns it. Never throws.
+### 17. Artist Directory Service (`artistDirectoryService.ts`)
 
-##### `recordDeniedAttempt(actor, action, targetName?): AuditLogEntry`
-- Records an RBAC refusal under the role the actor actually holds.
+Admin-only artist search/discovery (issue #420). Read-only: it never mutates
+artist data, so it only wraps `useGet`. The `admin` account role is read
+client-side only to decide whether to render the UI (`isAdminSession()` in
+`@/utils/jwt`); the backend remains the real authorization check.
 
-##### `getAuditLog()` / `getAuditLogServerSnapshot()`
-- Newest-first entries, malformed rows skipped, retention applied on read. Cached
-  by the stored string so it is safe as a `useSyncExternalStore` snapshot.
+#### Hooks & Endpoints
 
-##### `subscribeToAuditLog(onChange)`
-- Custom change event plus the `storage` event (other tabs).
+##### `useSearchArtists(params?: ArtistSearchParams, enabled?: boolean)`
+- **Endpoint**: `GET /admin/artists?q=&page=&limit=&status=` (`ADMIN_ARTIST_ENDPOINTS.SEARCH`)
+- **Params**: `{ query?: string; page?: number; limit?: number; status?: "all" | "verified" | "pending" | "unverified" }`
+- **Cache Stale Time**: `CACHE_TIME.SHORT` (1 minute); the query key is `["admin-artist-directory", params]`.
+- **Response Shape**:
+  ```typescript
+  interface ArtistDirectoryEntry {
+    id: string;
+    name: string;
+    handle: string;
+    email?: string;
+    profileImage?: string;
+    status: "verified" | "pending" | "unverified";
+    joinedAt?: string;
+    songCount?: number;
+    albumCount?: number;
+    totalEarnings?: number;
+  }
+  interface ArtistDirectoryResponse {
+    success: boolean;
+    data: ArtistDirectoryEntry[];
+    meta?: { page: number; limit: number; total: number; totalPages: number };
+  }
+  ```
+- **Notes**: the admin search box debounces its input (`useDebouncedValue`, 300 ms) so typing issues one request per pause, not per keystroke. `toArtistDirectoryEntries()` normalizes the response into a safe array.
 
-##### `queryAuditLog(filter?)`
-- Filtered slice. An empty `action` array means "no action restriction".
+### Server-only: Public Artist Profile (`app/src/lib/publicArtistProfile.ts`)
 
-##### `describeAuditEntry(entry)`
-- One-line sentence for a feed row; appends `— denied` for refusals.
+The public `/artist/[handle]` route is server-rendered so its metadata is real
+(issue #421). Because the shared axios client is browser-oriented, this module
+reads the profile with plain `fetch`.
 
-##### `exportAuditLogCsv(entries?)` / `exportAuditLogJson(entries?)`
-- Serialized exports. CSV cells are quoted, escaped, and leading `= + - @` are
-  neutralised so a member name cannot become a formula when the file is opened in
-  a spreadsheet.
-
-##### `clearAuditLog()`
-- Empties the trail (tests). Unlike email verification, the roster and the log are
-  per-workspace, so `clearSession()` does **not** clear them.
-
-#### Hook & component
-
-- `useAuditLog(filter?)` (`@/hooks/useAuditLog`) — live store-backed view.
-- `AuditTrailPanel` (`@/components/AuditTrailPanel`) — filter by action group and
-  outcome, export the filtered rows, newest-first list. Rendered on
-  `/dashboard/team`.
-
----
-
-### 18. Team Service (`teamService.ts`)
-
-Artist team / staff access management (#460): invites, role changes and removals
-for a multi-user artist workspace.
-
-Roles and permissions are **not** redefined here — the service consumes
-`ROLE_PERMISSION_TABLE` from `@/types/role`, and `roles:manage` (previously
-declared but unused) is what gates every mutation. The roster is a localStorage
-stand-in until `/api/v1/team` ships. Every accepted *and* refused mutation is
-written to the audit trail (#461).
-
-#### Types
-
-```typescript
-type TeamMemberStatus = "invited" | "active";
-interface TeamMember {
-  id: string; name: string; email: string; role: Role; status: TeamMemberStatus;
-  addedAt: number; addedBy: string; lastActiveAt?: number;
-}
-type WorkspaceOwner = AuditActor & { email: string };
-type TeamErrorCode =
-  | "forbidden" | "invalid_email" | "invalid_name" | "invalid_role"
-  | "duplicate_email" | "seats_exhausted" | "not_found" | "immutable_member";
-type TeamResult<T> = { ok: true; value: T } | { ok: false; error: TeamErrorCode; message: string };
-```
-
-Constants: `MAX_TEAM_SEATS` (8, counted including the owner), `ASSIGNABLE_ROLES`
-(`manager`, `viewer` — never `owner`), `OWNER_MEMBER_ID` (`"self"`).
-
-#### Functions
-
-##### `canManageTeam(role)` / `getTeamRestrictionReason(role)`
-- Permission check against `roles:manage`, and the copy shown on disabled controls.
-
-##### `listTeamMembers(owner, roster?)` / `getTeamRoster()` / `countSeatsUsed()`
-- Owner row first (derived from the session, never stored), then staff, newest
-  first. Malformed stored rows are skipped.
-
-##### `subscribeToTeamRoster(onChange)` / `getTeamRosterServerSnapshot()`
-- Store subscription for `useSyncExternalStore`.
-
-##### `inviteTeamMember(payload, actor): TeamResult<TeamMember>`
-- Validates name, email, assignable role, duplicate address (case-insensitive) and
-  seats; creates the row as `status: "invited"`.
-
-##### `updateTeamMemberRole(id, role, actor): TeamResult<TeamMember>`
-- Takes effect immediately. Refuses to change the owner row or grant `owner`;
-  records `viewer -> manager` style detail. Same-role calls succeed without
-  writing an audit entry.
-
-##### `removeTeamMember(id, actor): TeamResult<TeamMember>`
-- Audits as `member.removed` for someone who had access, `member.invite_revoked`
-  for an accept-alternative that never did.
-
-##### `acceptTeamInvitation(email): TeamResult<TeamMember>`
-- Flips an invite to `active` (a real backend does this through a signed link), and
-  records `member.joined`. Idempotent once active.
-
-##### `clearTeamRoster()`
-- Empties the roster (tests).
-
-#### Hook & page
-
-- `useTeam()` (`@/hooks/useTeam`) — `{ owner, staff, canManage, restrictionReason, seatsUsed, seatsRemaining }`. `staff` is the sorted roster minus the owner row.
-- `/dashboard/team` (`Team & staff`) — invite form, access table with per-row role
-  picker and remove action (owner only), and the `AuditTrailPanel` activity log.
+- **Endpoint**: `GET /artist/public/:handle` (`PUBLIC_ARTIST_ENDPOINTS.PROFILE`)
+- **Caching**: `next: { revalidate: 300 }`
+- **Returns**: `{ status: "ok", profile }` · `{ status: "not-found" }` · `{ status: "unavailable" }`, so the route can 404 only on a definitive miss and render a `noindex` shell when the API is down.
 
 ---
 
-### 19. Keyboard Shortcuts (`utils/keyboardShortcuts.ts`)
+## Caching Strategy
 
-Dashboard keyboard shortcuts (#462). This one is a helper module under `src/utils`
-rather than an API client: there is no backend to talk to, and keeping the
-definitions and the resolver free of React is what makes the sequence rules
-testable without a DOM.
+Dashboard reads are cached by React Query. `app/src/api/cachePolicy.ts` is the single source of truth:
 
-Two rules keep the shortcuts out of the rest of the app's way: nothing fires
-while a text field has focus, and nothing fires while ⌘, Ctrl or Alt is held — so
-`⌘K`, which `TopHeader` answers for the search box, is advertised but not owned
-here.
+| Tier | `staleTime` | Used by |
+|---|---|---|
+| `NONE` | 0 (refetch on every mount) | artist profile |
+| `SHORT` | 1 minute | overview KPIs, analytics, transactions, comments, merch orders |
+| `MEDIUM` | 2 minutes | recent activity, albums, fans engagement, events, merch |
+| `LONG` | 5 minutes | statistics, earnings, platform revenue (and the app-wide default) |
 
-#### Types
+- **Fresh** data renders straight from the cache with no network request; **stale** data is shown immediately while a fresh copy loads in the background. Unused queries are garbage-collected after 10 minutes (`queryClientInstance.ts`).
+- **Invalidation**: mutations invalidate the queries they affect. Finalizing a song upload refreshes the overview, statistics and recent-activity queries; creating an album also refreshes the albums list. Query keys live in `DASHBOARD_QUERY_KEYS` so a mutation can invalidate a query without importing the service that owns it.
+- **Session boundary**: `clearQueryCache()` runs after a successful login so one artist's cached data can never be shown to the next.
+- To add a new dashboard read, pick a tier in `DASHBOARD_CACHE`, add its key to `DASHBOARD_QUERY_KEYS`, and use both in the service hook.
 
-```typescript
-interface GoToShortcut { key: string; label: string; href: string; }
-interface KeyPress { key: string; meta?: boolean; ctrl?: boolean; alt?: boolean; }
-interface ShortcutState { awaitingPrefix: boolean; helpOpen: boolean; }
-type ShortcutEffect =
-  | { type: "navigate"; href: string; label: string }
-  | { type: "show-help" } | { type: "hide-help" }
-  | { type: "await-sequence" } | { type: "ignore" };
-```
+---
 
-#### Constants
+## Optimistic Updates
 
-- `GOTO_PREFIX` (`"g"`), `SHOW_HELP_KEY` (`"?"`), `SEQUENCE_TIMEOUT_MS` (2000).
-- `GOTO_SHORTCUTS` — the ten dashboard sections, one key each; `GENERAL_SHORTCUTS`
-  — the non-navigation rows shown in the list.
+`useOptimisticMutation` (`@/api/queryClient`) is a PUT/PATCH mutation that updates the UI before the server responds:
 
-#### Functions
+1. **On mutate** — cancels in-flight refetches of `queryKey`, snapshots the cache, writes the optimistic value (`applyOptimistic`) and runs `onOptimistic` for state that lives outside the cache.
+2. **On error** — restores the snapshot and runs the undo function `onOptimistic` returned, then calls `onError`.
+3. **On settle** — invalidates `queryKey` so the cache converges on the server's truth.
 
-##### `resolveKeyPress(press, state): ShortcutEffect`
-- Decides one keystroke given where the sequence stands. Unbound second keys
-  return `ignore`, which ends the sequence rather than letting a stale `g`
-  hijack the next press.
-
-##### `isEditableTarget(target)` / `normalizeKey(key)` / `keysFor(entry)`
-- Field focus check (including a contenteditable host and elements inside it),
-  case folding that rejects named keys such as `Escape`, and the two keystrokes
-  for a destination.
-
-#### Component
-
-- `DashboardShortcuts` (`@/components/DashboardShortcuts`) — mounted once by the
-  dashboard layout, so a half-typed sequence and the shortcut list survive moves
-  between sections. It only listens and applies effects; the `?` overlay renders
-  through the shared `Modal`.
+`trackService.useUpdateTrack` uses it for track edits in My Music: the new title appears instantly and reverts (with an error toast) if the save fails. Rollback restores only the edited track's fields, so unrelated reorders or edits made meanwhile are kept.
 
 ---
 

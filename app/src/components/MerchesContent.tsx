@@ -11,7 +11,9 @@ import useMerchService, { MerchItem, CreateMerchPayload } from "@/services/merch
 import { useRole } from "@/hooks/useRole";
 import ConfirmationDialog from "./shared/ConfirmationDialog";
 import EmptyState from "./shared/EmptyState";
+import { Skeleton } from "./shared/Skeleton";
 import { sanitize } from "@/utils/sanitize";
+import { getFormErrors, merchFormSchema } from "@/types/formValidation";
 
 interface MerchFormProps {
   initial?: Partial<MerchItem>;
@@ -27,6 +29,17 @@ const MERCH_FIELD_MAX_LENGTHS: Record<keyof CreateMerchPayload, number> = {
   time: 50,
   price: 20,
   image: 500,
+};
+
+const MERCH_REQUIRED_FIELDS: (keyof CreateMerchPayload)[] = ["title", "price"];
+
+const MERCH_FIELD_PLACEHOLDERS: Record<keyof CreateMerchPayload, string> = {
+  title: "Title",
+  detail: "Detail",
+  date: "DD-MM-YYYY",
+  time: "e.g. 18:30 or 6:30 PM",
+  price: "e.g. 25 or 25.50",
+  image: "Image URL (https://...)",
 };
 
 // Only show a running character count for fields long enough that users
@@ -47,8 +60,13 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
     image: initial?.image ?? "",
   });
 
-  const set = (key: keyof CreateMerchPayload) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const [errors, setErrors] = useState<Partial<Record<keyof CreateMerchPayload, string>>>({});
+
+  const set = (key: keyof CreateMerchPayload) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    // Clear a field's error as soon as the user edits it.
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
 
   const { restore, clearSavedData } = useAutoSave(
     "create-merch",
@@ -66,7 +84,11 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
   }, []);
 
   const handleSave = () => {
-    if (!form.title.trim() || !form.price.trim()) return;
+    const validationErrors = getFormErrors(merchFormSchema, form);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
     clearSavedData();
     onSave({ ...form, title: sanitize(form.title), detail: sanitize(form.detail) });
   };
@@ -95,14 +117,30 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
           const isNearLimit = value.length >= maxLength * 0.9;
           return (
             <div key={field} className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-[#A3A3A3] capitalize">{field}</label>
+              <label
+                htmlFor={`merch-${field}`}
+                className="text-xs font-medium text-[#A3A3A3] capitalize"
+              >
+                {field}
+                {MERCH_REQUIRED_FIELDS.includes(field) && (
+                  <span className="text-[#D2045B]"> *</span>
+                )}
+              </label>
               <input
+                id={`merch-${field}`}
                 value={value}
                 onChange={set(field)}
-                placeholder={field === "image" ? "Image URL" : field}
+                placeholder={MERCH_FIELD_PLACEHOLDERS[field]}
                 maxLength={maxLength}
-                className="rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-2 text-sm text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
+                aria-invalid={errors[field] ? "true" : "false"}
+                aria-describedby={errors[field] ? `merch-${field}-error` : undefined}
+                className={`rounded-lg border bg-[#111111] px-4 py-2 text-sm text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors[field] ? "border-red-500" : "border-[#2A2A2A]"}`}
               />
+              {errors[field] && (
+                <span id={`merch-${field}-error`} role="alert" className="text-xs text-red-500">
+                  {errors[field]}
+                </span>
+              )}
               {MERCH_FIELD_SHOW_COUNT[field] && isNearLimit && (
                 <span
                   className={`self-end text-xs ${value.length >= maxLength ? "text-red-500" : "text-yellow-500"}`}
@@ -117,7 +155,7 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
         <div className="flex gap-3 pt-2">
           <button
             onClick={handleSave}
-            disabled={isBusy || !form.title.trim() || !form.price.trim()}
+            disabled={isBusy}
             className="flex-1 rounded-lg bg-[#D2045B] hover:bg-[#B8043F] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2 text-sm transition-colors flex items-center justify-center gap-2"
           >
             {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -210,8 +248,21 @@ export default function MerchesContent() {
       </div>
 
       {isLoading && !featureFlags.useMockMerches ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-[#D2045B]" />
+        <div className="space-y-6" aria-busy="true">
+          <div role="status" aria-label="Loading merch" className="space-y-2">
+            <Skeleton className="h-4 w-24 rounded" />
+            <Skeleton className="h-9 w-56 rounded" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-28 rounded-3xl" />
+            ))}
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-64 rounded-3xl" />
+            ))}
+          </div>
         </div>
       ) : (
         <>

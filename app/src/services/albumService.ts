@@ -1,9 +1,14 @@
 import { ALBUM_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet, usePost } from "@/api/queryClient";
+import {
+  ALBUM_PUBLISHED_INVALIDATIONS,
+  DASHBOARD_CACHE,
+  DASHBOARD_QUERY_KEYS,
+} from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { AlbumCreateResponse, AlbumsResponse } from "@/types";
 
-export const ALBUMS_QUERY_KEY = ["get-artist-albums"];
+export const ALBUMS_QUERY_KEY = DASHBOARD_QUERY_KEYS.albums;
 
 const useAlbumServices = () => {
   const handleSuccess = useHandleSuccess();
@@ -19,7 +24,7 @@ const useAlbumServices = () => {
   const useGetAlbums = (enabled: boolean = true) => {
     return useGet<AlbumsResponse>(ALBUMS_QUERY_KEY, ALBUM_ENDPOINTS.LIST, {
       enabled,
-      staleTime: 1000 * 60 * 2,
+      staleTime: DASHBOARD_CACHE.albums,
     });
   };
 
@@ -38,7 +43,8 @@ const useAlbumServices = () => {
       onError(error: Error) {
         handleError(error.message || "Failed to upload album.");
       },
-      invalidateQueries: [ALBUMS_QUERY_KEY],
+      // A new album changes the albums list and the overview/statistics/activity summaries.
+      invalidateQueries: [...ALBUM_PUBLISHED_INVALIDATIONS],
     });
   };
 

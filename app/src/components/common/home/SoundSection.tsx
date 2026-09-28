@@ -31,7 +31,7 @@ export default function SoundsSection() {
     <section className="text-white w-4/5 mx-auto py-5">
       <div className="flex justify-between items-center mb-5">
         <h1 className="font-semibold text-[#A3A3A3] text-4xl leading-[100%] tracking-[0%] capitalize font-poppins">
-          Sounds <span className="text-white">You Shouldn't </span> Miss
+          Sounds <span className="text-white">You Shouldn&apos;t </span> Miss
         </h1>
         <Link
           href="#"

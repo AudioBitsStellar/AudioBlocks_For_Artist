@@ -41,6 +41,30 @@ interface HorizonTransactionsPage {
   _embedded: { records: HorizonTransaction[] };
 }
 
+/** One ledger operation. Horizon flattens the operation types into a single
+ *  record shape, so only the fields common to all of them are declared. */
+export interface HorizonOperation {
+  id: string;
+  paging_token?: string;
+  transaction_hash: string;
+  transaction_successful: boolean;
+  source_account: string;
+  /** e.g. `"create_contract_transaction"`, `"payment"`, `"account_credited"`. */
+  type: string;
+  type_i: number;
+  created_at: string;
+  asset_type?: string;
+  asset_code?: string;
+  asset_issuer?: string;
+  from?: string;
+  to?: string;
+  amount?: string;
+}
+
+interface HorizonOperationsPage {
+  _embedded: { records: HorizonOperation[] };
+}
+
 /** Per-operation fee percentiles, in stroops, as returned by Horizon's `/fee_stats`. */
 export interface HorizonFeeStats {
   fee_charged: {
@@ -89,10 +113,37 @@ export async function fetchAccountTransactions(
   return page._embedded?.records ?? [];
 }
 
+/**
+ * Fetches the most recent operations that touched an account, newest first.
+ * Operations — not transactions — are what an activity breakdown is built
+ * from: one transaction can carry many of them. Returns `[]` for an account
+ * that isn't on-chain yet.
+ */
+export async function fetchAccountOperations(
+  address: string,
+  limit = 50,
+): Promise<HorizonOperation[]> {
+  const res = await fetch(
+    `${horizonBaseUrl()}/accounts/${address}/operations?order=desc&limit=${limit}`,
+  );
+  if (res.status === 404) return [];
+  if (!res.ok) {
+    throw new Error(`Horizon returned ${res.status} fetching operations for ${address}`);
+  }
+  const page = (await res.json()) as HorizonOperationsPage;
+  return page._embedded?.records ?? [];
+}
+
 /** Builds a stellar.expert explorer link for a transaction hash, network-aware. */
 export function explorerTxUrl(hash: string): string {
   const network = getActiveNetworkId() === "testnet" ? "testnet" : "public";
   return `https://stellar.expert/explorer/${network}/tx/${hash}`;
+}
+
+/** Builds a stellar.expert explorer link for an account, network-aware. */
+export function explorerAccountUrl(address: string): string {
+  const network = getActiveNetworkId() === "testnet" ? "testnet" : "public";
+  return `https://stellar.expert/explorer/${network}/account/${address}`;
 }
 
 /** Fetches Horizon's live network-wide fee percentiles (in stroops per operation). */

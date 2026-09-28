@@ -22,19 +22,34 @@ const SummaryCard = ({
   trend?: number;
   trendColor?: string;
 }) => (
-  <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6">
+  <div
+    className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6"
+    role="region"
+    aria-label={`${label}: ${value}${unit || ""}`}
+  >
     <div className="flex items-start justify-between mb-4">
       <div className="flex-1">
         <p className="text-gray-400 text-sm font-medium">{label}</p>
         <div className="flex items-baseline gap-2 mt-2">
-          <p className="text-white text-3xl font-bold">{value}</p>
-          {unit && <span className="text-gray-500 text-sm">{unit}</span>}
+          <p className="text-white text-3xl font-bold" aria-label={`${label} value: ${value}`}>
+            {value}
+          </p>
+          {unit && (
+            <span className="text-gray-500 text-sm" aria-label={`Unit: ${unit}`}>
+              {unit}
+            </span>
+          )}
         </div>
       </div>
-      <div className="text-pink-500">{Icon}</div>
+      <div className="text-pink-500" aria-hidden="true">
+        {Icon}
+      </div>
     </div>
     {trend !== undefined && (
-      <div className={`text-sm font-medium ${trendColor || "text-green-500"}`}>
+      <div
+        className={`text-sm font-medium ${trendColor || "text-green-500"}`}
+        aria-label={`Trend: ${trend > 0 ? "+" : ""}${trend}% from last period`}
+      >
         {trend > 0 ? "+" : ""}
         {trend}% from last period
       </div>

@@ -17,7 +17,7 @@ const Hero = () => {
       <div className="w-4/5 mx-auto flex flex-col-reverse md:flex-row items-center justify-between">
         <div className="">
           <h1 className="text-3xl md:text-4xl font-extrabold leading-tight mb-6">
-            Discover Tomorrow's <br className="hidden md:block" /> Music Today
+            Discover Tomorrow&apos;s <br className="hidden md:block" /> Music Today
           </h1>
           <p className="text-[#DACFD3] font-normal text-base md:text-lg leading-[1.6] mb-8">
             Stream authentic, ad-free music from emerging voices. <br className="hidden md:block" />

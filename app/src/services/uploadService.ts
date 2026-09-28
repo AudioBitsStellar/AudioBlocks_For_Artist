@@ -8,7 +8,7 @@ import {
   UploadSong,
 } from "@/types";
 import { UploadCoverResponse as UploadCoverResponseType } from "@/types/api";
-import { OVERVIEW_QUERY_KEY } from "@/services/overviewService";
+import { SONG_PUBLISHED_INVALIDATIONS } from "@/api/cachePolicy";
 
 const useUploadServices = () => {
   const handleSuccess = useHandleSuccess();
@@ -53,8 +53,8 @@ const useUploadServices = () => {
   /**
    * Finalizes a chunked song upload once all chunks and the cover art have
    * been uploaded, registering the song with its metadata (title,
-   * description, genre, composers). Invalidates the overview cache
-   * (issue #121) since a new song changes its KPIs.
+   * description, genre, composers). Invalidates the overview, statistics and
+   * recent-activity caches (issue #121) since a new song changes them.
    *
    * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with `{ fileId, totalChunks, title, description, genre, composers, coverArtPath }`; resolves to an `UploadSong`.
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
@@ -67,10 +67,11 @@ const useUploadServices = () => {
       onError(error: Error) {
         handleError(error.message || "Failed to finalize upload.");
       },
-      // A newly-published song changes songsPublished/totalEarnings on
-      // the overview dashboard (issue #121) — bypass its cache so the
-      // artist doesn't see stale KPIs after uploading.
-      invalidateQueries: [OVERVIEW_QUERY_KEY],
+      // A newly-published song changes songsPublished/totalEarnings on the
+      // overview dashboard (issue #121), plus the statistics and recent
+      // activity feeds — bypass their caches so the artist doesn't see
+      // stale numbers after uploading.
+      invalidateQueries: [...SONG_PUBLISHED_INVALIDATIONS],
     });
   };
 

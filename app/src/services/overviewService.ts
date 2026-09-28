@@ -1,5 +1,6 @@
 import { OVERVIEW_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
+import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { OverviewResponse, StatisticsResponse, RecentActivityResponse } from "@/types";
 
 /**
@@ -8,16 +9,13 @@ import { OverviewResponse, StatisticsResponse, RecentActivityResponse } from "@/
  * a song upload, see `uploadService.ts`) can invalidate it via
  * `queryClient.invalidateQueries({ queryKey: OVERVIEW_QUERY_KEY })`.
  */
-export const OVERVIEW_QUERY_KEY = ["get-artist-overview"];
-
-/** How long a fetched overview response is considered fresh before a background refetch is triggered. */
-const OVERVIEW_CACHE_TTL_MS = 1000 * 60; // 60s
+export const OVERVIEW_QUERY_KEY = DASHBOARD_QUERY_KEYS.overview;
 
 const useOverviewServices = () => {
   /**
    * Fetches the artist overview KPI (earnings summary, recent activity, stats).
    *
-   * Cached for `OVERVIEW_CACHE_TTL_MS`: within that window, revisiting the
+   * Cached per `DASHBOARD_CACHE.overview` (60s): within that window, revisiting the
    * Overview tab shows the cached data instantly with no network request.
    * Once stale, cached data is still shown immediately while a fresh copy is
    * fetched in the background. Call the returned `refetch` to force a fresh
@@ -30,28 +28,28 @@ const useOverviewServices = () => {
   const useGetOverviewKpi = (enabled: boolean = true) => {
     return useGet<OverviewResponse>(OVERVIEW_QUERY_KEY, OVERVIEW_ENDPOINTS.GET_OVERVIEW, {
       enabled,
-      staleTime: OVERVIEW_CACHE_TTL_MS,
+      staleTime: DASHBOARD_CACHE.overview,
     });
   };
 
   const useGetStatistics = (enabled: boolean = true) => {
     return useGet<StatisticsResponse>(
-      ["get-artist-statistics"],
+      DASHBOARD_QUERY_KEYS.statistics,
       OVERVIEW_ENDPOINTS.GET_STATISTICS,
       {
         enabled,
-        staleTime: 1000 * 60 * 5,
+        staleTime: DASHBOARD_CACHE.statistics,
       }
     );
   };
 
   const useGetRecentActivity = (enabled: boolean = true) => {
     return useGet<RecentActivityResponse>(
-      ["get-artist-recent-activity"],
+      DASHBOARD_QUERY_KEYS.recentActivity,
       OVERVIEW_ENDPOINTS.GET_RECENT_ACTIVITY,
       {
         enabled,
-        staleTime: 1000 * 60 * 2,
+        staleTime: DASHBOARD_CACHE.recentActivity,
       }
     );
   };
