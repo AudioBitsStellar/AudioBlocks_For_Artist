@@ -74,6 +74,7 @@ everything — auth, profile, uploads — and to the
 | `/dashboard/events`       | Artist events management                                                                        |
 | `/dashboard/merches`      | Merchandise management                                                                          |
 | `/dashboard/profile`      | Profile editor, notification settings, and the **On-chain** tab (connect wallet + mint profile) |
+| `/dashboard/changelog`    | Release notes, rendered from the repository's `CHANGELOG.md`                                    |
 
 ## Authentication
 
@@ -165,6 +166,37 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api   # AudioBlock_Backend base U
 > No `.env.local` ships by default — without this variable set, the app
 > falls back to `http://localhost:3000/api`, which is almost never the
 > backend's actual port. Set this explicitly.
+
+Two more optional variables are relevant to the Artist Portal surfaces:
+
+| Variable                    | Effect when unset                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUBGRAPH_URL`  | The analytics dashboard omits its on-chain plays/sales section entirely — no request, no error state.   |
+| `NEXT_PUBLIC_FEATURE_FLAGS` | Rollout flags fall back to their configured percentage, e.g. `artistOnchainAnalytics=true` to force on. |
+
+### Feature flags and gradual rollout
+
+Artist-facing features that aren't ready for every artist go through the
+rollout flags in `src/lib/featureFlags.ts` rather than a bare conditional:
+
+- `FEATURE_FLAGS` holds each flag's `rolloutPercentage` and `allowlist`.
+  The percentage buckets on a hash of `flag:subject`, so an artist is in or
+  out consistently instead of flickering between visits.
+- `useFeatureFlag(name, subject)` is how a component asks. Pass the identity
+  the feature is rolled out to (an on-chain address, a user id) and leave it
+  `null` while that identity is still resolving — an unknown subject reads as
+  off, so the feature never appears and then disappears.
+- Precedence, highest first: a per-browser override, then
+  `NEXT_PUBLIC_FEATURE_FLAGS`, then the allowlist, then the percentage.
+- To see a flag on your own browser without changing the rollout — useful on
+  a preview deployment — write the override directly:
+  `localStorage.setItem("audioblocks:feature-flags:v1", JSON.stringify({ artistOnchainAnalytics: true }))`.
+  `setFeatureFlagOverride()` is the same thing for code that wants the mounted
+  components to update immediately.
+
+Adding a flag means one entry in `FEATURE_FLAGS`, one name in the
+`FeatureFlagName` union, and a call site. Removing it means deleting the
+entry and the branch it guarded.
 
 ## Getting Started
 

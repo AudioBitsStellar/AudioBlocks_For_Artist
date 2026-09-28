@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Soroban contract error handling** (#288): `translateContractError()` maps raw contract errors to user-friendly messages with categories, severity levels, and actionable resolution steps. Covers auth, network, contract, validation, and insufficient balance errors.
 - **IPFS metadata viewer** (#287): `IPFSMetadataViewer` component fetches and displays metadata stored on IPFS for minted songs and artists. Supports multiple IPFS gateways, formatted and raw JSON views, loading/error states, and responsive layout.
 - **CHANGELOG.md** (#276): Version history tracking.
+- **On-chain plays and sales in analytics** (#467): `lib/subgraph.ts` reads daily per-artist rollups from the Artist Portal subgraph (dependency-free GraphQL-over-POST, 8s timeout, no retry) and `services/onchainAnalyticsService.ts` caches them under a shared `onchainStats` key. A new section at the bottom of the analytics dashboard shows plays, sales and sale volume, and labels how far behind the indexer is instead of presenting lagging totals as live. Unset `NEXT_PUBLIC_SUBGRAPH_URL` and the section quietly disappears.
+- **Release notes page** (#468): `/dashboard/changelog` renders this file, parsed at build time by `lib/changelog.ts` into a timeline grouped by change type (`ChangelogTimeline`), linked from the sidebar. Single source of truth: a changelog entry is a release note, and the page degrades to "not available for this deployment" rather than 500ing when the file isn't shipped.
+- **Rollout feature flags** (#469): `FEATURE_FLAGS` plus `isFeatureEnabled()` in `lib/featureFlags.ts` gate a feature per artist by allowlist and a stable percentage bucket, overridable per deployment via `NEXT_PUBLIC_FEATURE_FLAGS` and per browser through `setFeatureFlagOverride` (localStorage, `audioblocks:feature-flags:v1`). `useFeatureFlag` applies the stored override after mount so client and server markup agree. The on-chain analytics section is the first flag, `artistOnchainAnalytics`, at 0%.
+
+### Changed
+
+- **PR preview deployments** (#472): `.github/workflows/preview.yml` installs with `npm ci --legacy-peer-deps` and an explicit Node 20 (the unguarded install failed on the Sentry/Next peer conflict, so no preview was ever produced), skips draft and fork PRs instead of failing on secrets Actions cannot read, cancels superseded deploys per PR, and publishes the preview URL to the job summary as well as the PR comment. Rationale and the maintainer setup steps are in `docs/adr/0005-pr-preview-deployments.md`.
 
 ## [0.1.0] - 2026-08-24
 

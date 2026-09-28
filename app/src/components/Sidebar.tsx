@@ -33,6 +33,7 @@ const navItems = [
   { name: "Collaborators", icon: Users, href: "/dashboard/collaborators" },
   { name: "Moderation", icon: ShieldAlert, href: "/dashboard/moderation" },
   { name: "Premium", icon: Star, href: "/dashboard/premium" },
+  { name: "Release notes", icon: Megaphone, href: "/dashboard/changelog" },
   { name: "Settings", icon: SettingsIcon, href: "/dashboard/settings/notifications" },
 ];
 
