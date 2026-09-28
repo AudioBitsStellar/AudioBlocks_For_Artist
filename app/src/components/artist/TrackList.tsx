@@ -1,6 +1,12 @@
 import React from 'react';
 
-export function TrackList({ tracks, onUnarchive }: { tracks: any[], onUnarchive: (id: string) => void }) {
+export interface TrackListItem {
+  id: string;
+  title?: string;
+  archived?: boolean;
+}
+
+export function TrackList({ tracks, onUnarchive }: { tracks: TrackListItem[], onUnarchive: (id: string) => void }) {
   return (
     <div className="space-y-4">
       {tracks.map(track => (

@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 
-export function ProfilePreview({ artistData }: { artistData: any }) {
+export interface ArtistProfileData {
+  name?: string;
+  bio?: string;
+}
+
+export function ProfilePreview({ artistData }: { artistData: ArtistProfileData }) {
   const [isPreview, setIsPreview] = useState(false);
 
   return (
