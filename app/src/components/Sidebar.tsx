@@ -56,9 +56,24 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   // Read after mount: the session token lives in cookies/localStorage, so the
   // admin role cannot be resolved during SSR.
   const [isAdmin, setIsAdmin] = useState(false);
+  // Loading/error state for the profile-derived bits of the sidebar (admin
+  // role, unread count). Navigation links below never depend on this — they
+  // render immediately either way (#136).
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadSidebarData = () => {
+    try {
+      setIsAdmin(isAdminSession());
+      setUnreadCount(getTotalUnreadCount());
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
+  };
 
   useEffect(() => {
-    setIsAdmin(isAdminSession());
+    loadSidebarData();
   }, []);
 
   const visibleNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
@@ -145,11 +160,35 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           </Link>
         </div>
 
+        {status === "loading" && (
+          <div className="space-y-2 px-4 pt-2" aria-hidden="true">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-9 animate-pulse rounded-lg bg-surface-raised" />
+            ))}
+          </div>
+        )}
+
+        {status === "error" && (
+          <div
+            role="alert"
+            className="mx-4 mt-2 flex items-center justify-between gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-400"
+          >
+            <span>Couldn&apos;t load your profile info.</span>
+            <button
+              type="button"
+              onClick={loadSidebarData}
+              className="cursor-pointer rounded px-2 py-1 font-medium underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <nav className="flex-1 space-y-1 overflow-y-auto p-4" aria-label="Main navigation">
           {visibleNavItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-            const unread = item.href === "/dashboard/messages" ? getTotalUnreadCount() : 0;
+            const unread = item.href === "/dashboard/messages" ? unreadCount : 0;
 
             return (
               <Link
