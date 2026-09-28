@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   estimateOperationFeeXlm,
+  explorerAccountUrl,
   explorerTxUrl,
   fetchAccountBalances,
+  fetchAccountOperations,
   fetchAccountTransactions,
   fetchFeeStats,
   fetchXlmBalance,
@@ -85,6 +87,35 @@ describe("lib/horizon", () => {
     });
   });
 
+  describe("fetchAccountOperations (#466)", () => {
+    it("requests the newest operations for the account", async () => {
+      const record = { id: "1", type: "payment", created_at: "2026-09-20T11:00:00Z" };
+      const fetchMock = mockFetchOnce({ _embedded: { records: [record] } });
+
+      const operations = await fetchAccountOperations(ADDRESS, 200);
+
+      expect(operations).toEqual([record]);
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${RPC_URL}/accounts/${ADDRESS}/operations?order=desc&limit=200`
+      );
+    });
+
+    it("returns an empty array for an unfunded account (404)", async () => {
+      mockFetchOnce(null, false, 404);
+      await expect(fetchAccountOperations(ADDRESS)).resolves.toEqual([]);
+    });
+
+    it("returns an empty array when Horizon omits the embedded page", async () => {
+      mockFetchOnce({});
+      await expect(fetchAccountOperations(ADDRESS)).resolves.toEqual([]);
+    });
+
+    it("throws on a non-404 Horizon error", async () => {
+      mockFetchOnce(null, false, 500);
+      await expect(fetchAccountOperations(ADDRESS)).rejects.toThrow(/500/);
+    });
+  });
+
   describe("explorerTxUrl", () => {
     it("links to the testnet explorer when the passphrase mentions Test", () => {
       process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
@@ -97,6 +128,19 @@ describe("lib/horizon", () => {
       process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE =
         "Public Global Stellar Network ; September 2015";
       expect(explorerTxUrl("HASH123")).toBe("https://stellar.expert/explorer/public/tx/HASH123");
+    });
+
+    it("builds network-aware account links for the stats panel", () => {
+      process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+      expect(explorerAccountUrl("GABC")).toBe(
+        "https://stellar.expert/explorer/testnet/account/GABC"
+      );
+
+      process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE =
+        "Public Global Stellar Network ; September 2015";
+      expect(explorerAccountUrl("GABC")).toBe(
+        "https://stellar.expert/explorer/public/account/GABC"
+      );
     });
   });
 

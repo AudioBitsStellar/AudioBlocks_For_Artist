@@ -11,6 +11,10 @@
    every variable atomically, repainting the whole UI without component
    changes. See app/src/theme/colors.ts and app/src/theme/README.md. */
 
+/* Token values below are the documented brand palette — the single source of
+   truth shared with `app/src/theme/colors.ts`, `app/src/theme/README.md` and
+   `docs/theme-tokens.md`. Keep the three in sync (see
+   `src/__tests__/themeTokens.test.ts`, which fails if they drift). */
 :root {
   --background: #ffffff;
   --foreground: #111111;
@@ -27,17 +31,17 @@
   --color-surface-sunken: #f0f0f0;
 
   --color-text: #111111;
-  --color-text-muted: #595959;
-  --color-text-subtle: #595959;
+  --color-text-muted: #6f6f6f;
+  --color-text-subtle: #9ca3af;
   --color-text-inverted: #ffffff;
 
-  --color-border: #d4d4d4;
-  --color-border-subtle: #e5e5e5;
+  --color-border: #e5e5e5;
+  --color-border-subtle: #f0f0f0;
 
-  --color-success: #15803d;
-  --color-warning: #a16207;
-  --color-error: #dc2626;
-  --color-info: #2563eb;
+  --color-success: #3ddc84;
+  --color-warning: #ffb020;
+  --color-error: #ff5252;
+  --color-info: #4f8dff;
 }
 
 .dark {
@@ -56,17 +60,46 @@
   --color-surface-sunken: #0f0f0f;
 
   --color-text: #ffffff;
-  --color-text-muted: #b3b3b3;
-  --color-text-subtle: #a3a3a3;
+  --color-text-muted: #a3a3a3;
+  --color-text-subtle: #6f6f6f;
   --color-text-inverted: #000000;
 
-  --color-border: #404040;
-  --color-border-subtle: #2a2a2a;
+  --color-border: #2a2a2a;
+  --color-border-subtle: #1f1f1f;
 
-  --color-success: #4ade80;
-  --color-warning: #fbbf24;
-  --color-error: #f87171;
-  --color-info: #60a5fa;
+  --color-success: #3ddc84;
+  --color-warning: #ffb020;
+  --color-error: #ff7b7b;
+  --color-info: #4f8dff;
+}
+
+/* ─── Short-name aliases ───────────────────────────────────────────────────
+   `NotificationBell`, `SearchModal` and `TopHeader` reference the tokens by
+   their short names (`var(--primary)`, `var(--text-muted)`) rather than
+   `--color-*`. Those names were never declared anywhere, so every one of
+   those styles resolved to nothing: the dropdowns rendered with no brand
+   colour and ignored the light/dark toggle. Aliasing them here against the
+   token values — which `.dark` redeclares on the same `<html>` element —
+   makes every short reference theme-aware without rewriting the call sites. */
+:root {
+  --primary: var(--color-primary);
+  --primary-hover: var(--color-primary-hover);
+  --primary-contrast: var(--color-primary-contrast);
+  --secondary: var(--color-secondary);
+  --secondary-contrast: var(--color-secondary-contrast);
+  --surface: var(--color-surface);
+  --surface-raised: var(--color-surface-raised);
+  --surface-sunken: var(--color-surface-sunken);
+  --text: var(--color-text);
+  --text-muted: var(--color-text-muted);
+  --text-subtle: var(--color-text-subtle);
+  --text-inverted: var(--color-text-inverted);
+  --border: var(--color-border);
+  --border-subtle: var(--color-border-subtle);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
+  --error: var(--color-error);
+  --info: var(--color-info);
 }
 
 /* Tailwind v4: register the tokens as theme colors so `bg-primary`,
@@ -86,6 +119,10 @@
   --color-text-muted: var(--color-text-muted);
   --color-text-subtle: var(--color-text-subtle);
   --color-text-inverted: var(--color-text-inverted);
+  /* `border-border` is used across the dashboard but only `--color-border-default`
+     was registered here, so Tailwind never generated the class and those
+     elements had no border colour. Register both spellings. */
+  --color-border: var(--color-border);
   --color-border-default: var(--color-border);
   --color-border-subtle: var(--color-border-subtle);
   --color-success: var(--color-success);
@@ -106,23 +143,24 @@ body {
 
 /* ─── Scrollbar / utility classes preserved from original baseline ──────── */
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar — follows the active theme instead of being pinned to the
+   original dark-only hex values. */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #000000;
+  background: var(--color-surface-sunken);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: var(--color-border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: var(--color-text-subtle);
 }
 
 /* Hide scrollbar for album container */

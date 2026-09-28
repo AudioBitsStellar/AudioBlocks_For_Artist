@@ -57,7 +57,7 @@ export default function DashboardCustomizationPanel() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 rounded-full border border-[#2E2E2E] bg-[#111111] px-4 py-2 text-sm font-medium text-white transition-colors hover:border-[#885FA8]"
+        className="flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:border-secondary"
         aria-label="Customize dashboard"
       >
         <Settings className="h-4 w-4" />
@@ -70,12 +70,12 @@ export default function DashboardCustomizationPanel() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
-          <div className="relative w-full max-w-sm bg-[#161616] border-l border-[#2A2A2A] overflow-y-auto">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#2A2A2A] bg-[#161616] px-6 py-4">
-              <h2 className="text-lg font-semibold text-white">Customize Dashboard</h2>
+          <div className="relative w-full max-w-sm bg-surface border-l border-border-subtle overflow-y-auto">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border-subtle bg-surface px-6 py-4">
+              <h2 className="text-lg font-semibold text-text">Customize Dashboard</h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg p-1 text-[#A3A3A3] hover:text-white"
+                className="rounded-lg p-1 text-text-muted hover:text-text"
                 aria-label="Close customization panel"
               >
                 <X className="h-5 w-5" />
@@ -86,10 +86,10 @@ export default function DashboardCustomizationPanel() {
               {/* Widget Visibility & Order */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4 text-[#A3A3A3]" />
-                  <h3 className="text-sm font-semibold text-white">Widgets</h3>
+                  <LayoutGrid className="h-4 w-4 text-text-muted" />
+                  <h3 className="text-sm font-semibold text-text">Widgets</h3>
                 </div>
-                <p className="text-xs text-[#6F6F6F]">
+                <p className="text-xs text-text-subtle">
                   Toggle visibility or drag to reorder dashboard sections.
                 </p>
                 <div className="space-y-1">
@@ -102,18 +102,18 @@ export default function DashboardCustomizationPanel() {
                       onDragEnd={handleDragEnd}
                       className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors cursor-grab active:cursor-grabbing ${
                         dragIndex === index
-                          ? "border-[#D2045B] bg-[#D2045B]/10"
-                          : "border-[#1F1F1F] bg-[#111111] hover:border-[#2E2E2E]"
+                          ? "border-primary bg-primary/10"
+                          : "border-border-subtle bg-surface hover:border-border"
                       }`}
                     >
-                      <GripVertical className="h-4 w-4 text-[#6F6F6F] flex-shrink-0" />
-                      <span className="flex-1 text-sm text-white">{widget.label}</span>
+                      <GripVertical className="h-4 w-4 text-text-subtle flex-shrink-0" />
+                      <span className="flex-1 text-sm text-text">{widget.label}</span>
                       <button
                         onClick={() => toggleWidget(widget.id)}
                         className={`flex-shrink-0 rounded-full p-1.5 transition-colors ${
                           widget.visible
-                            ? "text-green-400 hover:bg-green-400/10"
-                            : "text-[#6F6F6F] hover:bg-[#222]"
+                            ? "text-success hover:bg-success/10"
+                            : "text-text-subtle hover:bg-surface-raised"
                         }`}
                         aria-label={`${widget.visible ? "Hide" : "Show"} ${widget.label}`}
                       >
@@ -127,13 +127,13 @@ export default function DashboardCustomizationPanel() {
               {/* Theme */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-[#A3A3A3]" />
-                  <h3 className="text-sm font-semibold text-white">Theme</h3>
+                  <Palette className="h-4 w-4 text-text-muted" />
+                  <h3 className="text-sm font-semibold text-text">Theme</h3>
                 </div>
 
                 {/* Accent Color */}
                 <div className="space-y-2">
-                  <label className="text-xs text-[#A3A3A3]">Accent Color</label>
+                  <label className="text-xs text-text-muted">Accent Color</label>
                   <div className="flex gap-2">
                     {ACCENT_COLORS.map((c) => (
                       <button
@@ -153,7 +153,7 @@ export default function DashboardCustomizationPanel() {
 
                 {/* Card Style */}
                 <div className="space-y-2">
-                  <label className="text-xs text-[#A3A3A3]">Card Density</label>
+                  <label className="text-xs text-text-muted">Card Density</label>
                   <div className="flex gap-2">
                     {CARD_STYLES.map((s) => (
                       <button
@@ -161,8 +161,8 @@ export default function DashboardCustomizationPanel() {
                         onClick={() => setTheme({ cardStyle: s.value })}
                         className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
                           theme.cardStyle === s.value
-                            ? "bg-[#D2045B] text-white"
-                            : "bg-[#222] text-[#A3A3A3] hover:text-white"
+                            ? "bg-primary text-primary-contrast"
+                            : "bg-surface-raised text-text-muted hover:text-text"
                         }`}
                       >
                         {s.label}
@@ -173,11 +173,11 @@ export default function DashboardCustomizationPanel() {
 
                 {/* Show Metrics */}
                 <div className="flex items-center justify-between">
-                  <label className="text-xs text-[#A3A3A3]">Show KPI Metrics</label>
+                  <label className="text-xs text-text-muted">Show KPI Metrics</label>
                   <button
                     onClick={() => setTheme({ showMetrics: !theme.showMetrics })}
                     className={`relative h-5 w-9 rounded-full transition-colors ${
-                      theme.showMetrics ? "bg-[#D2045B]" : "bg-[#333]"
+                      theme.showMetrics ? "bg-primary" : "bg-surface-raised"
                     }`}
                   >
                     <div
@@ -192,7 +192,7 @@ export default function DashboardCustomizationPanel() {
               {/* Reset */}
               <button
                 onClick={resetToDefaults}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#2E2E2E] px-4 py-3 text-sm font-medium text-[#A3A3A3] transition-colors hover:border-red-500 hover:text-red-400"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium text-text-muted transition-colors hover:border-error hover:text-error"
               >
                 <RotateCcw className="h-4 w-4" />
                 Reset to Defaults

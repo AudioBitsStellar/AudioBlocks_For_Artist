@@ -10,6 +10,11 @@ import {
   type NotificationEventKey,
   type NotificationPreferences,
 } from "@/services/notificationPreferences";
+import {
+  MOCK_QUALITY_CHECKS,
+  toArtistNotification,
+  useQualityCheckNotifications,
+} from "@/services/qualityCheckService";
 
 /** An in-app notification about something that happened to the artist. */
 export interface ArtistNotification {
@@ -29,7 +34,7 @@ const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
 
-export const MOCK_NOTIFICATIONS: ArtistNotification[] = [
+const BASE_MOCK_NOTIFICATIONS: ArtistNotification[] = [
   {
     id: "notif_1",
     kind: "newFan",
@@ -76,6 +81,16 @@ export const MOCK_NOTIFICATIONS: ArtistNotification[] = [
   },
 ];
 
+/**
+ * The demo feed: the hand-written events above plus one notification per mock
+ * AI quality-check result, so the bell shows the #465 kinds in mock mode
+ * without a backend.
+ */
+export const MOCK_NOTIFICATIONS: ArtistNotification[] = [
+  ...BASE_MOCK_NOTIFICATIONS,
+  ...MOCK_QUALITY_CHECKS.map(toArtistNotification),
+];
+
 /** Marks a single notification as read without mutating the input. */
 export function markNotificationRead(
   notifications: ArtistNotification[],
@@ -97,6 +112,20 @@ export function filterByPreferences(
   prefs: NotificationPreferences
 ): ArtistNotification[] {
   return notifications.filter((n) => prefs[n.kind]?.inApp ?? true);
+}
+
+/**
+ * Combines two lists by notification id, with `overrides` winning a clash —
+ * a quality check the artist just re-ran replaces the seeded entry for the
+ * same song instead of appearing twice.
+ */
+export function mergeById(
+  base: ArtistNotification[],
+  overrides: ArtistNotification[]
+): ArtistNotification[] {
+  const merged = new Map(base.map((n) => [n.id, n]));
+  for (const n of overrides) merged.set(n.id, n);
+  return [...merged.values()];
 }
 
 /** Newest first. */
@@ -124,6 +153,10 @@ const subscribeToStorage = (onChange: () => void) => {
  * With mock data enabled (`NEXT_PUBLIC_USE_MOCK_DATA=true`) the list comes from
  * `MOCK_NOTIFICATIONS` and read state is kept in local state instead of
  * calling the API.
+ *
+ * AI quality-check results (#465) are merged in from localStorage on top of
+ * whichever source is active — the notifications endpoint doesn't serve them
+ * until the checker backend exists.
  */
 export function useNotifications() {
   const handleError = useHandleError();
@@ -150,10 +183,17 @@ export function useNotifications() {
   );
 
   const source = useMock ? mockNotifications : query.data;
+  // Quality checks the artist recorded in this browser (#465). They arrive
+  // from localStorage rather than the notifications endpoint, which doesn't
+  // serve them until the checker backend exists.
+  const recordedChecks = useQualityCheckNotifications();
 
   const notifications = useMemo(
-    () => sortByNewest(filterByPreferences(source ?? [], preferences)),
-    [source, preferences]
+    () =>
+      sortByNewest(
+        filterByPreferences(mergeById(source ?? [], recordedChecks), preferences)
+      ),
+    [source, recordedChecks, preferences]
   );
   const unreadCount = notifications.filter((n) => !n.read).length;
 

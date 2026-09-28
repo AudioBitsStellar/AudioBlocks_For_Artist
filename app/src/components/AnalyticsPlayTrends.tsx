@@ -1,6 +1,7 @@
 "use client";
 
 import { PlayTrendData } from "@/services/analyticsService";
+import { colorTokens } from "@/theme/colors";
 import {
   LineChart,
   Line,
@@ -11,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useState } from "react";
+import { analytics } from "@/lib/analytics";
 
 interface AnalyticsPlayTrendsProps {
   data: PlayTrendData[];
@@ -28,9 +30,9 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknow
 
   const data = payload[0] as { payload: PlayTrendData };
   return (
-    <div className="bg-[#1f2622] border border-[#2d3d2d] rounded p-3">
-      <p className="text-gray-300 text-sm">{data.payload.date}</p>
-      <p className="text-pink-500 font-semibold">{data.payload.plays.toLocaleString()} plays</p>
+    <div className="bg-surface border border-border rounded p-3">
+      <p className="text-text-muted text-sm">{data.payload.date}</p>
+      <p className="text-primary font-semibold">{data.payload.plays.toLocaleString()} plays</p>
     </div>
   );
 };
@@ -63,19 +65,22 @@ export default function AnalyticsPlayTrends({
     }
   };
 
+  const periodButtonBase =
+    "px-4 py-2 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface";
+  const periodButtonClass = (active: boolean) =>
+    `${periodButtonBase} ${
+      active ? "bg-primary text-primary-contrast" : "bg-surface-sunken text-text-muted hover:bg-surface-raised"
+    }`;
+
   return (
-    <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 mb-8">
+    <div className="bg-surface border border-border rounded-lg p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white text-lg font-semibold">Play Trends</h2>
+        <h2 className="text-text text-lg font-semibold">Play Trends</h2>
         <div className="flex gap-2" role="group" aria-label="Time period selection">
           <button
             onClick={() => handlePeriodChange("last30days")}
             onKeyDown={(e) => handleKeyDown(e, "last30days")}
-            className={`px-4 py-2 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-[#1f2622] ${
-              hoveredPeriod === "last30days"
-                ? "bg-pink-500 text-white"
-                : "bg-[#2d3d2d] text-gray-300 hover:bg-[#3d4d3d]"
-            }`}
+            className={periodButtonClass(hoveredPeriod === "last30days")}
             aria-pressed={hoveredPeriod === "last30days"}
             aria-label="View last 30 days"
           >
@@ -84,11 +89,7 @@ export default function AnalyticsPlayTrends({
           <button
             onClick={() => handlePeriodChange("last90days")}
             onKeyDown={(e) => handleKeyDown(e, "last90days")}
-            className={`px-4 py-2 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-[#1f2622] ${
-              hoveredPeriod === "last90days"
-                ? "bg-pink-500 text-white"
-                : "bg-[#2d3d2d] text-gray-300 hover:bg-[#3d4d3d]"
-            }`}
+            className={periodButtonClass(hoveredPeriod === "last90days")}
             aria-pressed={hoveredPeriod === "last90days"}
             aria-label="View last 90 days"
           >
@@ -104,21 +105,21 @@ export default function AnalyticsPlayTrends({
             margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
             aria-label="Line chart showing play trends over time"
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#2d3d2d" />
+            <CartesianGrid strokeDasharray="3 3" stroke={colorTokens.border.subtle} />
             <XAxis
               dataKey="date"
-              stroke="#666"
+              stroke={colorTokens.text.subtle}
               style={{ fontSize: "12px" }}
               tick={{
-                fill: "#999",
+                fill: colorTokens.text.muted,
               }}
               aria-label="Date"
             />
             <YAxis
-              stroke="#666"
+              stroke={colorTokens.text.subtle}
               style={{ fontSize: "12px" }}
               tick={{
-                fill: "#999",
+                fill: colorTokens.text.muted,
               }}
               aria-label="Number of plays"
             />
@@ -126,7 +127,7 @@ export default function AnalyticsPlayTrends({
             <Line
               type="monotone"
               dataKey="plays"
-              stroke="#ec4899"
+              stroke={colorTokens.primary.default}
               strokeWidth={2}
               dot={false}
               isAnimationActive={true}

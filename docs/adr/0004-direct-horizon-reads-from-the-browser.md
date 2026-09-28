@@ -9,7 +9,9 @@ Accepted.
 Several features only need to *read* public chain state that's already
 unauthenticated and public by design: an artist's XLM balance
 (`WalletBalanceDisplay.tsx`), their recent transaction history
-(`TransactionHistoryViewer.tsx`), and a live network-fee estimate for the
+(`TransactionHistoryViewer.tsx`), the account-wide activity summary behind
+the on-chain stats page (#466, `onchainStatsService.ts` →
+`/dashboard/onchain-stats`), and a live network-fee estimate for the
 "Est. gas" hint shown before minting/transferring
 (`MintSongButton.tsx`/`SetupArtistOnChainProfile.tsx`). None of this data is
 specific to this app or requires the backend's involvement — Horizon (the
@@ -22,12 +24,13 @@ maintain, and a staleness window for data that's cheaper to just fetch live.
 `src/lib/horizon.ts` is a minimal, dependency-free Horizon REST client that
 runs entirely client-side and talks straight to whichever Horizon instance
 the app is currently pointed at (`fetchAccountBalances`,
-`fetchAccountTransactions`, `fetchFeeStats`, `explorerTxUrl`). It
+`fetchAccountTransactions`, `fetchAccountOperations`, `fetchFeeStats`,
+`explorerTxUrl`, `explorerAccountUrl`). It
 deliberately does not go through `src/api/queryClient.ts` — there is no
 backend round-trip to layer React Query's mutation/cache machinery over,
 just a plain read from a public API, so components call these functions
 directly in a `useEffect`/`useCallback` pair (see `WalletBalanceDisplay.tsx`
-for the pattern).
+and `onchainStatsService.ts` for the pattern).
 
 Which Horizon instance "currently pointed at" means is itself configurable:
 `src/lib/stellarNetwork.ts` resolves testnet vs. mainnet from an explicit

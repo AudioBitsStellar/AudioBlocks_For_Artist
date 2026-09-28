@@ -10,7 +10,11 @@
 
 import type { AxiosResponse } from "@/types";
 
-export type NotificationEventKey = "newFan" | "earnings" | "eventReminder";
+export type NotificationEventKey =
+  | "newFan"
+  | "earnings"
+  | "eventReminder"
+  | "qualityCheck";
 
 export type NotificationChannel = "email" | "inApp";
 
@@ -35,12 +39,17 @@ export const NOTIFICATION_EVENT_LABELS: Record<
     title: "Event reminders",
     description: "Upcoming shows, ticket sales going live, and schedule changes.",
   },
+  qualityCheck: {
+    title: "Quality checks",
+    description: "Automated master reviews for uploaded tracks: loudness, clipping, format.",
+  },
 };
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   newFan: { email: false, inApp: true },
   earnings: { email: true, inApp: true },
   eventReminder: { email: true, inApp: true },
+  qualityCheck: { email: false, inApp: true },
 };
 
 const STORAGE_KEY = "audioblocks:notification-preferences:v1";
@@ -72,14 +81,17 @@ export function saveNotificationPreferences(prefs: NotificationPreferences): boo
 }
 
 function mergeWithDefaults(partial: Partial<NotificationPreferences>): NotificationPreferences {
-  const result: NotificationPreferences = {
-    newFan: { ...DEFAULT_NOTIFICATION_PREFERENCES.newFan },
-    earnings: { ...DEFAULT_NOTIFICATION_PREFERENCES.earnings },
-    eventReminder: { ...DEFAULT_NOTIFICATION_PREFERENCES.eventReminder },
-  };
+  // Built from the defaults rather than a hand-written literal so adding an
+  // event key above can't silently leave it out of the merge.
+  const result = Object.fromEntries(
+    (Object.keys(DEFAULT_NOTIFICATION_PREFERENCES) as NotificationEventKey[]).map((key) => [
+      key,
+      { ...DEFAULT_NOTIFICATION_PREFERENCES[key] },
+    ])
+  ) as NotificationPreferences;
   for (const key of Object.keys(partial) as NotificationEventKey[]) {
     const incoming = partial[key];
-    if (incoming) {
+    if (incoming && result[key]) {
       result[key] = {
         email: typeof incoming.email === "boolean" ? incoming.email : result[key].email,
         inApp: typeof incoming.inApp === "boolean" ? incoming.inApp : result[key].inApp,
