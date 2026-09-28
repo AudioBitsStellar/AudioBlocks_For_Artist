@@ -12,6 +12,7 @@ import { splitFile, generateFileId } from "@/utils/chunkUploader";
 import MusicLoader from "../MusicLoader";
 import { useToast } from "@/hooks/useToastHandler";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { useFileDrop } from "@/hooks/useFileDrop";
 import MintSongButton from "@/components/common/wallet/MintSongButton";
 import TransferSongButton from "@/components/common/wallet/TransferSongButton";
 import { analytics } from "@/lib/analytics";
@@ -135,10 +136,8 @@ const Song = () => {
   const validateAudioFile = (file: File): string | null =>
     validateFile(file, AUDIO_FILE_RULES).error;
 
-  const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  /** Validate and select an audio file — shared by the file picker and drag-and-drop (#391). */
+  const selectAudioFile = (file: File) => {
     const error = validateAudioFile(file);
     if (error) {
       setValidationError(error);
@@ -164,6 +163,11 @@ const Song = () => {
     });
   };
 
+  const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) selectAudioFile(file);
+  };
+
   const uploadSongInChunks = async (file: File, fileId: string, startChunk = 0) => {
     const chunks = splitFile(file);
 
@@ -187,36 +191,12 @@ const Song = () => {
     return chunks.length;
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      const error = validateAudioFile(file);
-      if (error) {
-        setValidationError(error);
-        setUploadedFile(null);
-        return;
-      }
-
-      setValidationError(null);
-      setAudioFile(file);
-      setFileId(generateFileId());
-      setRetryCount(0);
-      setFailedChunkIndex(0);
-      cancelRequestedRef.current = false;
-      setPreviewUrl(URL.createObjectURL(file));
-      setAudioMetadata(null);
-      extractAudioMetadata(file).then(setAudioMetadata);
-
-      const fileSize = formatFileSize(file.size);
-      setUploadedFile({
-        name: file.name,
-        size: fileSize,
-        type: formatFileType(file),
-        status: "uploading",
-      });
-    }
-  };
+  // Drag-and-drop audio selection (#391). Disabled while submitting or while a
+  // chunked upload is in flight, so a drop can't swap the file mid-upload.
+  const { isDragging, dropHandlers } = useFileDrop({
+    onFiles: ([file]) => selectAudioFile(file),
+    disabled: isBusy || uploadedFile?.status === "uploading",
+  });
 
   const handleRetry = async () => {
     if (!audioFile || !fileId) return;
@@ -257,10 +237,6 @@ const Song = () => {
     setUploadProgress(0);
     setPreviewUrl(null);
     setAudioMetadata(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
   };
 
   const onSubmit = async (data: UploadSong) => {
@@ -575,14 +551,14 @@ const Song = () => {
 
           {!uploadedFile ? (
             <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0"
+              {...dropHandlers}
+              data-dragging={isDragging}
+              className={`border-2 border-dashed ${isDragging ? "border-[#D2045B] bg-[#D2045B]/10" : "border-[#2A2A2A]"} transition-colors rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0`}
               role="group"
               aria-label="Upload music file - drag and drop here, or use the button to select"
             >
               <p className="text-xs text-[#A3A3A3]">
-                Drag & drop your files here or{" "}
+                {isDragging ? "Drop to upload" : "Drag & drop your files here or"}{" "}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -594,9 +570,9 @@ const Song = () => {
             </div>
           ) : (
             <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0"
+              {...dropHandlers}
+              data-dragging={isDragging}
+              className={`border-2 border-dashed ${isDragging ? "border-[#D2045B] bg-[#D2045B]/10" : "border-[#2A2A2A]"} transition-colors rounded-lg p-3 text-center mb-3 flex-1 flex flex-col items-center justify-center min-h-0`}
               role="button"
               tabIndex={0}
               aria-label="Replace uploaded file"
