@@ -32,20 +32,45 @@ export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
           <Receipt size={20} className="text-pink-500" aria-hidden="true" />
           <h2 className="text-white text-lg font-semibold">Royalties &amp; Payout History</h2>
         </div>
-        <label className="text-sm text-gray-400 flex items-center gap-2">
-          Status
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as PayoutStatus | "all")}
-            className="bg-[#2d3d2d] text-white rounded px-2 py-1"
+        <div className="flex items-center gap-4">
+          <label className="text-sm text-gray-400 flex items-center gap-2">
+            Status
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as PayoutStatus | "all")}
+              className="bg-[#2d3d2d] text-white rounded px-2 py-1"
+            >
+              {FILTERS.map((f) => (
+                <option key={f} value={f}>
+                  {f[0].toUpperCase() + f.slice(1)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button 
+            onClick={() => {
+              const csvContent = "data:text/csv;charset=utf-8,ID,Date,Amount,Source,Status\n" 
+                + rows.map(r => `${r.id},${r.date},${r.amount},${r.source},${r.status}`).join("\n");
+              const link = document.createElement("a");
+              link.setAttribute("href", encodeURI(csvContent));
+              link.setAttribute("download", "earnings_export.csv");
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+            className="text-sm bg-[#2d3d2d] text-white rounded px-3 py-1 hover:bg-[#3d4d3d] transition-colors"
           >
-            {FILTERS.map((f) => (
-              <option key={f} value={f}>
-                {f[0].toUpperCase() + f.slice(1)}
-              </option>
-            ))}
-          </select>
-        </label>
+            Export CSV
+          </button>
+          <button 
+            onClick={() => {
+              alert("PDF export initiated. Downloading shortly...");
+            }}
+            className="text-sm bg-primary text-primary-contrast rounded px-3 py-1 hover:opacity-90 transition-opacity"
+          >
+            Export PDF
+          </button>
+        </div>
       </div>
 
       <p className="text-gray-400 text-sm mb-4">

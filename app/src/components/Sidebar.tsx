@@ -14,6 +14,8 @@ import {
   Users,
   Search,
   Wallet,
+  Megaphone,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -34,6 +36,8 @@ const navItems = [
   { name: "Moderation", icon: ShieldAlert, href: "/dashboard/moderation" },
   { name: "Premium", icon: Star, href: "/dashboard/premium" },
   { name: "Release notes", icon: Megaphone, href: "/dashboard/changelog" },
+  { name: "Activity Log", icon: History, href: "/dashboard/activity-log" },
+  { name: "Referrals", icon: Users, href: "/dashboard/referrals" },
   { name: "Settings", icon: SettingsIcon, href: "/dashboard/settings/notifications" },
 ];
 
