@@ -31,6 +31,14 @@ export const featureFlags = {
    * so its flag is always false regardless of the global toggle.
    */
   useMockEarnings: false,
+  /**
+   * Onboarding email verification (#459). There is no code-delivery endpoint
+   * yet, so codes are issued and revealed locally — the only alternative is a
+   * step nobody can complete. Intentionally NOT tied to `globalMock`, which
+   * defaults to false; flip this to false and wire an email send once
+   * `POST /auth/verify-email/request` exists.
+   */
+  useMockEmailVerification: true,
 } as const;
 
 /* -------------------------------------------------------------------------- */

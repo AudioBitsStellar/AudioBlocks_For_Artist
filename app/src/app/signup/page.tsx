@@ -7,6 +7,7 @@ import Cookies from "js-cookie";
 import { toast } from "sonner";
 import MusicLoader from "@/components/MusicLoader";
 import useAuthServices from "@/services/authService";
+import { startVerification } from "@/services/emailVerificationService";
 import { RegisterEmailPayload } from "@/types";
 
 type SignupFormValues = Omit<RegisterEmailPayload, "role">;
@@ -30,8 +31,11 @@ export default function SignupPage() {
     try {
       const result = await registerMutation.mutateAsync({ ...data, role: "artist" });
       Cookies.set("audioblocks_jwt", result.token);
+      // Onboarding doesn't end at account creation: issue the first email
+      // verification code (#459) and send the artist to enter it.
+      startVerification(data.email);
       toast.success("Account created successfully!");
-      router.push("/dashboard");
+      router.push("/verify-email");
     } catch (err) {
       // onError on the mutation already toasts the message
     }

@@ -16,9 +16,11 @@ For full API endpoint documentation, parameter definitions, and response shapes,
 | Album Service | `albumService.ts` | Artist album/EP fetching, listing and creation (see "Album / EP creation" below) |
 | Analytics Service | `analyticsService.ts` | Streaming metrics, listener trends, geographic analytics |
 | Artist Service | `artistServices.ts` | Artist profile retrieval and update mutations |
+| Audit Log Service | `auditLogService.ts` | Rolling trail of team actions, including blocked attempts |
 | Auth Service | `authService.ts` | Login, signup, and logout operations |
 | Contract Upgrade | `contractUpgradeService.ts` | Soroban smart contract WASM upgrades and contract info |
 | Earnings Service | `earningsService.ts` | Revenue summaries and payout history |
+| Email Verification Service | `emailVerificationService.ts` | Onboarding email verification codes (issue, resend, confirm) |
 | Events Service | `eventsService.ts` | Event management, creation, and updates |
 | Merch Service | `merchService.ts` | Merch inventory and drop lifecycle management |
 | Message Service | `messageService.ts` | Direct messaging and fan interaction chats |

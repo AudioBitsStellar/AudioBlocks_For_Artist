@@ -29,12 +29,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               tabIndex={-1}
               className="flex-1 w-full max-w-7xl m-auto overflow-y-auto overflow-x-hidden px-4 pb-24 pt-6 space-y-6 focus:outline-none sm:px-6 sm:pt-8 sm:space-y-8 md:pb-8"
             >
-              {children}
+              <EmailVerificationGate>{children}</EmailVerificationGate>
             </main>
           </div>
         </div>
         <MobileNav />
         <ServiceWorkerRegister />
+        <DashboardShortcuts />
       </DashboardCustomizationProvider>
     </RoleProvider>
   );

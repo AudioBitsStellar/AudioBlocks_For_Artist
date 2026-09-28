@@ -67,6 +67,8 @@ export interface AuthUser {
   role: string;
   username?: string;
   name?: string;
+  /** See the note on `AuthUser` in `./api.ts` — optional until the backend returns it. */
+  emailVerified?: boolean;
 }
 
 export interface AuthResponse {

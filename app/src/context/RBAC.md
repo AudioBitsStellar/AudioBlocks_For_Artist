@@ -107,6 +107,10 @@ Real usage in this codebase:
   fields behind `can("settings:edit")`, and shows
   `getSettingsRestrictionReason(role)` as a tooltip explaining *why* a
   disabled control is disabled for non-owners.
+- `teamService.ts` + `app/dashboard/team/page.tsx` (#460) — the first consumer of
+  `roles:manage`. The service re-checks the permission itself through
+  `canManageTeam()` rather than trusting the page, and refuses by writing a
+  denied entry to the audit trail (#461) instead of throwing.
 
 ## Testing with RBAC
 
