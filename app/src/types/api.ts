@@ -1,6 +1,8 @@
 // Typed shapes for every API response returned by the AudioBlocks backend.
 // Import from here instead of inlining interface definitions in service files.
 
+import type { TrackVisibility } from "@/services/trackVisibilityService";
+
 // ── Shared envelope ───────────────────────────────────────────────────────────
 
 export interface ApiEnvelope<T = unknown> {
@@ -73,7 +75,7 @@ export interface UpdateProfilePayload {
   twitter: string;
 }
 
-export interface ArtistProfileResponse extends ApiEnvelope<ArtistProfile> {}
+export type ArtistProfileResponse = ApiEnvelope<ArtistProfile>;
 
 // ── Overview KPIs ─────────────────────────────────────────────────────────────
 
@@ -84,7 +86,7 @@ export interface OverviewKpi {
   mostStreamedRegion: string;
 }
 
-export interface OverviewResponse extends ApiEnvelope<OverviewKpi> {}
+export type OverviewResponse = ApiEnvelope<OverviewKpi>;
 
 // ── Earnings ──────────────────────────────────────────────────────────────────
 
@@ -100,7 +102,7 @@ export interface EarningsSummary {
   data: EarningsDataPoint[];
 }
 
-export interface EarningsResponse extends ApiEnvelope<EarningsSummary> {}
+export type EarningsResponse = ApiEnvelope<EarningsSummary>;
 
 // ── Platform Revenue Breakdown ──────────────────────────────────────────────
 
@@ -116,7 +118,7 @@ export interface PlatformRevenueSummary {
   platforms: PlatformRevenue[];
 }
 
-export interface PlatformRevenueResponse extends ApiEnvelope<PlatformRevenueSummary> {}
+export type PlatformRevenueResponse = ApiEnvelope<PlatformRevenueSummary>;
 
 // ── Transactions ──────────────────────────────────────────────────────────────
 
@@ -134,7 +136,7 @@ export interface TransactionItem {
   txHash?: string;
 }
 
-export interface TransactionListResponse extends ApiEnvelope<TransactionItem[]> {}
+export type TransactionListResponse = ApiEnvelope<TransactionItem[]>;
 
 // ── Albums ────────────────────────────────────────────────────────────────────
 
@@ -146,7 +148,7 @@ export interface Album {
   songCount?: number;
 }
 
-export interface AlbumsResponse extends ApiEnvelope<Album[]> {}
+export type AlbumsResponse = ApiEnvelope<Album[]>;
 
 export interface CreateAlbumPayload {
   title: string;
@@ -167,10 +169,16 @@ export interface SongMeta {
   marketPrice?: string;
   purchasePrice?: string;
   albumId?: string;
+  /**
+   * Who may find and play this track (#458). Optional because the field is new
+   * in the API contract: a record without it is treated as `public`, which is
+   * how it behaved before the setting existed.
+   */
+  visibility?: TrackVisibility;
   createdAt: string;
 }
 
-export interface UploadCoverResponse extends ApiEnvelope<{ cover: string; fileId: string }> {}
+export type UploadCoverResponse = ApiEnvelope<{ cover: string; fileId: string }>;
 
 export interface UploadChunkResponse {
   chunkIndex: number;
@@ -186,9 +194,11 @@ export interface FinalizeSongPayload {
   description: string;
   genre: string;
   composer: string;
+  /** Omitted means the server's default; the upload form sends `private` explicitly. */
+  visibility?: TrackVisibility;
 }
 
-export interface FinalizeSongResponse extends ApiEnvelope<SongMeta> {}
+export type FinalizeSongResponse = ApiEnvelope<SongMeta>;
 
 // ── Merch ─────────────────────────────────────────────────────────────────────
 
@@ -209,10 +219,10 @@ export interface MerchMetric {
   topItem?: string;
 }
 
-export interface MerchListResponse extends ApiEnvelope<{
+export type MerchListResponse = ApiEnvelope<{
   items: MerchItem[];
   metrics: MerchMetric;
-}> {}
+}>;
 
 export interface CreateMerchPayload {
   name: string;
@@ -257,10 +267,10 @@ export interface EventMetric {
   totalAttendees: number;
 }
 
-export interface EventListResponse extends ApiEnvelope<{
+export type EventListResponse = ApiEnvelope<{
   events: EventItem[];
   metrics: EventMetric;
-}> {}
+}>;
 
 export interface CreateEventPayload {
   title: string;
@@ -301,7 +311,7 @@ export interface AnalyticsData {
   period: "last30days" | "last90days";
 }
 
-export interface AnalyticsResponse extends ApiEnvelope<AnalyticsData> {}
+export type AnalyticsResponse = ApiEnvelope<AnalyticsData>;
 
 // ── On-chain (Soroban / Stellar) ──────────────────────────────────────────────
 
@@ -370,7 +380,7 @@ export type NotificationPreferences = Record<
   Record<NotificationChannel, boolean>
 >;
 
-export interface NotificationPreferencesResponse extends ApiEnvelope<NotificationPreferences> {}
+export type NotificationPreferencesResponse = ApiEnvelope<NotificationPreferences>;
 
 // ── Pagination meta ───────────────────────────────────────────────────────────
 

@@ -1,5 +1,7 @@
 // API Response types
-export interface AxiosResponse<T = any> {
+import type { TrackVisibility } from "@/services/trackVisibilityService";
+
+export interface AxiosResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -23,6 +25,8 @@ export interface UploadSong {
   description: string;
   genre: string;
   composer: string;
+  /** Chosen in the upload form (#458); absent on drafts saved before it existed. */
+  visibility?: TrackVisibility;
 }
 export interface UploadCoverResponse {
   cover: File | string;

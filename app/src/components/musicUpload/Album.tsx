@@ -24,6 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { albumFormSchema } from "@/types/formValidation";
 import { MUSIC_GENRES } from "../shared/music_genre";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { useFileDrop } from "@/hooks/useFileDrop";
 import { useToast } from "@/hooks/useToastHandler";
 import useAlbumServices from "@/services/albumService";
 import {
@@ -141,6 +142,43 @@ const Album = () => {
       return [...prev, { id, name: file.name, size: fileSize, file }];
     });
   };
+
+  /**
+   * Drag-and-drop tracks onto the album (#391). Each dropped file is validated;
+   * valid ones fill empty "Choose file" slots first, then append new rows.
+   * Rejected files are listed in the error message.
+   */
+  const addDroppedAlbumFiles = (files: File[]) => {
+    const accepted: File[] = [];
+    const rejected: string[] = [];
+    for (const file of files) {
+      if (validateFile(file, AUDIO_FILE_RULES).valid) accepted.push(file);
+      else rejected.push(file.name);
+    }
+    setMusicFileError(
+      rejected.length > 0
+        ? `Skipped ${rejected.length} unsupported or oversized file${rejected.length === 1 ? "" : "s"}: ${rejected.join(", ")}`
+        : null
+    );
+    if (accepted.length === 0) return;
+
+    setAlbumMusicFiles((prev) => {
+      const next = [...prev];
+      for (const file of accepted) {
+        const entry = { name: file.name, size: formatFileSize(file.size), file };
+        const emptyIndex = next.findIndex((f) => !f.file);
+        if (emptyIndex !== -1) next[emptyIndex] = { ...next[emptyIndex], ...entry };
+        else next.push({ id: nextFileId.current++, ...entry });
+      }
+      return next;
+    });
+  };
+
+  const { isDragging, dropHandlers } = useFileDrop({
+    onFiles: addDroppedAlbumFiles,
+    disabled: isBusy,
+    multiple: true,
+  });
 
   const handleDeleteAlbumFile = (id: number) => {
     setAlbumMusicFiles((prev) => prev.filter((f) => f.id !== id));
@@ -282,6 +320,19 @@ const Album = () => {
             <label className="text-sm font-medium text-white">
               Upload Music <span className="text-[#D2045B]">*</span>
             </label>
+            <div
+              {...dropHandlers}
+              data-dragging={isDragging}
+              role="group"
+              aria-label="Drag and drop album tracks here"
+              className={`rounded-lg border-2 border-dashed px-4 py-3 text-center text-xs transition-colors ${
+                isDragging
+                  ? "border-[#D2045B] bg-[#D2045B]/10 text-white"
+                  : "border-[#2A2A2A] text-[#A3A3A3]"
+              }`}
+            >
+              {isDragging ? "Drop to add tracks" : "Drag & drop one or more audio files here"}
+            </div>
             {albumMusicFiles.length === 0 ? (
               <div>
                 <input

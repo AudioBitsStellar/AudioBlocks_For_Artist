@@ -2,12 +2,15 @@ import { SONG_ENDPOINTS } from "@/api/api-endpoint";
 import { useOptimisticMutation } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { featureFlags } from "@/lib/featureFlags";
+import type { TrackVisibility } from "@/services/trackVisibilityService";
 
 /** The editable fields of a track, plus the id of the track being edited. */
 export interface TrackEditPayload {
   id: number | string;
   title: string;
   albumName: string;
+  /** Omitted leaves the track's current visibility alone. */
+  visibility?: TrackVisibility;
 }
 
 export interface TrackEditResponse {
@@ -18,19 +21,27 @@ interface EditableTrack {
   id: number | string;
   title: string;
   albumName: string;
+  visibility?: TrackVisibility;
 }
 
 /** Simulated latency for the mock-data path so the optimistic state is observable. */
 const MOCK_REQUEST_DELAY_MS = 400;
 
 /**
- * Returns `tracks` with the edited track's `title` and `albumName` replaced.
- * Every other track (and every other field) is left untouched, and the input
- * array is not mutated.
+ * Returns `tracks` with the edited track's `title`, `albumName` and (when the
+ * edit carries one) `visibility` replaced. Every other track, and every other
+ * field of this one, is left untouched, and the input array is not mutated.
  */
 export function applyTrackEdit<T extends EditableTrack>(tracks: T[], edit: TrackEditPayload): T[] {
   return tracks.map((track) =>
-    track.id === edit.id ? { ...track, title: edit.title, albumName: edit.albumName } : track
+    track.id === edit.id
+      ? {
+          ...track,
+          title: edit.title,
+          albumName: edit.albumName,
+          ...(edit.visibility ? { visibility: edit.visibility } : {}),
+        }
+      : track
   );
 }
 

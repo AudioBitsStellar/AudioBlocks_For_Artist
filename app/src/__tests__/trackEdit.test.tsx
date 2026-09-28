@@ -102,10 +102,12 @@ describe("My Music optimistic track edits", () => {
 
     await waitFor(() => expect(mockHandleSuccess).toHaveBeenCalledTimes(1));
     expect(screen.getByText("Golden Hour")).toBeInTheDocument();
+    // The dialog always submits the track's effective visibility (#458).
     expect(mockPatch).toHaveBeenCalledWith("/song/1", {
       id: 1,
       title: "Golden Hour",
       albumName: "Echoes of the Soul",
+      visibility: "public",
     });
   });
 

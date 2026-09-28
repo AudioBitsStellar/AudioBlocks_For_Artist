@@ -32,6 +32,12 @@ export interface PublicArtistProfile {
   songCount?: number;
   albumCount?: number;
   listenersCount?: number;
+  /**
+   * Followers of this artist, when the public payload reports them. Distinct
+   * from `listenersCount` (all-time plays) and optional: an API that doesn't
+   * send it simply leaves the follower surfaces off the page.
+   */
+  followersCount?: number;
   joinedAt?: string;
   /** Verification state; only `verified` profiles show the public badge. */
   status?: "verified" | "pending" | "unverified";
@@ -61,6 +67,7 @@ function toPublicProfile(payload: unknown): PublicArtistProfile | null {
     songCount: typeof record.songCount === "number" ? record.songCount : undefined,
     albumCount: typeof record.albumCount === "number" ? record.albumCount : undefined,
     listenersCount: typeof record.listenersCount === "number" ? record.listenersCount : undefined,
+    followersCount: typeof record.followersCount === "number" ? record.followersCount : undefined,
     joinedAt: typeof record.joinedAt === "string" ? record.joinedAt : undefined,
     status:
       record.status === "verified" || record.status === "pending" || record.status === "unverified"

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Drag-and-drop audio upload** (#391): `useFileDrop` hook (flicker-free drag highlight, ignores non-file drags, disabled while uploading) powering the song upload drop zone, which now shows a "Drop to upload" state and can't be replaced mid-upload, and a new album drop zone that accepts several tracks at once, fills empty slots first and reports any rejected files.
 - **Dashboard caching strategy** (#441): Central cache policy (`api/cachePolicy.ts`) with named freshness tiers and shared query keys, used by every dashboard service. Song/album publishes now refresh the overview, statistics and recent-activity caches, events/merch get explicit freshness windows, and the cache is cleared on login so data never leaks between artists.
 - **Optimistic track edits** (#442): `useOptimisticMutation` hook (cache snapshot, optimistic write, rollback, invalidate on settle), `trackService`, and an Edit track dialog in My Music — changes appear instantly and revert with an error toast if the save fails.
 - **Artist form validation** (#443): Zod schemas and a `getFormErrors` helper for login, events, merch, verification and artist-name forms, with accessible inline errors. Album price validation tightened.

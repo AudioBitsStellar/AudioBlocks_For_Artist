@@ -10,8 +10,10 @@ import {
   X,
   BarChart3,
   MessageSquare,
-  Megaphone,
+  ShieldAlert,
+  Users,
   Search,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -24,9 +26,12 @@ const navItems = [
   { name: "Overview", icon: Home, href: "/dashboard/overview" },
   { name: "My Music", icon: Music, href: "/dashboard/my-music" },
   { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
+  { name: "Payouts", icon: Wallet, href: "/dashboard/payouts" },
   { name: "Events", icon: Calendar, href: "/dashboard/events" },
   { name: "Merches", icon: Tag, href: "/dashboard/merches" },
   { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },
+  { name: "Collaborators", icon: Users, href: "/dashboard/collaborators" },
+  { name: "Moderation", icon: ShieldAlert, href: "/dashboard/moderation" },
   { name: "Premium", icon: Star, href: "/dashboard/premium" },
   { name: "Release notes", icon: Megaphone, href: "/dashboard/changelog" },
   { name: "Settings", icon: SettingsIcon, href: "/dashboard/settings/notifications" },
