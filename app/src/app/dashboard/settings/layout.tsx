@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgeCheck, Bell, DollarSign, Globe, ShieldCheck, Wallet, SlidersHorizontal, User } from "lucide-react";
+import {
+  BadgeCheck,
+  Bell,
+  DollarSign,
+  Globe,
+  Link2,
+  Palette,
+  ShieldCheck,
+  User,
+  Wallet,
+} from "lucide-react";
 
 const settingsNav = [
   { name: "Profile", icon: User, href: "/dashboard/profile" },
@@ -10,9 +20,10 @@ const settingsNav = [
   { name: "Security", icon: ShieldCheck, href: "/dashboard/settings/security" },
   { name: "Verification", icon: BadgeCheck, href: "/dashboard/settings/verification" },
   { name: "Wallet", icon: Wallet, href: "/dashboard/settings/wallet" },
+  { name: "Linked accounts", icon: Link2, href: "/dashboard/settings/linked-accounts" },
   { name: "Payout", icon: DollarSign, href: "/dashboard/settings/payout" },
   { name: "Network", icon: Globe, href: "/dashboard/settings/network" },
-  { name: "Preferences", icon: SlidersHorizontal, href: "/dashboard/settings/preferences" },
+  { name: "Appearance", icon: Palette, href: "/dashboard/settings/appearance" },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

@@ -14,7 +14,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <RoleProvider>
       <DashboardCustomizationProvider>
-        <div className="flex min-h-screen bg-[#151918]">
+        {/* `bg-background` follows the active theme, so the portal repaints on a
+            light/dark switch without any per-page work (#423). */}
+        <div className="flex min-h-screen bg-background text-text">
           {/* Sidebar — permanent from md, slide-over drawer below it */}
           <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 

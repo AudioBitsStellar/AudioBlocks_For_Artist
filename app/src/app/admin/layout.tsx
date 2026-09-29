@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#151918]">
+    <div className="flex min-h-screen flex-col bg-background text-text">
       <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-[#2A2A2A] bg-[#161616] px-4 sm:h-20 sm:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <Link
@@ -43,7 +43,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </Link>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-6 focus:outline-none sm:px-8 sm:py-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 px-4 py-6 focus:outline-none sm:px-8 sm:py-8"
+      >
         {children}
       </main>
     </div>
