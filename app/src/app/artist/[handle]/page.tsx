@@ -11,6 +11,7 @@ import { generateArtistMetadata, generateArtistStructuredData } from "@/utils/me
 import { formatDate } from "@/utils/date";
 import { VerifiedBadge } from "@/components/common/VerifiedBadge";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ArtistSocialLinksSection from "@/components/artist/ArtistSocialLinksSection";
 
 interface ArtistProfilePageProps {
   params: { handle: string };
@@ -304,6 +305,8 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
               </ul>
             </section>
           )}
+
+          <ArtistSocialLinksSection website={profile.website} twitter={profile.twitter} />
 
           {joinedLabel && (
             <p className="text-xs text-[#6F6F6F]">On AudioBlocks since {joinedLabel}</p>

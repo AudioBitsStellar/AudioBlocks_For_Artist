@@ -56,6 +56,15 @@ const AnalyticsGeographic = dynamic(() => import("@/components/AnalyticsGeograph
   ),
 });
 
+const AnalyticsDemographics = dynamic(() => import("@/components/AnalyticsDemographics"), {
+  loading: () => (
+    <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6 mb-8 animate-pulse">
+      <div className="h-8 bg-[#2d3d2d] rounded mb-6 w-1/3"></div>
+      <div className="h-40 bg-[#2d3d2d] rounded"></div>
+    </div>
+  ),
+});
+
 interface ChartSectionProps {
   children: React.ReactNode;
 }
@@ -141,6 +150,10 @@ export default function AnalyticsDashboard() {
                 onPeriodChange={setPeriod}
               />
             </LazyChartSection>
+          </ErrorBoundary>
+
+          <ErrorBoundary fallbackTitle="Failed to load demographics">
+            <AnalyticsDemographics data={analyticsData.demographics} />
           </ErrorBoundary>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
