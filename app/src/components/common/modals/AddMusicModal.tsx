@@ -93,11 +93,76 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
 
   const handleFieldChange =
     (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      const value = e.target.value;
+      setForm((prev) => ({ ...prev, [field]: value }));
+      validateField(field, value);
     };
 
   const clearError = (key: string) =>
     setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== key)));
+
+  const validateField = (field: keyof typeof form, value: string) => {
+    let error: string | null = null;
+
+    switch (field) {
+      case "songTitle":
+        if (mode === "song" && !value.trim()) {
+          error = "Song title is required";
+        } else if (value.length > 100) {
+          error = "Title must be 100 characters or less";
+        }
+        break;
+      case "albumTitle":
+        if (mode === "album" && !value.trim()) {
+          error = "Album title is required";
+        } else if (value.length > 100) {
+          error = "Title must be 100 characters or less";
+        }
+        break;
+      case "genre":
+        if (!value.trim()) {
+          error = "Genre is required";
+        } else if (value.length > 50) {
+          error = "Genre must be 50 characters or less";
+        }
+        break;
+      case "releaseDate":
+        if (publishMode === "now") {
+          if (!value.trim()) {
+            error = "Release date is required";
+          } else if (!/^\d{2}-\d{2}-\d{4}$/.test(value.trim())) {
+            error = "Release date must be in DD-MM-YYYY format";
+          }
+        } else {
+          if (!value.trim()) {
+            error = "Scheduled date & time is required";
+          } else if (new Date(value).getTime() <= Date.now()) {
+            error = "Scheduled date & time must be in the future";
+          }
+        }
+        break;
+      case "marketPrice":
+        if (!value.trim()) {
+          error = "Market price is required";
+        } else if (isNaN(Number(value.trim()))) {
+          error = "Market price must be a valid number";
+        } else if (Number(value.trim()) < 0) {
+          error = "Market price must be a positive number";
+        }
+        break;
+    }
+
+    if (error) {
+      setErrors((prev) => ({ ...prev, [field]: error }));
+    } else {
+      clearError(field);
+    }
+  };
+
+  const validateFieldOnBlur = (field: keyof typeof form) => {
+    const value = form[field];
+    validateField(field, value);
+  };
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -230,7 +295,15 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
         {/* Mode Selection */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setMode("album")}
+            onClick={() => {
+              setMode("album");
+              setErrors((prev) => {
+                const next = { ...prev };
+                delete next.songTitle;
+                delete next.uploadedFile;
+                return next;
+              });
+            }}
             className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
               mode === "album"
                 ? "bg-[#D2045B] text-white"
@@ -240,7 +313,14 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
             Add Album
           </button>
           <button
-            onClick={() => setMode("song")}
+            onClick={() => {
+              setMode("song");
+              setErrors((prev) => {
+                const next = { ...prev };
+                delete next.albumTitle;
+                return next;
+              });
+            }}
             className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
               mode === "song"
                 ? "bg-[#D2045B] text-white"
@@ -262,6 +342,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
               <input
                 value={form.songTitle}
                 onChange={handleFieldChange("songTitle")}
+                onBlur={() => validateFieldOnBlur("songTitle")}
                 placeholder="Add Song Title"
                 maxLength={100}
                 className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
@@ -283,6 +364,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
               <input
                 value={form.albumTitle}
                 onChange={handleFieldChange("albumTitle")}
+                onBlur={() => validateFieldOnBlur("albumTitle")}
                 placeholder="Enter Album Title"
                 maxLength={100}
                 className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
@@ -304,6 +386,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
               <input
                 value={form.genre}
                 onChange={handleFieldChange("genre")}
+                onBlur={() => validateFieldOnBlur("genre")}
                 placeholder="Add Genre of song"
                 maxLength={50}
                 className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
@@ -356,6 +439,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                 <input
                   value={form.releaseDate}
                   onChange={handleFieldChange("releaseDate")}
+                  onBlur={() => validateFieldOnBlur("releaseDate")}
                   placeholder="DD-MM-YYYY"
                   maxLength={10}
                   className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
@@ -365,6 +449,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                   type="datetime-local"
                   value={form.releaseDate}
                   onChange={handleFieldChange("releaseDate")}
+                  onBlur={() => validateFieldOnBlur("releaseDate")}
                   className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
                 />
               )}
@@ -378,6 +463,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
               <input
                 value={form.marketPrice}
                 onChange={handleFieldChange("marketPrice")}
+                onBlur={() => validateFieldOnBlur("marketPrice")}
                 placeholder="Add Price of Song"
                 maxLength={20}
                 className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none"
@@ -424,6 +510,9 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                   {errors.coverImage}
                 </p>
               )}
+              <p className="text-[10px] text-gray-500 mb-2">
+                Accepted: JPG, PNG (max 5 MB)
+              </p>
               <button
                 onClick={() => coverInputRef.current?.click()}
                 className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors"
@@ -471,9 +560,15 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
               {!uploadedFile && (
                 <p className="text-xs text-[#A3A3A3]">No uploads added to the queue</p>
               )}
+              {mode === "song" && !uploadedFile && (
+                <p className="text-xs text-yellow-500 mt-1" role="status">Audio file is required for songs</p>
+              )}
               {errors.uploadedFile && (
                 <p className="text-red-500 text-xs mt-2">{errors.uploadedFile}</p>
               )}
+              <p className="text-[10px] text-gray-500 mt-2">
+                Accepted: MP3, WAV, M4A, AAC, OGG, FLAC, WEBM (max 200 MB)
+              </p>
             </div>
           </div>
         </div>
