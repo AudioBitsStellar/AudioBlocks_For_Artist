@@ -138,7 +138,8 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
                 <button
                   type="button"
                   onClick={clearFile}
-                  className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                  aria-label="Remove selected file"
+                  className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   <X size={16} />
                 </button>
