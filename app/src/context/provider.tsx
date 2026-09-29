@@ -6,16 +6,19 @@ import { ReactNode } from "react";
 import { StellarNetworkProvider } from "./StellarNetworkContext";
 import { PlaybackProvider } from "./PlaybackContext";
 import { ThemeProvider } from "./ThemeContext";
+import PrivyProvider from "./PrivyProvider";
 
 const Provider = ({ children }: { children: ReactNode }) => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <StellarNetworkProvider>
-          <PlaybackProvider>{children}</PlaybackProvider>
-        </StellarNetworkProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <PrivyProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <StellarNetworkProvider>
+            <PlaybackProvider>{children}</PlaybackProvider>
+          </StellarNetworkProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </PrivyProvider>
   );
 };
 
