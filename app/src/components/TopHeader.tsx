@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/utils/date";
 import { useRole } from "@/hooks/useRole";
+import { useTheme } from "@/context/ThemeContext";
 import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
 import SearchModal from "./SearchModal";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -27,54 +28,6 @@ interface TopHeaderProps {
   notificationCount?: number | null;
 }
 
-function getInitialDarkMode(): boolean {
-  if (typeof window === "undefined") return false;
-
-  const savedTheme = window.localStorage.getItem("theme");
-  if (savedTheme === "dark") return true;
-  if (savedTheme === "light") return false;
-
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
-}
-
-function applyThemeVariables(isDark: boolean): void {
-  const root = document.documentElement;
-  root.classList.toggle("dark", isDark);
-  root.dataset.theme = isDark ? "dark" : "light";
-
-  const variables = isDark
-    ? {
-        "--background": "#111111",
-        "--surface": "#171717",
-        "--surface-raised": "#222222",
-        "--border": "#3f3f46",
-        "--border-subtle": "#27272a",
-        "--text": "#f4f4f5",
-        "--text-muted": "#a1a1aa",
-        "--text-subtle": "#71717a",
-        "--text-inverted": "#ffffff",
-        "--secondary": "#27272a",
-        "--primary": "#d2045b",
-      }
-    : {
-        "--background": "#ffffff",
-        "--surface": "#ffffff",
-        "--surface-raised": "#f4f4f5",
-        "--border": "#d4d4d8",
-        "--border-subtle": "#e4e4e7",
-        "--text": "#18181b",
-        "--text-muted": "#52525b",
-        "--text-subtle": "#71717a",
-        "--text-inverted": "#ffffff",
-        "--secondary": "#52525b",
-        "--primary": "#b0004b",
-      };
-
-  Object.entries(variables).forEach(([name, value]) => {
-    root.style.setProperty(name, value);
-  });
-}
-
 export default function TopHeader({
   onMenuClick,
   sidebarOpen = false,
@@ -83,21 +36,12 @@ export default function TopHeader({
   notificationCount,
 }: TopHeaderProps) {
   const { info: roleInfo, role: contextRole } = useRole();
+  const { isDark, toggleTheme } = useTheme();
   const [currentDate, setCurrentDate] = useState("");
   const [currentTime, setCurrentTime] = useState("");
-  const [isDark, setIsDark] = useState(getInitialDarkMode);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const activeRole: Role = userRole ?? contextRole ?? roleInfo.role;
-
-  useEffect(() => {
-    applyThemeVariables(isDark);
-    window.localStorage.setItem("theme", isDark ? "dark" : "light");
-  }, [isDark]);
-
-  const toggleTheme = () => {
-    setIsDark((current) => !current);
-  };
 
   // Keyboard shortcut: Cmd/Ctrl + K to open search
   useEffect(() => {
@@ -190,6 +134,8 @@ export default function TopHeader({
             {activeRole}
           </span>
 
+          {/* Quick light/dark switch (#423). The full three-way choice lives in
+              Settings → Appearance, which can also follow the OS. */}
           <button
             type="button"
             onClick={toggleTheme}

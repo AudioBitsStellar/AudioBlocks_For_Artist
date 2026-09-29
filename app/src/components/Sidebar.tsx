@@ -16,12 +16,14 @@ import {
   Wallet,
   Megaphone,
   History,
+  Percent,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getTotalUnreadCount } from "@/services/messageService";
+import { analytics } from "@/lib/analytics";
 import { isAdminSession } from "@/utils/jwt";
 
 const navItems = [
@@ -33,6 +35,7 @@ const navItems = [
   { name: "Merches", icon: Tag, href: "/dashboard/merches" },
   { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },
   { name: "Collaborators", icon: Users, href: "/dashboard/collaborators" },
+  { name: "Royalty splits", icon: Percent, href: "/dashboard/collaborators/royalties" },
   { name: "Moderation", icon: ShieldAlert, href: "/dashboard/moderation" },
   { name: "Premium", icon: Star, href: "/dashboard/premium" },
   { name: "Release notes", icon: Megaphone, href: "/dashboard/changelog" },

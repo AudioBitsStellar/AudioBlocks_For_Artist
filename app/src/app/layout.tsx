@@ -4,6 +4,7 @@ import "./globals.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Provider from "@/context/provider";
+import ThemeScript from "@/components/ThemeScript";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { Toaster } from "sonner";
 import { defaultMetadata } from "@/utils/metadata";
@@ -84,8 +85,11 @@ export default function RootLayout({
   }
 
   return (
-    <html lang="en">
+    // `suppressHydrationWarning` is required: ThemeScript sets `class="dark"`
+    // and `data-theme` on this element before React hydrates (#423).
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ThemeScript />
         <a
           href="#main-content"
           className="absolute left-4 top-4 z-[100] -translate-y-[200%] rounded-md bg-white px-4 py-2 font-semibold text-black shadow-lg transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-black"
