@@ -201,6 +201,13 @@ export default function SignupPage() {
             Log in
           </Link>
         </p>
+
+        <p className="text-xs text-[#6F6F6F] text-center pt-2">
+          Looking for a simpler signup?{" "}
+          <Link href="/artist-portal/signup" className="text-[#885FA8] hover:underline">
+            Try our Artist Portal
+          </Link>
+        </p>
       </div>
     </div>
   );

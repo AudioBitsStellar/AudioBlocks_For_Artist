@@ -55,7 +55,15 @@ const Navbar = () => {
             <Image src="/logo2.png" height={100} width={100} alt="AudioBlocks Logo" />
           </div>
 
-          {/* Desktop Nav - Removed nav items */}
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-6">
+            <Link
+              href="/artist-portal"
+              className="text-white hover:text-[#D2045B] font-medium transition-colors"
+            >
+              For Artists
+            </Link>
+          </div>
 
           {/* Sign In */}
           <div className="hidden md:flex">
@@ -109,6 +117,16 @@ const Navbar = () => {
               </div>
 
               <div className="flex flex-col gap-4 px-6 py-6">
+                <motion.div variants={itemVariants}>
+                  <Link
+                    href="/artist-portal"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-white hover:text-[#D2045B] font-medium py-2 block transition-colors"
+                  >
+                    For Artists
+                  </Link>
+                </motion.div>
+
                 <motion.div variants={itemVariants}>
                   <Link
                     href="/login"

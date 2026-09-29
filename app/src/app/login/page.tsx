@@ -114,6 +114,13 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+
+        <p className="text-xs text-[#6F6F6F] text-center pt-2">
+          Artists?{" "}
+          <Link href="/artist-portal" className="text-[#885FA8] hover:underline">
+            Check out our Artist Portal
+          </Link>
+        </p>
       </div>
     </div>
   );
