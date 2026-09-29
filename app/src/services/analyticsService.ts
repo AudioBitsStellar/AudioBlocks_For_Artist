@@ -22,10 +22,32 @@ export interface GeographicData {
   plays: number;
 }
 
+export interface AgeDemographic {
+  range: string;
+  percentage: number;
+}
+
+export interface GenderDemographic {
+  category: string;
+  percentage: number;
+}
+
+export interface DeviceDemographic {
+  device: string;
+  percentage: number;
+}
+
+export interface DemographicsData {
+  age: AgeDemographic[];
+  gender: GenderDemographic[];
+  device: DeviceDemographic[];
+}
+
 export interface AnalyticsData {
   summary: AnalyticsSummary;
   playTrends: PlayTrendData[];
   geographicDistribution: GeographicData[];
+  demographics?: DemographicsData;
   period: "last30days" | "last90days";
   insights?: AnalyticsInsights;
 }
@@ -75,6 +97,26 @@ const mockGeographicData: GeographicData[] = [
   { country: "Netherlands", region: "Europe", plays: 520 },
 ];
 
+const mockDemographicsData: DemographicsData = {
+  age: [
+    { range: "18-24", percentage: 38 },
+    { range: "25-34", percentage: 42 },
+    { range: "35-44", percentage: 12 },
+    { range: "45-54", percentage: 5 },
+    { range: "55+", percentage: 3 },
+  ],
+  gender: [
+    { category: "Female", percentage: 48 },
+    { category: "Male", percentage: 46 },
+    { category: "Non-binary / Other", percentage: 6 },
+  ],
+  device: [
+    { device: "Mobile App", percentage: 65 },
+    { device: "Desktop / Web", percentage: 25 },
+    { device: "Smart Speakers", percentage: 10 },
+  ],
+};
+
 export function getAnalyticsData(period: "last30days" | "last90days"): AnalyticsData {
   const playTrends = period === "last30days" ? STABLE_PLAY_TRENDS_30 : STABLE_PLAY_TRENDS_90;
   const totalPlays = playTrends.reduce((sum, trend) => sum + trend.plays, 0);
@@ -90,6 +132,7 @@ export function getAnalyticsData(period: "last30days" | "last90days"): Analytics
     },
     playTrends,
     geographicDistribution: mockGeographicData,
+    demographics: mockDemographicsData,
     period,
     insights: {
       peakListeningHours: "7 PM and 11 PM local time, with a secondary peak around 12 PM",
