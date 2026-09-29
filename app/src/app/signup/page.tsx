@@ -35,7 +35,7 @@ export default function SignupPage() {
       // verification code (#459) and send the artist to enter it.
       startVerification(data.email);
       toast.success("Account created successfully!");
-      router.push("/verify-email");
+      router.push("/onboarding");
     } catch (err) {
       // onError on the mutation already toasts the message
     }
