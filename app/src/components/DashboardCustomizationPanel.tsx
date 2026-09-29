@@ -176,6 +176,9 @@ export default function DashboardCustomizationPanel() {
                   <label className="text-xs text-text-muted">Show KPI Metrics</label>
                   <button
                     onClick={() => setTheme({ showMetrics: !theme.showMetrics })}
+                    role="switch"
+                    aria-checked={theme.showMetrics}
+                    aria-label="Show KPI metrics"
                     className={`relative h-5 w-9 rounded-full transition-colors ${
                       theme.showMetrics ? "bg-primary" : "bg-surface-raised"
                     }`}

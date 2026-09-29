@@ -87,9 +87,8 @@ const HowItWorks = () => {
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold mb-3 text-white">Artists</h3>
             <button
-              aria-hidden="true"
-              tabIndex={-1}
-              className="border-[#F2AFC9] border-[0.1px] cursor-pointer rounded-full p-1"
+              aria-label="Learn more for artists"
+              className="border-[#F2AFC9] border-[0.1px] cursor-pointer rounded-full p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <ArrowUpRight className="top-6 right-6 text-[#F2AFC9] w-5 h-5" />
             </button>
