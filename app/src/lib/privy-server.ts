@@ -1,6 +1,6 @@
 /**
  * Server-side Privy utilities
- * 
+ *
  * This file provides utilities for verifying Privy tokens on the server-side.
  * Use these functions in API routes or server components to authenticate users.
  */
@@ -31,7 +31,7 @@ export function getPrivyClient() {
  */
 export async function verifyPrivyToken(token: string) {
   const client = getPrivyClient();
-  
+
   try {
     const claims = await client.verifyAuthToken(token);
     return { success: true, claims };
@@ -43,24 +43,24 @@ export async function verifyPrivyToken(token: string) {
 
 /**
  * Example usage in an API route:
- * 
+ *
  * ```typescript
  * import { verifyPrivyToken } from "@/lib/privy-server";
- * 
+ *
  * export async function GET(request: Request) {
  *   const authHeader = request.headers.get("authorization");
  *   const token = authHeader?.replace("Bearer ", "");
- *   
+ *
  *   if (!token) {
  *     return Response.json({ error: "Unauthorized" }, { status: 401 });
  *   }
- *   
+ *
  *   const result = await verifyPrivyToken(token);
- *   
+ *
  *   if (!result.success) {
  *     return Response.json({ error: "Invalid token" }, { status: 401 });
  *   }
- *   
+ *
  *   // User is authenticated
  *   return Response.json({ user: result.claims });
  * }

@@ -5,8 +5,7 @@ const OnChainStatsPanel = dynamic(() => import("@/components/OnChainStatsPanel")
 
 export const metadata = {
   title: "On-Chain Activity | AudioBlocks",
-  description:
-    "See the transactions, operations and assets recorded on your Stellar account.",
+  description: "See the transactions, operations and assets recorded on your Stellar account.",
 };
 
 export default function OnChainStatsPage() {

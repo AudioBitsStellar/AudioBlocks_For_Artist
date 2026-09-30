@@ -10,20 +10,20 @@ surfaced to users by `src/components/OfflineIndicator.tsx`.
 Three named caches, all suffixed with a shared `CACHE_VERSION`
 (`audioblocks-v1`):
 
-| Cache            | Purpose                                                                |
-| ---------------- | ------------------------------------------------------------------------ |
-| `shell-<version>`   | Precached app shell — populated on `install`, see below.               |
-| `assets-<version>`  | Static assets (JS/CSS/images/fonts) cached as they're requested.       |
+| Cache               | Purpose                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| `shell-<version>`   | Precached app shell — populated on `install`, see below.                              |
+| `assets-<version>`  | Static assets (JS/CSS/images/fonts) cached as they're requested.                      |
 | `runtime-<version>` | Everything else (page navigations, same-origin API GETs) cached as they're requested. |
 
 ## Caching strategy by request type
 
-| Request                                              | Strategy                                                  |
-| ------------------------------------------------------ | ------------------------------------------------------------- |
-| Static asset (`.js .css .png .jpg .jpeg .gif .svg .webp .ico .woff .woff2 .ttf .eot .map`) | **Cache-first** (`ASSET_CACHE`) — serve from cache if present, otherwise fetch and populate the cache. |
-| Page navigation or any other same-origin GET (incl. API responses) | **Network-first** (`RUNTIME_CACHE`) — try the network, fall back to cache on failure; a failed *navigation* with nothing cached falls back further to the precached `/` shell. |
-| `POST` / `PUT` / `PATCH` / `DELETE`                  | **Never intercepted** — the service worker returns early and lets the request go straight to the network, so mutating requests are never served stale or cached. |
-| Non-`http(s)` requests (e.g. browser extension URLs) | **Ignored** — the fetch handler returns without calling `respondWith`. |
+| Request                                                                                    | Strategy                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Static asset (`.js .css .png .jpg .jpeg .gif .svg .webp .ico .woff .woff2 .ttf .eot .map`) | **Cache-first** (`ASSET_CACHE`) — serve from cache if present, otherwise fetch and populate the cache.                                                                         |
+| Page navigation or any other same-origin GET (incl. API responses)                         | **Network-first** (`RUNTIME_CACHE`) — try the network, fall back to cache on failure; a failed _navigation_ with nothing cached falls back further to the precached `/` shell. |
+| `POST` / `PUT` / `PATCH` / `DELETE`                                                        | **Never intercepted** — the service worker returns early and lets the request go straight to the network, so mutating requests are never served stale or cached.               |
+| Non-`http(s)` requests (e.g. browser extension URLs)                                       | **Ignored** — the fetch handler returns without calling `respondWith`.                                                                                                         |
 
 Only responses with `status === 200 && type === "basic"` are cached (i.e.
 successful, same-origin responses) — opaque cross-origin responses and error

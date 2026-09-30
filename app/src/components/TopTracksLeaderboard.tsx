@@ -25,13 +25,18 @@ export default function TopTracksLeaderboard({ tracks, limit = 10 }: TopTracksLe
           {ranked.map((track) => (
             <li key={track.id} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="w-6 text-right text-gray-400 font-semibold" aria-label={`Rank ${track.rank}`}>
+                <span
+                  className="w-6 text-right text-gray-400 font-semibold"
+                  aria-label={`Rank ${track.rank}`}
+                >
                   {track.rank}
                 </span>
                 <span className="text-white truncate">{track.title}</span>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <span className="text-pink-500 font-semibold">{track.plays.toLocaleString()} plays</span>
+                <span className="text-pink-500 font-semibold">
+                  {track.plays.toLocaleString()} plays
+                </span>
                 {track.changePercent !== null && (
                   <span
                     className={`flex items-center gap-1 text-xs ${track.changePercent >= 0 ? "text-green-400" : "text-red-400"}`}

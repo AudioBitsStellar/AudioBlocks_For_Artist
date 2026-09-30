@@ -29,9 +29,7 @@ export function EventTicketQR({ eventId, ticketId, eventTitle, attendeeName }: E
     <div className="flex flex-col items-center gap-4 rounded-2xl border border-[#1F1F1F] bg-[#151818] p-6">
       <div className="space-y-1 text-center">
         <h3 className="text-lg font-semibold text-white">{eventTitle}</h3>
-        {attendeeName && (
-          <p className="text-sm text-[#A3A3A3]">{attendeeName}</p>
-        )}
+        {attendeeName && <p className="text-sm text-[#A3A3A3]">{attendeeName}</p>}
       </div>
 
       <div className="rounded-xl bg-white p-4">

@@ -17,7 +17,10 @@ export const GenreTagSelector: React.FC<GenreTagSelectorProps> = ({
 
   const addTag = useCallback(
     (tagToOffer: string) => {
-      const sanitized = tagToOffer.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+      const sanitized = tagToOffer
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "");
       if (!sanitized) return;
 
       if (selectedTags.includes(sanitized)) {
@@ -56,7 +59,10 @@ export const GenreTagSelector: React.FC<GenreTagSelectorProps> = ({
     <div className="space-y-4">
       {/* Primary Genre Selection */}
       <div>
-        <label htmlFor="primary-genre-select" className="block text-sm font-medium text-gray-200 mb-1">
+        <label
+          htmlFor="primary-genre-select"
+          className="block text-sm font-medium text-gray-200 mb-1"
+        >
           Primary Genre <span className="text-pink-500">*</span>
         </label>
         <select

@@ -24,7 +24,7 @@ export default function OnboardingPage() {
     if (!completedSteps.includes(step)) {
       setCompletedSteps([...completedSteps, step]);
     }
-    
+
     if (step < 3) {
       setCurrentStep((step + 1) as OnboardingStep);
     } else {
@@ -54,8 +54,8 @@ export default function OnboardingPage() {
                   completedSteps.includes(step as OnboardingStep)
                     ? "bg-green-600"
                     : currentStep === step
-                    ? "bg-[#D2045B]"
-                    : "bg-[#2A2A2A]"
+                      ? "bg-[#D2045B]"
+                      : "bg-[#2A2A2A]"
                 } text-white font-semibold`}
               >
                 {completedSteps.includes(step as OnboardingStep) ? "✓" : step}
@@ -77,9 +77,7 @@ export default function OnboardingPage() {
           className="rounded-2xl p-8"
           style={{ background: "#161616", border: "1px solid #2A2A2A" }}
         >
-          {currentStep === 1 && (
-            <BasicInfoStep onComplete={() => handleStepComplete(1)} />
-          )}
+          {currentStep === 1 && <BasicInfoStep onComplete={() => handleStepComplete(1)} />}
           {currentStep === 2 && (
             <VerificationStep onComplete={() => handleStepComplete(2)} onBack={handleBack} />
           )}

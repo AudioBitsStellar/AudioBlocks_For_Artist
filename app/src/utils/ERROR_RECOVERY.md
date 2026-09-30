@@ -10,11 +10,11 @@ reused by every flow.
 
 Every failure caught in these flows is one of three kinds:
 
-| Kind              | What it is                                                                                   | Recovery UX                                                                                   |
-| ----------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Kind              | What it is                                                                                    | Recovery UX                                                                                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **retryable**     | Transient transport failure: no response, `408/429/499/5xx`, or a `network`/`timeout` message | Non-destructive "Try again" affordance. **Keep the user's input / uploaded file.** Bounded auto-retry with backoff is allowed at the transport layer (`api/axios.ts`). |
-| **user-rejected** | The wallet owner declined to sign the transaction in Freighter                               | Not an error. Reset to the state just before signing and offer "Retry signing". No red error styling. No analytics `*_failed` with a scary reason. |
-| **terminal**      | Everything else: `4xx` validation, auth, unexpected exceptions                               | Show the message. Do **not** offer a bare retry that will just fail again — the user has to change something (fix input, reconnect wallet, contact support). |
+| **user-rejected** | The wallet owner declined to sign the transaction in Freighter                                | Not an error. Reset to the state just before signing and offer "Retry signing". No red error styling. No analytics `*_failed` with a scary reason.                     |
+| **terminal**      | Everything else: `4xx` validation, auth, unexpected exceptions                                | Show the message. Do **not** offer a bare retry that will just fail again — the user has to change something (fix input, reconnect wallet, contact support).           |
 
 ## The API
 
@@ -44,13 +44,13 @@ are also exported for cases that only need one check.
 
 ## Where it is applied
 
-| Flow          | File                                                             |
-| ------------- | --------------------------------------------------------------- |
-| Upload music  | `components/musicUpload/Song.tsx`                               |
-| Mint song     | `components/common/wallet/MintSongButton.tsx`                   |
+| Flow                 | File                                                     |
+| -------------------- | -------------------------------------------------------- |
+| Upload music         | `components/musicUpload/Song.tsx`                        |
+| Mint song            | `components/common/wallet/MintSongButton.tsx`            |
 | Artist profile setup | `components/common/wallet/SetupArtistOnChainProfile.tsx` |
-| Profile save  | `app/dashboard/profile/page.tsx`                                |
-| Transport retry | `api/axios.ts` (auto-retry of `retryable` failures)          |
+| Profile save         | `app/dashboard/profile/page.tsx`                         |
+| Transport retry      | `api/axios.ts` (auto-retry of `retryable` failures)      |
 
 ## Manual test checklist
 

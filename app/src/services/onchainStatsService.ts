@@ -64,9 +64,7 @@ export function dayOf(iso: string): string {
 }
 
 /** Groups operations by their Horizon `type`, highest count first. */
-export function countByOperationType(
-  operations: HorizonOperation[]
-): Record<string, number> {
+export function countByOperationType(operations: HorizonOperation[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const operation of operations) {
     counts[operation.type] = (counts[operation.type] ?? 0) + 1;
@@ -108,7 +106,9 @@ export function summarizeOnChainActivity(input: {
 }
 
 /** Balance entries minus the XLM line, which the summary carries separately. */
-export function heldAssetsFrom(balances: { asset_type: string; balance: string; asset_code?: string }[]): HeldAsset[] {
+export function heldAssetsFrom(
+  balances: { asset_type: string; balance: string; asset_code?: string }[]
+): HeldAsset[] {
   return balances
     .filter((balance) => balance.asset_type !== "native" && balance.asset_code)
     .map((balance) => ({ code: balance.asset_code as string, balance: balance.balance }));
@@ -130,11 +130,7 @@ export function humanizeOperationType(type: string): string {
   return type.replace(/_/g, " ");
 }
 
-const transaction = (
-  hash: string,
-  createdAt: string,
-  successful = true
-): HorizonTransaction => ({
+const transaction = (hash: string, createdAt: string, successful = true): HorizonTransaction => ({
   id: hash,
   hash,
   created_at: createdAt,
@@ -199,8 +195,7 @@ export const MOCK_ONCHAIN_ASSETS: HeldAsset[] = [
 ];
 
 /** A checksum-valid account ID, so the sample's explorer link isn't a dead end. */
-export const MOCK_ONCHAIN_ADDRESS =
-  "GBQXKZDJN5RGY33DNNZS243BNVYGYZJNMFZHI2LTOQWTAMBQGAYDAOCF";
+export const MOCK_ONCHAIN_ADDRESS = "GBQXKZDJN5RGY33DNNZS243BNVYGYZJNMFZHI2LTOQWTAMBQGAYDAOCF";
 
 /** Demo summary for `NEXT_PUBLIC_USE_MOCK_DATA=true` and for signed-out artists. */
 export const MOCK_ONCHAIN_SUMMARY: OnChainActivitySummary = summarizeOnChainActivity({

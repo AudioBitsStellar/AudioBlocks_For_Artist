@@ -93,9 +93,9 @@ export default function VerificationApplicationModal({
           </div>
 
           <p className="text-sm text-[#A3A3A3] mb-6">
-            Verified artists get a badge on their profile so fans know it&apos;s really you.
-            Submit your legal name and a link that proves your identity (official website,
-            verified social profile, distributor account, etc).
+            Verified artists get a badge on their profile so fans know it&apos;s really you. Submit
+            your legal name and a link that proves your identity (official website, verified social
+            profile, distributor account, etc).
           </p>
 
           <div className="space-y-4 mb-6">

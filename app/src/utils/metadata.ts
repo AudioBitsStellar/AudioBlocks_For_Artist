@@ -1,6 +1,6 @@
 /**
  * SEO and Social Sharing Metadata Utilities
- * 
+ *
  * Provides helpers for generating Open Graph and Twitter Card metadata
  * for all pages in the application (issue #156).
  */
@@ -27,8 +27,7 @@ export interface PageMetadata {
 /**
  * Base URL for the application (from environment or default)
  */
-export const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL || "https://audioblocks.io";
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://audioblocks.io";
 
 /**
  * Default Open Graph image path
@@ -48,10 +47,10 @@ export const DEFAULT_DESCRIPTION =
 
 /**
  * Generates complete Next.js Metadata object with Open Graph and Twitter Card tags.
- * 
+ *
  * @param page - Page-specific metadata configuration
  * @returns Complete Metadata object for Next.js
- * 
+ *
  * @example
  * ```ts
  * export const metadata = generateMetadata({
@@ -63,10 +62,8 @@ export const DEFAULT_DESCRIPTION =
  * ```
  */
 export function generateMetadata(page: PageMetadata): Metadata {
-  const fullTitle = page.title.includes(SITE_NAME)
-    ? page.title
-    : `${page.title} | ${SITE_NAME}`;
-  
+  const fullTitle = page.title.includes(SITE_NAME) ? page.title : `${page.title} | ${SITE_NAME}`;
+
   const imageUrl = page.image || DEFAULT_OG_IMAGE;
   const fullUrl = page.url ? `${BASE_URL}${page.url}` : BASE_URL;
   const canonical = page.canonical
@@ -82,7 +79,7 @@ export function generateMetadata(page: PageMetadata): Metadata {
     // Guards against the same profile being indexed under several URLs
     // (query strings, trailing slashes, http/https variants).
     alternates: { canonical },
-    
+
     // Open Graph
     openGraph: {
       title: fullTitle,
@@ -129,7 +126,7 @@ export function generateMetadata(page: PageMetadata): Metadata {
     authors: page.author ? [{ name: page.author }] : [{ name: SITE_NAME }],
     creator: SITE_NAME,
     publisher: SITE_NAME,
-    
+
     // Robots
     robots: {
       index: indexable,
@@ -153,7 +150,7 @@ export function generateMetadata(page: PageMetadata): Metadata {
 
 /**
  * Generates metadata for music/album pages with specialized tags.
- * 
+ *
  * @param params - Album or song specific parameters
  * @returns Complete Metadata object optimized for music content
  */
@@ -167,8 +164,7 @@ export function generateMusicMetadata(params: {
   url?: string;
 }): Metadata {
   const description =
-    params.description ||
-    `Listen to ${params.title} by ${params.artist} on AudioBlocks`;
+    params.description || `Listen to ${params.title} by ${params.artist} on AudioBlocks`;
 
   return generateMetadata({
     title: `${params.title} - ${params.artist}`,
@@ -218,8 +214,12 @@ export function generateArtistMetadata(params: ArtistMetadataParams): Metadata {
   const name = params.name.trim() || "Artist";
   const handle = params.handle?.trim().replace(/^@/, "");
   const catalogue = [
-    typeof params.songCount === "number" ? `${params.songCount} song${params.songCount === 1 ? "" : "s"}` : null,
-    typeof params.albumCount === "number" ? `${params.albumCount} album${params.albumCount === 1 ? "" : "s"}` : null,
+    typeof params.songCount === "number"
+      ? `${params.songCount} song${params.songCount === 1 ? "" : "s"}`
+      : null,
+    typeof params.albumCount === "number"
+      ? `${params.albumCount} album${params.albumCount === 1 ? "" : "s"}`
+      : null,
   ].filter(Boolean);
 
   const description = clamp(
@@ -273,7 +273,10 @@ export function generateArtistStructuredData(
       : `${BASE_URL}${params.profileImage}`
     : undefined;
 
-  const sameAs = [params.website, params.twitter && `https://x.com/${params.twitter.replace(/^@/, "")}`]
+  const sameAs = [
+    params.website,
+    params.twitter && `https://x.com/${params.twitter.replace(/^@/, "")}`,
+  ]
     .filter((link): link is string => Boolean(link))
     .map((link) => (link.startsWith("http") ? link : `https://${link}`));
 
@@ -293,7 +296,7 @@ export function generateArtistStructuredData(
 
 /**
  * Generates metadata for album pages.
- * 
+ *
  * @param params - Album specific parameters
  * @returns Complete Metadata object for album pages
  */
@@ -309,7 +312,7 @@ export function generateAlbumMetadata(params: {
   const trackInfo = params.trackCount
     ? ` • ${params.trackCount} track${params.trackCount !== 1 ? "s" : ""}`
     : "";
-  
+
   const description =
     params.description ||
     `${params.title} by ${params.artist}${trackInfo}. Stream and collect on AudioBlocks.`;

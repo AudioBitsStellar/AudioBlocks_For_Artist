@@ -30,7 +30,11 @@ export const DashboardStatCards: React.FC<DashboardStatCardsProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5" role="status" aria-label="Loading stat cards">
+      <div
+        className="grid grid-cols-1 md:grid-cols-3 gap-5"
+        role="status"
+        aria-label="Loading stat cards"
+      >
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="bg-[#121214] border border-gray-800 rounded-xl p-5 space-y-3">
             <div className="flex justify-between items-center">
@@ -96,7 +100,11 @@ export const DashboardStatCards: React.FC<DashboardStatCardsProps> = ({
                 card.change >= 0 ? "text-emerald-400" : "text-rose-400"
               }`}
             >
-              {card.change >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+              {card.change >= 0 ? (
+                <TrendingUp className="h-3 w-3 mr-1" />
+              ) : (
+                <TrendingDown className="h-3 w-3 mr-1" />
+              )}
               {card.change >= 0 ? `+${card.change}%` : `${card.change}%`}
             </span>
           </div>

@@ -43,11 +43,7 @@ let revokedUrls: string[];
 const originalCreateObjectURL = Object.getOwnPropertyDescriptor(URL, "createObjectURL");
 const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(URL, "revokeObjectURL");
 
-function response(
-  config: InternalAxiosRequestConfig,
-  data: unknown,
-  status = 200
-): AxiosResponse {
+function response(config: InternalAxiosRequestConfig, data: unknown, status = 200): AxiosResponse {
   return {
     config,
     data,

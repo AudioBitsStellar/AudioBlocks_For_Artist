@@ -40,7 +40,9 @@ const DEFAULT_THEME: DashboardTheme = {
   showMetrics: true,
 };
 
-const DashboardCustomizationContext = createContext<DashboardCustomizationContextValue | null>(null);
+const DashboardCustomizationContext = createContext<DashboardCustomizationContextValue | null>(
+  null
+);
 
 const STORAGE_KEY = "audioblocks-dashboard-customization";
 
@@ -66,39 +68,44 @@ function saveToDisk(widgets: DashboardWidget[], theme: DashboardTheme) {
 
 export function DashboardCustomizationProvider({ children }: { children: ReactNode }) {
   const saved = loadSaved();
-  const [widgets, setWidgets] = useState<DashboardWidget[]>(
-    saved?.widgets ?? DEFAULT_WIDGETS
+  const [widgets, setWidgets] = useState<DashboardWidget[]>(saved?.widgets ?? DEFAULT_WIDGETS);
+  const [theme, setThemeState] = useState<DashboardTheme>(saved?.theme ?? DEFAULT_THEME);
+
+  const toggleWidget = useCallback(
+    (id: string) => {
+      setWidgets((prev) => {
+        const next = prev.map((w) => (w.id === id ? { ...w, visible: !w.visible } : w));
+        saveToDisk(next, theme);
+        return next;
+      });
+    },
+    [theme]
   );
-  const [theme, setThemeState] = useState<DashboardTheme>(
-    saved?.theme ?? DEFAULT_THEME
+
+  const reorderWidgets = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      setWidgets((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        const reordered = next.map((w, i) => ({ ...w, order: i }));
+        saveToDisk(reordered, theme);
+        return reordered;
+      });
+    },
+    [theme]
   );
 
-  const toggleWidget = useCallback((id: string) => {
-    setWidgets((prev) => {
-      const next = prev.map((w) => (w.id === id ? { ...w, visible: !w.visible } : w));
-      saveToDisk(next, theme);
-      return next;
-    });
-  }, [theme]);
-
-  const reorderWidgets = useCallback((fromIndex: number, toIndex: number) => {
-    setWidgets((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      const reordered = next.map((w, i) => ({ ...w, order: i }));
-      saveToDisk(reordered, theme);
-      return reordered;
-    });
-  }, [theme]);
-
-  const setTheme = useCallback((partial: Partial<DashboardTheme>) => {
-    setThemeState((prev) => {
-      const next = { ...prev, ...partial };
-      saveToDisk(widgets, next);
-      return next;
-    });
-  }, [widgets]);
+  const setTheme = useCallback(
+    (partial: Partial<DashboardTheme>) => {
+      setThemeState((prev) => {
+        const next = { ...prev, ...partial };
+        saveToDisk(widgets, next);
+        return next;
+      });
+    },
+    [widgets]
+  );
 
   const resetToDefaults = useCallback(() => {
     setWidgets(DEFAULT_WIDGETS);
@@ -117,6 +124,7 @@ export function DashboardCustomizationProvider({ children }: { children: ReactNo
 
 export function useDashboardCustomization(): DashboardCustomizationContextValue {
   const ctx = useContext(DashboardCustomizationContext);
-  if (!ctx) throw new Error("useDashboardCustomization must be used within DashboardCustomizationProvider");
+  if (!ctx)
+    throw new Error("useDashboardCustomization must be used within DashboardCustomizationProvider");
   return ctx;
 }

@@ -153,7 +153,9 @@ const ReleaseFlow = () => {
               {i < step ? <Check size={14} aria-hidden="true" /> : i + 1}
             </span>
             <span className={i === step ? "text-white" : "text-[#A3A3A3]"}>{name}</span>
-            {i < STEPS.length - 1 && <span className="mx-1 h-px w-6 bg-[#2A2A2A]" aria-hidden="true" />}
+            {i < STEPS.length - 1 && (
+              <span className="mx-1 h-px w-6 bg-[#2A2A2A]" aria-hidden="true" />
+            )}
           </li>
         ))}
       </ol>
@@ -174,7 +176,9 @@ const ReleaseFlow = () => {
                   <label
                     key={t}
                     className={`cursor-pointer rounded-lg border px-5 py-2 text-sm font-semibold ${
-                      draft.type === t ? "border-[#D2045B] bg-[#D2045B]/10 text-white" : "border-[#2A2A2A] text-[#A3A3A3]"
+                      draft.type === t
+                        ? "border-[#D2045B] bg-[#D2045B]/10 text-white"
+                        : "border-[#2A2A2A] text-[#A3A3A3]"
                     }`}
                   >
                     <input
@@ -268,7 +272,13 @@ const ReleaseFlow = () => {
           <div className="rounded-2xl border border-[#2A2A2A] bg-[#161616] p-6">
             <div className="relative mb-4 aspect-square w-full overflow-hidden rounded-lg bg-gradient-to-br from-teal-500 via-purple-500 to-pink-500">
               {coverPreview && (
-                <Image src={coverPreview} alt={`${label} cover`} fill className="object-cover" unoptimized />
+                <Image
+                  src={coverPreview}
+                  alt={`${label} cover`}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
               )}
             </div>
             <h3 className="mb-2 font-semibold text-white">
@@ -282,7 +292,11 @@ const ReleaseFlow = () => {
               className="hidden"
               aria-label="Upload cover image"
             />
-            <button type="button" onClick={() => coverInput.current?.click()} className={`${secondaryBtn} w-full`}>
+            <button
+              type="button"
+              onClick={() => coverInput.current?.click()}
+              className={`${secondaryBtn} w-full`}
+            >
               {draft.cover ? "Change cover" : "Add cover"}
             </button>
             {err(detailErrors.cover)}
@@ -303,21 +317,29 @@ const ReleaseFlow = () => {
           />
           {draft.tracks.length === 0 ? (
             <p className="text-sm text-[#A3A3A3]">
-              Add {limits.min}–{limits.max} tracks. You can rename and reorder them before publishing.
+              Add {limits.min}–{limits.max} tracks. You can rename and reorder them before
+              publishing.
             </p>
           ) : (
             <ol className="space-y-2" aria-label="Track list">
               {draft.tracks.map((t, i) => {
                 const trackError = trackValidation.tracks[t.id];
                 return (
-                  <li key={t.id} className="flex flex-wrap items-center gap-3 rounded-lg bg-[#1a1a1a] p-3">
+                  <li
+                    key={t.id}
+                    className="flex flex-wrap items-center gap-3 rounded-lg bg-[#1a1a1a] p-3"
+                  >
                     <span className="w-6 text-right text-sm text-[#A3A3A3]">{i + 1}</span>
                     <div className="min-w-0 flex-1 space-y-1">
                       <input
                         aria-label={`Track ${i + 1} title`}
                         value={t.title}
                         maxLength={100}
-                        onChange={(e) => patch({ tracks: updateTrack(draft.tracks, t.id, { title: e.target.value }) })}
+                        onChange={(e) =>
+                          patch({
+                            tracks: updateTrack(draft.tracks, t.id, { title: e.target.value }),
+                          })
+                        }
                         aria-invalid={showErrors && !!trackError}
                         className={`${inputBase} py-2 text-sm ${showErrors && trackError ? "border-red-500" : "border-[#2A2A2A]"}`}
                       />
@@ -377,7 +399,13 @@ const ReleaseFlow = () => {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#161616]">
             {coverPreview && (
-              <Image src={coverPreview} alt={`${label} cover`} fill className="object-cover" unoptimized />
+              <Image
+                src={coverPreview}
+                alt={`${label} cover`}
+                fill
+                className="object-cover"
+                unoptimized
+              />
             )}
           </div>
           <div className="space-y-3 md:col-span-2">
@@ -409,7 +437,12 @@ const ReleaseFlow = () => {
 
       <div className="flex flex-wrap gap-3">
         {step > 0 && (
-          <button type="button" onClick={() => setStep((s) => s - 1)} disabled={isBusy} className={secondaryBtn}>
+          <button
+            type="button"
+            onClick={() => setStep((s) => s - 1)}
+            disabled={isBusy}
+            className={secondaryBtn}
+          >
             Back
           </button>
         )}

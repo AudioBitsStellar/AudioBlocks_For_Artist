@@ -58,7 +58,7 @@ describe("BasicInfoStep", () => {
     const artistNameInput = screen.getByLabelText(/artist name/i);
     const bioInput = screen.getByLabelText(/bio/i);
     const hipHopCheckbox = screen.getByRole("checkbox", { name: /hip-hop/i });
-    
+
     fireEvent.change(artistNameInput, { target: { value: "Test Artist" } });
     fireEvent.change(bioInput, {
       target: { value: "This is a test bio that is definitely more than 50 characters long." },

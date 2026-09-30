@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 export interface ArtistProfileData {
   name?: string;
@@ -12,10 +12,10 @@ export function ProfilePreview({ artistData }: { artistData: ArtistProfileData }
     <div>
       <div className="flex justify-end mb-4">
         <button onClick={() => setIsPreview(!isPreview)} className="px-4 py-2 bg-gray-200 rounded">
-          {isPreview ? 'Exit Preview' : 'Preview as Fan'}
+          {isPreview ? "Exit Preview" : "Preview as Fan"}
         </button>
       </div>
-      
+
       {isPreview ? (
         <div className="border p-6 rounded bg-white shadow">
           <h1 className="text-3xl font-bold">{artistData.name}</h1>

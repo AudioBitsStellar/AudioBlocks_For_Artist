@@ -3,10 +3,38 @@
 import { Clock, Music, LogIn, Settings, Edit3 } from "lucide-react";
 
 const activities = [
-  { id: 1, type: "upload", title: "New Track Uploaded", description: "Uploaded 'Summer Vibes.wav'", date: "2 hours ago", icon: Music },
-  { id: 2, type: "profile", title: "Profile Updated", description: "Updated artist bio", date: "Yesterday, 3:45 PM", icon: Edit3 },
-  { id: 3, type: "settings", title: "Settings Changed", description: "Changed default currency to EUR", date: "Yesterday, 3:40 PM", icon: Settings },
-  { id: 4, type: "login", title: "New Login", description: "Logged in from Chrome on Mac OS", date: "Oct 12, 10:00 AM", icon: LogIn },
+  {
+    id: 1,
+    type: "upload",
+    title: "New Track Uploaded",
+    description: "Uploaded 'Summer Vibes.wav'",
+    date: "2 hours ago",
+    icon: Music,
+  },
+  {
+    id: 2,
+    type: "profile",
+    title: "Profile Updated",
+    description: "Updated artist bio",
+    date: "Yesterday, 3:45 PM",
+    icon: Edit3,
+  },
+  {
+    id: 3,
+    type: "settings",
+    title: "Settings Changed",
+    description: "Changed default currency to EUR",
+    date: "Yesterday, 3:40 PM",
+    icon: Settings,
+  },
+  {
+    id: 4,
+    type: "login",
+    title: "New Login",
+    description: "Logged in from Chrome on Mac OS",
+    date: "Oct 12, 10:00 AM",
+    icon: LogIn,
+  },
 ];
 
 export default function ActivityLogPage() {
@@ -17,7 +45,9 @@ export default function ActivityLogPage() {
           <Clock className="w-6 h-6 text-primary" />
           Activity Log
         </h1>
-        <p className="text-text-muted mt-2">Track all recent actions and history on your artist account.</p>
+        <p className="text-text-muted mt-2">
+          Track all recent actions and history on your artist account.
+        </p>
       </header>
 
       <div className="bg-surface rounded-xl border border-border overflow-hidden">

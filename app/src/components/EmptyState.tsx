@@ -19,13 +19,7 @@ interface EmptyStateProps {
  * Reusable empty state component for dashboard sections.
  * Shows a friendly message with optional CTA when there's no data.
  */
-export function EmptyState({
-  icon,
-  title,
-  message,
-  action,
-  className = "",
-}: EmptyStateProps) {
+export function EmptyState({ icon, title, message, action, className = "" }: EmptyStateProps) {
   return (
     <div
       className={`flex flex-col items-center justify-center py-12 px-4 text-center ${className}`}

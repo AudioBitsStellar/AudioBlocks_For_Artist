@@ -28,9 +28,7 @@ describe("ConnectStellarWalletButton", () => {
 
     render(<ConnectStellarWalletButton />);
 
-    expect(
-      screen.getByRole("button", { name: /connect stellar wallet/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /connect stellar wallet/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /disconnect/i })).not.toBeInTheDocument();
   });
 

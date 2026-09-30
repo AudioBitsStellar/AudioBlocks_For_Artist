@@ -204,7 +204,10 @@ export default function OnChainStatsPanel() {
               aria-label="Refresh on-chain stats"
               className="rounded-lg p-2 text-text-muted transition-colors hover:bg-surface-raised hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} aria-hidden="true" />
+              <RefreshCw
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                aria-hidden="true"
+              />
             </button>
           </div>
         </div>
@@ -256,8 +259,8 @@ export default function OnChainStatsPanel() {
       </div>
 
       <p className="text-xs text-text-subtle">
-        Last activity {formatDateTime(summary.lastActivityAt)}. Counts cover the {summary.operationCount}{" "}
-        most recent operations Horizon has indexed for this account.
+        Last activity {formatDateTime(summary.lastActivityAt)}. Counts cover the{" "}
+        {summary.operationCount} most recent operations Horizon has indexed for this account.
       </p>
     </div>
   );

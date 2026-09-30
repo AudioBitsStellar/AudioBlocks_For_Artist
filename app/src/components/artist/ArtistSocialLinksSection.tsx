@@ -82,7 +82,10 @@ export default function ArtistSocialLinksSection({
       aria-labelledby="artist-social-links-heading"
     >
       <div className="flex items-center justify-between">
-        <h2 id="artist-social-links-heading" className="text-lg font-semibold text-white flex items-center gap-2">
+        <h2
+          id="artist-social-links-heading"
+          className="text-lg font-semibold text-white flex items-center gap-2"
+        >
           <Share2 size={18} className="text-emerald-400" aria-hidden="true" />
           Social & Online Presence
         </h2>
@@ -117,7 +120,10 @@ export default function ArtistSocialLinksSection({
                   </span>
                 </div>
               </div>
-              <ExternalLink size={14} className="text-gray-500 group-hover:text-white shrink-0 transition-colors" />
+              <ExternalLink
+                size={14}
+                className="text-gray-500 group-hover:text-white shrink-0 transition-colors"
+              />
             </a>
           );
         })}

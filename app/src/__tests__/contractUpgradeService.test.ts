@@ -5,13 +5,12 @@ import {
   CONTRACT_INFO_QUERY_KEY,
 } from "../services/contractUpgradeService";
 
-const { mockUsePost, mockUseGet, mockHandleSuccess, mockHandleError } =
-  vi.hoisted(() => ({
-    mockUsePost: vi.fn(),
-    mockUseGet: vi.fn(),
-    mockHandleSuccess: vi.fn(),
-    mockHandleError: vi.fn(),
-  }));
+const { mockUsePost, mockUseGet, mockHandleSuccess, mockHandleError } = vi.hoisted(() => ({
+  mockUsePost: vi.fn(),
+  mockUseGet: vi.fn(),
+  mockHandleSuccess: vi.fn(),
+  mockHandleError: vi.fn(),
+}));
 
 vi.mock("@/api/queryClient", () => ({
   usePost: mockUsePost,

@@ -2,19 +2,19 @@
 
 This app tests at four layers: unit, component, integration, and end-to-end.
 `CONTRIBUTING.md` covers the basics (where tests live, run commands); this
-doc goes deeper on *when to use which layer* and *how to write one*.
+doc goes deeper on _when to use which layer_ and _how to write one_.
 
 ## The layers
 
-| Layer           | Tool                              | File pattern                          | What it covers                                                      |
-| ---------------- | ---------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------- |
-| Unit            | Vitest                            | `*.test.ts`                           | Pure functions, services, hooks in isolation — no rendered DOM needed for non-React modules. |
-| Component       | Vitest + React Testing Library    | `*.test.tsx`                          | A single component's rendered output and interactions, with dependencies mocked. |
-| Integration     | Vitest + React Testing Library    | `*.integration.test.tsx`              | A component wired to real providers (React Query, etc.) against a mocked API layer, exercising the actual data-fetching path. |
-| End-to-end (E2E) | Playwright                        | `e2e/*.spec.ts`                       | A full user flow in a real browser against the running Next.js app, with network calls intercepted via `page.route()`. |
-| Accessibility   | Vitest + `vitest-axe`             | e.g. `*Accessibility.test.tsx`        | Automated a11y violation checks (`toHaveNoViolations()`) layered on top of component tests. |
+| Layer            | Tool                           | File pattern                   | What it covers                                                                                                                |
+| ---------------- | ------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Unit             | Vitest                         | `*.test.ts`                    | Pure functions, services, hooks in isolation — no rendered DOM needed for non-React modules.                                  |
+| Component        | Vitest + React Testing Library | `*.test.tsx`                   | A single component's rendered output and interactions, with dependencies mocked.                                              |
+| Integration      | Vitest + React Testing Library | `*.integration.test.tsx`       | A component wired to real providers (React Query, etc.) against a mocked API layer, exercising the actual data-fetching path. |
+| End-to-end (E2E) | Playwright                     | `e2e/*.spec.ts`                | A full user flow in a real browser against the running Next.js app, with network calls intercepted via `page.route()`.        |
+| Accessibility    | Vitest + `vitest-axe`          | e.g. `*Accessibility.test.tsx` | Automated a11y violation checks (`toHaveNoViolations()`) layered on top of component tests.                                   |
 
-Rule of thumb: reach for the *lowest* layer that can actually catch the bug.
+Rule of thumb: reach for the _lowest_ layer that can actually catch the bug.
 A pure function bug belongs in a unit test, not an E2E flow — it's faster to
 run and pinpoints the failure precisely. Reach for integration/E2E when the
 bug is in how pieces are wired together (a component + its data fetching, or

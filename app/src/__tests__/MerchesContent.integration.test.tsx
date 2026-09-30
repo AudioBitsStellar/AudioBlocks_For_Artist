@@ -48,11 +48,7 @@ const networkAdapter: AxiosAdapter = (config) => {
   return handleRequest(config);
 };
 
-function response(
-  config: InternalAxiosRequestConfig,
-  data: unknown,
-  status = 200
-): AxiosResponse {
+function response(config: InternalAxiosRequestConfig, data: unknown, status = 200): AxiosResponse {
   return {
     config,
     data,
@@ -219,8 +215,9 @@ describe("MerchesContent integration", () => {
       title: "World Tour T-Shirt",
       price: "30.00",
     });
-    expect(requests.some((request) => request.method === "put" && request.url === "/artist/merches/2"))
-      .toBe(true);
+    expect(
+      requests.some((request) => request.method === "put" && request.url === "/artist/merches/2")
+    ).toBe(true);
 
     fireEvent.click(within(cardFor("World Tour T-Shirt")).getByRole("button", { name: "Delete" }));
     const confirmation = screen.getByRole("dialog", { name: "Delete Merch Item" });
@@ -231,8 +228,9 @@ describe("MerchesContent integration", () => {
       expect(screen.queryByRole("heading", { name: "World Tour T-Shirt" })).not.toBeInTheDocument();
     });
     expect(merchItems.map((item) => item.id)).toEqual([1]);
-    expect(requests.some((request) => request.method === "delete" && request.url === "/artist/merches/2"))
-      .toBe(true);
+    expect(
+      requests.some((request) => request.method === "delete" && request.url === "/artist/merches/2")
+    ).toBe(true);
     expect(requests.filter((request) => request.method === "get").length).toBeGreaterThanOrEqual(4);
   });
 

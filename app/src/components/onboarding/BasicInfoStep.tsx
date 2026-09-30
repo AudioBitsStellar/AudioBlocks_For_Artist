@@ -39,7 +39,7 @@ export default function BasicInfoStep({ onComplete }: BasicInfoStepProps) {
   const onSubmit = async (data: ArtistBasicInfo) => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       localStorage.setItem("onboarding_basic_info", JSON.stringify(data));
       toast.success("Basic information saved!");
       onComplete();
@@ -173,7 +173,7 @@ export default function BasicInfoStep({ onComplete }: BasicInfoStepProps) {
 
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-white">Social Media</h3>
-        
+
         <div className="flex flex-col">
           <label htmlFor="twitter" className="text-sm font-medium text-white mb-2">
             Twitter/X

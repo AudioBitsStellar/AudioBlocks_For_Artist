@@ -26,11 +26,11 @@ code changes roles.
 
 ## Roles
 
-| Role      | Description                                                                 |
-| --------- | ----------------------------------------------------------------------------- |
-| `owner`   | Full access; only role that can change billing/settings and manage roles.   |
+| Role      | Description                                                                                               |
+| --------- | --------------------------------------------------------------------------------------------------------- |
+| `owner`   | Full access; only role that can change billing/settings and manage roles.                                 |
 | `manager` | Can create/edit/delete content (songs, merch, events); cannot manage the workspace or its settings/roles. |
-| `viewer`  | Read-only; cannot create, edit, or delete content, nor change settings.     |
+| `viewer`  | Read-only; cannot create, edit, or delete content, nor change settings.                                   |
 
 ### Platform admin is a different axis
 
@@ -54,15 +54,15 @@ Permissions are static booleans looked up per role (`ROLE_PERMISSION_TABLE`
 in `src/types/role.ts`) — deliberately simple so the UI can check them in
 O(1) without enumerating actions:
 
-| Permission          | `owner` | `manager` | `viewer` |
-| -------------------- | :-----: | :-------: | :------: |
-| `content:create`    |   ✅    |    ✅     |    ❌    |
-| `content:edit`      |   ✅    |    ✅     |    ❌    |
-| `content:delete`    |   ✅    |    ✅     |    ❌    |
-| `settings:read`     |   ✅    |    ✅     |    ✅    |
-| `settings:edit`     |   ✅    |    ❌     |    ❌    |
-| `workspace:manage`  |   ✅    |    ❌     |    ❌    |
-| `roles:manage`      |   ✅    |    ❌     |    ❌    |
+| Permission         | `owner` | `manager` | `viewer` |
+| ------------------ | :-----: | :-------: | :------: |
+| `content:create`   |   ✅    |    ✅     |    ❌    |
+| `content:edit`     |   ✅    |    ✅     |    ❌    |
+| `content:delete`   |   ✅    |    ✅     |    ❌    |
+| `settings:read`    |   ✅    |    ✅     |    ✅    |
+| `settings:edit`    |   ✅    |    ❌     |    ❌    |
+| `workspace:manage` |   ✅    |    ❌     |    ❌    |
+| `roles:manage`     |   ✅    |    ❌     |    ❌    |
 
 Each role also has display metadata in `ROLE_INFO` (label + tagline shown
 next to the role badge) and a Tailwind class string in `ROLE_BADGE_STYLES`
@@ -105,7 +105,7 @@ Real usage in this codebase:
 - `TopHeader.tsx` — renders the role badge via `ROLE_BADGE_STYLES[role]`.
 - `app/dashboard/profile/page.tsx` — gates the Settings tab's editable
   fields behind `can("settings:edit")`, and shows
-  `getSettingsRestrictionReason(role)` as a tooltip explaining *why* a
+  `getSettingsRestrictionReason(role)` as a tooltip explaining _why_ a
   disabled control is disabled for non-owners.
 - `teamService.ts` + `app/dashboard/team/page.tsx` (#460) — the first consumer of
   `roles:manage`. The service re-checks the permission itself through

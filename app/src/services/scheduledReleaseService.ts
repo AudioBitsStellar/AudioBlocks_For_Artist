@@ -41,7 +41,10 @@ export function getScheduledReleases(): ScheduledRelease[] {
 export function publishDueReleases(now: Date = new Date()): ScheduledRelease[] {
   const published: ScheduledRelease[] = [];
   for (const release of SCHEDULED_RELEASES) {
-    if (release.status === "scheduled" && new Date(release.scheduledAt).getTime() <= now.getTime()) {
+    if (
+      release.status === "scheduled" &&
+      new Date(release.scheduledAt).getTime() <= now.getTime()
+    ) {
       release.status = "published";
       published.push(release);
     }

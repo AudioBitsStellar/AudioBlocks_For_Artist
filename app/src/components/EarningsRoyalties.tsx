@@ -165,7 +165,7 @@ export default function EarningsRoyalties() {
       id: "last-withdrawal",
       amount: 1840,
       status: "Completed",
-          requestedAt: "Jul 12, 2026",
+      requestedAt: "Jul 12, 2026",
     },
   ];
 
@@ -345,7 +345,10 @@ export default function EarningsRoyalties() {
       </div>
 
       {isError ? (
-        <div className="h-64 flex flex-col items-center justify-center gap-3 text-red-400" role="alert">
+        <div
+          className="h-64 flex flex-col items-center justify-center gap-3 text-red-400"
+          role="alert"
+        >
           <p>Failed to load earnings data. Please try again later.</p>
           <button
             type="button"

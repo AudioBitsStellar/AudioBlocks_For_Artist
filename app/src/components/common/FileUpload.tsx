@@ -118,7 +118,9 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
             ref={ref}
             disabled={disabled}
             onChange={handleFileChange}
-            accept={acceptedFormats ?? (validationRules ? toAcceptAttribute(validationRules) : undefined)}
+            accept={
+              acceptedFormats ?? (validationRules ? toAcceptAttribute(validationRules) : undefined)
+            }
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             {...props}
           />

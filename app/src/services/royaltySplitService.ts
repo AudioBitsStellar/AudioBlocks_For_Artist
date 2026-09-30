@@ -155,8 +155,7 @@ export function setRowField(
 }
 
 export type SaveSplitResult =
-  | { ok: true; split: SavedSplit }
-  | { ok: false; errors: SplitDraftErrors };
+  { ok: true; split: SavedSplit } | { ok: false; errors: SplitDraftErrors };
 
 /**
  * Validates against both the artist-facing rules and the contract invariants

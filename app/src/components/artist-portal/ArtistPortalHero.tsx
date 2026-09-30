@@ -47,8 +47,8 @@ const ArtistPortalHero = () => {
           </h1>
 
           <p className="font-['Inter'] font-medium text-lg md:text-xl text-[#A3A3A3] max-w-3xl mx-auto">
-            Join AudioBlocks and take control of your music career. Mint NFTs, engage with fans,
-            and earn transparent royalties on the Stellar blockchain.
+            Join AudioBlocks and take control of your music career. Mint NFTs, engage with fans, and
+            earn transparent royalties on the Stellar blockchain.
           </p>
         </div>
 

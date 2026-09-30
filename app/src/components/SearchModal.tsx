@@ -1,6 +1,6 @@
 /**
  * Global Search Modal Component
- * 
+ *
  * Provides a searchable interface for tracks, albums, events, and merch.
  * Features:
  * - Real-time filtering as you type
@@ -109,21 +109,24 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         event: `/dashboard/events/${id}`,
         merch: `/dashboard/merch/${id}`,
       };
-      
+
       if (query.trim()) {
         saveRecentSearch(query);
       }
-      
+
       router.push(routes[type]);
       onClose();
     },
     [query, router, onClose]
   );
 
-  const handleRecentSearchClick = useCallback((recentQuery: string) => {
-    setQuery(recentQuery);
-    handleSearch(recentQuery);
-  }, [handleSearch]);
+  const handleRecentSearchClick = useCallback(
+    (recentQuery: string) => {
+      setQuery(recentQuery);
+      handleSearch(recentQuery);
+    },
+    [handleSearch]
+  );
 
   const handleClearRecent = useCallback(() => {
     clearRecentSearches();
@@ -149,11 +152,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       >
         {/* Search Input */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-[var(--border-subtle)]">
-          <Search
-            className="text-[var(--text-muted)] flex-shrink-0"
-            size={20}
-            aria-hidden="true"
-          />
+          <Search className="text-[var(--text-muted)] flex-shrink-0" size={20} aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -309,7 +308,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         <div className="px-4 py-3 bg-[var(--surface-raised)] border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-subtle)]">
           <span>Press ESC to close</span>
           <span>
-            {query.trim() && totalResults > 0 && `${totalResults} result${totalResults !== 1 ? "s" : ""}`}
+            {query.trim() &&
+              totalResults > 0 &&
+              `${totalResults} result${totalResults !== 1 ? "s" : ""}`}
           </span>
         </div>
       </div>
@@ -352,14 +353,10 @@ function ResultItem({ title, subtitle, icon, onClick }: ResultItemProps) {
         onClick={onClick}
         className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-[var(--surface-raised)] text-left transition-colors group"
       >
-        <span className="text-[var(--text-muted)] group-hover:text-[var(--primary)]">
-          {icon}
-        </span>
+        <span className="text-[var(--text-muted)] group-hover:text-[var(--primary)]">{icon}</span>
         <div className="flex-1 min-w-0">
           <p className="text-[var(--text)] font-medium truncate">{title}</p>
-          {subtitle && (
-            <p className="text-[var(--text-subtle)] text-sm truncate">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-[var(--text-subtle)] text-sm truncate">{subtitle}</p>}
         </div>
       </button>
     </li>

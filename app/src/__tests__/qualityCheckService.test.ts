@@ -81,10 +81,14 @@ describe("analyseMaster", () => {
 
   it("flags under-spec sample rate and bitrate but not over-spec ones", () => {
     expect(
-      codesFor(cleanMaster({ metadata: { durationSec: 210, sampleRateHz: 22050, bitrateKbps: 128 } }))
+      codesFor(
+        cleanMaster({ metadata: { durationSec: 210, sampleRateHz: 22050, bitrateKbps: 128 } })
+      )
     ).toEqual(["sampleRate", "lowBitrate"]);
     expect(
-      codesFor(cleanMaster({ metadata: { durationSec: 210, sampleRateHz: 48000, bitrateKbps: 1411 } }))
+      codesFor(
+        cleanMaster({ metadata: { durationSec: 210, sampleRateHz: 48000, bitrateKbps: 1411 } })
+      )
     ).toEqual([]);
   });
 
@@ -243,8 +247,12 @@ describe("local persistence", () => {
   });
 
   it("finds the latest report for a song", () => {
-    saveQualityCheck(result({ id: "qc_song_a_v1", songId: "song_a", checkedAt: "2026-08-01T00:00:00.000Z" }));
-    saveQualityCheck(result({ id: "qc_song_a_v2", songId: "song_a", checkedAt: "2026-09-01T00:00:00.000Z" }));
+    saveQualityCheck(
+      result({ id: "qc_song_a_v1", songId: "song_a", checkedAt: "2026-08-01T00:00:00.000Z" })
+    );
+    saveQualityCheck(
+      result({ id: "qc_song_a_v2", songId: "song_a", checkedAt: "2026-09-01T00:00:00.000Z" })
+    );
     saveQualityCheck(result({ id: "qc_song_b", songId: "song_b" }));
 
     expect(latestQualityCheckForSong("song_a")?.checkedAt).toBe("2026-09-01T00:00:00.000Z");
@@ -283,10 +291,7 @@ describe("the artist's mute switch", () => {
   });
 
   it("gives preferences saved before #465 the new default instead of undefined", () => {
-    localStorage.setItem(
-      PREFS_KEY,
-      JSON.stringify({ newFan: { email: true, inApp: true } })
-    );
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ newFan: { email: true, inApp: true } }));
 
     expect(loadNotificationPreferences().qualityCheck).toEqual({ email: false, inApp: true });
   });

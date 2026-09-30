@@ -68,7 +68,8 @@ export default class ErrorBoundary extends Component<Props, State> {
             </h3>
 
             <p className="mb-6 max-w-md text-sm text-[#A3A3A3]">
-              An unexpected error occurred while loading this section. You can try again or expand details below for troubleshooting.
+              An unexpected error occurred while loading this section. You can try again or expand
+              details below for troubleshooting.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">

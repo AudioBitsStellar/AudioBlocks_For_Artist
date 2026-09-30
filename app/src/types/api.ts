@@ -379,11 +379,7 @@ export interface SubmitSongTransferResponse {
 
 // ── Notification preferences ──────────────────────────────────────────────────
 
-export type NotificationEventKey =
-  | "newFan"
-  | "earnings"
-  | "eventReminder"
-  | "qualityCheck";
+export type NotificationEventKey = "newFan" | "earnings" | "eventReminder" | "qualityCheck";
 export type NotificationChannel = "email" | "inApp";
 
 export type NotificationPreferences = Record<

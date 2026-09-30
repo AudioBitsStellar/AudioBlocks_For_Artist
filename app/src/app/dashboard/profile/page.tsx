@@ -50,9 +50,7 @@ function ProfileFormSkeleton() {
         ))}
         <div className="h-11 w-[131px] rounded-lg bg-[#2A2A2A] animate-pulse mt-6" />
       </div>
-      <div
-        className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col w-full max-w-[244px] h-[321px] rounded-2xl"
-      >
+      <div className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col w-full max-w-[244px] h-[321px] rounded-2xl">
         <div className="w-full aspect-square rounded-lg bg-[#2A2A2A] animate-pulse mb-4" />
         <div className="h-4 w-20 rounded bg-[#2A2A2A] animate-pulse mb-2" />
         <div className="h-3 w-full rounded bg-[#2A2A2A] animate-pulse mb-4 flex-1" />
@@ -219,9 +217,7 @@ export default function ProfilePage() {
               <span className="text-white font-medium">Your artist profile is verified.</span>
             )}
             {verificationStatus === "pending" && (
-              <span className="text-white font-medium">
-                Verification application under review.
-              </span>
+              <span className="text-white font-medium">Verification application under review.</span>
             )}
             {verificationStatus === "unverified" && (
               <>
@@ -256,7 +252,10 @@ export default function ProfilePage() {
       />
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto border-b border-[#2A2A2A]" role="tablist">
+      <div
+        className="flex items-center gap-2 overflow-x-auto border-b border-[#2A2A2A]"
+        role="tablist"
+      >
         <button
           onClick={() => setActiveTab("profile")}
           role="tab"
@@ -431,9 +430,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Right Column - Profile Image */}
-          <div
-            className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col w-full max-w-[244px] h-[321px] rounded-2xl"
-          >
+          <div className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col w-full max-w-[244px] h-[321px] rounded-2xl">
             {profileImage ? (
               <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
                 <Image

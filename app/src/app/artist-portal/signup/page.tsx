@@ -65,7 +65,9 @@ export default function ArtistSignupPage() {
                 <div className="w-full border-t border-[#2A2A2A]"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-[#161616] text-[#6F6F6F]">Secure authentication powered by Privy</span>
+                <span className="px-2 bg-[#161616] text-[#6F6F6F]">
+                  Secure authentication powered by Privy
+                </span>
               </div>
             </div>
 
@@ -87,10 +89,7 @@ export default function ArtistSignupPage() {
 
           <p className="text-sm text-[#A3A3A3] text-center">
             Already have an account?{" "}
-            <button
-              onClick={handleLogin}
-              className="text-[#D2045B] hover:underline cursor-pointer"
-            >
+            <button onClick={handleLogin} className="text-[#D2045B] hover:underline cursor-pointer">
               Log in
             </button>
           </p>

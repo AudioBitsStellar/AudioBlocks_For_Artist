@@ -1,19 +1,22 @@
-'use client';
+"use client";
 
-import { usePlayback } from '@/context/PlaybackContext';
-import { useRef, useCallback } from 'react';
+import { usePlayback } from "@/context/PlaybackContext";
+import { useRef, useCallback } from "react";
 
 export function VolumeSlider() {
   const { state, dispatch } = usePlayback();
   const barRef = useRef<HTMLDivElement>(null);
 
-  const handleChange = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!barRef.current) return;
-    const rect = barRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const volume = Math.max(0, Math.min(1, x / rect.width));
-    dispatch({ type: 'SET_VOLUME', volume });
-  }, [dispatch]);
+  const handleChange = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!barRef.current) return;
+      const rect = barRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const volume = Math.max(0, Math.min(1, x / rect.width));
+      dispatch({ type: "SET_VOLUME", volume });
+    },
+    [dispatch]
+  );
 
   return (
     <div

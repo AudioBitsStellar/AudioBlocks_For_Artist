@@ -65,12 +65,7 @@ export default function DashboardShortcuts() {
       // Keep the help/preferences panel reachable so shortcuts can be turned
       // back on after the user disables them.
       if (!enabled) {
-        if (
-          event.key === SHOW_HELP_KEY &&
-          !event.metaKey &&
-          !event.ctrlKey &&
-          !event.altKey
-        ) {
+        if (event.key === SHOW_HELP_KEY && !event.metaKey && !event.ctrlKey && !event.altKey) {
           event.preventDefault();
           setHelpOpen(true);
         }
