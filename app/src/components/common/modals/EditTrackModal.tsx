@@ -10,11 +10,19 @@ import {
   TRACK_VISIBILITY_OPTIONS,
   type TrackVisibility,
 } from "@/services/trackVisibilityService";
+import { MUSIC_GENRES } from "@/components/shared/music_genre";
+
+/** Max description length, matching the upload form (#396). */
+const DESCRIPTION_MAX = 500;
 
 export interface EditableTrackFields {
   title: string;
   albumName: string;
   visibility: TrackVisibility;
+  /** "" when not set. */
+  genre: string;
+  /** "" when not set. */
+  description: string;
 }
 
 interface EditTrackModalProps {
@@ -27,6 +35,8 @@ interface EditTrackModalProps {
     albumName: string;
     /** Effective visibility, already resolved by the caller. */
     visibility: TrackVisibility;
+    genre?: string;
+    description?: string;
   } | null;
   /** Album names offered in the album picker. */
   albumOptions: string[];
@@ -54,6 +64,8 @@ export default function EditTrackModal({
       title: track?.title ?? "",
       albumName: track?.albumName ?? "",
       visibility: track?.visibility ?? "private",
+      genre: track?.genre ?? "",
+      description: track?.description ?? "",
     },
   });
 
@@ -69,11 +81,14 @@ export default function EditTrackModal({
         title: current.title,
         albumName: current.albumName,
         visibility: current.visibility,
+        genre: current.genre ?? "",
+        description: current.description ?? "",
       });
     }
   }, [open, trackId, reset]);
 
   const selectedVisibility = watch("visibility");
+  const descriptionLength = (watch("description") ?? "").length;
 
   // Keep the track's current album selectable even if it isn't in the list.
   const albums =
@@ -162,6 +177,59 @@ export default function EditTrackModal({
           {errors.visibility && (
             <p id="edit-track-visibility-error" role="alert" className="text-xs text-red-500">
               {errors.visibility.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="edit-track-genre" className="text-sm font-medium text-white">
+            Genre
+          </label>
+          <select
+            id="edit-track-genre"
+            {...register("genre")}
+            aria-invalid={errors.genre ? "true" : "false"}
+            aria-describedby={errors.genre ? "edit-track-genre-error" : undefined}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none ${errors.genre ? "border-red-500" : "border-[#2A2A2A]"}`}
+          >
+            <option value="">Not set</option>
+            {MUSIC_GENRES.map((genre) => (
+              <option key={genre} value={genre}>
+                {genre}
+              </option>
+            ))}
+          </select>
+          {errors.genre && (
+            <p id="edit-track-genre-error" role="alert" className="text-xs text-red-500">
+              {errors.genre.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label htmlFor="edit-track-description" className="text-sm font-medium text-white">
+              Description
+            </label>
+            <span
+              className={`text-xs ${descriptionLength > DESCRIPTION_MAX ? "text-red-500" : "text-gray-400"}`}
+              aria-live="polite"
+            >
+              {descriptionLength}/{DESCRIPTION_MAX}
+            </span>
+          </div>
+          <textarea
+            id="edit-track-description"
+            rows={3}
+            {...register("description")}
+            aria-invalid={errors.description ? "true" : "false"}
+            aria-describedby={errors.description ? "edit-track-description-error" : undefined}
+            placeholder="Tell listeners about this track"
+            className={`w-full resize-none rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.description ? "border-red-500" : "border-[#2A2A2A]"}`}
+          />
+          {errors.description && (
+            <p id="edit-track-description-error" role="alert" className="text-xs text-red-500">
+              {errors.description.message}
             </p>
           )}
         </div>

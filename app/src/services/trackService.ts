@@ -11,6 +11,10 @@ export interface TrackEditPayload {
   albumName: string;
   /** Omitted leaves the track's current visibility alone. */
   visibility?: TrackVisibility;
+  /** #396 — omitted leaves the current genre alone; "" clears it. */
+  genre?: string;
+  /** #396 — omitted leaves the current description alone; "" clears it. */
+  description?: string;
 }
 
 export interface TrackEditResponse {
@@ -22,6 +26,8 @@ interface EditableTrack {
   title: string;
   albumName: string;
   visibility?: TrackVisibility;
+  genre?: string;
+  description?: string;
 }
 
 /** Simulated latency for the mock-data path so the optimistic state is observable. */
@@ -29,7 +35,7 @@ const MOCK_REQUEST_DELAY_MS = 400;
 
 /**
  * Returns `tracks` with the edited track's `title`, `albumName` and (when the
- * edit carries one) `visibility` replaced. Every other track, and every other
+ * edit carries them) `visibility`, `genre` and `description` replaced. Every other track, and every other
  * field of this one, is left untouched, and the input array is not mutated.
  */
 export function applyTrackEdit<T extends EditableTrack>(tracks: T[], edit: TrackEditPayload): T[] {
@@ -40,6 +46,8 @@ export function applyTrackEdit<T extends EditableTrack>(tracks: T[], edit: Track
           title: edit.title,
           albumName: edit.albumName,
           ...(edit.visibility ? { visibility: edit.visibility } : {}),
+          ...(edit.genre !== undefined ? { genre: edit.genre } : {}),
+          ...(edit.description !== undefined ? { description: edit.description } : {}),
         }
       : track
   );
