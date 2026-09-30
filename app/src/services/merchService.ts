@@ -2,6 +2,7 @@ import { MERCH_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet, usePost, usePut, useDelete } from "@/api/queryClient";
 import { DASHBOARD_CACHE } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
+import type { MerchOrderPayload, CreateMerchPayload, MerchInventoryItem, MerchItem, MerchListResponse, MerchMetric, MerchOrder, PriceValidation, UpdateMerchPayload } from "@/types/api";
 
 export interface MerchMetric {
   label: string;
@@ -241,7 +242,7 @@ const useMerchService = () => {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept in the public signature to match the documented `.mutate({ itemId, quantity })` payload shape below
   const useCreateMerchOrder = (itemId: number, quantity: number) =>
-    usePost<MerchOrder, { itemId: number; quantity: number }>(
+    usePost<MerchOrder, MerchOrderPayload>(
       MERCH_ENDPOINTS.CREATE_ORDER(itemId),
       {
         onSuccess: () => handleSuccess("Merch order created!"),

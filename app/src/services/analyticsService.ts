@@ -1,73 +1,11 @@
 import { ANALYTICS_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
+import type { AgeDemographic, AnalyticsData, AnalyticsInsights, AnalyticsResponse, AnalyticsSummary, AnalyticsSummaryResponse, DemographicsData, DeviceDemographic, GenderDemographic, GeographicData, PlayTrendData } from "@/types/api";
 
-export interface AnalyticsSummary {
-  totalPlays: number;
-  uniqueListeners: number;
-  engagementRate: number;
-  growthPercentage: number;
-  engagementTrendPercentage?: number;
-  listenerGrowthPercentage?: number;
-}
-
-export interface PlayTrendData {
-  date: string;
-  plays: number;
-}
-
-export interface GeographicData {
-  country: string;
-  region: string;
-  plays: number;
-}
-
-export interface AgeDemographic {
-  range: string;
-  percentage: number;
-}
-
-export interface GenderDemographic {
-  category: string;
-  percentage: number;
-}
-
-export interface DeviceDemographic {
-  device: string;
-  percentage: number;
-}
-
-export interface DemographicsData {
-  age: AgeDemographic[];
-  gender: GenderDemographic[];
-  device: DeviceDemographic[];
-}
-
-export interface AnalyticsData {
-  summary: AnalyticsSummary;
-  playTrends: PlayTrendData[];
-  geographicDistribution: GeographicData[];
-  demographics?: DemographicsData;
-  period: "last30days" | "last90days";
-  insights?: AnalyticsInsights;
-}
-
-export interface AnalyticsInsights {
-  peakListeningHours: string;
-  topPerformingTrackPlays: number;
-  topPerformingTrackGrowthPercentage: number;
-  listenerRetentionPercentage: number;
-}
-
-export interface AnalyticsResponse {
-  success: boolean;
-  data: AnalyticsData;
-}
-
-export interface AnalyticsSummaryResponse {
-  success: boolean;
-  data: AnalyticsSummary;
-}
+// Response types live in the central `@/types/api` module (#140); re-exported
+// here so existing imports from this service keep working.
+export type { AgeDemographic, AnalyticsData, AnalyticsInsights, AnalyticsResponse, AnalyticsSummary, AnalyticsSummaryResponse, DemographicsData, DeviceDemographic, GenderDemographic, GeographicData, PlayTrendData } from "@/types/api";
 
 const generateStablePlayTrends = (days: number): PlayTrendData[] => {
   const firstDate = Date.UTC(2026, 4, 3);

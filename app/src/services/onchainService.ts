@@ -1,21 +1,13 @@
 import { ARTIST_ONCHAIN_ENDPOINTS, SONG_ONCHAIN_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
+import type { PreparedTransaction } from "@/types/api";
+
+// Response types live in the central `@/types/api` module (#140); re-exported
+// here so existing imports from this service keep working.
+export type { PreparedTransaction } from "@/types/api";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
-
-/**
- * Returned by every prepare-* endpoint. The backend builds the Soroban
- * transaction XDR and includes the network passphrase so the client can
- * pass both directly to Freighter without any extra lookups.
- *
- * Matches the `PreparedTxResponse` shape on the backend
- * (src/modules/onchain/dto/prepared-tx.dto.ts).
- */
-export interface PreparedTransaction {
-  xdr: string;
-  networkPassphrase: string;
-}
 
 /**
  * Generic API envelope used by all endpoints in this service.

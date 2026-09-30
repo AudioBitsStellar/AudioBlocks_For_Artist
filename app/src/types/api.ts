@@ -1,6 +1,7 @@
 // Typed shapes for every API response returned by the AudioBlocks backend.
 // Import from here instead of inlining interface definitions in service files.
 
+import type { ArtistDirectoryStatus } from "@/api/api-endpoint";
 import type { TrackVisibility } from "@/services/trackVisibilityService";
 
 // ── Shared envelope ───────────────────────────────────────────────────────────
@@ -84,6 +85,11 @@ export interface UpdateProfilePayload {
 
 export type ArtistProfileResponse = ApiEnvelope<ArtistProfile>;
 
+/** `GET` profile response consumed by `useGetProfile` (artistServices). */
+export interface ProfileResponse {
+  user: AuthUser;
+}
+
 // ── Overview KPIs ─────────────────────────────────────────────────────────────
 
 export interface OverviewKpi {
@@ -127,23 +133,21 @@ export interface PlatformRevenueSummary {
 
 export type PlatformRevenueResponse = ApiEnvelope<PlatformRevenueSummary>;
 
-// ── Transactions ──────────────────────────────────────────────────────────────
+// ── Transactions ───────────────────────────────────────────────────────────
 
-export type TransactionType = "Royalty" | "Sale" | "Payout" | "Refund";
-
-export interface TransactionItem {
-  id: string;
-  type: TransactionType;
-  song?: string;
-  album?: string;
+export interface DashboardTransaction {
+  id: string | number;
+  type: string;
+  song: string;
   value: string;
-  currency: string;
   date: string;
-  status: "completed" | "pending" | "failed";
-  txHash?: string;
+  receiptUrl?: string;
 }
 
-export type TransactionListResponse = ApiEnvelope<TransactionItem[]>;
+export interface TransactionsResponse {
+  success: boolean;
+  data: DashboardTransaction[];
+}
 
 // ── Albums ────────────────────────────────────────────────────────────────────
 
@@ -157,9 +161,12 @@ export interface Album {
 
 export type AlbumsResponse = ApiEnvelope<Album[]>;
 
+/** Multipart fields sent to `POST /artist/albums` (see albumService). */
 export interface CreateAlbumPayload {
-  title: string;
-  releaseDate?: string;
+  albumTitle: string;
+  genre: string;
+  songTitle: string;
+  purchasePrice: string;
 }
 
 // ── Songs / upload ────────────────────────────────────────────────────────────
@@ -207,97 +214,131 @@ export interface FinalizeSongPayload {
 
 export type FinalizeSongResponse = ApiEnvelope<SongMeta>;
 
-// ── Merch ─────────────────────────────────────────────────────────────────────
+// ── Merch ──────────────────────────────────────────────────────────────────
+
+export interface MerchMetric {
+  label: string;
+  value: string;
+  descriptor: string;
+  gradient: string;
+}
 
 export interface MerchItem {
   id: number;
-  name: string;
-  description?: string;
-  price: number;
-  currency: string;
-  imageUrl?: string;
-  inventory?: number;
-  createdAt: string;
+  title: string;
+  detail: string;
+  date: string;
+  time: string;
+  price: string;
+  image: string;
 }
 
-export interface MerchMetric {
-  totalSales: number;
-  revenue: number;
-  topItem?: string;
-}
-
-export type MerchListResponse = ApiEnvelope<{
+export interface MerchListResponse {
+  metrics: MerchMetric[];
   items: MerchItem[];
-  metrics: MerchMetric;
-}>;
+}
 
 export interface CreateMerchPayload {
-  name: string;
-  description?: string;
-  price: number;
-  currency: string;
-  imageUrl?: string;
-  inventory?: number;
+  title: string;
+  detail: string;
+  date: string;
+  time: string;
+  price: string;
+  image?: string;
 }
 
 export type UpdateMerchPayload = Partial<CreateMerchPayload>;
 
 export interface MerchInventoryItem {
-  itemId: number;
-  remaining: number;
+  id: number;
+  title: string;
+  stock: number;
   reserved: number;
+}
+
+export interface MerchOrder {
+  id: number;
+  itemId: number;
+  itemTitle: string;
+  quantity: number;
+  price: string;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PriceValidation {
   valid: boolean;
-  minPrice: number;
-  maxPrice: number;
-  currency: string;
+  errors: Record<string, string>;
 }
 
-// ── Events ────────────────────────────────────────────────────────────────────
-
-export interface EventItem {
-  id: string;
-  title: string;
-  venue?: string;
-  location?: string;
-  date: string;
-  ticketUrl?: string;
-  description?: string;
-  imageUrl?: string;
-  createdAt: string;
+export interface PriceValidation {
+  valid: boolean;
+  errors: Record<string, string>;
 }
+
+/** Body for placing a merch order. */
+export interface MerchOrderPayload {
+  itemId: number;
+  quantity: number;
+}
+
+// ── Events ─────────────────────────────────────────────────────────────────
 
 export interface EventMetric {
-  upcomingCount: number;
-  totalAttendees: number;
+  label: string;
+  value: string;
+  descriptor: string;
+  gradient: string;
 }
 
-export type EventListResponse = ApiEnvelope<{
-  events: EventItem[];
-  metrics: EventMetric;
-}>;
+export interface EventItem {
+  id: string | number;
+  title: string;
+  tickets: string;
+  date: string;
+  time: string;
+  price: string;
+  image: string;
+}
+
+export interface EngagementTrendPoint {
+  date: string;
+  score: number;
+  attendees: number;
+}
+
+export interface EventEngagement {
+  metrics: EventMetric[];
+  trend: EngagementTrendPoint[];
+}
+
+export interface EventListResponse {
+  metrics: EventMetric[];
+  engagement: EventEngagement;
+  items: EventItem[];
+}
 
 export interface CreateEventPayload {
   title: string;
-  venue?: string;
-  location?: string;
+  tickets: string;
   date: string;
-  ticketUrl?: string;
-  description?: string;
-  imageUrl?: string;
+  time: string;
+  price: string;
+  image?: string;
 }
 
 export type UpdateEventPayload = Partial<CreateEventPayload>;
 
-// ── Analytics ─────────────────────────────────────────────────────────────────
+// ── Analytics ──────────────────────────────────────────────────────────────
 
 export interface AnalyticsSummary {
   totalPlays: number;
   uniqueListeners: number;
   engagementRate: number;
   growthPercentage: number;
+  engagementTrendPercentage?: number;
+  listenerGrowthPercentage?: number;
 }
 
 export interface PlayTrendData {
@@ -311,14 +352,52 @@ export interface GeographicData {
   plays: number;
 }
 
+export interface AgeDemographic {
+  range: string;
+  percentage: number;
+}
+
+export interface GenderDemographic {
+  category: string;
+  percentage: number;
+}
+
+export interface DeviceDemographic {
+  device: string;
+  percentage: number;
+}
+
+export interface DemographicsData {
+  age: AgeDemographic[];
+  gender: GenderDemographic[];
+  device: DeviceDemographic[];
+}
+
 export interface AnalyticsData {
   summary: AnalyticsSummary;
   playTrends: PlayTrendData[];
   geographicDistribution: GeographicData[];
+  demographics?: DemographicsData;
   period: "last30days" | "last90days";
+  insights?: AnalyticsInsights;
 }
 
-export type AnalyticsResponse = ApiEnvelope<AnalyticsData>;
+export interface AnalyticsInsights {
+  peakListeningHours: string;
+  topPerformingTrackPlays: number;
+  topPerformingTrackGrowthPercentage: number;
+  listenerRetentionPercentage: number;
+}
+
+export interface AnalyticsResponse {
+  success: boolean;
+  data: AnalyticsData;
+}
+
+export interface AnalyticsSummaryResponse {
+  success: boolean;
+  data: AnalyticsSummary;
+}
 
 // ── On-chain (Soroban / Stellar) ──────────────────────────────────────────────
 
@@ -388,6 +467,103 @@ export type NotificationPreferences = Record<
 >;
 
 export type NotificationPreferencesResponse = ApiEnvelope<NotificationPreferences>;
+
+// ── Artist directory ───────────────────────────────────────────────────────
+
+/** One row of the admin artist directory. */
+export interface ArtistDirectoryEntry {
+  id: string;
+  /** Display name, falling back to the handle when the artist has no stage name. */
+  name: string;
+  handle: string;
+  email?: string;
+  profileImage?: string;
+  status: Exclude<ArtistDirectoryStatus, "all">;
+  joinedAt?: string;
+  songCount?: number;
+  albumCount?: number;
+  totalEarnings?: number;
+}
+
+export interface ArtistDirectoryResponse {
+  success: boolean;
+  data: ArtistDirectoryEntry[];
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// ── Comments ───────────────────────────────────────────────────────────────
+
+export interface DashboardComment {
+  id: string | number;
+  name: string;
+  time: string;
+  comment: string;
+  avatar?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+}
+
+export interface CommentsResponse {
+  success: boolean;
+  data: DashboardComment[];
+}
+
+export interface CreateCommentPayload {
+  comment: string;
+  attachment?: File;
+}
+
+export interface CreateCommentResponse {
+  success: boolean;
+  data: DashboardComment;
+}
+
+// ── Notifications ──────────────────────────────────────────────────────────
+
+/** An in-app notification about something that happened to the artist. */
+export interface ArtistNotification {
+  id: string;
+  /** Same keys as the notification preferences, so each kind can be muted in settings. */
+  kind: NotificationEventKey;
+  title: string;
+  message: string;
+  /** ISO 8601 timestamp. */
+  createdAt: string;
+  read: boolean;
+  /** Dashboard route to open when the notification is selected. */
+  href?: string;
+}
+
+// ── Royalty distribution ───────────────────────────────────────────────────
+
+/** Response after submitting a royalty split transaction. */
+export interface SubmitRoyaltySplitResponse {
+  txHash: string;
+  songId: string;
+  splitId: string;
+  recipients: Array<{
+    address: string;
+    basisPoints: number;
+  }>;
+}
+
+/** A royalty distribution record. */
+export interface RoyaltyDistribution {
+  songId: string;
+  splitId: string;
+  recipients: Array<{
+    address: string;
+    basisPoints: number;
+    sharePercentage: number;
+  }>;
+  totalBasisPoints: number;
+  createdAt: string;
+}
 
 // ── Pagination meta ───────────────────────────────────────────────────────────
 

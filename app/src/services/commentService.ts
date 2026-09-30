@@ -3,31 +3,11 @@ import { DASHBOARD_COMMENT_ENDPOINTS } from "@/api/api-endpoint";
 import { createApiClient } from "@/api/axios";
 import { useGet } from "@/api/queryClient";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
+import type { CommentsResponse, CreateCommentPayload, CreateCommentResponse, DashboardComment } from "@/types/api";
 
-export interface DashboardComment {
-  id: string | number;
-  name: string;
-  time: string;
-  comment: string;
-  avatar?: string;
-  attachmentUrl?: string;
-  attachmentName?: string;
-}
-
-export interface CommentsResponse {
-  success: boolean;
-  data: DashboardComment[];
-}
-
-export interface CreateCommentPayload {
-  comment: string;
-  attachment?: File;
-}
-
-export interface CreateCommentResponse {
-  success: boolean;
-  data: DashboardComment;
-}
+// Response types live in the central `@/types/api` module (#140); re-exported
+// here so existing imports from this service keep working.
+export type { CommentsResponse, CreateCommentPayload, CreateCommentResponse, DashboardComment } from "@/types/api";
 
 export const COMMENTS_QUERY_KEY = DASHBOARD_QUERY_KEYS.comments;
 

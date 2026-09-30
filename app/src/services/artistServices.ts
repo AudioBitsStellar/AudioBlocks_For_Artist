@@ -5,6 +5,7 @@ import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { extractApiError, ApiError } from "@/api/axios";
 import { updateProfilePayload, AuthUser } from "@/types";
+import type { ProfileResponse } from "@/types/api";
 
 /**
  * Normalizes an unknown error into the `ApiError` shape we standardize on.
@@ -64,7 +65,7 @@ const useArtistServices = () => {
    * @throws Never throws directly — failures surface via the returned `error`/`isError` fields and a single toast per failure.
    */
   const useGetArtistProfile = (enabled: boolean) => {
-    const query = useGet<{ user: AuthUser }>(
+    const query = useGet<ProfileResponse>(
       DASHBOARD_QUERY_KEYS.profile,
       `${USER_ENDPOINTS.PROFILE}`,
       {
