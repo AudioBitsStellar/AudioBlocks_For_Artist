@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  ApiPerformanceMonitor,
-  SLOW_THRESHOLD_MS,
-  apiMonitor,
-} from "./apiPerformanceMonitor";
+import { ApiPerformanceMonitor, SLOW_THRESHOLD_MS, apiMonitor } from "./apiPerformanceMonitor";
 
 describe("ApiPerformanceMonitor", () => {
   let monitor: ApiPerformanceMonitor;

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/utils/date";
 import { useRole } from "@/hooks/useRole";
+import { DASHBOARD_SEARCH_EVENT } from "@/hooks/useKeyboardShortcuts";
 import { useTheme } from "@/context/ThemeContext";
 import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
 import SearchModal from "./SearchModal";
@@ -43,17 +44,11 @@ export default function TopHeader({
 
   const activeRole: Role = userRole ?? contextRole ?? roleInfo.role;
 
-  // Keyboard shortcut: Cmd/Ctrl + K to open search
+  // The dashboard shortcut hook broadcasts search requests to the shared header.
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setIsSearchOpen(true);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    const openSearch = () => setIsSearchOpen(true);
+    window.addEventListener(DASHBOARD_SEARCH_EVENT, openSearch);
+    return () => window.removeEventListener(DASHBOARD_SEARCH_EVENT, openSearch);
   }, []);
 
   useEffect(() => {
@@ -106,7 +101,8 @@ export default function TopHeader({
           <button
             onClick={() => setIsSearchOpen(true)}
             className="relative w-full group"
-            aria-label="Open search (Cmd+K or Ctrl+K)"
+            aria-label="Open search (⌘/Ctrl+K)"
+            title="Search (⌘/Ctrl+K)"
           >
             <Search
               className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors"
@@ -117,7 +113,7 @@ export default function TopHeader({
               Search by artists, songs or albums
             </div>
             <kbd className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-1 px-2 py-1 bg-[var(--surface)] border border-[var(--border-subtle)] rounded text-[10px] text-[var(--text-subtle)] font-mono">
-              <span>⌘</span>K
+              <span>⌘ / Ctrl</span>K
             </kbd>
           </button>
         </div>

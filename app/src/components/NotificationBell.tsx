@@ -2,7 +2,15 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import { AudioLines, Bell, CalendarClock, CheckCheck, UserPlus, Wallet, type LucideIcon } from "lucide-react";
+import {
+  AudioLines,
+  Bell,
+  CalendarClock,
+  CheckCheck,
+  UserPlus,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import { formatDate } from "@/utils/date";
 import { analytics } from "@/lib/analytics";
 import type { NotificationEventKey } from "@/services/notificationPreferences";

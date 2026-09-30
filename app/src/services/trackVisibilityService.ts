@@ -158,10 +158,7 @@ export function getTrackVisibility(source: {
  * Records the artist's choice for one track.
  * @returns false when the value isn't a visibility or storage rejected the write.
  */
-export function setTrackVisibility(
-  trackId: string | number,
-  visibility: TrackVisibility
-): boolean {
+export function setTrackVisibility(trackId: string | number, visibility: TrackVisibility): boolean {
   if (!isTrackVisibility(visibility)) return false;
   const overrides = readOverrides();
   overrides[String(trackId)] = { visibility, updatedAt: new Date().toISOString() };
@@ -200,12 +197,16 @@ export function filterCatalog<T extends VisibilitySource>(
   tracks: readonly T[],
   viewer: ViewerKind
 ): T[] {
-  return tracks.filter((track) => visibilityPermissions(getTrackVisibility(track), viewer).discoverable);
+  return tracks.filter(
+    (track) => visibilityPermissions(getTrackVisibility(track), viewer).discoverable
+  );
 }
 
 /** Label for the mode, for badges and selects. */
 export function visibilityLabel(visibility: TrackVisibility): string {
-  return TRACK_VISIBILITY_OPTIONS.find((option) => option.value === visibility)?.label ?? visibility;
+  return (
+    TRACK_VISIBILITY_OPTIONS.find((option) => option.value === visibility)?.label ?? visibility
+  );
 }
 
 /**

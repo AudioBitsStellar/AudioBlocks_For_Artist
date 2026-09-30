@@ -34,4 +34,3 @@ export function setSentryUserContext(artistId: string | null, extra?: Record<str
 }
 
 export default SentryProvider;
-

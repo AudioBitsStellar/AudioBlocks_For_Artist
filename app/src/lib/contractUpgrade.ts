@@ -2,9 +2,7 @@
  * Soroban contract upgrade validation and formatting utilities (#295).
  */
 
-import type {
-  ContractUpgradeValidationResult,
-} from "../types/contractUpgrade";
+import type { ContractUpgradeValidationResult } from "../types/contractUpgrade";
 
 /** Regular expression matching a 64-character hexadecimal SHA-256 hash (32 bytes) */
 const WASM_HASH_REGEX = /^[0-9a-fA-F]{64}$/;
@@ -75,9 +73,7 @@ export function validateUpgradeParams(params: {
     isValidWasmHash(params.newWasmHash) &&
     params.newWasmHash.trim().toLowerCase() === params.currentWasmHash.trim().toLowerCase()
   ) {
-    errors.push(
-      "New WASM hash is identical to the currently deployed contract WASM hash."
-    );
+    errors.push("New WASM hash is identical to the currently deployed contract WASM hash.");
   }
 
   // Admin address checks (optional at input time, but must be valid if supplied)
@@ -102,11 +98,7 @@ export function validateUpgradeParams(params: {
  * formatWasmHash("a1b2c3d4e5f67890123456789012345678901234567890123456789012345678")
  * // "a1b2c3d4...12345678"
  */
-export function formatWasmHash(
-  hash: string,
-  leadingChars = 8,
-  trailingChars = 8
-): string {
+export function formatWasmHash(hash: string, leadingChars = 8, trailingChars = 8): string {
   if (!hash) return "";
   const trimmed = hash.trim();
   if (trimmed.length <= leadingChars + trailingChars) return trimmed;

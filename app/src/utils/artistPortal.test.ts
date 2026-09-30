@@ -19,9 +19,13 @@ describe("rankTopTracks", () => {
         { id: "c", title: "C", plays: 30 },
         { id: "d", title: "D", plays: 5 },
       ],
-      3,
+      3
     );
-    expect(ranked.map((t) => [t.id, t.rank])).toEqual([["b", 1], ["c", 1], ["a", 3]]);
+    expect(ranked.map((t) => [t.id, t.rank])).toEqual([
+      ["b", 1],
+      ["c", 1],
+      ["a", 3],
+    ]);
   });
 
   it("computes change only when a baseline exists", () => {
@@ -55,7 +59,9 @@ describe("aggregateListenersByRegion", () => {
   });
 
   it("returns every region at zero for no data", () => {
-    expect(aggregateListenersByRegion([]).every((r) => r.plays === 0 && r.intensity === 0)).toBe(true);
+    expect(aggregateListenersByRegion([]).every((r) => r.plays === 0 && r.intensity === 0)).toBe(
+      true
+    );
   });
 });
 
@@ -93,8 +99,14 @@ describe("validateWithdrawal", () => {
   });
 
   it("rejects missing, malformed and secret-key destinations", () => {
-    expect(validateWithdrawal({ amount: "1", destination: "" }, "10").destination).toMatch(/Enter a Stellar address/);
-    expect(validateWithdrawal({ amount: "1", destination: "GABC" }, "10").destination).toMatch(/valid Stellar/);
-    expect(validateWithdrawal({ amount: "1", destination: "S" + "A".repeat(55) }, "10").destination).toMatch(/secret key/);
+    expect(validateWithdrawal({ amount: "1", destination: "" }, "10").destination).toMatch(
+      /Enter a Stellar address/
+    );
+    expect(validateWithdrawal({ amount: "1", destination: "GABC" }, "10").destination).toMatch(
+      /valid Stellar/
+    );
+    expect(
+      validateWithdrawal({ amount: "1", destination: "S" + "A".repeat(55) }, "10").destination
+    ).toMatch(/secret key/);
   });
 });

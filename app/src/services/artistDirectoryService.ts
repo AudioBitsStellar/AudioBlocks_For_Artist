@@ -71,21 +71,18 @@ export const artistDirectoryStatuses: ReadonlyArray<ArtistDirectoryStatus> = [
 ];
 
 const useArtistDirectoryService = () => {
-    /**
-     * Searches the artist directory.
-     *
-     * Callers pass `enabled: false` until they have confirmed the session
-     * carries the platform `admin` role, so a non-admin never fires a request
-     * that would 403. Search input is debounced by the caller, so each call is a
-     * discrete query rather than a keystroke-by-keystroke request.
-     *
-     * @param params - Search term, page (1-based), page size and verification filter.
-     * @param enabled - Whether the query should run.
-     */
-  const useSearchArtists = (
-    params: ArtistSearchParams = {},
-    enabled: boolean = true
-  ) => {
+  /**
+   * Searches the artist directory.
+   *
+   * Callers pass `enabled: false` until they have confirmed the session
+   * carries the platform `admin` role, so a non-admin never fires a request
+   * that would 403. Search input is debounced by the caller, so each call is a
+   * discrete query rather than a keystroke-by-keystroke request.
+   *
+   * @param params - Search term, page (1-based), page size and verification filter.
+   * @param enabled - Whether the query should run.
+   */
+  const useSearchArtists = (params: ArtistSearchParams = {}, enabled: boolean = true) => {
     const normalized: Required<ArtistSearchParams> = {
       query: params.query ?? "",
       page: params.page ?? 1,

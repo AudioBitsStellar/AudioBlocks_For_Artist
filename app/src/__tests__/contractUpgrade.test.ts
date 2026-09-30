@@ -9,12 +9,9 @@ import {
 } from "../lib/contractUpgrade";
 
 describe("Soroban Contract Upgrade Utilities (#295)", () => {
-  const validWasmHash =
-    "a1b2c3d4e5f67890123456789012345678901234567890123456789012345678";
-  const validContractId =
-    "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-  const validAdminAddress =
-    "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN";
+  const validWasmHash = "a1b2c3d4e5f67890123456789012345678901234567890123456789012345678";
+  const validContractId = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+  const validAdminAddress = "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN";
 
   describe("isValidWasmHash", () => {
     it("accepts a valid 64-character lowercase hex hash", () => {
@@ -211,4 +208,3 @@ describe("Soroban Contract Upgrade Utilities (#295)", () => {
     });
   });
 });
-

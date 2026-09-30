@@ -51,7 +51,7 @@ export default function BatchMintSongsButton({ songIds }: BatchMintSongsButtonPr
         const signedXdr = await signTransactionXdr(
           prepared.data.xdr,
           prepared.data.networkPassphrase,
-          address,
+          address
         );
         await services.useSubmitSongMint(songId).mutateAsync({ signedXdr });
         setStates((prev) => ({ ...prev, [songId]: "success" }));

@@ -80,14 +80,17 @@ export function moveTrack(tracks: DraftTrack[], id: number, direction: -1 | 1): 
 
 // ── Validation ───────────────────────────────────────────────────────────────
 
-export type DetailsErrors = Partial<Record<"title" | "genre" | "purchasePrice" | "releaseDate" | "cover", string>>;
+export type DetailsErrors = Partial<
+  Record<"title" | "genre" | "purchasePrice" | "releaseDate" | "cover", string>
+>;
 
 export function validateDetails(draft: ReleaseDraft, today = new Date()): DetailsErrors {
   const errors: DetailsErrors = {};
   const label = RELEASE_TYPE_LABELS[draft.type];
   const title = draft.title.trim();
   if (!title) errors.title = `${label} title is required`;
-  else if (title.length > MAX_TITLE_LENGTH) errors.title = `Title must be ${MAX_TITLE_LENGTH} characters or less`;
+  else if (title.length > MAX_TITLE_LENGTH)
+    errors.title = `Title must be ${MAX_TITLE_LENGTH} characters or less`;
   if (!draft.genre) errors.genre = "Please select a genre";
   const price = draft.purchasePrice.trim();
   if (price && (Number.isNaN(Number(price)) || Number(price) < 0)) {
@@ -123,7 +126,8 @@ export function validateTracks(draft: ReleaseDraft): TracksValidation {
     const title = t.title.trim();
     if (!t.file) result.tracks[t.id] = "Choose an audio file";
     else if (!title) result.tracks[t.id] = "Track title is required";
-    else if (title.length > MAX_TITLE_LENGTH) result.tracks[t.id] = `Title must be ${MAX_TITLE_LENGTH} characters or less`;
+    else if (title.length > MAX_TITLE_LENGTH)
+      result.tracks[t.id] = `Title must be ${MAX_TITLE_LENGTH} characters or less`;
     else {
       const key = title.toLowerCase();
       if (seen.has(key)) result.tracks[t.id] = "Duplicate track title";

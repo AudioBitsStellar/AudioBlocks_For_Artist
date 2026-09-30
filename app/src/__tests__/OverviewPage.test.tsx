@@ -30,7 +30,7 @@ vi.mock("@/components/RecentPayouts", () => ({
 describe("Overview Page Integration", () => {
   it("renders the critical components in the overview dashboard page", async () => {
     render(<OverviewPage />);
-    
+
     // Verify that all critical components are in the document
     await waitFor(() => {
       expect(screen.getByTestId("greeting-header")).toBeInTheDocument();

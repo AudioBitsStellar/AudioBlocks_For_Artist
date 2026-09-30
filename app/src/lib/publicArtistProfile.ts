@@ -56,14 +56,19 @@ function toPublicProfile(payload: unknown): PublicArtistProfile | null {
   if (typeof record.handle !== "string" || !record.handle) return null;
 
   return {
-    id: typeof record.id === "string" || typeof record.id === "number" ? String(record.id) : record.handle,
+    id:
+      typeof record.id === "string" || typeof record.id === "number"
+        ? String(record.id)
+        : record.handle,
     handle: record.handle,
     name: typeof record.name === "string" && record.name ? record.name : `@${record.handle}`,
     bio: typeof record.bio === "string" ? record.bio : undefined,
     profileImage: typeof record.profileImage === "string" ? record.profileImage : undefined,
     website: typeof record.website === "string" ? record.website : undefined,
     twitter: typeof record.twitter === "string" ? record.twitter : undefined,
-    genres: Array.isArray(record.genres) ? record.genres.filter((g): g is string => typeof g === "string") : undefined,
+    genres: Array.isArray(record.genres)
+      ? record.genres.filter((g): g is string => typeof g === "string")
+      : undefined,
     songCount: typeof record.songCount === "number" ? record.songCount : undefined,
     albumCount: typeof record.albumCount === "number" ? record.albumCount : undefined,
     listenersCount: typeof record.listenersCount === "number" ? record.listenersCount : undefined,
@@ -80,9 +85,7 @@ function toPublicProfile(payload: unknown): PublicArtistProfile | null {
  * Fetches a public artist profile by handle. Safe to call during
  * `generateMetadata` — it never throws.
  */
-export async function fetchPublicArtistProfile(
-  handle: string
-): Promise<PublicArtistProfileResult> {
+export async function fetchPublicArtistProfile(handle: string): Promise<PublicArtistProfileResult> {
   // Tolerate a trailing slash so `…/api/` + `/artist/public/x` doesn't double up.
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
   const normalizedHandle = handle.trim().replace(/^@/, "");

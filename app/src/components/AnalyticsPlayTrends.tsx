@@ -69,7 +69,9 @@ export default function AnalyticsPlayTrends({
     "px-4 py-2 rounded text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface";
   const periodButtonClass = (active: boolean) =>
     `${periodButtonBase} ${
-      active ? "bg-primary text-primary-contrast" : "bg-surface-sunken text-text-muted hover:bg-surface-raised"
+      active
+        ? "bg-primary text-primary-contrast"
+        : "bg-surface-sunken text-text-muted hover:bg-surface-raised"
     }`;
 
   return (
@@ -98,7 +100,10 @@ export default function AnalyticsPlayTrends({
         </div>
       </div>
 
-      <div role="region" aria-label={`Play trends for ${hoveredPeriod === "last30days" ? "last 30 days" : "last 90 days"}`}>
+      <div
+        role="region"
+        aria-label={`Play trends for ${hoveredPeriod === "last30days" ? "last 30 days" : "last 90 days"}`}
+      >
         <ResponsiveContainer width="100%" height={300}>
           <LineChart
             data={chartData}

@@ -167,9 +167,7 @@ export default function ArtistSearch() {
       </form>
 
       <p className="text-xs text-[#A3A3A3]" role="status" aria-live="polite">
-        {showSkeleton
-          ? "Searching artists…"
-          : `${total} artist${total === 1 ? "" : "s"} found`}
+        {showSkeleton ? "Searching artists…" : `${total} artist${total === 1 ? "" : "s"} found`}
       </p>
 
       {showSkeleton ? (
@@ -236,7 +234,9 @@ export default function ArtistSearch() {
                   {artist.joinedAt && (
                     <div>
                       <dt className="text-[#6F6F6F]">Joined</dt>
-                      <dd className="text-white">{formatDate(new Date(artist.joinedAt), "short")}</dd>
+                      <dd className="text-white">
+                        {formatDate(new Date(artist.joinedAt), "short")}
+                      </dd>
                     </div>
                   )}
                 </dl>

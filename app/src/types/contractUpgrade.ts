@@ -7,13 +7,7 @@ import type { PreparedTransaction } from "./api";
 
 /** Status lifecycle of a contract upgrade operation */
 export type ContractUpgradeStatus =
-  | "idle"
-  | "validating"
-  | "preparing"
-  | "signing"
-  | "submitting"
-  | "success"
-  | "error";
+  "idle" | "validating" | "preparing" | "signing" | "submitting" | "success" | "error";
 
 /** Request payload for preparing a Soroban contract upgrade transaction */
 export interface PrepareContractUpgradeRequest {

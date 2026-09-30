@@ -134,11 +134,15 @@ describe("useAlbumServices", () => {
 
   describe("useCreateAlbum", () => {
     it("POSTs the FormData to the create endpoint", async () => {
-      mockPost.mockResolvedValueOnce({ data: { id: "42", message: "Album uploaded successfully!" } });
+      mockPost.mockResolvedValueOnce({
+        data: { id: "42", message: "Album uploaded successfully!" },
+      });
       const { Wrapper } = makeWrapper();
       const fd = makeAlbumFormData();
 
-      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), { wrapper: Wrapper });
+      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), {
+        wrapper: Wrapper,
+      });
 
       await act(async () => {
         await result.current.mutateAsync(fd);
@@ -151,7 +155,9 @@ describe("useAlbumServices", () => {
       mockPost.mockResolvedValueOnce({ data: { id: "42", message: "Custom success" } });
       const { Wrapper } = makeWrapper();
 
-      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), { wrapper: Wrapper });
+      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), {
+        wrapper: Wrapper,
+      });
 
       await act(async () => {
         await result.current.mutateAsync(makeAlbumFormData());
@@ -165,7 +171,9 @@ describe("useAlbumServices", () => {
       mockPost.mockResolvedValueOnce({ data: { id: "42" } });
       const { Wrapper } = makeWrapper();
 
-      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), { wrapper: Wrapper });
+      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), {
+        wrapper: Wrapper,
+      });
 
       await act(async () => {
         await result.current.mutateAsync(makeAlbumFormData());
@@ -178,7 +186,9 @@ describe("useAlbumServices", () => {
       mockPost.mockResolvedValueOnce({ data: { id: "42", message: "ok" } });
       const { Wrapper, invalidateSpy } = makeWrapper();
 
-      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), { wrapper: Wrapper });
+      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), {
+        wrapper: Wrapper,
+      });
 
       await act(async () => {
         await result.current.mutateAsync(makeAlbumFormData());
@@ -191,7 +201,9 @@ describe("useAlbumServices", () => {
       mockPost.mockRejectedValueOnce(new Error("Upload rejected by server"));
       const { Wrapper } = makeWrapper();
 
-      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), { wrapper: Wrapper });
+      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), {
+        wrapper: Wrapper,
+      });
 
       await act(async () => {
         await expect(result.current.mutateAsync(makeAlbumFormData())).rejects.toThrow(
@@ -208,7 +220,9 @@ describe("useAlbumServices", () => {
       mockPost.mockRejectedValueOnce(new Error(""));
       const { Wrapper } = makeWrapper();
 
-      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), { wrapper: Wrapper });
+      const { result } = renderHook(() => useAlbumServices().useCreateAlbum(), {
+        wrapper: Wrapper,
+      });
 
       await act(async () => {
         await result.current.mutateAsync(makeAlbumFormData()).catch(() => {});

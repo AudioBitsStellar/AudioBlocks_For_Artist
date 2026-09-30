@@ -15,7 +15,10 @@ export const TrackUploadPage: React.FC = () => {
   const [genre, setGenre] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const { useUploadSong } = useUploadServices();
   const uploadSongMutation = useUploadSong();
@@ -27,7 +30,10 @@ export const TrackUploadPage: React.FC = () => {
       if (selected.type.startsWith("audio/")) {
         setFile(selected);
       } else {
-        setStatusMessage({ type: "error", text: "Please upload a valid audio file (.mp3, .wav, .flac)." });
+        setStatusMessage({
+          type: "error",
+          text: "Please upload a valid audio file (.mp3, .wav, .flac).",
+        });
       }
     }
   };
@@ -35,7 +41,10 @@ export const TrackUploadPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !title || !genre) {
-      setStatusMessage({ type: "error", text: "Please fill in all required fields (Audio file, Title, Genre)." });
+      setStatusMessage({
+        type: "error",
+        text: "Please fill in all required fields (Audio file, Title, Genre).",
+      });
       return;
     }
 
@@ -53,10 +62,16 @@ export const TrackUploadPage: React.FC = () => {
         coverArtPath: coverArt ? coverArt.name : "",
       });
 
-      setStatusMessage({ type: "success", text: "Track uploaded successfully and published to Stellar Network!" });
+      setStatusMessage({
+        type: "success",
+        text: "Track uploaded successfully and published to Stellar Network!",
+      });
       setTimeout(() => router.push("/dashboard/my-music"), 1500);
     } catch (err: any) {
-      setStatusMessage({ type: "error", text: err?.message || "Failed to upload track. Please try again." });
+      setStatusMessage({
+        type: "error",
+        text: err?.message || "Failed to upload track. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -66,16 +81,24 @@ export const TrackUploadPage: React.FC = () => {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Upload New Track</h1>
-        <p className="text-gray-400 text-sm mt-1">Publish your track to AudioBlock on the Stellar Blockchain.</p>
+        <p className="text-gray-400 text-sm mt-1">
+          Publish your track to AudioBlock on the Stellar Blockchain.
+        </p>
       </div>
 
       {statusMessage && (
         <div
           className={`p-4 rounded-lg flex items-center gap-3 text-sm font-medium ${
-            statusMessage.type === "success" ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800" : "bg-red-950/60 text-red-300 border border-red-800"
+            statusMessage.type === "success"
+              ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800"
+              : "bg-red-950/60 text-red-300 border border-red-800"
           }`}
         >
-          {statusMessage.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+          {statusMessage.type === "success" ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : (
+            <AlertCircle className="h-5 w-5" />
+          )}
           {statusMessage.text}
         </div>
       )}
@@ -98,11 +121,14 @@ export const TrackUploadPage: React.FC = () => {
             <UploadCloud className="h-10 w-10 text-pink-500 mx-auto" />
             {file ? (
               <p className="text-pink-400 font-semibold text-sm flex items-center justify-center gap-2">
-                <Music className="h-4 w-4" /> {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                <Music className="h-4 w-4" /> {file.name} ({(file.size / (1024 * 1024)).toFixed(2)}{" "}
+                MB)
               </p>
             ) : (
               <div>
-                <p className="text-white font-medium text-base">Drag & drop your audio file here, or click to browse</p>
+                <p className="text-white font-medium text-base">
+                  Drag & drop your audio file here, or click to browse
+                </p>
                 <p className="text-gray-400 text-xs mt-1">Supports MP3, WAV, FLAC up to 50MB</p>
               </div>
             )}

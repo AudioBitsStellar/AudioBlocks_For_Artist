@@ -44,7 +44,7 @@ export default function VerificationStep({ onComplete, onBack }: VerificationSte
   const onSubmit = async (data: ArtistVerification) => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       localStorage.setItem("onboarding_verification", JSON.stringify(data));
       toast.success("Verification information saved!");
       onComplete();
@@ -57,9 +57,7 @@ export default function VerificationStep({ onComplete, onBack }: VerificationSte
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-white mb-2">Verification & KYC</h2>
-        <p className="text-[#A3A3A3]">
-          We need to verify your identity to comply with regulations
-        </p>
+        <p className="text-[#A3A3A3]">We need to verify your identity to comply with regulations</p>
       </div>
 
       <div className="flex flex-col">
@@ -214,10 +212,10 @@ export default function VerificationStep({ onComplete, onBack }: VerificationSte
           <strong>Document Upload (Optional)</strong>
         </p>
         <p className="text-[#A3A3A3] text-xs mb-4">
-          You can upload your ID document and proof of address now, or do it later from your
-          profile settings
+          You can upload your ID document and proof of address now, or do it later from your profile
+          settings
         </p>
-        
+
         <div className="space-y-3">
           <div>
             <label htmlFor="idDocument" className="text-sm text-white mb-1 block">
@@ -231,7 +229,7 @@ export default function VerificationStep({ onComplete, onBack }: VerificationSte
               className="text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#D2045B] file:text-white file:cursor-pointer hover:file:bg-[#B8043F]"
             />
           </div>
-          
+
           <div>
             <label htmlFor="proofOfAddress" className="text-sm text-white mb-1 block">
               Proof of Address

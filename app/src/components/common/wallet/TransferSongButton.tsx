@@ -294,9 +294,7 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
           <Check className="h-4 w-4 text-green-500" />
           <p className="text-xs text-green-400 font-medium">Transferred successfully!</p>
         </div>
-        {txHash && (
-          <p className="text-[10px] text-gray-400 font-mono truncate">Tx: {txHash}</p>
-        )}
+        {txHash && <p className="text-[10px] text-gray-400 font-mono truncate">Tx: {txHash}</p>}
         {cooldownActive && (
           <p className="text-[10px] text-gray-400">
             Cooldown: {cooldownRemaining}s — new transfer available shortly

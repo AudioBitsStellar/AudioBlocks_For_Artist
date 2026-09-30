@@ -241,10 +241,7 @@ export function IPFSMetadataViewer({
               <h4 className="text-xs font-medium uppercase text-gray-400">Attributes</h4>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {data.attributes.map((attr, i) => (
-                  <div
-                    key={`${attr.trait_type}-${i}`}
-                    className="rounded-md bg-gray-50 px-3 py-2"
-                  >
+                  <div key={`${attr.trait_type}-${i}`} className="rounded-md bg-gray-50 px-3 py-2">
                     <span className="text-xs text-gray-400">{attr.trait_type}</span>
                     <p className="text-sm font-medium text-gray-700">{String(attr.value)}</p>
                   </div>

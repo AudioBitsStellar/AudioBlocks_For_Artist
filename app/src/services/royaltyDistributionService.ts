@@ -143,8 +143,7 @@ export const useRoyaltyDistributionService = () => {
     usePost<ApiEnvelope<PreparedTransaction>, UpdateRoyaltySplitRequest>(
       ROYALTY_ENDPOINTS.updateSplit("", ""),
       {
-        onError: (error) =>
-          handleError(error.message || "Failed to prepare royalty split update."),
+        onError: (error) => handleError(error.message || "Failed to prepare royalty split update."),
       }
     );
 

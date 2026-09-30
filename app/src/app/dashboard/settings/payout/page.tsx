@@ -19,7 +19,11 @@ const DEFAULT_METHODS: PayoutMethod[] = [];
 export default function PayoutSettingsPage() {
   const [methods, setMethods] = useState<PayoutMethod[]>(DEFAULT_METHODS);
   const [isEditing, setIsEditing] = useState(false);
-  const [newMethod, setNewMethod] = useState<{ type: "stellar" | "bank"; address: string; label: string }>({
+  const [newMethod, setNewMethod] = useState<{
+    type: "stellar" | "bank";
+    address: string;
+    label: string;
+  }>({
     type: "stellar",
     address: "",
     label: "",
@@ -95,10 +99,15 @@ export default function PayoutSettingsPage() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    method.type === "stellar" ? "bg-primary/10" : "bg-blue-500/10"
-                  }`}>
-                    <DollarSign size={20} className={method.type === "stellar" ? "text-primary" : "text-blue-500"} />
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      method.type === "stellar" ? "bg-primary/10" : "bg-blue-500/10"
+                    }`}
+                  >
+                    <DollarSign
+                      size={20}
+                      className={method.type === "stellar" ? "text-primary" : "text-blue-500"}
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-text">{method.label}</p>
@@ -178,7 +187,9 @@ export default function PayoutSettingsPage() {
               />
               <input
                 type="text"
-                placeholder={newMethod.type === "stellar" ? "Stellar address (G...)" : "Account details"}
+                placeholder={
+                  newMethod.type === "stellar" ? "Stellar address (G...)" : "Account details"
+                }
                 value={newMethod.address}
                 onChange={(e) => setNewMethod({ ...newMethod, address: e.target.value })}
                 className="w-full rounded-lg border border-border-subtle bg-surface-raised px-4 py-3 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"

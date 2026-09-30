@@ -145,7 +145,8 @@ export function analyseMaster(analysis: MasterAnalysis): QualityCheckIssue[] {
     issues.push({
       code: "monoMaster",
       severity: "info",
-      message: "This is a mono master. Fine for some genres, but worth double-checking it's intentional.",
+      message:
+        "This is a mono master. Fine for some genres, but worth double-checking it's intentional.",
     });
   }
 
@@ -153,7 +154,8 @@ export function analyseMaster(analysis: MasterAnalysis): QualityCheckIssue[] {
     issues.push({
       code: "longSilence",
       severity: "warning",
-      message: "More than a quarter of the track is digital silence. Trim the dead air at the start and end.",
+      message:
+        "More than a quarter of the track is digital silence. Trim the dead air at the start and end.",
     });
   }
 
@@ -200,7 +202,16 @@ export function runQualityCheck({
 }: QualityCheckInput): QualityCheckResult {
   const issues = analyseMaster(analysis);
   const score = scoreOf(issues);
-  return { id, songId, songTitle, issues, score, verdict: verdictFor(issues, score), checkedAt, seen: false };
+  return {
+    id,
+    songId,
+    songTitle,
+    issues,
+    score,
+    verdict: verdictFor(issues, score),
+    checkedAt,
+    seen: false,
+  };
 }
 
 const HEADLINE: Record<QualityCheckVerdict, string> = {
@@ -293,7 +304,9 @@ export function saveQualityCheck(result: QualityCheckResult): QualityCheckResult
 
 /** Marks one result as opened. Returns the updated list. */
 export function markQualityCheckSeen(id: string): QualityCheckResult[] {
-  const next = loadQualityChecks().map((result) => (result.id === id ? { ...result, seen: true } : result));
+  const next = loadQualityChecks().map((result) =>
+    result.id === id ? { ...result, seen: true } : result
+  );
   persist(next);
   return next;
 }
@@ -339,10 +352,7 @@ export function useQualityCheckNotifications(): ArtistNotification[] {
     readNotificationsSnapshot,
     emptyNotificationsSnapshot
   );
-  const notifications = useMemo(
-    () => JSON.parse(snapshot) as ArtistNotification[],
-    [snapshot]
-  );
+  const notifications = useMemo(() => JSON.parse(snapshot) as ArtistNotification[], [snapshot]);
   return notifications;
 }
 

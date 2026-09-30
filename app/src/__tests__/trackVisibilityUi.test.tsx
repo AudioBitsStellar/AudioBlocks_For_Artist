@@ -30,10 +30,7 @@ vi.mock("next/image", () => ({
 }));
 
 import MyMusicContent from "@/components/MyMusicContent";
-import {
-  getStoredVisibility,
-  setTrackVisibility,
-} from "@/services/trackVisibilityService";
+import { getStoredVisibility, setTrackVisibility } from "@/services/trackVisibilityService";
 
 /** Resolves the pending PATCH by hand so a test can control success or failure. */
 function deferred<T>() {

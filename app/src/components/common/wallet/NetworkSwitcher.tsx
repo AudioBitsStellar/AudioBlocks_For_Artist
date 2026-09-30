@@ -37,8 +37,8 @@ export default function NetworkSwitcher() {
       <div>
         <h3 className="text-white font-semibold mb-1">Stellar network</h3>
         <p className="text-sm text-[#A3A3A3]">
-          Choose which network your wallet balance, transaction history, and gas estimate are
-          read from.
+          Choose which network your wallet balance, transaction history, and gas estimate are read
+          from.
         </p>
       </div>
 
@@ -72,8 +72,8 @@ export default function NetworkSwitcher() {
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-yellow-500" />
           <p className="text-xs text-yellow-500">
             Freighter is connected to a different network than the one selected here. Balances and
-            transaction history shown on this page won&apos;t match what you see in the extension
-            — switch Freighter&apos;s own network from within the extension to line them up.
+            transaction history shown on this page won&apos;t match what you see in the extension —
+            switch Freighter&apos;s own network from within the extension to line them up.
           </p>
         </div>
       )}

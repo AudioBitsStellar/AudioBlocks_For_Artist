@@ -29,7 +29,8 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
     pattern: /upgrade.*unauthorized|unauthorized.*upgrade|only.*admin.*upgrade|upgrade.*forbidden/i,
     info: {
       title: "Upgrade Unauthorized",
-      message: "Only the designated contract administrator is authorized to upgrade this Soroban contract.",
+      message:
+        "Only the designated contract administrator is authorized to upgrade this Soroban contract.",
       category: "auth",
       severity: "error",
       resolution: [
@@ -100,10 +101,7 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
       message: "Your account does not have enough XLM to complete this transaction.",
       category: "insufficient",
       severity: "error",
-      resolution: [
-        "Check your XLM balance in your wallet",
-        "Add more XLM to your account",
-      ],
+      resolution: ["Check your XLM balance in your wallet", "Add more XLM to your account"],
     },
   },
   {
@@ -113,9 +111,7 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
       message: "The network fee is too low for current conditions.",
       category: "network",
       severity: "warning",
-      resolution: [
-        "The fee will be recalculated automatically — try again",
-      ],
+      resolution: ["The fee will be recalculated automatically — try again"],
     },
   },
 
@@ -140,10 +136,7 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
       message: "The contract encountered an error during execution.",
       category: "contract",
       severity: "error",
-      resolution: [
-        "Try the operation again",
-        "Check that all parameters are valid",
-      ],
+      resolution: ["Try the operation again", "Check that all parameters are valid"],
     },
   },
   {
@@ -153,13 +146,9 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
       message: "This operation has already been completed.",
       category: "contract",
       severity: "warning",
-      resolution: [
-        "Check your transaction history",
-        "No action needed if it already succeeded",
-      ],
+      resolution: ["Check your transaction history", "No action needed if it already succeeded"],
     },
   },
-
 
   // Network
   {
@@ -169,10 +158,7 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
       message: "Could not connect to the Stellar network.",
       category: "network",
       severity: "error",
-      resolution: [
-        "Check your internet connection",
-        "Try again in a few moments",
-      ],
+      resolution: ["Check your internet connection", "Try again in a few moments"],
     },
   },
   {
@@ -182,10 +168,7 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
       message: "The transaction was not confirmed before it expired.",
       category: "network",
       severity: "error",
-      resolution: [
-        "Try submitting the transaction again",
-        "Check your network connection",
-      ],
+      resolution: ["Try submitting the transaction again", "Check your network connection"],
     },
   },
   {
@@ -223,10 +206,7 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; info: ContractErrorInfo }> = [
       message: "The amount entered is not valid.",
       category: "validation",
       severity: "error",
-      resolution: [
-        "Enter a valid positive number",
-        "Check for special characters",
-      ],
+      resolution: ["Enter a valid positive number", "Check for special characters"],
     },
   },
 ];
@@ -260,7 +240,8 @@ export function translateContractError(error: unknown): ContractErrorInfo {
 
   return {
     title: "Unexpected Error",
-    message: rawMessage || "An unexpected error occurred while interacting with the smart contract.",
+    message:
+      rawMessage || "An unexpected error occurred while interacting with the smart contract.",
     category: "unknown",
     severity: "error",
     resolution: [

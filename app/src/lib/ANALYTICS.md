@@ -23,23 +23,23 @@ no network calls, no noise in `vitest` runs.
 All events are typed in `src/lib/analytics.ts` (`EventName`); there is no
 untyped/free-form `track()` escape hatch, so every event below is exhaustive.
 
-| Event              | Properties                                            | Fired from                                                                                     |
-| ------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `upload_started`   | `fileId`, `fileName`, `fileSizeBytes`                 | `src/components/musicUpload/Song.tsx` — when a song file upload begins                          |
-| `upload_completed` | `fileId`, `songId`, `durationMs`                      | `src/components/musicUpload/Song.tsx` — when the chunked upload + finalize call succeeds        |
-| `upload_failed`    | `fileId`, `reason`                                    | `src/components/musicUpload/Song.tsx` — when any step of the upload pipeline throws              |
-| `mint_started`     | `songId`, `walletAddress`                             | `MintSongButton.tsx` (song mint) and `SetupArtistOnChainProfile.tsx` (profile mint, `songId: "artist-profile"`) — when the Freighter sign request is sent |
-| `mint_succeeded`   | `songId`, `txHash`, `tokenId`                         | Same two components, once the signed transaction is submitted and the backend returns a token ID |
-| `mint_failed`      | `songId`, `reason`                                    | Same two components — covers both a rejected Freighter signature (`reason: "user rejected signature"`) and any other submit/backend failure |
-| `profile_saved`    | `hasImage`, `hasWebsite`, `hasTwitter`                | `src/app/dashboard/profile/page.tsx` — when the artist saves profile edits                       |
-| `upload_mode_selected` | `mode` (`"song"` \| `"album"`)                    | `src/app/dashboard/upload-music/page.tsx` — when the artist switches between the two upload flows  |
-| `nav_item_clicked` | `item`, `href`                                        | `src/components/Sidebar.tsx` — every dashboard nav link, including the mobile drawer               |
-| `analytics_range_changed` | `range` (`"last30days"` \| `"last90days"`)  | `src/components/AnalyticsPlayTrends.tsx` — the 30/90-day toggle on the play-trends card            |
-| `merch_stock_adjusted` | `itemId`, `change`, `newStock`                  | `src/components/MerchInventory.tsx` — after a +/- or typed stock change is applied                 |
-| `notifications_panel_opened` | `unreadCount`                               | `src/components/NotificationBell.tsx` — when the bell dropdown opens                               |
-| `notification_clicked` | `notificationId`, `kind`, `hasLink`             | `src/components/NotificationBell.tsx` — on any notification row, link or not                       |
-| `notifications_all_marked_read` | `unreadCount`                        | `src/components/NotificationBell.tsx` — the "Mark all as read" action                              |
-| `quality_check_published` | `songId`, `verdict`, `score`, `issueCount`  | `src/services/qualityCheckService.ts` — when `saveQualityCheck` records an AI master review (#465) |
+| Event                           | Properties                                 | Fired from                                                                                                                                                |
+| ------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `upload_started`                | `fileId`, `fileName`, `fileSizeBytes`      | `src/components/musicUpload/Song.tsx` — when a song file upload begins                                                                                    |
+| `upload_completed`              | `fileId`, `songId`, `durationMs`           | `src/components/musicUpload/Song.tsx` — when the chunked upload + finalize call succeeds                                                                  |
+| `upload_failed`                 | `fileId`, `reason`                         | `src/components/musicUpload/Song.tsx` — when any step of the upload pipeline throws                                                                       |
+| `mint_started`                  | `songId`, `walletAddress`                  | `MintSongButton.tsx` (song mint) and `SetupArtistOnChainProfile.tsx` (profile mint, `songId: "artist-profile"`) — when the Freighter sign request is sent |
+| `mint_succeeded`                | `songId`, `txHash`, `tokenId`              | Same two components, once the signed transaction is submitted and the backend returns a token ID                                                          |
+| `mint_failed`                   | `songId`, `reason`                         | Same two components — covers both a rejected Freighter signature (`reason: "user rejected signature"`) and any other submit/backend failure               |
+| `profile_saved`                 | `hasImage`, `hasWebsite`, `hasTwitter`     | `src/app/dashboard/profile/page.tsx` — when the artist saves profile edits                                                                                |
+| `upload_mode_selected`          | `mode` (`"song"` \| `"album"`)             | `src/app/dashboard/upload-music/page.tsx` — when the artist switches between the two upload flows                                                         |
+| `nav_item_clicked`              | `item`, `href`                             | `src/components/Sidebar.tsx` — every dashboard nav link, including the mobile drawer                                                                      |
+| `analytics_range_changed`       | `range` (`"last30days"` \| `"last90days"`) | `src/components/AnalyticsPlayTrends.tsx` — the 30/90-day toggle on the play-trends card                                                                   |
+| `merch_stock_adjusted`          | `itemId`, `change`, `newStock`             | `src/components/MerchInventory.tsx` — after a +/- or typed stock change is applied                                                                        |
+| `notifications_panel_opened`    | `unreadCount`                              | `src/components/NotificationBell.tsx` — when the bell dropdown opens                                                                                      |
+| `notification_clicked`          | `notificationId`, `kind`, `hasLink`        | `src/components/NotificationBell.tsx` — on any notification row, link or not                                                                              |
+| `notifications_all_marked_read` | `unreadCount`                              | `src/components/NotificationBell.tsx` — the "Mark all as read" action                                                                                     |
+| `quality_check_published`       | `songId`, `verdict`, `score`, `issueCount` | `src/services/qualityCheckService.ts` — when `saveQualityCheck` records an AI master review (#465)                                                        |
 
 Note that `mint_started` / `mint_succeeded` / `mint_failed` are shared
 between song minting and artist-profile minting (same on-chain

@@ -36,7 +36,11 @@ export default function ListenerMap({ data }: ListenerMapProps) {
         <h2 className="text-white text-lg font-semibold">Listener Map</h2>
       </div>
 
-      <div className="grid grid-cols-4 grid-rows-3 gap-2" role="img" aria-label="Listeners by world region">
+      <div
+        className="grid grid-cols-4 grid-rows-3 gap-2"
+        role="img"
+        aria-label="Listeners by world region"
+      >
         {regions.map((r) => (
           <div
             key={r.region}

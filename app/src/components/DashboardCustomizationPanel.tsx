@@ -117,7 +117,11 @@ export default function DashboardCustomizationPanel() {
                         }`}
                         aria-label={`${widget.visible ? "Hide" : "Show"} ${widget.label}`}
                       >
-                        {widget.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        {widget.visible ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   ))}

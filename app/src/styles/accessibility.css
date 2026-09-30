@@ -9,38 +9,38 @@
 
 :root {
   /* ─── Text Colors (4.5:1+ contrast on dark backgrounds) ──────────────────── */
-  --color-text-primary: #ffffff;      /* 21:1 on #000000 */
-  --color-text-secondary: #a1a1aa;    /* 7.5:1 on #18181b */
-  --color-text-tertiary: #71717a;     /* 4.6:1 on #18181b */
-  --color-text-disabled: #52525b;     /* 3.1:1 on #18181b — use only for decorative */
+  --color-text-primary: #ffffff; /* 21:1 on #000000 */
+  --color-text-secondary: #a1a1aa; /* 7.5:1 on #18181b */
+  --color-text-tertiary: #71717a; /* 4.6:1 on #18181b */
+  --color-text-disabled: #52525b; /* 3.1:1 on #18181b — use only for decorative */
 
   /* ─── Interactive Element Colors (3:1+ contrast) ──────────────────────────── */
-  --color-button-primary: #10b981;    /* emerald-500 */
+  --color-button-primary: #10b981; /* emerald-500 */
   --color-button-primary-text: #ffffff; /* 4.5:1 on emerald-500 */
-  --color-button-secondary: #374151;  /* gray-700 */
+  --color-button-secondary: #374151; /* gray-700 */
   --color-button-secondary-text: #f9fafb; /* 14.5:1 on gray-700 */
 
   /* ─── Link Colors ─────────────────────────────────────────────────────────── */
-  --color-link: #60a5fa;              /* blue-400 — 8.6:1 on #18181b */
-  --color-link-hover: #93c5fd;        /* blue-300 — 12.5:1 on #18181b */
-  --color-link-visited: #a78bfa;      /* violet-400 — 6.7:1 on #18181b */
+  --color-link: #60a5fa; /* blue-400 — 8.6:1 on #18181b */
+  --color-link-hover: #93c5fd; /* blue-300 — 12.5:1 on #18181b */
+  --color-link-visited: #a78bfa; /* violet-400 — 6.7:1 on #18181b */
 
   /* ─── Form Input Colors ───────────────────────────────────────────────────── */
-  --color-input-border: #52525b;      /* zinc-600 — 4.6:1 on #18181b */
+  --color-input-border: #52525b; /* zinc-600 — 4.6:1 on #18181b */
   --color-input-border-focus: #10b981; /* emerald-500 — 4.5:1 on #18181b */
-  --color-input-text: #ffffff;        /* 21:1 on input background */
+  --color-input-text: #ffffff; /* 21:1 on input background */
   --color-input-placeholder: #71717a; /* 4.6:1 on #18181b */
 
   /* ─── Focus Indicators (3:1+ contrast) ────────────────────────────────────── */
-  --color-focus-ring: #60a5fa;        /* blue-400 — visible on dark backgrounds */
+  --color-focus-ring: #60a5fa; /* blue-400 — visible on dark backgrounds */
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
 
   /* ─── Status Colors ───────────────────────────────────────────────────────── */
-  --color-success: #10b981;           /* emerald-500 */
-  --color-warning: #f59e0b;           /* amber-500 — 3.1:1 on #18181b */
-  --color-error: #ef4444;            /* red-500 — 4.0:1 on #18181b */
-  --color-info: #3b82f6;             /* blue-500 — 5.0:1 on #18181b */
+  --color-success: #10b981; /* emerald-500 */
+  --color-warning: #f59e0b; /* amber-500 — 3.1:1 on #18181b */
+  --color-error: #ef4444; /* red-500 — 4.0:1 on #18181b */
+  --color-info: #3b82f6; /* blue-500 — 5.0:1 on #18181b */
 }
 
 /* ─── Focus Ring Utility ────────────────────────────────────────────────────── */

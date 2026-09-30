@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TopHeader from "@/components/TopHeader";
 import { RoleProvider } from "@/context/RoleContext";
+import { DASHBOARD_SEARCH_EVENT } from "@/hooks/useKeyboardShortcuts";
 
 // SearchModal calls useRouter(), which needs a mounted app router.
 vi.mock("next/navigation", () => ({
@@ -226,6 +227,16 @@ describe("TopHeader – search bar", () => {
     });
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("opens search when the global shortcut hook requests it", () => {
+    renderTopHeader(<TopHeader onMenuClick={() => {}} />);
+
+    act(() => {
+      window.dispatchEvent(new Event(DASHBOARD_SEARCH_EVENT));
+    });
+
+    expect(screen.getByRole("dialog", { name: "Search dialog" })).toBeInTheDocument();
   });
 });
 

@@ -47,10 +47,11 @@ export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
               ))}
             </select>
           </label>
-          <button 
+          <button
             onClick={() => {
-              const csvContent = "data:text/csv;charset=utf-8,ID,Date,Amount,Source,Status\n" 
-                + rows.map(r => `${r.id},${r.date},${r.amount},${r.source},${r.status}`).join("\n");
+              const csvContent =
+                "data:text/csv;charset=utf-8,ID,Date,Amount,Source,Status\n" +
+                rows.map((r) => `${r.id},${r.date},${r.amount},${r.source},${r.status}`).join("\n");
               const link = document.createElement("a");
               link.setAttribute("href", encodeURI(csvContent));
               link.setAttribute("download", "earnings_export.csv");
@@ -62,7 +63,7 @@ export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
           >
             Export CSV
           </button>
-          <button 
+          <button
             onClick={() => {
               alert("PDF export initiated. Downloading shortly...");
             }}
@@ -74,7 +75,8 @@ export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
       </div>
 
       <p className="text-gray-400 text-sm mb-4">
-        Total paid out: <span className="text-pink-500 font-semibold">{totalCompletedPayouts(payouts)} XLM</span>
+        Total paid out:{" "}
+        <span className="text-pink-500 font-semibold">{totalCompletedPayouts(payouts)} XLM</span>
       </p>
 
       {rows.length === 0 ? (
@@ -83,7 +85,9 @@ export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-gray-400">
-              <th scope="col" className="py-2">Date</th>
+              <th scope="col" className="py-2">
+                Date
+              </th>
               <th scope="col">Source</th>
               <th scope="col">Amount</th>
               <th scope="col">Status</th>

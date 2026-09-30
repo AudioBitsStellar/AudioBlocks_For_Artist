@@ -1,6 +1,6 @@
 /**
  * Accessibility audit for SearchModal component (issue #166).
- * 
+ *
  * Ensures the global search interface is fully accessible with proper
  * keyboard navigation, ARIA labels, and no critical WCAG violations.
  */
@@ -46,29 +46,23 @@ describe("SearchModal – axe audit", () => {
   });
 
   it("closed modal has no accessibility violations", async () => {
-    const { container } = render(
-      <SearchModal isOpen={false} onClose={vi.fn()} />
-    );
+    const { container } = render(<SearchModal isOpen={false} onClose={vi.fn()} />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
   it("open modal has no critical axe violations", async () => {
-    const { container } = render(
-      <SearchModal isOpen={true} onClose={vi.fn()} />
-    );
+    const { container } = render(<SearchModal isOpen={true} onClose={vi.fn()} />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
   it("modal with search results has no violations", async () => {
-    const { container, rerender } = render(
-      <SearchModal isOpen={true} onClose={vi.fn()} />
-    );
-    
+    const { container, rerender } = render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+
     // Simulate search results by re-rendering
     rerender(<SearchModal isOpen={true} onClose={vi.fn()} />);
-    
+
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

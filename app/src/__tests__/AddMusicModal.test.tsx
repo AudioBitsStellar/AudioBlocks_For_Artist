@@ -48,7 +48,9 @@ describe("AddMusicModal scheduling", () => {
     fillRequiredFields();
     fireEvent.click(screen.getByText("Schedule for Later"));
 
-    const dateTimeInput = document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    const dateTimeInput = document.querySelector(
+      'input[type="datetime-local"]'
+    ) as HTMLInputElement;
     fireEvent.change(dateTimeInput, { target: { value: "2020-01-01T10:00" } });
     fireEvent.click(screen.getByText("Schedule Release"));
 
@@ -73,7 +75,9 @@ describe("AddMusicModal scheduling", () => {
     });
     fireEvent.click(screen.getByText("Schedule for Later"));
 
-    const dateTimeInput = document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    const dateTimeInput = document.querySelector(
+      'input[type="datetime-local"]'
+    ) as HTMLInputElement;
     fireEvent.change(dateTimeInput, { target: { value: "2099-01-01T10:00" } });
     fireEvent.click(screen.getByText("Schedule Release"));
 

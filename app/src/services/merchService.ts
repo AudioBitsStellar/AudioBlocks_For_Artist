@@ -49,7 +49,7 @@ export interface MerchOrder {
   itemTitle: string;
   quantity: number;
   price: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   createdAt: string;
   updatedAt: string;
 }
@@ -250,10 +250,9 @@ const useMerchService = () => {
       MERCH_ENDPOINTS.CREATE_ORDER(itemId),
       {
         onSuccess: () => handleSuccess("Merch order created!"),
-        onError: (error) =>
-          handleError(error.message || "Failed to create merch order."),
+        onError: (error) => handleError(error.message || "Failed to create merch order."),
         invalidateQueries: [MERCH_QUERY_KEY],
-      },
+      }
     );
 
   /**

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { usePlayback } from '@/context/PlaybackContext';
-import { useMultilingualMusic } from '@/hooks/useMultilingualMusic';
-import { useEffect } from 'react';
+import { usePlayback } from "@/context/PlaybackContext";
+import { useMultilingualMusic } from "@/hooks/useMultilingualMusic";
+import { useEffect } from "react";
 
 type LyricsLine = { text: string; startTime: number; endTime: number };
 
@@ -22,8 +22,7 @@ export function LyricsDisplay({ lyrics }: { lyrics: LyricsLine[] }) {
     if (!formattedLyrics.length) return;
 
     const handleTimeUpdate = () => {
-      const duration =
-        formattedLyrics[formattedLyrics.length - 1]?.endTime || 0;
+      const duration = formattedLyrics[formattedLyrics.length - 1]?.endTime || 0;
       const progress = state.isPlaying ? state.seekPosition % duration : 0;
 
       let foundIndex = 0;
@@ -38,15 +37,15 @@ export function LyricsDisplay({ lyrics }: { lyrics: LyricsLine[] }) {
     };
 
     if (state.isPlaying) {
-      const audio = document.querySelector('audio');
+      const audio = document.querySelector("audio");
       if (audio) {
-        audio.addEventListener('timeupdate', handleTimeUpdate);
+        audio.addEventListener("timeupdate", handleTimeUpdate);
       }
     }
     return () => {
-      const audio = document.querySelector('audio');
+      const audio = document.querySelector("audio");
       if (audio) {
-        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener("timeupdate", handleTimeUpdate);
       }
     };
   }, [formattedLyrics, state.isPlaying, state.seekPosition]);
@@ -59,10 +58,9 @@ export function LyricsDisplay({ lyrics }: { lyrics: LyricsLine[] }) {
         <div
           key={index}
           className={`${
-            index === currentLineIndex
-              ? 'text-[#D2045B] font-medium'
-              : 'text-[#6F6F6F]'
-          } transition-colors`}>
+            index === currentLineIndex ? "text-[#D2045B] font-medium" : "text-[#6F6F6F]"
+          } transition-colors`}
+        >
           {line.text}
         </div>
       ))}

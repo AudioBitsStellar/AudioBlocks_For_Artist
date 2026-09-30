@@ -38,7 +38,7 @@ export function validateRoyaltySplit(splits: RoyaltySplitEntry[]): RoyaltySplitV
   const total = splits.reduce((sum, s) => sum + s.basisPoints, 0);
   if (splits.length > 0 && total !== TOTAL_BASIS_POINTS) {
     errors.push(
-      `Splits must sum to 100% (${TOTAL_BASIS_POINTS} basis points) — got ${total / 100}%.`,
+      `Splits must sum to 100% (${TOTAL_BASIS_POINTS} basis points) — got ${total / 100}%.`
     );
   }
 

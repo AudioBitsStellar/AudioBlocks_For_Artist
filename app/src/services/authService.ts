@@ -17,7 +17,9 @@ const TOKEN_STORAGE_KEY = "token";
 const TOKEN_EXPIRY_STORAGE_KEY = "token_expiry";
 
 function isWellFormedToken(token: string): boolean {
-  return typeof token === "string" && token.trim().length > 0 && token.split(".").length === 3;
+  if (typeof token !== "string") return false;
+  const segments = token.trim().split(".");
+  return segments.length === 3 && segments.every((segment) => segment.trim().length > 0);
 }
 
 /**
@@ -59,8 +61,9 @@ export function isTokenExpired(): boolean {
   if (typeof window === "undefined") return true;
 
   const expiry = localStorage.getItem(TOKEN_EXPIRY_STORAGE_KEY);
-  if (!expiry) return false;
-  return Date.now() >= Number(expiry);
+  if (expiry === null) return false;
+  const expiresAt = Number(expiry);
+  return !Number.isFinite(expiresAt) || Date.now() >= expiresAt;
 }
 
 /**
@@ -93,6 +96,10 @@ export async function refreshAccessToken(
 
   try {
     const { token, expiresIn } = await refresh();
+    if (!isWellFormedToken(token)) {
+      clearTokens();
+      return null;
+    }
     storeToken(token, expiresIn);
     return token;
   } catch {

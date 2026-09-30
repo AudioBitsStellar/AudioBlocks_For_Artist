@@ -47,7 +47,9 @@ const darkDeclarations = declarationsIn(".dark", GLOBALS_CSS);
 
 describe("theme token palette (#463)", () => {
   it("declares a dark-mode value for every light-mode token", () => {
-    const undocumented = [...rootDeclarations.keys()].filter((token) => !darkDeclarations.has(token));
+    const undocumented = [...rootDeclarations.keys()].filter(
+      (token) => !darkDeclarations.has(token)
+    );
     expect(undocumented).toEqual([]);
   });
 
@@ -60,16 +62,23 @@ describe("theme token palette (#463)", () => {
 
     const mismatches: string[] = [];
     for (const row of rows) {
-      const cells = row.split("|").map((cell) => cell.trim()).filter(Boolean);
+      const cells = row
+        .split("|")
+        .map((cell) => cell.trim())
+        .filter(Boolean);
       const token = cells[0].replace(/`/g, "");
       const lightHex = cells[1].match(/#[0-9a-fA-F]{6}/)?.[0]?.toLowerCase();
       const darkHex = cells[2].match(/#[0-9a-fA-F]{6}/)?.[0]?.toLowerCase();
       if (!lightHex || !darkHex) continue;
       if (rootDeclarations.get(`--color-${token}`) !== lightHex) {
-        mismatches.push(`--color-${token}: light is ${rootDeclarations.get(`--color-${token}`)}, docs say ${lightHex}`);
+        mismatches.push(
+          `--color-${token}: light is ${rootDeclarations.get(`--color-${token}`)}, docs say ${lightHex}`
+        );
       }
       if (darkDeclarations.get(`--color-${token}`) !== darkHex) {
-        mismatches.push(`--color-${token}: dark is ${darkDeclarations.get(`--color-${token}`)}, docs say ${darkHex}`);
+        mismatches.push(
+          `--color-${token}: dark is ${darkDeclarations.get(`--color-${token}`)}, docs say ${darkHex}`
+        );
       }
     }
     expect(mismatches).toEqual([]);

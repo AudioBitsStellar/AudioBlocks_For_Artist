@@ -31,7 +31,9 @@ const AnalyticsPlayTrends = dynamic(() => import("@/components/AnalyticsPlayTren
 });
 
 const ListenerMap = dynamic(() => import("@/components/ListenerMap"), { ssr: false });
-const TopTracksLeaderboard = dynamic(() => import("@/components/TopTracksLeaderboard"), { ssr: false });
+const TopTracksLeaderboard = dynamic(() => import("@/components/TopTracksLeaderboard"), {
+  ssr: false,
+});
 
 // Placeholder until per-track play stats are served by the analytics API. The
 // leaderboard is labelled as sample data so artists don't mistake it for theirs.
@@ -91,8 +93,7 @@ export default function AnalyticsDashboard() {
   // The selected period drives the query, so the 30/90-day toggle refetches
   // real data for that window instead of re-slicing the 30-day response (#401).
   const [period, setPeriod] = useState<AnalyticsPeriod>("last30days");
-  const { data, isLoading, isError, refetch } =
-    useAnalyticsServices().useGetAnalyticsData(period);
+  const { data, isLoading, isError, refetch } = useAnalyticsServices().useGetAnalyticsData(period);
   const analyticsData = data?.data;
   // Only show insights the API actually computed. Previously a hard-coded
   // "peak hours" string and made-up retention/top-track figures were shown
@@ -193,16 +194,16 @@ export default function AnalyticsDashboard() {
                     <p className="text-gray-400 text-sm">
                       Your most popular track in the{" "}
                       {period === "last90days" ? "last 90 days" : "last 30 days"} has{" "}
-                      {insights.topPerformingTrackPlays.toLocaleString()} plays, trending upward with
-                      a {insights.topPerformingTrackGrowthPercentage.toFixed(1)}% growth rate.
+                      {insights.topPerformingTrackPlays.toLocaleString()} plays, trending upward
+                      with a {insights.topPerformingTrackGrowthPercentage.toFixed(1)}% growth rate.
                     </p>
                   </div>
 
                   <div className="p-4 bg-[#2d3d2d] rounded-lg border border-[#3d4d3d]">
                     <h4 className="text-pink-500 font-semibold mb-2">Listener Retention</h4>
                     <p className="text-gray-400 text-sm">
-                      {insights.listenerRetentionPercentage.toFixed(1)}% of listeners return to listen
-                      again, showing strong fan loyalty.
+                      {insights.listenerRetentionPercentage.toFixed(1)}% of listeners return to
+                      listen again, showing strong fan loyalty.
                     </p>
                   </div>
                 </div>

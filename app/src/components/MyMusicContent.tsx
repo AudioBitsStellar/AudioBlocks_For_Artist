@@ -700,9 +700,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
               <Eye size={16} aria-hidden="true" />
               <select
                 value={visibilityFilter}
-                onChange={(event) =>
-                  setVisibilityFilter(event.target.value as VisibilityFilter)
-                }
+                onChange={(event) => setVisibilityFilter(event.target.value as VisibilityFilter)}
                 aria-label="Filter tracks by visibility"
                 className="bg-transparent py-2.5 outline-none"
               >

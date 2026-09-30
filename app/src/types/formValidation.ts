@@ -313,4 +313,3 @@ export const collaboratorInviteSchema = z.object({
     .refine((val) => (ROLES as ReadonlyArray<string>).includes(val), "Invalid role selection"),
   message: z.string().trim().max(300, "Message must be 300 characters or less").optional(),
 });
-

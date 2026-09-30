@@ -73,6 +73,7 @@ export function useCrossfade() {
     startCrossfade,
     cancelCrossfade,
     setCrossfadeEnabled: (enabled: boolean) => dispatch({ type: "SET_CROSSFADE_ENABLED", enabled }),
-    setCrossfadeDuration: (duration: number) => dispatch({ type: "SET_CROSSFADE_DURATION", duration }),
+    setCrossfadeDuration: (duration: number) =>
+      dispatch({ type: "SET_CROSSFADE_DURATION", duration }),
   };
 }

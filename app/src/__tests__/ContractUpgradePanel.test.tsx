@@ -4,13 +4,12 @@ import ContractUpgradePanel from "@/components/ContractUpgradePanel";
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
 
-const { mockUsePost, mockUseGet, mockHandleSuccess, mockHandleError } =
-  vi.hoisted(() => ({
-    mockUsePost: vi.fn(),
-    mockUseGet: vi.fn(),
-    mockHandleSuccess: vi.fn(),
-    mockHandleError: vi.fn(),
-  }));
+const { mockUsePost, mockUseGet, mockHandleSuccess, mockHandleError } = vi.hoisted(() => ({
+  mockUsePost: vi.fn(),
+  mockUseGet: vi.fn(),
+  mockHandleSuccess: vi.fn(),
+  mockHandleError: vi.fn(),
+}));
 
 vi.mock("@/api/queryClient", () => ({
   usePost: mockUsePost,
@@ -26,8 +25,7 @@ vi.mock("@/hooks/useToastHandler", () => ({
 
 const VALID_CONTRACT_ID = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 const VALID_ADMIN = "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN";
-const VALID_WASM_HASH =
-  "a1b2c3d4e5f67890123456789012345678901234567890123456789012345678";
+const VALID_WASM_HASH = "a1b2c3d4e5f67890123456789012345678901234567890123456789012345678";
 
 function buildDefaultMocks() {
   mockUsePost.mockReturnValue({ mutateAsync: vi.fn() });
@@ -55,9 +53,7 @@ describe("ContractUpgradePanel (#295)", () => {
   it("renders the heading and WASM hash input", () => {
     renderPanel();
 
-    expect(
-      screen.getByRole("heading", { name: /soroban contract upgrade/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /soroban contract upgrade/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/new wasm hash/i)).toBeInTheDocument();
   });
 
@@ -75,9 +71,7 @@ describe("ContractUpgradePanel (#295)", () => {
       target: { value: VALID_WASM_HASH },
     });
 
-    expect(
-      screen.getByRole("button", { name: /upgrade contract/i })
-    ).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /upgrade contract/i })).not.toBeDisabled();
   });
 
   it("shows validation errors for an invalid WASM hash on submit", async () => {
