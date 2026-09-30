@@ -15,20 +15,11 @@ import {
   toArtistNotification,
   useQualityCheckNotifications,
 } from "@/services/qualityCheckService";
+import type { ArtistNotification } from "@/types/api";
 
-/** An in-app notification about something that happened to the artist. */
-export interface ArtistNotification {
-  id: string;
-  /** Same keys as the notification preferences, so each kind can be muted in settings. */
-  kind: NotificationEventKey;
-  title: string;
-  message: string;
-  /** ISO 8601 timestamp. */
-  createdAt: string;
-  read: boolean;
-  /** Dashboard route to open when the notification is selected. */
-  href?: string;
-}
+// Response types live in the central `@/types/api` module (#140); re-exported
+// here so existing imports from this service keep working.
+export type { ArtistNotification } from "@/types/api";
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;

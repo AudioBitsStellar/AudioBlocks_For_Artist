@@ -14,32 +14,11 @@
 import { useGet } from "@/api/queryClient";
 import { ADMIN_ARTIST_ENDPOINTS, type ArtistDirectoryStatus } from "@/api/api-endpoint";
 import { CACHE_TIME } from "@/api/cachePolicy";
+import type { ArtistDirectoryEntry, ArtistDirectoryResponse } from "@/types/api";
 
-/** One row of the admin artist directory. */
-export interface ArtistDirectoryEntry {
-  id: string;
-  /** Display name, falling back to the handle when the artist has no stage name. */
-  name: string;
-  handle: string;
-  email?: string;
-  profileImage?: string;
-  status: Exclude<ArtistDirectoryStatus, "all">;
-  joinedAt?: string;
-  songCount?: number;
-  albumCount?: number;
-  totalEarnings?: number;
-}
-
-export interface ArtistDirectoryResponse {
-  success: boolean;
-  data: ArtistDirectoryEntry[];
-  meta?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+// Response types live in the central `@/types/api` module (#140); re-exported
+// here so existing imports from this service keep working.
+export type { ArtistDirectoryEntry, ArtistDirectoryResponse } from "@/types/api";
 
 export interface ArtistSearchParams {
   /** Free-text query. An empty string lists the whole directory. */

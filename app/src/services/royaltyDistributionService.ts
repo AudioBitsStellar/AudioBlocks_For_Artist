@@ -10,18 +10,18 @@ import { ARTIST_ONCHAIN_ENDPOINTS, SONG_ONCHAIN_ENDPOINTS } from "@/api/api-endp
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import type { RoyaltySplitEntry } from "@/types/royalty";
+import type {
+  ApiEnvelope,
+  PreparedTransaction,
+  RoyaltyDistribution,
+  SubmitRoyaltySplitResponse,
+} from "@/types/api";
+
+// Response types live in the central `@/types/api` module (#140); re-exported
+// here so existing imports from this service keep working.
+export type { RoyaltyDistribution, SubmitRoyaltySplitResponse } from "@/types/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-interface PreparedTransaction {
-  xdr: string;
-  networkPassphrase: string;
-}
-
-interface ApiEnvelope<T> {
-  success: boolean;
-  data: T;
-}
 
 /** Request to prepare a royalty split setup transaction. */
 export interface PrepareRoyaltySplitRequest {
@@ -33,30 +33,6 @@ export interface PrepareRoyaltySplitRequest {
 export interface SubmitRoyaltySplitRequest {
   songId: string;
   signedXdr: string;
-}
-
-/** Response after submitting a royalty split transaction. */
-export interface SubmitRoyaltySplitResponse {
-  txHash: string;
-  songId: string;
-  splitId: string;
-  recipients: Array<{
-    address: string;
-    basisPoints: number;
-  }>;
-}
-
-/** A royalty distribution record. */
-export interface RoyaltyDistribution {
-  songId: string;
-  splitId: string;
-  recipients: Array<{
-    address: string;
-    basisPoints: number;
-    sharePercentage: number;
-  }>;
-  totalBasisPoints: number;
-  createdAt: string;
 }
 
 /** Request to fetch royalty distribution for a song. */

@@ -1,20 +1,11 @@
 import { DASHBOARD_TRANSACTION_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
+import type { DashboardTransaction, TransactionsResponse } from "@/types/api";
 
-export interface DashboardTransaction {
-  id: string | number;
-  type: string;
-  song: string;
-  value: string;
-  date: string;
-  receiptUrl?: string;
-}
-
-export interface TransactionsResponse {
-  success: boolean;
-  data: DashboardTransaction[];
-}
+// Response types live in the central `@/types/api` module (#140); re-exported
+// here so existing imports from this service keep working.
+export type { DashboardTransaction, TransactionsResponse } from "@/types/api";
 
 export const TRANSACTIONS_QUERY_KEY = DASHBOARD_QUERY_KEYS.transactions;
 
