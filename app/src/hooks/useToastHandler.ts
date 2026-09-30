@@ -21,7 +21,7 @@ export const useHandleSuccess = () => {
           }, 4000);
         }
       }
-    } catch (e) {
+    } catch {
       // ignore DOM errors
     }
     toast.success(message || "Operation completed successfully", {
@@ -75,7 +75,7 @@ export const useHandleError = () => {
           }, 5000);
         }
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -100,7 +100,7 @@ export const useToast = () => {
           }, 4000);
         }
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -115,7 +115,7 @@ export const useToast = () => {
           el.textContent = message;
         }
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
 

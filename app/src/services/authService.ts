@@ -4,7 +4,7 @@ import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { getToken, clearSession } from "@/api/axios";
 import { AuthResponse, LoginEmailPayload, RegisterEmailPayload } from "@/types";
 
-interface ApiEnvelope<T> {
+interface ApiEnvelope {
   success: boolean;
   message?: string;
 }
@@ -119,7 +119,7 @@ const useAuthServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useRegisterEmail = () =>
-    usePost<ApiEnvelope<never> & AuthResponse, RegisterEmailPayload>(
+    usePost<ApiEnvelope & AuthResponse, RegisterEmailPayload>(
       AUTH_ENDPOINTS.REGISTER_EMAIL,
       {
         onSuccess: () => handleSuccess("Registered successfully!"),
@@ -134,7 +134,7 @@ const useAuthServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useLoginEmail = () =>
-    usePost<ApiEnvelope<never> & AuthResponse, LoginEmailPayload>(AUTH_ENDPOINTS.LOGIN_EMAIL, {
+    usePost<ApiEnvelope & AuthResponse, LoginEmailPayload>(AUTH_ENDPOINTS.LOGIN_EMAIL, {
       onSuccess: () => handleSuccess("Logged in successfully!"),
       onError: (error) => handleError(error.message || "Failed to log in."),
     });
