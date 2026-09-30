@@ -87,12 +87,18 @@ describe("DashboardShortcuts navigation (#462)", () => {
     trackTitle.remove();
   });
 
-  it("leaves browser combinations such as ⌘K alone", () => {
+  it("handles search but leaves unrelated browser combinations alone", () => {
     render(<DashboardShortcuts />);
-    expect(tap("k", { metaKey: true })).toBe(true); // not prevented: TopHeader owns it
+    expect(tap("k", { metaKey: true })).toBe(false); // handled by the dashboard search shortcut
     expect(tap("g", { ctrlKey: true })).toBe(true);
     expect(push).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens the dashboard music upload workflow with Cmd/Ctrl+U", () => {
+    render(<DashboardShortcuts />);
+    expect(tap("u", { ctrlKey: true })).toBe(false);
+    expect(push).toHaveBeenCalledWith("/dashboard/upload-music");
   });
 });
 
@@ -105,6 +111,8 @@ describe("DashboardShortcuts shortcut list", () => {
       expect(dialog).toHaveTextContent(entry.label);
     }
     expect(dialog).toHaveTextContent("Search");
+    expect(dialog).toHaveTextContent("Save");
+    expect(dialog).toHaveTextContent("Upload");
   });
 
   it("closes on the same key", async () => {
@@ -139,5 +147,22 @@ describe("DashboardShortcuts shortcut list", () => {
     await screen.findByRole("dialog");
     fireEvent.click(screen.getByRole("button", { name: "Close keyboard shortcuts" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("keeps help available to re-enable disabled shortcuts", async () => {
+    render(<DashboardShortcuts />);
+    tap(SHOW_HELP_KEY);
+    const checkbox = await screen.findByRole("checkbox", { name: "Enable keyboard shortcuts" });
+    fireEvent.click(checkbox);
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    expect(tap(SHOW_HELP_KEY)).toBe(false);
+    const reopenedCheckbox = await screen.findByRole("checkbox", {
+      name: "Enable keyboard shortcuts",
+    });
+    expect(reopenedCheckbox).not.toBeChecked();
+    fireEvent.click(reopenedCheckbox);
+    await waitFor(() => expect(reopenedCheckbox).toBeChecked());
   });
 });

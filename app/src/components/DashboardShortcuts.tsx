@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/shared/Modal";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import {
   GENERAL_SHORTCUTS,
   GOTO_SHORTCUTS,
+  SHOW_HELP_KEY,
   SEQUENCE_TIMEOUT_MS,
   isEditableTarget,
   keysFor,
@@ -46,6 +48,8 @@ export default function DashboardShortcuts() {
   const [helpOpen, setHelpOpen] = useState(false);
   const awaitingPrefix = useRef(false);
   const sequenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openUpload = useCallback(() => router.push("/dashboard/upload-music"), [router]);
+  const { enabled, setEnabled } = useKeyboardShortcuts({ onUpload: openUpload });
 
   useEffect(() => {
     const endSequence = () => {
@@ -57,6 +61,22 @@ export default function DashboardShortcuts() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
       if (isEditableTarget(event.target)) return;
+
+      // Keep the help/preferences panel reachable so shortcuts can be turned
+      // back on after the user disables them.
+      if (!enabled) {
+        if (
+          event.key === SHOW_HELP_KEY &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.altKey
+        ) {
+          event.preventDefault();
+          setHelpOpen(true);
+        }
+        endSequence();
+        return;
+      }
 
       const state: ShortcutState = { awaitingPrefix: awaitingPrefix.current, helpOpen };
       const effect = resolveKeyPress(
@@ -95,7 +115,7 @@ export default function DashboardShortcuts() {
       window.removeEventListener("keydown", handleKeyDown);
       endSequence();
     };
-  }, [helpOpen, router]);
+  }, [enabled, helpOpen, router]);
 
   return (
     <Modal
@@ -149,9 +169,20 @@ export default function DashboardShortcuts() {
         </section>
 
         <p className="text-xs leading-relaxed text-[#A3A3A3]">
-          Shortcuts pause while you are typing in a field, and leave browser combinations such as ⌘K
-          or Ctrl+K to the browser.
+          Navigation shortcuts pause while you are typing. Search, Save, and Upload work with ⌘ or
+          Ctrl; other browser shortcuts are left untouched.
         </p>
+        <label className="flex items-center gap-3 border-t border-[#2A2A2A] pt-4 text-sm text-white">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(event) => setEnabled(event.target.checked)}
+            aria-label="Enable keyboard shortcuts"
+            className="h-4 w-4 accent-[#D2045B]"
+          />
+          Enable keyboard shortcuts
+          <span className="text-xs text-[#A3A3A3]">Preference saved on this device</span>
+        </label>
       </div>
     </Modal>
   );

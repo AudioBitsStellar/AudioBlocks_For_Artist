@@ -175,7 +175,7 @@ function MerchForm({ initial, onSave, onClose, isBusy }: MerchFormProps) {
 
 export default function MerchesContent() {
   const { useGetMerches, useCreateMerch, useUpdateMerch, useDeleteMerch } = useMerchService();
-  const { data, isLoading } = useGetMerches();
+  const { data, isLoading, isError, refetch } = useGetMerches();
   // RBAC – issue #173: gate destructive actions by role.
   const { can } = useRole();
   const canCreate = can("content:create");
@@ -263,6 +263,17 @@ export default function MerchesContent() {
               <Skeleton key={index} className="h-64 rounded-3xl" />
             ))}
           </div>
+        </div>
+      ) : isError && !featureFlags.useMockMerches ? (
+        <div className="flex min-h-64 flex-col items-center justify-center gap-3" role="alert">
+          <p className="text-sm text-red-400">Failed to load merch. Please try again.</p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="rounded-full border border-[#2E2E2E] px-5 py-2 text-sm font-medium text-white transition-colors hover:border-[#885FA8]"
+          >
+            Retry
+          </button>
         </div>
       ) : (
         <>

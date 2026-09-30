@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
 import Cookies from "js-cookie";
 import {
   storeToken,
@@ -19,9 +19,14 @@ describe("authService — token management", () => {
     Cookies.remove("audioblocks_jwt");
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe("storeToken / getStoredToken", () => {
     it("stores a token to localStorage and reads it back", () => {
       storeToken(FAKE_TOKEN);
+      expect(localStorage.getItem("token")).toBe(FAKE_TOKEN);
       expect(getStoredToken()).toBe(FAKE_TOKEN);
     });
 
@@ -56,6 +61,11 @@ describe("authService — token management", () => {
       localStorage.setItem("token", "a.b.c.d");
       expect(getStoredToken()).toBeNull();
     });
+
+    it("rejects a token with an empty segment", () => {
+      localStorage.setItem("token", "header..signature");
+      expect(getStoredToken()).toBeNull();
+    });
   });
 
   describe("isTokenExpired", () => {
@@ -71,6 +81,20 @@ describe("authService — token management", () => {
 
     it("is true once the recorded expiry has passed", () => {
       storeToken(FAKE_TOKEN, -1);
+      expect(isTokenExpired()).toBe(true);
+    });
+
+    it("is true at the exact expiry instant", () => {
+      const now = 1_750_000_000_000;
+      vi.spyOn(Date, "now").mockReturnValue(now);
+      localStorage.setItem("token_expiry", String(now));
+
+      expect(isTokenExpired()).toBe(true);
+    });
+
+    it("treats a corrupted expiry timestamp as expired", () => {
+      localStorage.setItem("token_expiry", "not-a-timestamp");
+
       expect(isTokenExpired()).toBe(true);
     });
   });
@@ -146,6 +170,17 @@ describe("authService — token management", () => {
       const result = await refreshAccessToken(refresh);
 
       expect(result).toBeNull();
+      expect(getStoredToken()).toBeNull();
+    });
+
+    it("clears state when refresh returns a malformed token", async () => {
+      storeToken(FAKE_TOKEN, -1);
+      const refresh = vi.fn().mockResolvedValue({ token: "not-a-jwt", expiresIn: 3600 });
+
+      const result = await refreshAccessToken(refresh);
+
+      expect(result).toBeNull();
+      expect(localStorage.getItem("token")).toBeNull();
       expect(getStoredToken()).toBeNull();
     });
   });
