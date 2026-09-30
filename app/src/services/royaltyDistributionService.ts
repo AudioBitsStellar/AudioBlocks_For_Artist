@@ -6,7 +6,6 @@
  * frontend never handles partial payouts manually.
  */
 
-import { ARTIST_ONCHAIN_ENDPOINTS, SONG_ONCHAIN_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import type { RoyaltySplitEntry } from "@/types/royalty";
