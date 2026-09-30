@@ -91,6 +91,9 @@ interface Song {
   thumbnail: string;
   /** Absent on fixtures and pre-feature records, which read as public. */
   visibility?: TrackVisibility;
+  /** #396 — optional metadata editable in the track dialog. */
+  genre?: string;
+  description?: string;
 }
 
 /** The track list's visibility filter: everything, what a listener would find, or one mode. */
@@ -357,6 +360,8 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             title: previous.title,
             albumName: previous.albumName,
             visibility: previous.visibility,
+            genre: previous.genre ?? "",
+            description: previous.description ?? "",
           })
         );
         if (edit.visibility) {
@@ -370,7 +375,16 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
 
   const handleEditSave = (values: EditableTrackFields) => {
     if (editingSongId === null) return;
-    updateTrack.mutate({ id: editingSongId, ...values });
+    const { genre, description, ...core } = values;
+    // #396 — only send genre/description when the artist changed them, so an
+    // edit to the title never overwrites metadata this client doesn't hold.
+    const current = songs.find((song) => song.id === editingSongId);
+    updateTrack.mutate({
+      id: editingSongId,
+      ...core,
+      ...(genre !== (current?.genre ?? "") ? { genre } : {}),
+      ...(description.trim() !== (current?.description ?? "") ? { description: description.trim() } : {}),
+    });
   };
 
   /**
@@ -907,6 +921,8 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
                 title: editingSong.title,
                 albumName: editingSong.albumName,
                 visibility: editingSong.visibility ?? LEGACY_DEFAULT_VISIBILITY,
+                genre: editingSong.genre ?? "",
+                description: editingSong.description ?? "",
               }
             : null
         }

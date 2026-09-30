@@ -77,6 +77,11 @@ export const trackEditSchema = z.object({
     .min(1, "Please select an album")
     .max(100, "Album name must be 100 characters or less"),
   visibility: trackVisibilityField,
+  // #396 — optional metadata; "" means "not set".
+  genre: z
+    .string()
+    .refine((val) => val === "" || MUSIC_GENRES.includes(val), "Invalid genre selection"),
+  description: z.string().trim().max(500, "Description must be 500 characters or less"),
 });
 
 export const profileFormSchema = z.object({
