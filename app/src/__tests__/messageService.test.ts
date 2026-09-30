@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { getUnreadTotal as getFanUnreadTotal } from "@/services/fanMessagingService";
 import {
   getConversations,
   getConversation,
@@ -32,12 +33,12 @@ describe("messageService", () => {
     expect(getConversation(artist.id)?.type).toBe("artist");
   });
 
-  it("counts unread messages across both fan and artist conversations", () => {
-    const expected = [...getConversations("fan"), ...getConversations("artist")].reduce(
-      (sum, c) => sum + c.unreadCount,
-      0
-    );
-    expect(getTotalUnreadCount()).toBe(expected);
+  it("counts fan-inbox unread plus Artists-tab unread (#146)", () => {
+    // The Fans tab renders the fanMessagingService inbox, so the badge must
+    // count that store (muted threads excluded), not this module's legacy
+    // fan mocks, which the Messages page no longer shows.
+    const artistUnread = getConversations("artist").reduce((sum, c) => sum + c.unreadCount, 0);
+    expect(getTotalUnreadCount()).toBe(getFanUnreadTotal() + artistUnread);
   });
 
   it("appends a message to an artist conversation and updates its preview", () => {

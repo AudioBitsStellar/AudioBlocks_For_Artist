@@ -9,6 +9,7 @@ import {
   sendMessage,
   formatMessageTime,
   formatConversationDate,
+  markConversationRead,
   type Conversation,
   type ConversationType,
 } from "@/services/messageService";
@@ -258,6 +259,7 @@ export default function MessagesPage() {
               conversations={artistConversations}
               selectedId={selected?.id ?? null}
               onSelect={(conversation) => {
+                markConversationRead(conversation.id);
                 setSelected(conversation);
                 setIsThreadOpen(true);
               }}

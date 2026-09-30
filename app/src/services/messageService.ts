@@ -1,3 +1,6 @@
+import { getUnreadTotal as getFanUnreadTotal } from "@/services/fanMessagingService";
+import { notifyInboxUnreadChanged } from "@/services/inboxEvents";
+
 export type ConversationType = "fan" | "artist";
 
 export interface Message {
@@ -212,8 +215,28 @@ export function getConversation(id: number): Conversation | undefined {
   return ALL_CONVERSATIONS.find((c) => c.id === id);
 }
 
+/**
+ * Unread total shown on the navigation badges (#146).
+ *
+ * The Messages page's Fans tab is the fan inbox backed by
+ * `fanMessagingService` (#419), not this module's legacy fan mocks, so fan
+ * unread comes from that store (muted threads excluded, matching the inbox).
+ * The Artists tab still reads this module, so its unread is added here.
+ */
 export function getTotalUnreadCount(): number {
-  return ALL_CONVERSATIONS.reduce((sum, c) => sum + c.unreadCount, 0);
+  const artistUnread = getConversations("artist").reduce((sum, c) => sum + c.unreadCount, 0);
+  return getFanUnreadTotal() + artistUnread;
+}
+
+/** Marks an Artists-tab conversation read when it is opened (#146). */
+export function markConversationRead(id: number): Conversation | undefined {
+  const conversation = ALL_CONVERSATIONS.find((c) => c.id === id);
+  if (!conversation) return undefined;
+  if (conversation.unreadCount !== 0) {
+    conversation.unreadCount = 0;
+    notifyInboxUnreadChanged();
+  }
+  return conversation;
 }
 
 export function sendMessage(payload: SendMessagePayload): Message {

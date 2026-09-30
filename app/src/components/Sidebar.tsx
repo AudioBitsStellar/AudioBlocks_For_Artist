@@ -23,6 +23,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getTotalUnreadCount } from "@/services/messageService";
+import { subscribeToInboxUnread } from "@/services/inboxEvents";
 import { analytics } from "@/lib/analytics";
 import { isAdminSession } from "@/utils/jwt";
 
@@ -78,6 +79,20 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   useEffect(() => {
     loadSidebarData();
   }, []);
+
+  // Keep the Messages badge live: reading or receiving a message elsewhere
+  // (or in another tab) updates the count without a reload (#146).
+  useEffect(
+    () =>
+      subscribeToInboxUnread(() => {
+        try {
+          setUnreadCount(getTotalUnreadCount());
+        } catch {
+          // Keep the last known count; the sidebar itself must not break.
+        }
+      }),
+    []
+  );
 
   const visibleNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
 

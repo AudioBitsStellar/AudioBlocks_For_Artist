@@ -8,6 +8,7 @@
  * `utils/fanMessaging.ts` stays as-is.
  */
 
+import { notifyInboxUnreadChanged } from "@/services/inboxEvents";
 import {
   filterConversations,
   groupMessagesByDay,
@@ -196,6 +197,8 @@ function persist(): void {
   } catch {
     // Storage full or blocked — the session keeps working in memory.
   }
+  // Every mutation goes through here, so the nav badges stay in sync (#146).
+  notifyInboxUnreadChanged();
 }
 
 /** Test seam: drops the memo so each spec starts from the seed data. */
