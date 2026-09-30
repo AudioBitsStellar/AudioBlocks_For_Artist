@@ -147,8 +147,8 @@ function SessionWarningModal({ expiresIn, onExtend, onLogout }: SessionWarningMo
           Session Expiring Soon
         </h2>
         <p className="text-gray-400 text-sm mb-4">
-          Your session will expire in {minutes} minute{minutes !== 1 ? "s" : ""}.
-          Any unsaved changes may be lost.
+          Your session will expire in {minutes} minute{minutes !== 1 ? "s" : ""}. Any unsaved
+          changes may be lost.
         </p>
         <div className="flex gap-3 justify-end">
           <button

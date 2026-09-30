@@ -33,7 +33,7 @@ describe("I18nProvider", () => {
     render(
       <I18nProvider>
         <LocaleProbe />
-      </I18nProvider>,
+      </I18nProvider>
     );
     await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("en"));
   });
@@ -43,7 +43,7 @@ describe("I18nProvider", () => {
     render(
       <I18nProvider>
         <LocaleProbe />
-      </I18nProvider>,
+      </I18nProvider>
     );
     await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("es"));
   });
@@ -53,7 +53,7 @@ describe("I18nProvider", () => {
     render(
       <I18nProvider>
         <LocaleProbe />
-      </I18nProvider>,
+      </I18nProvider>
     );
     await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("en"));
   });
@@ -68,10 +68,10 @@ describe("I18nProvider", () => {
       render(
         <I18nProvider>
           <LocaleProbe />
-        </I18nProvider>,
+        </I18nProvider>
       );
       await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("en"));
-    },
+    }
   );
 
   it("survives a localStorage that throws on read", async () => {
@@ -81,7 +81,7 @@ describe("I18nProvider", () => {
     render(
       <I18nProvider>
         <LocaleProbe />
-      </I18nProvider>,
+      </I18nProvider>
     );
     await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("en"));
   });
@@ -98,7 +98,7 @@ describe("LanguageSwitcher", () => {
     render(
       <I18nProvider>
         <LanguageSwitcher />
-      </I18nProvider>,
+      </I18nProvider>
     );
     const select = await screen.findByRole("combobox");
     expect(select.querySelectorAll("option")).toHaveLength(2);
@@ -110,7 +110,7 @@ describe("LanguageSwitcher", () => {
       <I18nProvider>
         <LanguageSwitcher />
         <LocaleProbe />
-      </I18nProvider>,
+      </I18nProvider>
     );
 
     await user.selectOptions(await screen.findByRole("combobox"), "es");
@@ -128,7 +128,7 @@ describe("LanguageSwitcher", () => {
       <I18nProvider>
         <LanguageSwitcher />
         <LocaleProbe />
-      </I18nProvider>,
+      </I18nProvider>
     );
 
     await user.selectOptions(await screen.findByRole("combobox"), "es");
@@ -142,7 +142,7 @@ describe("locale tables", () => {
   function leafPaths(value: unknown, prefix = ""): string[] {
     if (typeof value !== "object" || value === null) return [prefix];
     return Object.entries(value as Record<string, unknown>).flatMap(([key, child]) =>
-      leafPaths(child, prefix ? `${prefix}.${key}` : key),
+      leafPaths(child, prefix ? `${prefix}.${key}` : key)
     );
   }
 

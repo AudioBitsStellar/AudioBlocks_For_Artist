@@ -58,14 +58,11 @@ function matchesAllWords(text: string, queryWords: string[]): boolean {
  * @param query - Search query string
  * @returns Filtered tracks matching the query
  */
-export function searchTracks(
-  tracks: SearchableTrack[],
-  query: string
-): SearchableTrack[] {
+export function searchTracks(tracks: SearchableTrack[], query: string): SearchableTrack[] {
   if (!query.trim()) return tracks;
 
   const queryWords = normalize(query).split(/\s+/).filter(Boolean);
-  
+
   return tracks.filter((track) => {
     const searchText = [
       normalize(track.title),
@@ -118,10 +115,7 @@ export function searchEvents(events: EventItem[], query: string): EventItem[] {
  * @param query - Search query string
  * @returns Filtered merch items matching the query
  */
-export function searchMerch(
-  merchItems: MerchItem[],
-  query: string
-): MerchItem[] {
+export function searchMerch(merchItems: MerchItem[], query: string): MerchItem[] {
   if (!query.trim()) return merchItems;
 
   const queryWords = normalize(query).split(/\s+/).filter(Boolean);
@@ -162,10 +156,7 @@ export function globalSearch(
  */
 export function getTotalResults(results: SearchResults): number {
   return (
-    results.tracks.length +
-    results.albums.length +
-    results.events.length +
-    results.merch.length
+    results.tracks.length + results.albums.length + results.events.length + results.merch.length
   );
 }
 
@@ -185,13 +176,13 @@ export function saveRecentSearch(query: string): void {
   try {
     const recent = getRecentSearches();
     const normalized = query.trim();
-    
+
     // Remove if already exists (to move it to the top)
     const filtered = recent.filter((q) => q !== normalized);
-    
+
     // Add to the beginning and limit to MAX_RECENT_SEARCHES
     const updated = [normalized, ...filtered].slice(0, MAX_RECENT_SEARCHES);
-    
+
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
   } catch (error) {
     // Silently fail if localStorage is unavailable
@@ -209,7 +200,7 @@ export function getRecentSearches(): string[] {
   try {
     const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
     if (!stored) return [];
-    
+
     const parsed = JSON.parse(stored);
     return Array.isArray(parsed) ? parsed : [];
   } catch (error) {

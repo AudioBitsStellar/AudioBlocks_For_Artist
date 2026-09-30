@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ScanLine,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  Users,
-  UserCheck,
-  UserX,
-} from "lucide-react";
+import { ScanLine, CheckCircle2, XCircle, Loader2, Users, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 
 interface CheckInResult {
@@ -27,7 +19,11 @@ interface CheckInStats {
 const MOCK_CHECK_IN_RESULTS: Record<string, CheckInResult> = {
   "TICKET-001": { ticketId: "TICKET-001", status: "valid", attendeeName: "Alice Johnson" },
   "TICKET-002": { ticketId: "TICKET-002", status: "valid", attendeeName: "Bob Smith" },
-  "TICKET-003": { ticketId: "TICKET-003", status: "already_checked_in", attendeeName: "Carol White" },
+  "TICKET-003": {
+    ticketId: "TICKET-003",
+    status: "already_checked_in",
+    attendeeName: "Carol White",
+  },
   "FAKE-001": { ticketId: "FAKE-001", status: "invalid" },
 };
 
@@ -79,7 +75,9 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-[#1F1F1F] bg-[#151818] p-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-[#A3A3A3]">{s.label}</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#A3A3A3]">
+                {s.label}
+              </span>
               <s.icon className={`h-4 w-4 ${s.color}`} />
             </div>
             <p className={`text-3xl font-semibold ${s.color}`}>{s.value}</p>
@@ -107,7 +105,9 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
                   <XCircle className="h-16 w-16 text-red-400" />
                 )}
                 <div className="text-center">
-                  <p className={`text-sm font-semibold ${lastResult.status === "valid" ? "text-green-400" : "text-red-400"}`}>
+                  <p
+                    className={`text-sm font-semibold ${lastResult.status === "valid" ? "text-green-400" : "text-red-400"}`}
+                  >
                     {lastResult.status === "valid"
                       ? "Valid Ticket"
                       : lastResult.status === "already_checked_in"
@@ -122,7 +122,11 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
             ) : (
               <div className="flex flex-col items-center gap-2 text-[#6F6F6F]">
                 <ScanLine className="h-12 w-12" />
-                <p className="text-xs text-center">Point camera at ticket QR code<br />or enter ticket ID below</p>
+                <p className="text-xs text-center">
+                  Point camera at ticket QR code
+                  <br />
+                  or enter ticket ID below
+                </p>
               </div>
             )}
 
@@ -173,11 +177,29 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
         <h3 className="text-lg font-semibold text-white mb-4">Recent Check-ins</h3>
         <div className="space-y-3">
           {[
-            { ticketId: "TICKET-127", name: "Maria Garcia", time: "2 min ago", status: "valid" as const },
-            { ticketId: "TICKET-126", name: "James Wilson", time: "5 min ago", status: "valid" as const },
-            { ticketId: "TICKET-125", name: "Sarah Chen", time: "8 min ago", status: "already_checked_in" as const },
+            {
+              ticketId: "TICKET-127",
+              name: "Maria Garcia",
+              time: "2 min ago",
+              status: "valid" as const,
+            },
+            {
+              ticketId: "TICKET-126",
+              name: "James Wilson",
+              time: "5 min ago",
+              status: "valid" as const,
+            },
+            {
+              ticketId: "TICKET-125",
+              name: "Sarah Chen",
+              time: "8 min ago",
+              status: "already_checked_in" as const,
+            },
           ].map((ci) => (
-            <div key={ci.ticketId} className="flex items-center justify-between rounded-xl bg-[#111111] px-4 py-3">
+            <div
+              key={ci.ticketId}
+              className="flex items-center justify-between rounded-xl bg-[#111111] px-4 py-3"
+            >
               <div className="flex items-center gap-3">
                 {ci.status === "valid" ? (
                   <CheckCircle2 className="h-4 w-4 text-green-400" />

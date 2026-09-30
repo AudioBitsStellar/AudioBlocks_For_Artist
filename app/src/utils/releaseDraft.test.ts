@@ -53,7 +53,9 @@ describe("validateDetails", () => {
     const errors = validateDetails(d, TODAY);
     expect(errors.purchasePrice).toBeDefined();
     expect(errors.releaseDate).toBe("Release date can't be in the past");
-    expect(validateDetails({ ...d, purchasePrice: "4.99", releaseDate: "2026-06-01" }, TODAY)).toEqual({});
+    expect(
+      validateDetails({ ...d, purchasePrice: "4.99", releaseDate: "2026-06-01" }, TODAY)
+    ).toEqual({});
   });
 });
 

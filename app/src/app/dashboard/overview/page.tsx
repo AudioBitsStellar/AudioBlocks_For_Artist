@@ -21,23 +21,31 @@ const widgetLoading = () => (
   </div>
 );
 
-const OverviewCards = dynamic(() => import("@/components/OverviewCards"), { loading: widgetLoading });
-const EarningsRoyalties = dynamic(() => import("@/components/EarningsRoyalties"), { loading: widgetLoading });
-const PlatformRevenueBreakdown = dynamic(() => import("@/components/PlatformRevenueBreakdown"), { loading: widgetLoading });
+const OverviewCards = dynamic(() => import("@/components/OverviewCards"), {
+  loading: widgetLoading,
+});
+const EarningsRoyalties = dynamic(() => import("@/components/EarningsRoyalties"), {
+  loading: widgetLoading,
+});
+const PlatformRevenueBreakdown = dynamic(() => import("@/components/PlatformRevenueBreakdown"), {
+  loading: widgetLoading,
+});
 const MyAlbums = dynamic(() => import("@/components/MyAlbums"), { loading: widgetLoading });
-const FansEngagement = dynamic(() => import("@/components/FansEngagement"), { loading: widgetLoading });
+const FansEngagement = dynamic(() => import("@/components/FansEngagement"), {
+  loading: widgetLoading,
+});
 const Transactions = dynamic(() => import("@/components/Transactions"), { loading: widgetLoading });
 const Comments = dynamic(() => import("@/components/Comments"), { loading: widgetLoading });
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 const WIDGET_COMPONENTS: Record<string, React.ComponentType> = {
   "overview-cards": OverviewCards,
-  "earnings": EarningsRoyalties,
+  earnings: EarningsRoyalties,
   "platform-revenue": PlatformRevenueBreakdown,
-  "albums": MyAlbums,
+  albums: MyAlbums,
   "fans-engagement": FansEngagement,
-  "transactions": Transactions,
-  "comments": Comments,
+  transactions: Transactions,
+  comments: Comments,
 };
 
 export default function OverviewPage() {

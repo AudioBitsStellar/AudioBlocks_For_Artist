@@ -55,12 +55,8 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
         <p className="text-text text-sm">
           Revenue: ${data.revenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
         </p>
-        <p className="text-text-muted text-sm">
-          {data.percentage.toFixed(1)}% of total
-        </p>
-        <p className="text-text-muted text-sm">
-          {data.streams.toLocaleString()} streams
-        </p>
+        <p className="text-text-muted text-sm">{data.percentage.toFixed(1)}% of total</p>
+        <p className="text-text-muted text-sm">{data.streams.toLocaleString()} streams</p>
       </div>
     );
   }
@@ -131,7 +127,10 @@ export default function PlatformRevenueBreakdown() {
                   tickLine={false}
                   width={100}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--color-surface-sunken)" }} />
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={{ fill: "var(--color-surface-sunken)" }}
+                />
                 <Bar dataKey="revenue" radius={[0, 4, 4, 0]} maxBarSize={32}>
                   {platforms.map((_, index) => (
                     <Cell

@@ -27,7 +27,9 @@ const ClaimArtistNameModal = memo(({ open, onOpenChange }: ClaimArtistNameModalP
   const nameValidation = artistNameSchema.safeParse(artistName);
   // Only complain once the user has typed something; an empty box just means "not started".
   const nameError =
-    artistName.length > 0 && !nameValidation.success ? nameValidation.error.issues[0].message : null;
+    artistName.length > 0 && !nameValidation.success
+      ? nameValidation.error.issues[0].message
+      : null;
 
   // Check username availability with debounce
   useEffect(() => {

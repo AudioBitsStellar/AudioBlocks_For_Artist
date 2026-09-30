@@ -510,9 +510,7 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                   {errors.coverImage}
                 </p>
               )}
-              <p className="text-[10px] text-gray-500 mb-2">
-                Accepted: JPG, PNG (max 5 MB)
-              </p>
+              <p className="text-[10px] text-gray-500 mb-2">Accepted: JPG, PNG (max 5 MB)</p>
               <button
                 onClick={() => coverInputRef.current?.click()}
                 className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors"
@@ -561,7 +559,9 @@ export default function AddMusicModal({ open, onOpenChange }: AddMusicModalProps
                 <p className="text-xs text-[#A3A3A3]">No uploads added to the queue</p>
               )}
               {mode === "song" && !uploadedFile && (
-                <p className="text-xs text-yellow-500 mt-1" role="status">Audio file is required for songs</p>
+                <p className="text-xs text-yellow-500 mt-1" role="status">
+                  Audio file is required for songs
+                </p>
               )}
               {errors.uploadedFile && (
                 <p className="text-red-500 text-xs mt-2">{errors.uploadedFile}</p>

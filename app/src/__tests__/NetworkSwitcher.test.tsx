@@ -44,14 +44,8 @@ describe("NetworkSwitcher", () => {
 
     render(<NetworkSwitcher />);
 
-    expect(screen.getByRole("radio", { name: "Testnet" })).toHaveAttribute(
-      "aria-checked",
-      "true"
-    );
-    expect(screen.getByRole("radio", { name: "Mainnet" })).toHaveAttribute(
-      "aria-checked",
-      "false"
-    );
+    expect(screen.getByRole("radio", { name: "Testnet" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Mainnet" })).toHaveAttribute("aria-checked", "false");
   });
 
   it("calls setNetworkId when a different network is selected", () => {

@@ -12,7 +12,9 @@ function Zone(props: { onFiles: (f: File[]) => void; disabled?: boolean; multipl
 }
 
 const mp3 = (name = "a.mp3") => new File(["x"], name, { type: "audio/mpeg" });
-const fileTransfer = (files: File[]) => ({ dataTransfer: { types: ["Files"], files, dropEffect: "" } });
+const fileTransfer = (files: File[]) => ({
+  dataTransfer: { types: ["Files"], files, dropEffect: "" },
+});
 
 describe("useFileDrop (#391)", () => {
   it("highlights while files are dragged over and clears on leave", () => {

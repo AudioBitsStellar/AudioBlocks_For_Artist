@@ -4,7 +4,7 @@ import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { getToken, clearSession } from "@/api/axios";
 import { AuthResponse, LoginEmailPayload, RegisterEmailPayload } from "@/types";
 
-interface ApiEnvelope<T> {
+interface ApiEnvelope {
   success: boolean;
   message?: string;
 }
@@ -17,7 +17,9 @@ const TOKEN_STORAGE_KEY = "token";
 const TOKEN_EXPIRY_STORAGE_KEY = "token_expiry";
 
 function isWellFormedToken(token: string): boolean {
-  return typeof token === "string" && token.trim().length > 0 && token.split(".").length === 3;
+  if (typeof token !== "string") return false;
+  const segments = token.trim().split(".");
+  return segments.length === 3 && segments.every((segment) => segment.trim().length > 0);
 }
 
 /**
@@ -59,8 +61,9 @@ export function isTokenExpired(): boolean {
   if (typeof window === "undefined") return true;
 
   const expiry = localStorage.getItem(TOKEN_EXPIRY_STORAGE_KEY);
-  if (!expiry) return false;
-  return Date.now() >= Number(expiry);
+  if (expiry === null) return false;
+  const expiresAt = Number(expiry);
+  return !Number.isFinite(expiresAt) || Date.now() >= expiresAt;
 }
 
 /**
@@ -93,6 +96,10 @@ export async function refreshAccessToken(
 
   try {
     const { token, expiresIn } = await refresh();
+    if (!isWellFormedToken(token)) {
+      clearTokens();
+      return null;
+    }
     storeToken(token, expiresIn);
     return token;
   } catch {
@@ -112,7 +119,7 @@ const useAuthServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useRegisterEmail = () =>
-    usePost<ApiEnvelope<never> & AuthResponse, RegisterEmailPayload>(
+    usePost<ApiEnvelope & AuthResponse, RegisterEmailPayload>(
       AUTH_ENDPOINTS.REGISTER_EMAIL,
       {
         onSuccess: () => handleSuccess("Registered successfully!"),
@@ -127,7 +134,7 @@ const useAuthServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useLoginEmail = () =>
-    usePost<ApiEnvelope<never> & AuthResponse, LoginEmailPayload>(AUTH_ENDPOINTS.LOGIN_EMAIL, {
+    usePost<ApiEnvelope & AuthResponse, LoginEmailPayload>(AUTH_ENDPOINTS.LOGIN_EMAIL, {
       onSuccess: () => handleSuccess("Logged in successfully!"),
       onError: (error) => handleError(error.message || "Failed to log in."),
     });

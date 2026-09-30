@@ -10,14 +10,16 @@ export default function CurrencyPreferencesPage() {
     <div className="space-y-6">
       <header>
         <h2 className="text-xl font-bold">Currency Display Preferences</h2>
-        <p className="text-text-muted text-sm">Choose how monetary values are displayed across your dashboard.</p>
+        <p className="text-text-muted text-sm">
+          Choose how monetary values are displayed across your dashboard.
+        </p>
       </header>
 
       <div className="space-y-4 max-w-md bg-surface p-6 rounded-xl border border-border">
         <div className="space-y-2">
           <label className="text-sm font-medium">Preferred Currency</label>
-          <select 
-            value={currency} 
+          <select
+            value={currency}
             onChange={(e) => setCurrency(e.target.value)}
             className="w-full bg-background border border-border rounded-lg p-2 text-text"
           >
@@ -30,8 +32,8 @@ export default function CurrencyPreferencesPage() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Display Format</label>
-          <select 
-            value={displayFormat} 
+          <select
+            value={displayFormat}
             onChange={(e) => setDisplayFormat(e.target.value)}
             className="w-full bg-background border border-border rounded-lg p-2 text-text"
           >

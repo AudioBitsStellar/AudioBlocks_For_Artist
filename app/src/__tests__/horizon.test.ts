@@ -55,7 +55,7 @@ describe("lib/horizon", () => {
       expect(xlm).toBe("42.5000000");
     });
 
-    it("returns null balances (and \"0\" xlm) for an unfunded account (404)", async () => {
+    it('returns null balances (and "0" xlm) for an unfunded account (404)', async () => {
       mockFetchOnce(null, false, 404);
       const balances = await fetchAccountBalances(ADDRESS);
       expect(balances).toBeNull();
@@ -119,9 +119,7 @@ describe("lib/horizon", () => {
   describe("explorerTxUrl", () => {
     it("links to the testnet explorer when the passphrase mentions Test", () => {
       process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
-      expect(explorerTxUrl("HASH123")).toBe(
-        "https://stellar.expert/explorer/testnet/tx/HASH123"
-      );
+      expect(explorerTxUrl("HASH123")).toBe("https://stellar.expert/explorer/testnet/tx/HASH123");
     });
 
     it("links to the public explorer otherwise", () => {
@@ -146,7 +144,9 @@ describe("lib/horizon", () => {
 
   describe("fetchFeeStats / estimateOperationFeeXlm (#289)", () => {
     it("fetches Horizon's fee_stats", async () => {
-      const stats = { fee_charged: { min: "100", mode: "100", p50: "100", p95: "500", max: "1000" } };
+      const stats = {
+        fee_charged: { min: "100", mode: "100", p50: "100", p95: "500", max: "1000" },
+      };
       const fetchMock = mockFetchOnce(stats);
 
       const result = await fetchFeeStats();
@@ -178,7 +178,9 @@ describe("lib/horizon", () => {
     });
 
     it("throws when Horizon returns a non-numeric fee", async () => {
-      mockFetchOnce({ fee_charged: { min: "0", mode: "0", p50: "not-a-number", p95: "0", max: "0" } });
+      mockFetchOnce({
+        fee_charged: { min: "0", mode: "0", p50: "not-a-number", p95: "0", max: "0" },
+      });
 
       await expect(estimateOperationFeeXlm()).rejects.toThrow(/invalid fee estimate/i);
     });

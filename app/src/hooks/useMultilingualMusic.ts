@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/context/I18nContext";
-import { MusicMetadata, MultilingualText, SupportedLanguage } from "@/types";
+import { MultilingualText, SupportedLanguage } from "@/types";
 
 /**
  * Hook for working with multilingual music metadata
@@ -53,6 +53,7 @@ export function useMultilingualMusic() {
     translation: string
   ): MultilingualText => {
     if (!translation.trim()) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructuring to drop the `language` key from `rest`
       const { [language]: _, ...rest } = multilingualText;
       return rest;
     }

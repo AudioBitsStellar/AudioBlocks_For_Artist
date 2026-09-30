@@ -19,7 +19,7 @@ function truncate(address: string) {
 export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletStepProps) {
   const { address, isConnecting, connect, restore } = useStellarWallet();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const {
     register,
     handleSubmit,
@@ -55,7 +55,7 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       localStorage.setItem("onboarding_payout_wallet", JSON.stringify(data));
       toast.success("Payout wallet setup complete!");
       onComplete();
@@ -70,9 +70,7 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-white mb-2">Payout Wallet Setup</h2>
-        <p className="text-[#A3A3A3]">
-          Connect your Stellar wallet to receive royalty payments
-        </p>
+        <p className="text-[#A3A3A3]">Connect your Stellar wallet to receive royalty payments</p>
       </div>
 
       <div
@@ -146,9 +144,7 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
           onClick={handleConnectWallet}
           disabled={isConnecting}
           className={`${
-            isConnecting
-              ? "opacity-70 cursor-not-allowed"
-              : "hover:bg-[#B8043F]"
+            isConnecting ? "opacity-70 cursor-not-allowed" : "hover:bg-[#B8043F]"
           } w-full rounded-lg bg-[#D2045B] text-white font-semibold px-6 py-3 transition-colors`}
         >
           {isConnecting ? <MusicLoader small /> : "Connect Freighter Wallet"}

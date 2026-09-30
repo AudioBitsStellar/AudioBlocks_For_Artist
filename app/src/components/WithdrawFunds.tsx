@@ -30,7 +30,9 @@ export default function WithdrawFunds({ availableBalance, onWithdraw }: Withdraw
   const confirm = async () => {
     setStep("submitting");
     try {
-      setTxHash(await onWithdraw({ amount: input.amount.trim(), destination: input.destination.trim() }));
+      setTxHash(
+        await onWithdraw({ amount: input.amount.trim(), destination: input.destination.trim() })
+      );
       setStep("success");
     } catch (err) {
       setFailure(err instanceof Error ? err.message : "Withdrawal failed. Please try again.");
@@ -59,7 +61,9 @@ export default function WithdrawFunds({ availableBalance, onWithdraw }: Withdraw
       {step === "form" && (
         <form onSubmit={review} noValidate className="space-y-4">
           <div>
-            <label htmlFor="withdraw-amount" className="block text-sm text-gray-300 mb-1">Amount (XLM)</label>
+            <label htmlFor="withdraw-amount" className="block text-sm text-gray-300 mb-1">
+              Amount (XLM)
+            </label>
             <input
               id="withdraw-amount"
               inputMode="decimal"
@@ -69,10 +73,16 @@ export default function WithdrawFunds({ availableBalance, onWithdraw }: Withdraw
               aria-describedby={errors.amount ? "withdraw-amount-error" : undefined}
               className="w-full bg-[#2d3d2d] text-white rounded px-3 py-2"
             />
-            {errors.amount && <p id="withdraw-amount-error" role="alert" className="text-red-400 text-xs mt-1">{errors.amount}</p>}
+            {errors.amount && (
+              <p id="withdraw-amount-error" role="alert" className="text-red-400 text-xs mt-1">
+                {errors.amount}
+              </p>
+            )}
           </div>
           <div>
-            <label htmlFor="withdraw-destination" className="block text-sm text-gray-300 mb-1">Destination Stellar address</label>
+            <label htmlFor="withdraw-destination" className="block text-sm text-gray-300 mb-1">
+              Destination Stellar address
+            </label>
             <input
               id="withdraw-destination"
               autoComplete="off"
@@ -83,9 +93,15 @@ export default function WithdrawFunds({ availableBalance, onWithdraw }: Withdraw
               aria-describedby={errors.destination ? "withdraw-destination-error" : undefined}
               className="w-full bg-[#2d3d2d] text-white rounded px-3 py-2 font-mono text-xs"
             />
-            {errors.destination && <p id="withdraw-destination-error" role="alert" className="text-red-400 text-xs mt-1">{errors.destination}</p>}
+            {errors.destination && (
+              <p id="withdraw-destination-error" role="alert" className="text-red-400 text-xs mt-1">
+                {errors.destination}
+              </p>
+            )}
           </div>
-          <button type="submit" className="bg-pink-500 text-white rounded px-4 py-2 font-semibold">Review withdrawal</button>
+          <button type="submit" className="bg-pink-500 text-white rounded px-4 py-2 font-semibold">
+            Review withdrawal
+          </button>
         </form>
       )}
 
@@ -96,10 +112,20 @@ export default function WithdrawFunds({ availableBalance, onWithdraw }: Withdraw
             <span className="font-mono text-xs break-all">{input.destination.trim()}</span>?
           </p>
           <div className="flex gap-3">
-            <button type="button" onClick={confirm} disabled={step === "submitting"} className="bg-pink-500 text-white rounded px-4 py-2 font-semibold disabled:opacity-50">
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={step === "submitting"}
+              className="bg-pink-500 text-white rounded px-4 py-2 font-semibold disabled:opacity-50"
+            >
               {step === "submitting" ? "Withdrawing…" : "Confirm withdrawal"}
             </button>
-            <button type="button" onClick={() => setStep("form")} disabled={step === "submitting"} className="text-gray-300 px-4 py-2">
+            <button
+              type="button"
+              onClick={() => setStep("form")}
+              disabled={step === "submitting"}
+              className="text-gray-300 px-4 py-2"
+            >
               Back
             </button>
           </div>
@@ -109,15 +135,25 @@ export default function WithdrawFunds({ availableBalance, onWithdraw }: Withdraw
       {step === "success" && (
         <div role="status" className="space-y-3">
           <p className="text-green-400 font-semibold">Withdrawal submitted.</p>
-          {txHash && <p className="text-gray-400 text-xs font-mono break-all">Transaction: {txHash}</p>}
-          <button type="button" onClick={reset} className="text-pink-500 underline text-sm">Make another withdrawal</button>
+          {txHash && (
+            <p className="text-gray-400 text-xs font-mono break-all">Transaction: {txHash}</p>
+          )}
+          <button type="button" onClick={reset} className="text-pink-500 underline text-sm">
+            Make another withdrawal
+          </button>
         </div>
       )}
 
       {step === "error" && (
         <div role="alert" className="space-y-3">
           <p className="text-red-400 font-semibold">{failure}</p>
-          <button type="button" onClick={() => setStep("confirm")} className="text-pink-500 underline text-sm">Try again</button>
+          <button
+            type="button"
+            onClick={() => setStep("confirm")}
+            className="text-pink-500 underline text-sm"
+          >
+            Try again
+          </button>
         </div>
       )}
     </div>

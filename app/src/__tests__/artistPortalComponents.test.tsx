@@ -15,7 +15,7 @@ describe("TopTracksLeaderboard", () => {
           { id: "1", title: "Second", plays: 10 },
           { id: "2", title: "First", plays: 20, previousPlays: 10 },
         ]}
-      />,
+      />
     );
     const items = screen.getAllByRole("listitem");
     expect(items[0].textContent).toContain("First");
@@ -43,10 +43,17 @@ describe("PayoutHistory", () => {
     render(
       <PayoutHistory
         payouts={[
-          { id: "1", date: "2026-05-01", amount: "10.5", source: "royalties", status: "completed", txHash: "abc" },
+          {
+            id: "1",
+            date: "2026-05-01",
+            amount: "10.5",
+            source: "royalties",
+            status: "completed",
+            txHash: "abc",
+          },
           { id: "2", date: "2026-05-02", amount: "3", source: "merch", status: "pending" },
         ]}
-      />,
+      />
     );
     expect(screen.getByText("10.5 XLM", { selector: "span" })).toBeTruthy();
     expect(screen.getAllByRole("row")).toHaveLength(3);
@@ -67,7 +74,9 @@ describe("WithdrawFunds", () => {
     expect(onWithdraw).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText("Amount (XLM)"), { target: { value: "25" } });
-    fireEvent.change(screen.getByLabelText("Destination Stellar address"), { target: { value: ADDRESS } });
+    fireEvent.change(screen.getByLabelText("Destination Stellar address"), {
+      target: { value: ADDRESS },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Review withdrawal" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm withdrawal" }));
 
@@ -81,7 +90,9 @@ describe("WithdrawFunds", () => {
     render(<WithdrawFunds availableBalance="100" onWithdraw={onWithdraw} />);
 
     fireEvent.change(screen.getByLabelText("Amount (XLM)"), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText("Destination Stellar address"), { target: { value: ADDRESS } });
+    fireEvent.change(screen.getByLabelText("Destination Stellar address"), {
+      target: { value: ADDRESS },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Review withdrawal" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm withdrawal" }));
 

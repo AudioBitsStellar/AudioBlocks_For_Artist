@@ -55,7 +55,7 @@ export interface RegionTotal {
 
 export function aggregateListenersByRegion(data: GeographicData[]): RegionTotal[] {
   const totals = new Map<MapRegion, { plays: number; countries: string[] }>(
-    MAP_REGIONS.map((r) => [r, { plays: 0, countries: [] }]),
+    MAP_REGIONS.map((r) => [r, { plays: 0, countries: [] }])
   );
   for (const row of data) {
     const bucket = totals.get(row.region as MapRegion);
@@ -68,7 +68,9 @@ export function aggregateListenersByRegion(data: GeographicData[]): RegionTotal[
 
   return MAP_REGIONS.map((region) => {
     const { plays, countries } = totals.get(region)!;
-    const intensity = (plays === 0 ? 0 : Math.max(1, Math.ceil((plays / max) * 4))) as RegionTotal["intensity"];
+    const intensity = (
+      plays === 0 ? 0 : Math.max(1, Math.ceil((plays / max) * 4))
+    ) as RegionTotal["intensity"];
     return { region, plays, share: all ? (plays / all) * 100 : 0, intensity, countries };
   });
 }
@@ -89,7 +91,10 @@ export interface PayoutRecord {
 }
 
 /** Newest first, optionally filtered by status. */
-export function filterPayouts(records: PayoutRecord[], status: PayoutStatus | "all" = "all"): PayoutRecord[] {
+export function filterPayouts(
+  records: PayoutRecord[],
+  status: PayoutStatus | "all" = "all"
+): PayoutRecord[] {
   return records
     .filter((r) => status === "all" || r.status === status)
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -110,7 +115,9 @@ function fromStroops(stroops: bigint): string {
 /** Exact sum of completed payouts (no floating point). */
 export function totalCompletedPayouts(records: PayoutRecord[]): string {
   return fromStroops(
-    records.filter((r) => r.status === "completed").reduce((sum, r) => sum + toStroops(r.amount), 0n),
+    records
+      .filter((r) => r.status === "completed")
+      .reduce((sum, r) => sum + toStroops(r.amount), 0n)
   );
 }
 
@@ -133,12 +140,16 @@ export function validateWithdrawal(input: WithdrawInput, availableBalance: strin
   if (!amount) errors.amount = "Enter an amount to withdraw.";
   else if (!AMOUNT.test(amount)) errors.amount = "Use a number with at most 7 decimal places.";
   else if (toStroops(amount) === 0n) errors.amount = "Amount must be greater than 0.";
-  else if (toStroops(amount) > toStroops(availableBalance)) errors.amount = "Amount exceeds your available balance.";
+  else if (toStroops(amount) > toStroops(availableBalance))
+    errors.amount = "Amount exceeds your available balance.";
 
   const destination = input.destination.trim();
   if (!destination) errors.destination = "Enter a Stellar address.";
-  else if (destination.startsWith("S")) errors.destination = "That looks like a secret key. Never share it — enter your public G… address.";
-  else if (!STELLAR_ADDRESS.test(destination)) errors.destination = "Enter a valid Stellar public address (starts with G, 56 characters).";
+  else if (destination.startsWith("S"))
+    errors.destination =
+      "That looks like a secret key. Never share it — enter your public G… address.";
+  else if (!STELLAR_ADDRESS.test(destination))
+    errors.destination = "Enter a valid Stellar public address (starts with G, 56 characters).";
 
   return errors;
 }

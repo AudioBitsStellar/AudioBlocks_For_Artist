@@ -6,7 +6,6 @@
  * frontend never handles partial payouts manually.
  */
 
-import { ARTIST_ONCHAIN_ENDPOINTS, SONG_ONCHAIN_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import type { RoyaltySplitEntry } from "@/types/royalty";
@@ -119,8 +118,7 @@ export const useRoyaltyDistributionService = () => {
     usePost<ApiEnvelope<PreparedTransaction>, UpdateRoyaltySplitRequest>(
       ROYALTY_ENDPOINTS.updateSplit("", ""),
       {
-        onError: (error) =>
-          handleError(error.message || "Failed to prepare royalty split update."),
+        onError: (error) => handleError(error.message || "Failed to prepare royalty split update."),
       }
     );
 

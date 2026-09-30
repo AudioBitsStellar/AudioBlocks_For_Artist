@@ -6,10 +6,9 @@
  * window listener that binds them to the router.
  *
  * Two rules keep the shortcuts out of the way of everything else on the page:
- *  - nothing fires while a text field has focus (see {@link isEditableTarget}),
- *    so typing a track title never jumps to another section;
- *  - nothing fires while ⌘, Ctrl or Alt is held, so browser combos — including
- *    the ⌘K search owned by `TopHeader` — are left untouched.
+ *  - navigation keys do not fire while a text field has focus (see
+ *    {@link isEditableTarget}), so typing a track title never jumps sections;
+ *  - modified shortcuts are handled separately by `useKeyboardShortcuts`.
  */
 
 /** Key that starts a "go to" sequence. */
@@ -105,6 +104,18 @@ export const GENERAL_SHORTCUTS: ReadonlyArray<GeneralShortcut> = [
     order: "with",
     label: "Search",
     detail: "Open the header search box",
+  },
+  {
+    keys: ["⌘ / Ctrl", "S"],
+    order: "with",
+    label: "Save",
+    detail: "Submit the form containing the current focus",
+  },
+  {
+    keys: ["⌘ / Ctrl", "U"],
+    order: "with",
+    label: "Upload",
+    detail: "Open the music upload workflow",
   },
 ];
 

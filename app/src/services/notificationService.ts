@@ -180,10 +180,7 @@ export function useNotifications() {
   const recordedChecks = useQualityCheckNotifications();
 
   const notifications = useMemo(
-    () =>
-      sortByNewest(
-        filterByPreferences(mergeById(source ?? [], recordedChecks), preferences)
-      ),
+    () => sortByNewest(filterByPreferences(mergeById(source ?? [], recordedChecks), preferences)),
     [source, recordedChecks, preferences]
   );
   const unreadCount = notifications.filter((n) => !n.read).length;

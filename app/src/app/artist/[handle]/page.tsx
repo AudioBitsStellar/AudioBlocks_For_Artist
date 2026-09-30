@@ -39,10 +39,7 @@ const safeDecode = (value: string) => {
  * `\u003c` is a valid JSON escape, so crawlers still read `<`.
  */
 const jsonLdScript = (data: unknown) =>
-  JSON.stringify(data)
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/&/g, "\\u0026");
+  JSON.stringify(data).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 
 /**
  * Per-artist SEO metadata (issue #421).
@@ -143,7 +140,9 @@ function ProfileHeader({ profile }: { profile: PublicArtistProfile }) {
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
           {profile.website && (
             <a
-              href={profile.website.startsWith("http") ? profile.website : `https://${profile.website}`}
+              href={
+                profile.website.startsWith("http") ? profile.website : `https://${profile.website}`
+              }
               rel="noopener noreferrer nofollow"
               target="_blank"
               className="inline-flex items-center gap-1.5 rounded-lg border border-[#2A2A2A] px-3 py-1.5 text-sm text-white transition-colors hover:bg-white/5"
@@ -159,8 +158,7 @@ function ProfileHeader({ profile }: { profile: PublicArtistProfile }) {
               target="_blank"
               className="inline-flex items-center gap-1.5 rounded-lg border border-[#2A2A2A] px-3 py-1.5 text-sm text-white transition-colors hover:bg-white/5"
             >
-              <Radio size={14} aria-hidden="true" />
-              X (Twitter)
+              <Radio size={14} aria-hidden="true" />X (Twitter)
             </a>
           )}
         </div>
@@ -232,7 +230,10 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(structuredData) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(structuredData) }}
+      />
 
       <ErrorBoundary fallbackTitle="This artist profile couldn't be displayed">
         <main
@@ -256,10 +257,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
               const value = profile[key];
               if (typeof value !== "number") return null;
               return (
-                <div
-                  key={key}
-                  className="rounded-2xl border border-[#1F1F1F] bg-[#111111] p-6"
-                >
+                <div key={key} className="rounded-2xl border border-[#1F1F1F] bg-[#111111] p-6">
                   <dt className="flex items-center gap-2 text-sm text-[#A3A3A3]">
                     <Icon size={16} aria-hidden="true" />
                     {label}
@@ -273,10 +271,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
           </dl>
 
           {emptyStates.length > 0 && (
-            <section
-              aria-label="Nothing to show yet"
-              className="grid gap-4 sm:grid-cols-2"
-            >
+            <section aria-label="Nothing to show yet" className="grid gap-4 sm:grid-cols-2">
               {emptyStates.map(({ icon: Icon, title, description }) => (
                 <ProfileEmptyState
                   key={title}

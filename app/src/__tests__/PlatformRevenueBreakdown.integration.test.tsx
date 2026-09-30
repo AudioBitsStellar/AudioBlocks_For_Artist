@@ -113,9 +113,7 @@ describe("PlatformRevenueBreakdown integration", () => {
         success: true,
         data: {
           totalRevenue: 5000,
-          platforms: [
-            { platform: "AudioBlocks", revenue: 5000, percentage: 100, streams: 120000 },
-          ],
+          platforms: [{ platform: "AudioBlocks", revenue: 5000, percentage: 100, streams: 120000 }],
         },
       },
     });

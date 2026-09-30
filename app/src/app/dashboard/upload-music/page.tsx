@@ -31,9 +31,9 @@ const Upload_Music = () => {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => {
-              setMode("album");
-              analytics.uploadModeSelected({ mode: "album" });
-            }}
+            setMode("album");
+            analytics.uploadModeSelected({ mode: "album" });
+          }}
           className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
             mode === "album"
               ? "bg-[#D2045B] text-white"
@@ -44,9 +44,9 @@ const Upload_Music = () => {
         </button>
         <button
           onClick={() => {
-              setMode("song");
-              analytics.uploadModeSelected({ mode: "song" });
-            }}
+            setMode("song");
+            analytics.uploadModeSelected({ mode: "song" });
+          }}
           className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
             mode === "song"
               ? "bg-[#D2045B] text-white"

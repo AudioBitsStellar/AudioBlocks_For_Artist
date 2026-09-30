@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  getActiveNetworkId,
-  getNetworkConfig,
-  setActiveNetworkId,
-} from "@/lib/stellarNetwork";
+import { getActiveNetworkId, getNetworkConfig, setActiveNetworkId } from "@/lib/stellarNetwork";
 
 describe("lib/stellarNetwork (#282)", () => {
   const originalEnv = { ...process.env };

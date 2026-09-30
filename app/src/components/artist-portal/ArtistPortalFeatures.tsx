@@ -39,7 +39,8 @@ const ArtistPortalFeatures = () => {
             Everything You Need to Succeed
           </h2>
           <p className="text-[#A3A3A3] text-lg md:text-xl max-w-2xl mx-auto">
-            AudioBlocks provides artists with powerful tools to grow their career and connect with fans
+            AudioBlocks provides artists with powerful tools to grow their career and connect with
+            fans
           </p>
         </div>
 

@@ -27,11 +27,7 @@ import type { HorizonOperation, HorizonTransaction } from "@/lib/horizon";
 const RPC_URL = "https://horizon-testnet.stellar.org";
 const ADDRESS = "GCONNECTEDACCOUNT1234567890ABCDEFGHIJKLMNOPQRSTUVWXY";
 
-const tx = (
-  hash: string,
-  createdAt: string,
-  successful = true
-): HorizonTransaction => ({
+const tx = (hash: string, createdAt: string, successful = true): HorizonTransaction => ({
   id: hash,
   hash,
   created_at: createdAt,

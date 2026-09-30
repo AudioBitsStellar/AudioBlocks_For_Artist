@@ -405,7 +405,9 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
                       <Pencil className="h-3 w-3 mr-1" /> Edit
                     </button>
                     <button
-                      onClick={() => setDeleteConfirmation({ isOpen: true, eventId: String(event.id) })}
+                      onClick={() =>
+                        setDeleteConfirmation({ isOpen: true, eventId: String(event.id) })
+                      }
                       className="rounded-full border border-error bg-error/20 px-4 py-1.5 text-xs font-medium text-error hover:text-error hover:bg-error transition-colors"
                     >
                       Delete
@@ -426,11 +428,7 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
         message="Are you sure you want to delete this event? This action is permanent and cannot be undone."
       />
       {editEvent && (
-        <EditEventModal
-          event={editEvent}
-          onClose={handleEditClose}
-          onSave={handleEditSave}
-        />
+        <EditEventModal event={editEvent} onClose={handleEditClose} onSave={handleEditSave} />
       )}
     </div>
   );
@@ -456,14 +454,15 @@ function EditEventModal({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleFieldChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next[field];
-      return next;
-    });
-  };
+  const handleFieldChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -495,7 +494,10 @@ function EditEventModal({
         <h2 className="text-xl font-semibold text-text mb-6">Edit Event</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="edit-title" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <label
+              htmlFor="edit-title"
+              className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            >
               Event Name*
             </label>
             <input
@@ -511,7 +513,10 @@ function EditEventModal({
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="edit-price" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <label
+              htmlFor="edit-price"
+              className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            >
               Event Ticket Price*
             </label>
             <input
@@ -529,7 +534,10 @@ function EditEventModal({
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="edit-date" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <label
+              htmlFor="edit-date"
+              className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            >
               Event Date*
             </label>
             <input
@@ -546,7 +554,10 @@ function EditEventModal({
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="edit-time" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <label
+              htmlFor="edit-time"
+              className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            >
               Event Time*
             </label>
             <input
@@ -563,7 +574,10 @@ function EditEventModal({
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="edit-tickets" className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <label
+              htmlFor="edit-tickets"
+              className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            >
               Tickets Available
             </label>
             <input

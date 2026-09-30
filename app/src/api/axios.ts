@@ -63,8 +63,7 @@ type TrackedConfig = InternalAxiosRequestConfig & {
   _perfStart?: number;
 };
 
-const now = (): number =>
-  typeof performance !== "undefined" ? performance.now() : Date.now();
+const now = (): number => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 /** Records the round-trip time of one attempt with the API performance monitor. */
 function recordTiming(config: TrackedConfig | undefined): void {

@@ -148,7 +148,9 @@ describe("My Music catalog search and filter", () => {
   it("explains an empty result set and clears the filters again", () => {
     renderMyMusic();
 
-    fireEvent.change(screen.getByLabelText("Search tracks"), { target: { value: "no-such-track" } });
+    fireEvent.change(screen.getByLabelText("Search tracks"), {
+      target: { value: "no-such-track" },
+    });
 
     expect(screen.getByText("No tracks found")).toBeInTheDocument();
     expect(screen.queryByText("Golden Skies")).not.toBeInTheDocument();

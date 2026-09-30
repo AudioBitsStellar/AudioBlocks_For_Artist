@@ -13,7 +13,15 @@
  */
 
 import { useState } from "react";
-import { AlertTriangle, CheckCircle, ChevronDown, ChevronUp, Loader, RefreshCw, UploadCloud } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Loader,
+  RefreshCw,
+  UploadCloud,
+} from "lucide-react";
 import { useContractUpgradeService } from "@/services/contractUpgradeService";
 import {
   formatContractAddress,
@@ -38,10 +46,7 @@ interface ContractUpgradePanelProps {
    * Called to request a Freighter signature.  Mirrors the Freighter API:
    * `signTransactionXdr(xdr, { networkPassphrase })`.
    */
-  onSign: (
-    xdr: string,
-    opts: { networkPassphrase: string }
-  ) => Promise<string>;
+  onSign: (xdr: string, opts: { networkPassphrase: string }) => Promise<string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,8 +66,7 @@ const STATUS_LABELS: Record<ContractUpgradeStatus, string> = {
 function StatusBadge({ status }: { status: ContractUpgradeStatus }) {
   const isError = status === "error";
   const isSuccess = status === "success";
-  const isActive =
-    status === "preparing" || status === "signing" || status === "submitting";
+  const isActive = status === "preparing" || status === "signing" || status === "submitting";
 
   return (
     <span
@@ -108,7 +112,10 @@ export default function ContractUpgradePanel({
 
   const prepare = usePrepareContractUpgrade();
   const submit = useSubmitContractUpgrade();
-  const { data: contractInfo, isLoading: loadingInfo } = useGetContractInfo(contractId, !!contractId);
+  const { data: contractInfo, isLoading: loadingInfo } = useGetContractInfo(
+    contractId,
+    !!contractId
+  );
 
   const currentWasmHash = contractInfo?.data?.wasmHash;
   const isWorking =
@@ -149,11 +156,10 @@ export default function ContractUpgradePanel({
         ...(migrationNote ? { migrationData: { note: migrationNote } } : {}),
       });
 
-      const { xdr, networkPassphrase } =
-        prepared.data as PreparedContractUpgradeResponse & {
-          xdr: string;
-          networkPassphrase: string;
-        };
+      const { xdr, networkPassphrase } = prepared.data as PreparedContractUpgradeResponse & {
+        xdr: string;
+        networkPassphrase: string;
+      };
 
       // Step 2 — sign via Freighter
       setStatus("signing");
@@ -170,8 +176,7 @@ export default function ContractUpgradePanel({
       setResultTxHash(result.data.txHash);
       setStatus("success");
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "An unexpected error occurred.";
+      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
       setErrorMessage(message);
       setStatus("error");
     }
@@ -204,8 +209,8 @@ export default function ContractUpgradePanel({
             Soroban Contract Upgrade
           </h2>
           <p className="text-gray-400 text-sm mt-1">
-            Replace on-chain WASM bytecode in-place while preserving all contract
-            storage and the same contract address.
+            Replace on-chain WASM bytecode in-place while preserving all contract storage and the
+            same contract address.
           </p>
         </div>
         <StatusBadge status={status} />
@@ -242,12 +247,8 @@ export default function ContractUpgradePanel({
       {/* Input form */}
       <div className="space-y-4">
         <div>
-          <label
-            htmlFor="new-wasm-hash"
-            className="block text-sm font-medium text-gray-300 mb-1"
-          >
-            New WASM Hash{" "}
-            <span className="text-gray-500 font-normal">(64-character hex)</span>
+          <label htmlFor="new-wasm-hash" className="block text-sm font-medium text-gray-300 mb-1">
+            New WASM Hash <span className="text-gray-500 font-normal">(64-character hex)</span>
           </label>
           <input
             id="new-wasm-hash"
@@ -285,8 +286,7 @@ export default function ContractUpgradePanel({
                 htmlFor="migration-note"
                 className="block text-sm font-medium text-gray-300 mb-1"
               >
-                Migration note{" "}
-                <span className="text-gray-500 font-normal">(optional)</span>
+                Migration note <span className="text-gray-500 font-normal">(optional)</span>
               </label>
               <textarea
                 id="migration-note"
@@ -340,8 +340,7 @@ export default function ContractUpgradePanel({
             Contract upgraded successfully
           </div>
           <div>
-            Tx:{" "}
-            <code className="font-mono text-xs">{resultTxHash}</code>
+            Tx: <code className="font-mono text-xs">{resultTxHash}</code>
           </div>
         </div>
       )}

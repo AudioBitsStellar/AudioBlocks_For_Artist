@@ -35,8 +35,12 @@ export default function OnboardingProgressCard({ className = "" }: OnboardingPro
 
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Progress</span>
-            <span className="block text-xl font-bold font-mono text-emerald-400">{progress.percentage}%</span>
+            <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">
+              Progress
+            </span>
+            <span className="block text-xl font-bold font-mono text-emerald-400">
+              {progress.percentage}%
+            </span>
           </div>
         </div>
       </div>
@@ -68,7 +72,9 @@ export default function OnboardingProgressCard({ className = "" }: OnboardingPro
               <button
                 onClick={() => !step.completed && markStepComplete(step.id)}
                 className="mt-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-400 rounded-full"
-                aria-label={step.completed ? `${step.title} completed` : `Mark ${step.title} as completed`}
+                aria-label={
+                  step.completed ? `${step.title} completed` : `Mark ${step.title} as completed`
+                }
               >
                 {step.completed ? (
                   <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
@@ -78,7 +84,9 @@ export default function OnboardingProgressCard({ className = "" }: OnboardingPro
               </button>
 
               <div>
-                <h3 className={`text-sm font-medium ${step.completed ? "line-through text-gray-400" : "text-white"}`}>
+                <h3
+                  className={`text-sm font-medium ${step.completed ? "line-through text-gray-400" : "text-white"}`}
+                >
                   {step.title}
                 </h3>
                 <p className="text-xs text-gray-400 mt-0.5">{step.description}</p>

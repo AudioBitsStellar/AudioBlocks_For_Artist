@@ -20,22 +20,26 @@ export default function ReferralProgramPage() {
           <Users className="w-6 h-6 text-primary" />
           Referral Program
         </h1>
-        <p className="text-text-muted mt-2">Invite other artists and earn a percentage of their first-year earnings.</p>
+        <p className="text-text-muted mt-2">
+          Invite other artists and earn a percentage of their first-year earnings.
+        </p>
       </header>
 
       <div className="bg-surface rounded-xl border border-border p-6 space-y-6">
         <div>
           <h3 className="font-semibold text-lg text-text">Your Referral Link</h3>
-          <p className="text-sm text-text-muted mt-1">Share this link with your network to start earning.</p>
-          
+          <p className="text-sm text-text-muted mt-1">
+            Share this link with your network to start earning.
+          </p>
+
           <div className="mt-4 flex gap-2">
-            <input 
-              type="text" 
-              readOnly 
-              value={referralLink} 
+            <input
+              type="text"
+              readOnly
+              value={referralLink}
               className="flex-1 bg-background border border-border rounded-lg p-3 text-text font-mono text-sm"
             />
-            <button 
+            <button
               onClick={handleCopy}
               className="px-4 py-2 bg-primary text-primary-contrast rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
             >

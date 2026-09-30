@@ -33,7 +33,7 @@ describe("VerificationStep", () => {
     const dobInput = screen.getByLabelText(/date of birth/i);
     const today = new Date();
     const underageDate = new Date(today.getFullYear() - 17, today.getMonth(), today.getDate());
-    
+
     fireEvent.change(dobInput, { target: { value: underageDate.toISOString().split("T")[0] } });
     fireEvent.blur(dobInput);
 

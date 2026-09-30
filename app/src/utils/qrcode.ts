@@ -62,7 +62,8 @@ export function generateQRSVG(value: string, size = 200): string {
   for (let y = 0; y < gridSize; y++) {
     for (let x = 0; x < gridSize; x++) {
       // Skip finder pattern areas
-      if ((x < 8 && y < 8) || (x >= gridSize - 8 && y < 8) || (x < 8 && y >= gridSize - 8)) continue;
+      if ((x < 8 && y < 8) || (x >= gridSize - 8 && y < 8) || (x < 8 && y >= gridSize - 8))
+        continue;
 
       if (rand() > 0.5) {
         cells.push(

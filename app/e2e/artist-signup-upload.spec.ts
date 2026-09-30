@@ -281,7 +281,10 @@ test.describe("Artist Signup to First Upload Journey", () => {
 
     // Verify error message about password mismatch
     const errorMessage = page.locator("text=password").or(page.locator("text=match"));
-    const isVisible = await errorMessage.first().isVisible().catch(() => false);
+    const isVisible = await errorMessage
+      .first()
+      .isVisible()
+      .catch(() => false);
 
     // Either form validation prevents submission or error appears
     const submitButton = page.locator('button:has-text("Sign up")');

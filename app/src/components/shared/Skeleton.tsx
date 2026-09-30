@@ -55,7 +55,9 @@ export function Skeleton({ className = "" }: SkeletonProps) {
       {/* The animation lives here rather than in `SkeletonList` so a lone
           `Skeleton` still shimmers — styled-jsx only injects a block when the
           component owning it renders. */}
-      <style jsx global>{SKELETON_CSS}</style>
+      <style jsx global>
+        {SKELETON_CSS}
+      </style>
     </>
   );
 }
@@ -75,11 +77,7 @@ export function SkeletonList({ items = 3, ariaLabel, className = "" }: SkeletonL
   return (
     <div role="status" aria-busy="true" aria-label={ariaLabel} className={className}>
       {Array.from({ length: items }).map((_, index) => (
-        <div
-          key={index}
-          className="flex items-center gap-4 px-4 py-4"
-          data-testid="skeleton-row"
-        >
+        <div key={index} className="flex items-center gap-4 px-4 py-4" data-testid="skeleton-row">
           <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-1/3 rounded" />

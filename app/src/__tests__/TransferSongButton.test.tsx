@@ -78,7 +78,8 @@ describe("TransferSongButton", () => {
       useSubmitArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }) as never,
       usePrepareSongMint: () => ({ mutateAsync: vi.fn(), isPending: false }) as never,
       useSubmitSongMint: () => ({ mutateAsync: vi.fn(), isPending: false }) as never,
-      usePrepareSongTransfer: () => ({ mutateAsync: prepareMutateAsync, isPending: false }) as never,
+      usePrepareSongTransfer: () =>
+        ({ mutateAsync: prepareMutateAsync, isPending: false }) as never,
       useSubmitSongTransfer: () => ({ mutateAsync: submitMutateAsync, isPending: false }) as never,
     });
 
@@ -99,9 +100,7 @@ describe("TransferSongButton", () => {
     render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
 
     expect(screen.queryByRole("button", { name: /transfer song/i })).toBeNull();
-    expect(
-      screen.getByRole("button", { name: /connect stellar wallet/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /connect stellar wallet/i })).toBeInTheDocument();
   });
 
   it("disables the transfer button until a valid recipient address is entered", () => {

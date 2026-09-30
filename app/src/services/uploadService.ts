@@ -1,12 +1,7 @@
-import { ARTIST_UPLOAD_ENDPOINTS, USER_ENDPOINTS } from "@/api/api-endpoint";
+import { ARTIST_UPLOAD_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
-import {
-  updateProfilePayload,
-  UploadChunkResponse,
-  UploadCoverResponse,
-  UploadSong,
-} from "@/types";
+import { UploadChunkResponse, UploadSong } from "@/types";
 import { UploadCoverResponse as UploadCoverResponseType } from "@/types/api";
 import { SONG_PUBLISHED_INVALIDATIONS } from "@/api/cachePolicy";
 

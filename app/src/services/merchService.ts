@@ -4,11 +4,62 @@ import { DASHBOARD_CACHE } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import type { MerchOrderPayload, CreateMerchPayload, MerchInventoryItem, MerchItem, MerchListResponse, MerchMetric, MerchOrder, PriceValidation, UpdateMerchPayload } from "@/types/api";
 
-// Response types live in the central `@/types/api` module (#140); re-exported
-// here so existing imports from this service keep working.
-export type { CreateMerchPayload, MerchInventoryItem, MerchItem, MerchListResponse, MerchMetric, MerchOrder, PriceValidation, UpdateMerchPayload } from "@/types/api";
+export interface MerchMetric {
+  label: string;
+  value: string;
+  descriptor: string;
+  gradient: string;
+}
 
-const CURRENCY = "USD";
+export interface MerchItem {
+  id: number;
+  title: string;
+  detail: string;
+  date: string;
+  time: string;
+  price: string;
+  image: string;
+}
+
+export interface MerchListResponse {
+  metrics: MerchMetric[];
+  items: MerchItem[];
+}
+
+export interface CreateMerchPayload {
+  title: string;
+  detail: string;
+  date: string;
+  time: string;
+  price: string;
+  image?: string;
+}
+
+export type UpdateMerchPayload = Partial<CreateMerchPayload>;
+
+export interface MerchInventoryItem {
+  id: number;
+  title: string;
+  stock: number;
+  reserved: number;
+}
+
+export interface MerchOrder {
+  id: number;
+  itemId: number;
+  itemTitle: string;
+  quantity: number;
+  price: string;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PriceValidation {
+  valid: boolean;
+  errors: Record<string, string>;
+}
+
 const CURRENCY_SYMBOL = "$";
 
 /**
@@ -189,15 +240,15 @@ const useMerchService = () => {
    * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)`.
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept in the public signature to match the documented `.mutate({ itemId, quantity })` payload shape below
   const useCreateMerchOrder = (itemId: number, quantity: number) =>
     usePost<MerchOrder, MerchOrderPayload>(
       MERCH_ENDPOINTS.CREATE_ORDER(itemId),
       {
         onSuccess: () => handleSuccess("Merch order created!"),
-        onError: (error) =>
-          handleError(error.message || "Failed to create merch order."),
+        onError: (error) => handleError(error.message || "Failed to create merch order."),
         invalidateQueries: [MERCH_QUERY_KEY],
-      },
+      }
     );
 
   /**

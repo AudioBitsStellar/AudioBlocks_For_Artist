@@ -5,6 +5,7 @@ This guide explains how to add proper SEO and social sharing metadata to pages i
 ## Overview
 
 All pages now include comprehensive metadata for:
+
 - **Open Graph** (Facebook, LinkedIn, etc.)
 - **Twitter Cards**
 - **SEO optimization** (title, description, keywords)
@@ -102,6 +103,7 @@ What the artist helper adds on top of the shared tags:
 Each metadata generation includes:
 
 ### Open Graph Tags
+
 - `og:title` - Page title
 - `og:description` - Page description
 - `og:image` - Social sharing image (1200x630)
@@ -111,6 +113,7 @@ Each metadata generation includes:
 - `og:locale` - "en_US"
 
 ### Twitter Card Tags
+
 - `twitter:card` - "summary_large_image"
 - `twitter:title` - Page title
 - `twitter:description` - Page description
@@ -118,6 +121,7 @@ Each metadata generation includes:
 - `twitter:creator` - Artist name (when applicable)
 
 ### SEO Tags
+
 - `title` - Browser tab title
 - `description` - Meta description
 - `keywords` - Relevant keywords
@@ -129,6 +133,7 @@ Each metadata generation includes:
 ## Image Requirements
 
 ### Social Sharing Images (OG Images)
+
 - **Dimensions**: 1200x630 pixels (recommended)
 - **Format**: PNG or JPG
 - **File size**: Under 5MB
@@ -136,6 +141,7 @@ Each metadata generation includes:
 - **Fallback**: `/public/logo.png` is used when no image is specified
 
 ### Best Practices
+
 1. Use high-quality, relevant images
 2. Include text overlay sparingly (it may be cropped on some platforms)
 3. Test previews using:
@@ -167,11 +173,13 @@ Default values are configured in `app/src/utils/metadata.ts`:
 ## Testing
 
 ### Local Testing
+
 1. Run the development server
 2. View page source to verify meta tags
 3. Use browser extensions like "Meta SEO Inspector"
 
 ### Social Media Preview Testing
+
 1. Deploy to staging/production
 2. Use platform-specific validators:
    - Facebook: https://developers.facebook.com/tools/debug/
@@ -179,6 +187,7 @@ Default values are configured in `app/src/utils/metadata.ts`:
    - LinkedIn: https://www.linkedin.com/post-inspector/
 
 ### What to Check
+
 - ✅ All required tags are present
 - ✅ Images load correctly (absolute URLs)
 - ✅ Titles are descriptive and under 60 characters
@@ -188,6 +197,7 @@ Default values are configured in `app/src/utils/metadata.ts`:
 ## Examples
 
 ### Landing Page
+
 ```typescript
 // app/src/app/page.tsx
 export const metadata = generateMetadata({
@@ -198,11 +208,12 @@ export const metadata = generateMetadata({
 ```
 
 ### Dynamic Music Page
+
 ```typescript
 // app/src/app/music/[id]/page.tsx
 export async function generateMetadata({ params }): Promise<Metadata> {
   const song = await fetchSong(params.id);
-  
+
   return generateMusicMetadata({
     title: song.title,
     artist: song.artist,
@@ -215,11 +226,12 @@ export async function generateMetadata({ params }): Promise<Metadata> {
 ```
 
 ### Profile Page
+
 ```typescript
 // app/src/app/profile/[username]/page.tsx
 export async function generateMetadata({ params }): Promise<Metadata> {
   const artist = await fetchArtist(params.username);
-  
+
   return generateArtistMetadata({
     name: artist.name,
     bio: artist.bio,
@@ -232,17 +244,20 @@ export async function generateMetadata({ params }): Promise<Metadata> {
 ## Troubleshooting
 
 ### Images Not Showing in Previews
+
 - Ensure images use absolute URLs starting with `https://`
 - Verify images are publicly accessible
 - Check image file sizes (should be under 5MB)
 - Clear cache on social media validators
 
 ### Title Too Long
+
 - Keep titles under 60 characters for best display
 - Use the pipe separator: `Page Title | AudioBlocks`
 - The utility automatically appends "| AudioBlocks" if not present
 
 ### Description Cut Off
+
 - Keep descriptions between 120-160 characters
 - Front-load important information
 - Avoid trailing ellipses (platforms add them automatically)

@@ -96,8 +96,8 @@ const CustomTooltip = ({ active, payload, coordinate }: CustomTooltipProps) => {
 };
 
 const CustomDot = ({
-  cx,
   cy,
+  cx,
   payload,
   highlightMonth,
 }: {
@@ -130,11 +130,14 @@ const EmptyState = () => (
 
 export default function EarningsRoyalties() {
   const { useGetEarnings } = useEarningsServices();
-  const { data: response, isLoading, isError } = useGetEarnings(true);
+  const { data: response, isLoading, isError, refetch } = useGetEarnings(true);
 
   const summary = response?.data;
   const chartData: EarningsDataPoint[] = summary?.data ?? [];
-  const highlightMonth = chartData.length > 0 ? chartData[chartData.length - 1].month : "";
+  const [dateRange, setDateRange] = useState(12);
+  const filteredChartData = chartData.slice(-dateRange);
+  const highlightMonth =
+    filteredChartData.length > 0 ? filteredChartData[filteredChartData.length - 1].month : "";
   const [payoutRequested, setPayoutRequested] = useState(false);
 
   const totalEarnings = summary?.totalEarnings ?? 0;
@@ -187,7 +190,7 @@ export default function EarningsRoyalties() {
   const handleExport = useCallback(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return;
 
-    const csv = createEarningsCsv(chartData);
+    const csv = createEarningsCsv(filteredChartData);
     const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -199,7 +202,7 @@ export default function EarningsRoyalties() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [chartData]);
+  }, [filteredChartData]);
 
   return (
     <div id={PRINT_TARGET_ID} className="bg-surface-raised rounded-lg p-6">
@@ -251,9 +254,13 @@ export default function EarningsRoyalties() {
             />
             <select
               aria-label="Earnings date range"
+              value={dateRange}
+              onChange={(event) => setDateRange(Number(event.target.value))}
               className="bg-surface-sunken border border-border rounded-lg pl-10 pr-8 py-2 text-text text-sm appearance-none cursor-pointer hover:border-border-subtle transition-colors"
             >
-              <option>{DATE_RANGE_LABEL}</option>
+              <option value={3}>Last 3 months</option>
+              <option value={6}>Last 6 months</option>
+              <option value={12}>{DATE_RANGE_LABEL}</option>
             </select>
             <ChevronDown
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none"
@@ -338,8 +345,18 @@ export default function EarningsRoyalties() {
       </div>
 
       {isError ? (
-        <div className="h-64 flex items-center justify-center text-red-400" role="alert">
-          Failed to load earnings data. Please try again later.
+        <div
+          className="h-64 flex flex-col items-center justify-center gap-3 text-red-400"
+          role="alert"
+        >
+          <p>Failed to load earnings data. Please try again later.</p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="rounded-lg border border-border px-4 py-2 text-sm text-text transition-colors hover:border-border-subtle"
+          >
+            Retry
+          </button>
         </div>
       ) : isLoading ? (
         <ChartSkeleton />

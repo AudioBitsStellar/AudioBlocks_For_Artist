@@ -10,11 +10,7 @@
 
 import type { AxiosResponse } from "@/types";
 
-export type NotificationEventKey =
-  | "newFan"
-  | "earnings"
-  | "eventReminder"
-  | "qualityCheck";
+export type NotificationEventKey = "newFan" | "earnings" | "eventReminder" | "qualityCheck";
 
 export type NotificationChannel = "email" | "inApp";
 

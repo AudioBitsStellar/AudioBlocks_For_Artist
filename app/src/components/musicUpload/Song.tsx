@@ -738,8 +738,8 @@ const Song = () => {
               {audioMetadata && (
                 <p className="text-[10px] text-[#A3A3A3] mt-1.5">
                   {formatDuration(audioMetadata.durationSec)} &middot;{" "}
-                  {audioMetadata.sampleRateHz.toLocaleString()} Hz &middot;{" "}
-                  ~{audioMetadata.bitrateKbps} kbps
+                  {audioMetadata.sampleRateHz.toLocaleString()} Hz &middot; ~
+                  {audioMetadata.bitrateKbps} kbps
                 </p>
               )}
             </div>

@@ -100,10 +100,10 @@ export async function fetchXlmBalance(address: string): Promise<string> {
 /** Fetches the most recent transactions for an account, newest first. */
 export async function fetchAccountTransactions(
   address: string,
-  limit = 10,
+  limit = 10
 ): Promise<HorizonTransaction[]> {
   const res = await fetch(
-    `${horizonBaseUrl()}/accounts/${address}/transactions?order=desc&limit=${limit}`,
+    `${horizonBaseUrl()}/accounts/${address}/transactions?order=desc&limit=${limit}`
   );
   if (res.status === 404) return [];
   if (!res.ok) {
@@ -121,10 +121,10 @@ export async function fetchAccountTransactions(
  */
 export async function fetchAccountOperations(
   address: string,
-  limit = 50,
+  limit = 50
 ): Promise<HorizonOperation[]> {
   const res = await fetch(
-    `${horizonBaseUrl()}/accounts/${address}/operations?order=desc&limit=${limit}`,
+    `${horizonBaseUrl()}/accounts/${address}/operations?order=desc&limit=${limit}`
   );
   if (res.status === 404) return [];
   if (!res.ok) {

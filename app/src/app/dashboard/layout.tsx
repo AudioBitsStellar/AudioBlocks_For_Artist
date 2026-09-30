@@ -4,6 +4,8 @@ import Sidebar from "@/components/Sidebar";
 import TopHeader from "@/components/TopHeader";
 import MobileNav from "@/components/MobileNav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import DashboardShortcuts from "@/components/DashboardShortcuts";
+import EmailVerificationGate from "@/components/EmailVerificationGate";
 import RoleProvider from "@/context/RoleContext";
 import { DashboardCustomizationProvider } from "@/context/DashboardCustomizationContext";
 import { useState } from "react";
