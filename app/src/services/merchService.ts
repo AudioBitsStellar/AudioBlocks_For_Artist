@@ -59,13 +59,7 @@ export interface PriceValidation {
   errors: Record<string, string>;
 }
 
-const CURRENCY = "USD";
 const CURRENCY_SYMBOL = "$";
-
-export interface PriceValidation {
-  valid: boolean;
-  errors: Record<string, string>;
-}
 
 /**
  * Formats a price as a USD currency string.
@@ -245,6 +239,7 @@ const useMerchService = () => {
    * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)`.
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept in the public signature to match the documented `.mutate({ itemId, quantity })` payload shape below
   const useCreateMerchOrder = (itemId: number, quantity: number) =>
     usePost<MerchOrder, { itemId: number; quantity: number }>(
       MERCH_ENDPOINTS.CREATE_ORDER(itemId),
