@@ -71,6 +71,5 @@ when the comment is not wanted.
 - `cancel-in-progress` on a per-PR concurrency group means a force-push or a
   quick follow-up commit cancels the superseded deploy instead of stacking two
   of them.
-- Preview deployments are created as temporary Vercel URLs and are not
-  reclaimed by this workflow when the PR closes; expiring them is left to the
-  Vercel project's own retention settings.
+- Preview deployments are automatically created with development environment endpoints (`https://api-dev.audioblocks.io`), and are destroyed via the `destroy-preview` job when the PR is closed or merged.
+
