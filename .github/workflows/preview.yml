@@ -3,7 +3,7 @@ name: Deploy PR Preview
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, closed]
 
 # One preview per open PR: a new push replaces the deployment instead of
 # queuing a second one behind it.
@@ -25,9 +25,9 @@ jobs:
     runs-on: ubuntu-latest
 
     # Actions cannot read repository secrets from a fork, so running here would
-    # just fail on an empty VERCEL_TOKEN. Draft PRs are skipped for the same
-    # reason as CI: nothing is ready to look at yet.
+    # just fail on an empty VERCEL_TOKEN. Draft PRs and closed PRs are skipped.
     if: >-
+      github.event.action != 'closed' &&
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository
 
@@ -58,6 +58,7 @@ jobs:
           working-directory: app
           github-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-args: "--build-env NEXT_PUBLIC_API_BASE_URL=https://api-dev.audioblocks.io --build-env NEXT_PUBLIC_USE_MOCK_DATA=false"
 
       - name: Publish the preview URL
         if: always() && steps.vercel.outputs.preview-url != ''
@@ -70,3 +71,22 @@ jobs:
             echo "| PR | #${{ github.event.pull_request.number }} |"
             echo "| Preview | ${{ steps.vercel.outputs.preview-url }} |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  destroy-preview:
+    name: Destroy preview
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Remove preview deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ]; then
+            echo "Cleaning up preview deployment for closed PR #${{ github.event.pull_request.number }}..."
+            npx vercel remove ${{ github.event.pull_request.head.ref }} --token="$VERCEL_TOKEN" --yes || echo "Preview removal complete or already cleaned up."
+          else
+            echo "VERCEL_TOKEN not available; skipped remote preview deletion."
+          fi
