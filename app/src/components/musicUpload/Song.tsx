@@ -44,6 +44,7 @@ const Song = () => {
   const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [failedChunkIndex, setFailedChunkIndex] = useState<number>(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<{
@@ -65,6 +66,7 @@ const Song = () => {
   // but no further chunk requests are made and the UI reflects "cancelled"
   // immediately.
   const cancelRequestedRef = useRef(false);
+  const retryInProgressRef = useRef(false);
 
   const { useFinalizeUpload, useUploadChunk, useUploadCover } = useUploadServices();
   const uploadChunk = useUploadChunk();
@@ -76,6 +78,8 @@ const Song = () => {
     handleSubmit,
     reset,
     watch,
+    getValues,
+    trigger,
     formState: { errors, isSubmitting, isValid },
   } = useForm<UploadSong>({
     resolver: zodResolver(songFormSchema),
@@ -155,6 +159,7 @@ const Song = () => {
     setFileId(generateFileId());
     setRetryCount(0);
     setFailedChunkIndex(0);
+    setUploadError(null);
     cancelRequestedRef.current = false;
     setPreviewUrl(URL.createObjectURL(file));
     setAudioMetadata(null);
@@ -182,6 +187,7 @@ const Song = () => {
         throw new Error("UPLOAD_CANCELLED");
       }
 
+      setFailedChunkIndex(i);
       const form = new FormData();
       form.append("fileId", fileId);
       form.append("chunkIndex", String(i));
@@ -189,6 +195,7 @@ const Song = () => {
 
       await uploadChunk.mutateAsync(form);
 
+      setFailedChunkIndex(i + 1);
       const percent = Math.round(((i + 1) / chunks.length) * 100);
       setUploadProgress(percent);
     }
@@ -203,45 +210,18 @@ const Song = () => {
     disabled: isBusy || uploadedFile?.status === "uploading",
   });
 
-  const handleRetry = async () => {
-    if (!audioFile || !fileId) return;
-
-    if (retryCount >= MAX_RETRY_ATTEMPTS) {
-      setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
-      toast.error(
-        `Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) reached. Please delete and start over.`
-      );
-      return;
-    }
-
-    try {
-      cancelRequestedRef.current = false;
-      setRetryCount((prev) => prev + 1);
-      setUploadedFile((prev) => (prev ? { ...prev, status: "uploading" } : prev));
-
-      await uploadSongInChunks(audioFile, fileId, failedChunkIndex);
-
-      setUploadedFile((prev) => (prev ? { ...prev, status: "success" } : prev));
-    } catch (err) {
-      if (err instanceof Error && err.message === "UPLOAD_CANCELLED") {
-        setUploadedFile((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
-        toast.success("Upload cancelled");
-        return;
-      }
-      console.error(err);
-      setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
-      toast.error(`Retry failed: ${getErrorMessage(err as Error)}`);
-    }
-  };
-
   const handleDelete = () => {
     cancelRequestedRef.current = false;
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setUploadedFile(null);
     setAudioFile(null);
     setFileId(null);
     setUploadProgress(0);
     setPreviewUrl(null);
     setAudioMetadata(null);
+    setRetryCount(0);
+    setFailedChunkIndex(0);
+    setUploadError(null);
   };
 
   const onSubmit = async (data: UploadSong) => {
@@ -261,26 +241,10 @@ const Song = () => {
 
     try {
       setIsUploading(true);
+      setUploadError(null);
       setUploadedFile((prev) => (prev ? { ...prev, status: "uploading" } : prev));
 
-      const chunks = splitFile(audioFile);
-      for (let i = 0; i < chunks.length; i++) {
-        if (cancelRequestedRef.current) {
-          setFailedChunkIndex(i);
-          throw new Error("UPLOAD_CANCELLED");
-        }
-
-        const form = new FormData();
-        form.append("fileId", fileId);
-        form.append("chunkIndex", String(i));
-        form.append("chunk", chunks[i]);
-
-        await uploadChunk.mutateAsync(form);
-
-        const percent = Math.round(((i + 1) / chunks.length) * 100);
-        setUploadProgress(percent);
-      }
-      const totalChunks = chunks.length;
+      const totalChunks = await uploadSongInChunks(audioFile, fileId, failedChunkIndex);
 
       // 2. Upload cover
       const coverForm = new FormData();
@@ -318,6 +282,7 @@ const Song = () => {
       // a clear backend error if clicked too early.
       setMintableSongId(songId || null);
 
+      setUploadError(null);
       setUploadedFile((prev) => (prev ? { ...prev, status: "success" } : prev));
 
       clearSavedData();
@@ -339,6 +304,7 @@ const Song = () => {
       }
       console.error(err);
       const reason = getErrorMessage(err);
+      setUploadError(reason);
       analytics.uploadFailed({ fileId, reason });
       setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
       if (isRetryableError(err)) {
@@ -348,6 +314,23 @@ const Song = () => {
       }
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!audioFile || !fileId || retryCount >= MAX_RETRY_ATTEMPTS || retryInProgressRef.current) {
+      return;
+    }
+
+    retryInProgressRef.current = true;
+    try {
+      if (!(await trigger())) return;
+
+      cancelRequestedRef.current = false;
+      setRetryCount((prev) => prev + 1);
+      await onSubmit(getValues());
+    } finally {
+      retryInProgressRef.current = false;
     }
   };
 
@@ -657,7 +640,7 @@ const Song = () => {
                       {uploadedFile.status === "failed" && (
                         <span className="text-[10px] text-red-500 font-medium">
                           {retryCount >= MAX_RETRY_ATTEMPTS
-                            ? "Max retries reached"
+                            ? "Upload failed after max retries"
                             : "Upload failed"}
                         </span>
                       )}
@@ -682,6 +665,17 @@ const Song = () => {
                         </span>
                       )}
                     </div>
+                    {uploadedFile.status === "failed" && (
+                      <p
+                        className="text-[10px] text-red-400 truncate"
+                        role="alert"
+                        title={uploadError ?? undefined}
+                      >
+                        {retryCount >= MAX_RETRY_ATTEMPTS
+                          ? `Upload failed after ${MAX_RETRY_ATTEMPTS} retries. Start over to try again.`
+                          : (uploadError ?? "The upload failed. Try again.")}
+                      </p>
+                    )}
                     {uploadedFile.status === "uploading" && (
                       <div className="w-full bg-zinc-800 rounded-full h-1 mt-1.5 overflow-hidden">
                         <div
@@ -706,12 +700,21 @@ const Song = () => {
                   {uploadedFile.status === "failed" && retryCount < MAX_RETRY_ATTEMPTS && (
                     <button
                       onClick={handleRetry}
-                      className="p-1 text-[#A3A3A3] hover:text-white transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] text-[#A3A3A3] hover:text-white transition-colors"
                       disabled={isBusy}
                       title="Retry upload"
                       aria-label="Retry upload"
                     >
-                      <RotateCw size={14} />
+                      <RotateCw size={12} />
+                      Retry
+                    </button>
+                  )}
+                  {uploadedFile.status === "failed" && retryCount >= MAX_RETRY_ATTEMPTS && (
+                    <button
+                      onClick={handleDelete}
+                      className="px-2 py-1 text-[10px] font-medium text-white hover:text-[#D2045B] transition-colors"
+                    >
+                      Start over
                     </button>
                   )}
                   <button
