@@ -588,11 +588,7 @@ export default function ProfilePage() {
 
       {activeTab === "onchain" && (
         <div id="onchain-panel" role="tabpanel" className="mt-6">
-          <ErrorBoundary
-            fallbackTitle="On-Chain Profile Error"
-            fallbackDescription="A wallet extension error or unexpected contract response prevented the on-chain tab from loading. Check your Freighter wallet connection and retry. Your profile editor tab remains accessible."
-            retryLabel="Retry / Reconnect"
-          >
+          <ErrorBoundary fallbackTitle="Failed to load on-chain profile">
             <SetupArtistOnChainProfile />
           </ErrorBoundary>
         </div>

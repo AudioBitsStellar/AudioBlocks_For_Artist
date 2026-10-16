@@ -4,24 +4,15 @@ import { useState } from "react";
 import Breadcrumb from "@/components/Breadcrumb";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import dynamic from "next/dynamic";
+
+const MyMusicContent = dynamic(() => import("@/components/MyMusicContent"));
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Album } from "@/types";
-import { useQueryClient } from "@tanstack/react-query";
-import { ALBUMS_QUERY_KEY } from "@/services/albumService";
-
-const MyMusicContent = dynamic(() => import("@/components/MyMusicContent"));
 
 export default function MyMusicPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [boundaryKey, setBoundaryKey] = useState(0);
-  const queryClient = useQueryClient();
   const route = useRouter();
-
-  const handleRetry = () => {
-    queryClient.invalidateQueries({ queryKey: ALBUMS_QUERY_KEY });
-    setBoundaryKey((prev) => prev + 1);
-  };
 
   const handleBreadcrumbClick = () => {
     setSelectedAlbum(null);
@@ -52,13 +43,7 @@ export default function MyMusicPage() {
           </button>
         }
       />
-      <ErrorBoundary
-        key={boundaryKey}
-        fallbackTitle="Failed to load your music library"
-        fallbackDescription="An error occurred while loading your albums and tracks. Check your connection and retry."
-        retryLabel="Retry"
-        onRetry={handleRetry}
-      >
+      <ErrorBoundary fallbackTitle="Failed to load your music library">
         <MyMusicContent onAlbumSelect={setSelectedAlbum} />
       </ErrorBoundary>
     </>

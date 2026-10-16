@@ -623,12 +623,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             ctaHref={UPLOAD_MUSIC_HREF}
           />
         ) : (
-          <ErrorBoundary
-            fallbackTitle="Your albums couldn't be displayed"
-            fallbackDescription="An error occurred while displaying your album library. You can retry to reload."
-            retryLabel="Retry"
-            onRetry={() => refetchAlbums()}
-          >
+          <ErrorBoundary fallbackTitle="Your albums couldn't be displayed">
             <div
               ref={scrollContainerRef}
               className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
@@ -745,12 +740,7 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
             onCta={clearFilters}
           />
         ) : (
-          <ErrorBoundary
-            fallbackTitle="Your track list couldn't be displayed"
-            fallbackDescription="An error occurred while displaying your track list. You can retry to reload."
-            retryLabel="Retry"
-            onRetry={() => refetchAlbums()}
-          >
+          <ErrorBoundary fallbackTitle="Your track list couldn't be displayed">
             <div className="overflow-hidden rounded-xl border border-gray-800 bg-[#111111]">
               <div className="hidden grid-cols-[40px_1fr_150px_120px_100px_100px_100px_200px] items-center gap-4 border-b border-gray-800 px-4 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid">
                 <span aria-hidden="true" />

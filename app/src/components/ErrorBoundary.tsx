@@ -3,18 +3,9 @@
 import { Component, ReactNode, ErrorInfo } from "react";
 import { AlertTriangle, RefreshCw, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 
-interface FallbackProps {
-  error: Error | null;
-  reset: () => void;
-}
-
 interface Props {
   children: ReactNode;
   fallbackTitle?: string;
-  fallbackDescription?: string;
-  retryLabel?: string;
-  onRetry?: () => void;
-  fallback?: ReactNode | ((props: FallbackProps) => ReactNode);
 }
 
 interface State {
@@ -45,7 +36,6 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   handleRetry = () => {
-    this.props.onRetry?.();
     this.setState({
       hasError: false,
       error: null,
@@ -60,16 +50,8 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      const { fallbackTitle, fallbackDescription, retryLabel, fallback } = this.props;
+      const { fallbackTitle } = this.props;
       const { error, errorInfo, showDetails } = this.state;
-
-      if (typeof fallback === "function") {
-        return fallback({ error, reset: this.handleRetry });
-      }
-
-      if (fallback) {
-        return fallback;
-      }
 
       return (
         <div
@@ -86,8 +68,8 @@ export default class ErrorBoundary extends Component<Props, State> {
             </h3>
 
             <p className="mb-6 max-w-md text-sm text-[#A3A3A3]">
-              {fallbackDescription ??
-                "An unexpected error occurred while loading this section. You can try again or expand details below for troubleshooting."}
+              An unexpected error occurred while loading this section. You can try again or expand
+              details below for troubleshooting.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -97,7 +79,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 className="flex items-center gap-2 rounded-full bg-[#D2045B] px-5 py-2 text-xs font-semibold text-white shadow-[0_4px_14px_rgba(210,4,91,0.4)] transition-all hover:bg-[#B8043F] hover:shadow-[0_6px_20px_rgba(210,4,91,0.6)] focus:outline-none"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                {retryLabel ?? "Try Again"}
+                Try Again
               </button>
 
               <button
