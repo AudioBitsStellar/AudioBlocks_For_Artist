@@ -45,6 +45,41 @@ import {
 } from "@/services/trackVisibilityService";
 import { featureFlags } from "@/lib/featureFlags";
 
+
+import React from 'react';
+import { SongTrack } from '../types/song';
+
+interface MyMusicContentProps {
+  tracks: SongTrack[];
+  onSelectTrack: (trackId: string) => void;
+}
+
+export const MyMusicContent: React.FC<MyMusicContentProps> = ({ tracks, onSelectTrack }) => {
+  return (
+    <div className="my-music-content">
+      <h2>My Tracks</h2>
+      <div className="track-list">
+        {tracks.map((track) => (
+          <div
+            key={track.id}
+            className={`track-item-card ${track.isNearDuplicate ? 'flagged-duplicate' : ''}`}
+            onClick={() => onSelectTrack(track.id)}
+          >
+            <img src={track.coverUrl} alt={track.title} className="track-thumb" />
+            <div className="track-info">
+              <h4>{track.title}</h4>
+              {track.isNearDuplicate && (
+                <span className="duplicate-warning-badge" title="Flagged as near-duplicate">
+                  ⚠️ Near-Duplicate ({Math.round((track.duplicateSimilarityScore || 0) * 100)}% match)
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 const SONG_ORDER_STORAGE_KEY = "my-music-track-order";
 
 /** Tracks listed per page (issue #427). */
@@ -951,3 +986,5 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
 }
 
 export { MyMusicContent };
+
+
