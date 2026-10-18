@@ -142,3 +142,39 @@ export function validateFile(file: File, rules: FileValidationRules): FileValida
 
   return { valid: true, error: null };
 }
+
+
+export interface ImageValidationResult {
+  isValid: boolean;
+  error?: string;
+}
+
+export async function validateCoverArtFile(file: File): Promise<ImageValidationResult> {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    return { isValid: false, error: 'Invalid file type. Please upload a JPEG, PNG, or WebP image.' };
+  }
+
+  const maxSizeMb = 10;
+  if (file.size > maxSizeMb * 1024 * 1024) {
+    return { isValid: false, error: `File size exceeds the maximum limit of ${maxSizeMb}MB.` };
+  }
+
+  // Validate minimum dimensions (square 500x500 min)
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      if (img.width < 500 || img.height < 500) {
+        resolve({ isValid: false, error: 'Cover art must be at least 500x500 pixels.' });
+      } else if (img.width !== img.height) {
+        resolve({ isValid: false, error: 'Cover art must be square (1:1 aspect ratio).' });
+      } else {
+        resolve({ isValid: true });
+      }
+    };
+    img.onerror = () => {
+      resolve({ isValid: false, error: 'Failed to read image file.' });
+    };
+  });
+}
