@@ -16,6 +16,7 @@ import { useEstimatedFee } from "@/hooks/useEstimatedFee";
 interface MintSongButtonProps {
   songId: string;
   albumId?: number;
+  onMintingChange?: (minting: boolean) => void;
 }
 
 type MintStatus =
@@ -36,7 +37,11 @@ interface MintTransactionDetails {
 
 const COOLDOWN_DURATION = 5;
 
-export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonProps) {
+export default function MintSongButton({
+  songId,
+  albumId = 0,
+  onMintingChange,
+}: MintSongButtonProps) {
   const { address } = useStellarWallet();
   const { usePrepareSongMint, useSubmitSongMint } = useOnchainServices();
   const prepareMutation = usePrepareSongMint(songId);
@@ -49,11 +54,13 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
 
+  const isMinting = ["preparing", "awaiting_signature", "submitting"].includes(status);
   const isBusy =
-    prepareMutation.isPending ||
-    submitMutation.isPending ||
-    ["preparing", "awaiting_signature", "submitting"].includes(status) ||
-    cooldownActive;
+    prepareMutation.isPending || submitMutation.isPending || isMinting || cooldownActive;
+
+  useEffect(() => {
+    onMintingChange?.(isMinting);
+  }, [isMinting, onMintingChange]);
 
   useEffect(() => {
     if (!cooldownActive) return;
