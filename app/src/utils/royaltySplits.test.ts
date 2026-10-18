@@ -13,6 +13,42 @@ import {
   type SplitParticipant,
 } from "./royaltySplits";
 
+
+export interface Recipient {
+  address: string;
+  role: string;
+  percentage: number;
+}
+
+export function validateRoyaltySplits(recipients: Recipient[]): { isValid: boolean; error?: string } {
+  if (!recipients || recipients.length === 0) {
+    return { isValid: false, error: 'At least one recipient is required.' };
+  }
+
+  let totalPercentage = 0;
+  const addressSet = new Set<string>();
+
+  for (const r of recipients) {
+    if (!r.address || r.address.trim() === '') {
+      return { isValid: false, error: 'All recipients must have a valid Stellar address.' };
+    }
+    if (addressSet.has(r.address)) {
+      return { isValid: false, error: 'Duplicate Stellar addresses are not allowed in royalty splits.' };
+    }
+    addressSet.add(r.address);
+
+    if (isNaN(r.percentage) || r.percentage <= 0) {
+      return { isValid: false, error: 'Each recipient percentage must be greater than zero.' };
+    }
+    totalPercentage += Number(r.percentage);
+  }
+
+  if (Math.abs(totalPercentage - 100) > 0.01) {
+    return { isValid: false, error: `Royalty percentages must sum to exactly 100% (currently ${totalPercentage}%).` };
+  }
+
+  return { isValid: true };
+}
 const ADDRESS_A = "GAB2CDEFGHIJKLMNOPQRSTUVWXYZ34567AB2CDEFGHIJKLMNOPQRSTUV";
 const ADDRESS_B = "G76543ZYXWVUTSRQPONMLKJIHGFEDC2BAAB2CDEFGHIJKLMNOPQRSTUV";
 
