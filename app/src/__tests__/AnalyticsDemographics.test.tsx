@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import AnalyticsDemographics from "@/components/AnalyticsDemographics";
 import { DemographicsData } from "@/services/analyticsService";
 
@@ -19,7 +19,9 @@ const mockDemographics: DemographicsData = {
 };
 
 describe("AnalyticsDemographics Component (#403)", () => {
+  afterEach(() => vi.unstubAllEnvs());
   it("renders listener demographics section title and metrics", () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK_DATA", "true");
     render(<AnalyticsDemographics data={mockDemographics} />);
 
     expect(screen.getByText("Listener Demographics Breakdown")).toBeInTheDocument();
@@ -36,7 +38,17 @@ describe("AnalyticsDemographics Component (#403)", () => {
   });
 
   it("returns null when no data is provided", () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK_DATA", "true");
     const { container } = render(<AnalyticsDemographics data={undefined} />);
     expect(container).toBeEmptyDOMElement();
+  });
+  it("hides supplied demographics when mocks are off", () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK_DATA", "false");
+    render(<AnalyticsDemographics data={mockDemographics} />);
+    expect(
+      screen.getByText("Listener location and demographics aren't available yet.")
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(screen.queryByText("Female")).not.toBeInTheDocument();
   });
 });
