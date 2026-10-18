@@ -130,7 +130,8 @@ export const NOTIFICATION_ENDPOINTS = {
 // Public (unauthenticated) artist profile, read by the server-rendered
 // /artist/[handle] route so its SEO metadata is real rather than a placeholder.
 export const PUBLIC_ARTIST_ENDPOINTS = {
-  PROFILE: (handle: string) => `/artist/public/${encodeURIComponent(handle)}`,
+  PROFILE: (id: string) => `/artist/${encodeURIComponent(id)}/metadata`,
+  VISIBILITY: (id: string) => `/users/${encodeURIComponent(id)}/public`,
 };
 
 // Admin-only artist discovery. `search` is the free-text query typed by the
