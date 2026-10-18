@@ -1,28 +1,7 @@
-/**
- * On-chain stats for the artist's Stellar account (#466).
- *
- * "Indexer-derived" here means derived in the browser from Horizon's own
- * index of the ledger: `/accounts/…/operations` and `/accounts/…/transactions`
- * are Horizon's materialised views over the ledger, and this module folds them
- * into the numbers an artist actually cares about — how many transactions they
- * signed, what kinds of operations that was, which assets they hold, and when
- * the account last moved. Reading them straight from Horizon follows
- * ADR-0004 (`docs/adr/0004-direct-horizon-reads-from-the-browser.md`); when
- * AudioBlock runs its own indexer this module is the only thing that has to
- * change, because every number below comes out of the pure
- * `summarizeOnChainActivity`.
- */
-
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchIndexedActivity, type IndexedActivity } from "@/lib/onchainIndexer";
 import { featureFlags } from "@/lib/featureFlags";
-import {
-  fetchAccountBalances,
-  fetchAccountOperations,
-  fetchAccountTransactions,
-  fetchXlmBalance,
-  type HorizonOperation,
-  type HorizonTransaction,
-} from "@/lib/horizon";
+import { type HorizonOperation, type HorizonTransaction } from "@/lib/horizon";
 import { getActiveNetworkId } from "@/lib/stellarNetwork";
 import { useStellarWallet } from "@/components/common/wallet/useStellarWallet";
 
@@ -37,7 +16,7 @@ export interface OnChainActivitySummary {
   network: "testnet" | "public";
   xlmBalance: string;
   transactionCount: number;
-  failedTransactionCount: number;
+  failedTransactionCount: number | null;
   operationCount: number;
   /** Operation type → how many of them the account has been part of. */
   operationsByType: Record<string, number>;
@@ -48,9 +27,6 @@ export interface OnChainActivitySummary {
   /** Distinct calendar days the account was active on, oldest first. */
   activeDays: string[];
 }
-
-/** Horizon paginates; this is how much history the summary is computed from. */
-const HISTORY_PAGE_SIZE = 200;
 
 /** The `G…` address with enough of both ends to recognise it. */
 export function truncateAddress(address: string): string {
@@ -197,7 +173,7 @@ export const MOCK_ONCHAIN_ASSETS: HeldAsset[] = [
 /** A checksum-valid account ID, so the sample's explorer link isn't a dead end. */
 export const MOCK_ONCHAIN_ADDRESS = "GBQXKZDJN5RGY33DNNZS243BNVYGYZJNMFZHI2LTOQWTAMBQGAYDAOCF";
 
-/** Demo summary for `NEXT_PUBLIC_USE_MOCK_DATA=true` and for signed-out artists. */
+/** Demo summary for `NEXT_PUBLIC_USE_MOCK_DATA=true` only. */
 export const MOCK_ONCHAIN_SUMMARY: OnChainActivitySummary = summarizeOnChainActivity({
   address: MOCK_ONCHAIN_ADDRESS,
   xlmBalance: "11984.5000000",
@@ -216,59 +192,74 @@ export interface UseOnChainStatsResult {
   refresh: () => void;
 }
 
-/**
- * The connected artist's on-chain activity, read live from Horizon and
- * summarised with {@link summarizeOnChainActivity}.
- *
- * Unconnected artists get the demo summary so the page still explains itself;
- * `isMock` says which of the two is on screen.
- */
+/** Indexed events involving the connected account, not all ledger operations. */
+export function summarizeIndexedActivity(
+  address: string,
+  events: IndexedActivity[]
+): OnChainActivitySummary {
+  const timestamps = events.map((event) => event.createdAt).sort();
+  const operationsByType: Record<string, number> = {};
+  for (const event of events)
+    operationsByType[event.eventType] = (operationsByType[event.eventType] ?? 0) + 1;
+  return {
+    address,
+    network: getActiveNetworkId() === "testnet" ? "testnet" : "public",
+    xlmBalance: "",
+    assets: [],
+    failedTransactionCount: null,
+    transactionCount: new Set(events.map((event) => event.txHash).filter(Boolean)).size,
+    operationCount: events.length,
+    operationsByType,
+    firstActivityAt: timestamps[0] ?? null,
+    lastActivityAt: timestamps.at(-1) ?? null,
+    activeDays: [...new Set(timestamps.map(dayOf))].sort(),
+  };
+}
+
 export function useOnChainStats(): UseOnChainStatsResult {
   const { address } = useStellarWallet();
-  const isMock = featureFlags.useMockOnChainStats || !address;
+  const isMock = featureFlags.useMockOnChainStats;
   const [fetched, setFetched] = useState<OnChainActivitySummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestId = useRef(0);
 
   const load = useCallback(async () => {
+    const request = ++requestId.current;
     // Nothing to query without a wallet, and the sample summary is derived at
     // return time instead — so this effect only ever runs real reads.
     if (!address || featureFlags.useMockOnChainStats) return;
     setIsLoading(true);
     setError(null);
     try {
-      const [xlmBalance, balances, transactions, operations] = await Promise.all([
-        fetchXlmBalance(address),
-        fetchAccountBalances(address),
-        fetchAccountTransactions(address, HISTORY_PAGE_SIZE),
-        fetchAccountOperations(address, HISTORY_PAGE_SIZE),
-      ]);
-      setFetched(
-        summarizeOnChainActivity({
-          address,
-          xlmBalance,
-          assets: heldAssetsFrom(balances ?? []),
-          transactions,
-          operations,
-        })
-      );
+      const events = await fetchIndexedActivity(address);
+      if (request !== requestId.current) return;
+      setFetched(summarizeIndexedActivity(address, events));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't reach Horizon.");
+      if (request !== requestId.current) return;
+      setError(err instanceof Error ? err.message : "Couldn't reach the backend indexer.");
       setFetched(null);
     } finally {
-      setIsLoading(false);
+      if (request === requestId.current) setIsLoading(false);
     }
   }, [address]);
 
   useEffect(() => {
     load();
+    return () => {
+      requestId.current += 1;
+    };
   }, [load]);
 
   return {
-    summary: isMock ? MOCK_ONCHAIN_SUMMARY : fetched,
+    summary: isMock
+      ? MOCK_ONCHAIN_SUMMARY
+      : address && fetched?.address === address
+        ? fetched
+        : null,
     address: address ?? null,
-    isLoading,
-    error,
+    isLoading: Boolean(address) && !isMock && isLoading,
+    error: address && !isMock ? error : null,
     isMock,
     refresh: load,
   };

@@ -64,9 +64,9 @@ describe("OnChainStatsPanel", () => {
 
     expect(screen.getByText("Connected account")).toBeInTheDocument();
     // Once on the KPI card, once as the native line of the assets table.
-    expect(screen.getAllByText("11,984.5")).toHaveLength(2);
+    expect(screen.getAllByText("11,984.5")).toHaveLength(1);
     expect(screen.getByText("1 failed")).toBeInTheDocument();
-    expect(screen.getByText("2 other assets")).toBeInTheDocument();
+    expect(screen.getByText("Balances are not exposed by the indexer")).toBeInTheDocument();
   });
 
   it("breaks operations down by type with their share of history", () => {
@@ -79,7 +79,8 @@ describe("OnChainStatsPanel", () => {
     expect(screen.getAllByText("1 · 25%")).toHaveLength(2);
   });
 
-  it("lists the native balance alongside every trustline held", () => {
+  it("lists sample balances only in mock mode", () => {
+    statsState.current.isMock = true;
     render(<OnChainStatsPanel />);
 
     expect(screen.getByRole("table")).toBeInTheDocument();
@@ -114,7 +115,7 @@ describe("OnChainStatsPanel", () => {
 
     render(<OnChainStatsPanel />);
 
-    expect(screen.getByRole("status")).toHaveTextContent(/Horizon/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/indexed/i);
     expect(screen.queryByText("XLM balance")).not.toBeInTheDocument();
   });
 
@@ -144,9 +145,9 @@ describe("OnChainStatsPanel", () => {
 
     render(<OnChainStatsPanel />);
 
-    expect(screen.getByText("No operations on this account yet.")).toBeInTheDocument();
+    expect(screen.getByText("No indexed events involving this account yet.")).toBeInTheDocument();
     expect(screen.getByText(/Last activity —/i)).toBeInTheDocument();
-    expect(screen.getByText("None failed")).toBeInTheDocument();
+    expect(screen.getByText("Successful indexed events only")).toBeInTheDocument();
   });
 
   it("keeps the refresh button disabled while a re-read is in flight", () => {
