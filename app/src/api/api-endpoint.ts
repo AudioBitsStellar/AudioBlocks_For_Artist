@@ -51,10 +51,8 @@ export const EARNINGS_ENDPOINTS = {
   WITHDRAW: "/artist/earnings/withdraw",
 };
 
-export const OVERVIEW_ENDPOINTS = {
-  GET_OVERVIEW: "/artist/overview",
-  GET_STATISTICS: "/artist/statistics",
-  GET_RECENT_ACTIVITY: "/artist/recent-activity",
+export const ARTIST_STATS_ENDPOINTS = {
+  STATS: (id: string) => `/artists/${encodeURIComponent(id)}/stats`,
 };
 
 export const DASHBOARD_TRANSACTION_ENDPOINTS = {
