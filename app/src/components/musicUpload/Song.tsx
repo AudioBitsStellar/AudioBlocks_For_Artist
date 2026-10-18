@@ -5,7 +5,7 @@ import { UploadSong } from "@/types";
 import { FinalizeSongResponse } from "@/types/api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { songFormSchema } from "@/types/formValidation";
+import { songFormSchema, LYRICS_MAX_LENGTH, SONG_LANGUAGES } from "@/types/formValidation";
 import { MUSIC_GENRES } from "../shared/music_genre";
 import useUploadServices from "@/services/uploadService";
 import {
@@ -58,24 +58,21 @@ const Song = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // #128 — the shared usePost/axios client has no AbortSignal support, so
-  // cancellation is cooperative: the chunk loop below checks this ref
-  // between chunks and stops sending further chunks once it's set. The
-  // one already-in-flight request (if any) still completes server-side,
-  // but no further chunk requests are made and the UI reflects "cancelled"
-  // immediately.
   const cancelRequestedRef = useRef(false);
 
-  const { useFinalizeUpload, useUploadChunk, useUploadCover } = useUploadServices();
+  const { useFinalizeUpload, useUploadChunk, useUploadCover, useTranscribeLyrics } =
+    useUploadServices();
   const uploadChunk = useUploadChunk();
   const uploadCover = useUploadCover();
   const finalizeUpload = useFinalizeUpload();
+  const transcribeLyrics = useTranscribeLyrics();
 
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting, isValid },
   } = useForm<UploadSong>({
     resolver: zodResolver(songFormSchema),
@@ -291,6 +288,7 @@ const Song = () => {
       const coverArtPath = coverRes.data.cover;
 
       // 3. Finalize
+      const trimmedLyrics = data.lyrics?.trim();
       const finalizeResult: FinalizeSongResponse = await finalizeUpload.mutateAsync({
         fileId: fileId,
         totalChunks: totalChunks,
@@ -302,7 +300,13 @@ const Song = () => {
         // A track the artist has just uploaded has not been heard by anyone
         // yet, so it starts out of sight until they choose otherwise (#458).
         visibility: data.visibility ?? NEW_TRACK_DEFAULT_VISIBILITY,
-        // marketPrice: data.marketPrice,
+        ...(data.language ? { language: data.language } : {}),
+        ...(trimmedLyrics
+          ? {
+              lyrics: sanitize(trimmedLyrics),
+              lyricsRightsConfirmed: Boolean(data.lyricsRightsConfirmed),
+            }
+          : {}),
       });
 
       const songId: string = finalizeResult?.data?.id ?? "";
@@ -489,6 +493,106 @@ const Song = () => {
             {describeVisibility(watchedValues.visibility ?? NEW_TRACK_DEFAULT_VISIBILITY)} You can
             change this later from My Music.
           </p>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="song-language" className="text-sm font-medium text-white">
+            Language
+          </label>
+          <select
+            id="song-language"
+            {...register("language")}
+            defaultValue=""
+            className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none"
+          >
+            <option value="" className="bg-[#161616]">
+              Select language
+            </option>
+            {SONG_LANGUAGES.map((lang) => (
+              <option key={lang.value} value={lang.value} className="bg-[#161616]">
+                {lang.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label htmlFor="song-lyrics" className="text-sm font-medium text-white">
+              Lyrics
+            </label>
+            <div className="flex items-center gap-3">
+              {audioFile && (
+                <button
+                  type="button"
+                  disabled={transcribeLyrics.isPending || isBusy}
+                  onClick={async () => {
+                    try {
+                      const form = new FormData();
+                      form.append("audio", audioFile);
+                      if (watchedValues.language) form.append("language", watchedValues.language);
+                      const res = await transcribeLyrics.mutateAsync(form);
+                      const draftLyrics = res?.data?.lyrics ?? res?.lyrics ?? "";
+                      if (draftLyrics) {
+                        setValue("lyrics", draftLyrics, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                        if (res?.data?.language && !watchedValues.language) {
+                          setValue("language", res.data.language, { shouldDirty: true });
+                        }
+                        toast.success("AI lyrics draft ready for review");
+                      }
+                    } catch {
+                      // Handled by mutation onError
+                    }
+                  }}
+                  className="text-xs font-medium text-[#D2045B] hover:underline disabled:opacity-50"
+                >
+                  {transcribeLyrics.isPending ? "Transcribing..." : "Transcribe with AI"}
+                </button>
+              )}
+              <span className="text-[10px] text-gray-400">
+                {watchedValues.lyrics?.length ?? 0}/{LYRICS_MAX_LENGTH}
+              </span>
+            </div>
+          </div>
+          <textarea
+            id="song-lyrics"
+            rows={4}
+            maxLength={LYRICS_MAX_LENGTH}
+            {...register("lyrics")}
+            placeholder="Paste or type song lyrics"
+            aria-invalid={errors.lyrics ? "true" : "false"}
+            aria-describedby={errors.lyrics ? "song-lyrics-error" : undefined}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.lyrics ? "border-red-500" : "border-[#2A2A2A]"}`}
+          />
+          {errors.lyrics && (
+            <p id="song-lyrics-error" className="text-[10px] text-red-500" role="alert">
+              {errors.lyrics.message}
+            </p>
+          )}
+
+          {Boolean(watchedValues.lyrics?.trim()) && (
+            <div className="space-y-1 pt-1">
+              <label className="flex items-start gap-2 text-xs text-gray-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("lyricsRightsConfirmed")}
+                  className="mt-0.5 rounded border-[#2A2A2A] bg-[#161616] text-[#D2045B] focus:ring-[#885FA8]"
+                />
+                <span>
+                  I own or have licensed the rights to publish these lyrics{" "}
+                  <span className="text-[#D2045B]">*</span>
+                </span>
+              </label>
+              {errors.lyricsRightsConfirmed && (
+                <p className="text-[10px] text-red-500" role="alert">
+                  {errors.lyricsRightsConfirmed.message}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* <div className="space-y-2">

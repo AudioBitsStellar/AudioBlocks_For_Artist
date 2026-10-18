@@ -27,6 +27,10 @@ export interface UploadSong {
   composer: string;
   /** Chosen in the upload form (#458); absent on drafts saved before it existed. */
   visibility?: TrackVisibility;
+  lyrics?: string;
+  language?: string;
+  lyricsRightsConfirmed?: boolean;
+  tags?: string[];
 }
 export interface UploadCoverResponse {
   cover: File | string;
@@ -69,6 +73,7 @@ export interface AuthUser {
   name?: string;
   /** See the note on `AuthUser` in `./api.ts` — optional until the backend returns it. */
   emailVerified?: boolean;
+  aiStudioEnabled?: boolean;
 }
 
 export interface AuthResponse {

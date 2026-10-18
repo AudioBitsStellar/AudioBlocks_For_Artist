@@ -12,6 +12,7 @@ export const ARTIST_UPLOAD_ENDPOINTS = {
   UPLOAD_COVER: "/song/upload/cover",
   UPLOAD_CHUNK: "/song/upload/chunk",
   UPLOAD_SONG: "/song/upload/finalize",
+  TRANSCRIBE_LYRICS: "/song/upload/transcribe-lyrics",
 };
 
 // Soroban on-chain endpoints: the backend only builds/relays transactions,
@@ -97,6 +98,11 @@ export const FANS_ENGAGEMENT_ENDPOINTS = {
 
 export const SONG_ENDPOINTS = {
   UPDATE: (id: string | number) => `/song/${id}`,
+  TAGS: (id: string | number) => `/song/${id}/tags`,
+  TRANSCRIBE_LYRICS: (id: string | number) => `/song/${id}/lyrics/transcribe`,
+  DRAFT_DESCRIPTION: (id: string | number) => `/ai/studio/songs/${id}/description`,
+  VERSIONS: (id: string | number) => `/song/${id}/versions`,
+  REUPLOAD: (id: string | number) => `/song/${id}/versions`,
 };
 
 export const ALBUM_ENDPOINTS = {
