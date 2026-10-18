@@ -293,3 +293,23 @@ function extractName(error: unknown): string {
   }
   return "";
 }
+
+
+export function mapContractError(errorCodeOrMessage: string): string {
+  if (!errorCodeOrMessage) return 'An unexpected error occurred during minting.';
+
+  if (errorCodeOrMessage.includes('NOT_READY') || errorCodeOrMessage.includes('PROCESSING')) {
+    return 'Song is still processing. Please wait until finishing processing.';
+  }
+  if (errorCodeOrMessage.includes('MISSING_METADATA_CID') || errorCodeOrMessage.includes('IPFS')) {
+    return 'NFT metadata is not yet pinned to IPFS.';
+  }
+  if (errorCodeOrMessage.includes('WALLET_NOT_CONNECTED') || errorCodeOrMessage.includes('AUTH')) {
+    return 'Stellar wallet is not connected. Please connect your wallet in settings.';
+  }
+  if (errorCodeOrMessage.includes('ALREADY_MINTED')) {
+    return 'This song has already been minted.';
+  }
+
+  return errorCodeOrMessage;
+}
