@@ -9,21 +9,6 @@ interface ApiError {
 
 export const useHandleSuccess = () => {
   return useCallback((message?: string) => {
-    // Announce for screen readers
-    try {
-      if (typeof window !== "undefined") {
-        const el = document.getElementById("sr-toast");
-        if (el) {
-          el.textContent = message || "Operation completed successfully";
-          setTimeout(() => {
-            if (el.textContent === (message || "Operation completed successfully"))
-              el.textContent = "";
-          }, 4000);
-        }
-      }
-    } catch {
-      // ignore DOM errors
-    }
     toast.success(message || "Operation completed successfully", {
       duration: 4000,
     });
@@ -65,20 +50,6 @@ export const useHandleError = () => {
       }
     }
 
-    try {
-      if (typeof window !== "undefined") {
-        const el = document.getElementById("sr-toast");
-        if (el) {
-          el.textContent = message;
-          setTimeout(() => {
-            if (el.textContent === message) el.textContent = "";
-          }, 5000);
-        }
-      }
-    } catch {
-      // ignore
-    }
-
     toast.error(message, {
       duration: 5000,
     });
@@ -90,35 +61,10 @@ export const useToast = () => {
   const handleError = useHandleError();
 
   const showInfo = useCallback((message: string) => {
-    try {
-      if (typeof window !== "undefined") {
-        const el = document.getElementById("sr-toast");
-        if (el) {
-          el.textContent = message;
-          setTimeout(() => {
-            if (el.textContent === message) el.textContent = "";
-          }, 4000);
-        }
-      }
-    } catch {
-      // ignore
-    }
-
     toast(message, { duration: 4000 });
   }, []);
 
   const showLoading = useCallback((message: string) => {
-    try {
-      if (typeof window !== "undefined") {
-        const el = document.getElementById("sr-toast");
-        if (el) {
-          el.textContent = message;
-        }
-      }
-    } catch {
-      // ignore
-    }
-
     return toast.loading(message);
   }, []);
 

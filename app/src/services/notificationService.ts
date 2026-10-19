@@ -162,6 +162,9 @@ export function useNotifications() {
   const query = useGet<ArtistNotification[]>(NOTIFICATIONS_QUERY_KEY, NOTIFICATION_ENDPOINTS.LIST, {
     enabled: !isMock,
     staleTime: DASHBOARD_CACHE.notifications,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
   const notificationMocks = useMock("notifications", isMock);
