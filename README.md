@@ -135,7 +135,7 @@ AudioBlocks_For_Artist/
 │   │   ├── utils/           # Helper functions
 │   │   ├── theme/           # Theme configuration
 │   │   ├── __tests__/       # Unit and integration tests
-│   │   └── __mocks__/       # Test mocks
+│   │   └── __mocks__/       # Mock-mode fixtures, loaded lazily via loadMock.ts
 │   ├── e2e/                 # Playwright E2E tests
 │   ├── .storybook/          # Storybook configuration
 │   ├── package.json

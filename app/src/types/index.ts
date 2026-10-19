@@ -308,3 +308,22 @@ export interface LoyaltyProgramConfig {
   referralBonusPoints: number;
   tiers: RewardTierConfig[];
 }
+
+export interface EventTicket {
+  id: string;
+  attendeeName: string;
+  tier: string;
+  purchasedAt: string;
+}
+
+export interface CheckInResult {
+  ticketId: string;
+  status: "valid" | "invalid" | "already_checked_in";
+  attendeeName?: string;
+}
+
+export interface CheckInStats {
+  total: number;
+  checkedIn: number;
+  remaining: number;
+}

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Filter, Search, ShoppingBag, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { featureFlags } from "@/lib/featureFlags";
-import { MOCK_MERCH_ITEMS, MOCK_MERCH_METRICS } from "@/__mocks__/mockData";
+import { useMock } from "@/__mocks__/loadMock";
 import MockDataBadge from "@/components/MockDataBadge";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import useMerchService, { MerchItem, CreateMerchPayload } from "@/services/merchService";
@@ -198,9 +198,11 @@ export default function MerchesContent() {
   const updateMutation = useUpdateMerch(editTarget?.id ?? 0);
   const deleteMutation = useDeleteMerch(deleteId ?? 0);
 
-  const metrics = featureFlags.useMockMerches ? MOCK_MERCH_METRICS : (data?.metrics ?? []);
+  const merchMocks = useMock("merch", featureFlags.useMockMerches);
 
-  const items = featureFlags.useMockMerches ? MOCK_MERCH_ITEMS : (data?.items ?? []);
+  const metrics = merchMocks ? merchMocks.MOCK_MERCH_METRICS : (data?.metrics ?? []);
+
+  const items = merchMocks ? merchMocks.MOCK_MERCH_ITEMS : (data?.items ?? []);
 
   const handleCreate = (payload: CreateMerchPayload) => {
     createMutation.mutate(payload, { onSuccess: () => setShowCreate(false) });

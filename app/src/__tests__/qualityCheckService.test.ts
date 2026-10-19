@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { MOCK_QUALITY_CHECKS } from "@/__mocks__/qualityChecks";
 import {
-  MOCK_QUALITY_CHECKS,
   analyseMaster,
   latestQualityCheckForSong,
   loadQualityChecks,

@@ -22,6 +22,8 @@ export const featureFlags = {
   useMockTracks: globalMock,
   /** Fans Engagement widget (top songs, streaming regions, top streamers) — wired to real API when false */
   useMockFansEngagement: globalMock,
+  /** Artists-tab conversations in Messages — there is no artist-to-artist API yet, so the tab is empty when false */
+  useMockMessages: globalMock,
   /** Notification bell dropdown in the top header — read state is kept locally when true */
   useMockNotifications: globalMock,
   /** On-chain activity stats (#466) — read live from Horizon when false */

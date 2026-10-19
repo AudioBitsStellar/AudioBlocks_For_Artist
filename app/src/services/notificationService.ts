@@ -10,77 +10,13 @@ import {
   type NotificationEventKey,
   type NotificationPreferences,
 } from "@/services/notificationPreferences";
-import {
-  MOCK_QUALITY_CHECKS,
-  toArtistNotification,
-  useQualityCheckNotifications,
-} from "@/services/qualityCheckService";
+import { useQualityCheckNotifications } from "@/services/qualityCheckService";
+import { useMock } from "@/__mocks__/loadMock";
 import type { ArtistNotification } from "@/types/api";
 
 // Response types live in the central `@/types/api` module (#140); re-exported
 // here so existing imports from this service keep working.
 export type { ArtistNotification } from "@/types/api";
-
-const MINUTE = 60 * 1000;
-const HOUR = 60 * MINUTE;
-const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
-
-const BASE_MOCK_NOTIFICATIONS: ArtistNotification[] = [
-  {
-    id: "notif_1",
-    kind: "newFan",
-    title: "New fan",
-    message: "Tomothy Nguyen started following you.",
-    createdAt: ago(5 * MINUTE),
-    read: false,
-    href: "/dashboard/messages",
-  },
-  {
-    id: "notif_2",
-    kind: "earnings",
-    title: "Royalty payout sent",
-    message: "Your weekly royalty payout of 125.40 XLM was sent to your wallet.",
-    createdAt: ago(2 * HOUR),
-    read: false,
-    href: "/dashboard/overview",
-  },
-  {
-    id: "notif_3",
-    kind: "eventReminder",
-    title: "Show tomorrow",
-    message: "Lagos Live Sessions starts tomorrow at 8:00 PM. 42 tickets remain.",
-    createdAt: ago(5 * HOUR),
-    read: false,
-    href: "/dashboard/events",
-  },
-  {
-    id: "notif_4",
-    kind: "newFan",
-    title: "New fan",
-    message: "Victoria Robertson added “Midnight Drive” to a playlist.",
-    createdAt: ago(26 * HOUR),
-    read: true,
-  },
-  {
-    id: "notif_5",
-    kind: "earnings",
-    title: "Sales milestone",
-    message: "“Midnight Drive” passed 1,000 streams this month.",
-    createdAt: ago(3 * 24 * HOUR),
-    read: true,
-    href: "/dashboard/analytics",
-  },
-];
-
-/**
- * The demo feed: the hand-written events above plus one notification per mock
- * AI quality-check result, so the bell shows the #465 kinds in mock mode
- * without a backend.
- */
-export const MOCK_NOTIFICATIONS: ArtistNotification[] = [
-  ...BASE_MOCK_NOTIFICATIONS,
-  ...MOCK_QUALITY_CHECKS.map(toArtistNotification),
-];
 
 /** Marks a single notification as read without mutating the input. */
 export function markNotificationRead(
@@ -142,7 +78,7 @@ const subscribeToStorage = (onChange: () => void) => {
  * optimistic "mark as read" actions.
  *
  * With mock data enabled (`NEXT_PUBLIC_USE_MOCK_DATA=true`) the list comes from
- * `MOCK_NOTIFICATIONS` and read state is kept in local state instead of
+ * `src/__mocks__/notifications` and read state is kept in local state instead of
  * calling the API.
  *
  * AI quality-check results (#465) are merged in from localStorage on top of
@@ -221,14 +157,20 @@ export function normalizeNotifications(
 
 export function useNotifications() {
   const handleError = useHandleError();
-  const useMock = featureFlags.useMockNotifications;
+  const isMock = featureFlags.useMockNotifications;
 
   const query = useGet<ArtistNotification[]>(NOTIFICATIONS_QUERY_KEY, NOTIFICATION_ENDPOINTS.LIST, {
-    enabled: !useMock,
+    enabled: !isMock,
     staleTime: DASHBOARD_CACHE.notifications,
   });
 
-  const [mockNotifications, setMockNotifications] = useState(MOCK_NOTIFICATIONS);
+  const notificationMocks = useMock("notifications", isMock);
+  // Null until the artist marks something read; the loaded fixture is the
+  // starting point until then.
+  const [readMockNotifications, setMockNotifications] = useState<ArtistNotification[] | null>(
+    null
+  );
+  const mockNotifications = readMockNotifications ?? notificationMocks?.MOCK_NOTIFICATIONS ?? [];
 
   // Preferences live in localStorage. Reading them as an external store keeps
   // the server render on the defaults and re-reads them on every render, so a
@@ -248,7 +190,7 @@ export function useNotifications() {
     return normalizeNotifications(query.data);
   }, [query.data]);
 
-  const source = useMock ? mockNotifications : mappedData;
+  const source = isMock ? mockNotifications : mappedData;
   // Quality checks the artist recorded in this browser (#465). They arrive
   // from localStorage rather than the notifications endpoint, which doesn't
   // serve them until the checker backend exists.
@@ -265,11 +207,11 @@ export function useNotifications() {
   const markRead = useOptimisticMutation<unknown, { id: string }, ArtistNotification[]>({
     method: "put",
     endpoint: ({ id }) => NOTIFICATION_ENDPOINTS.MARK_READ(id),
-    request: useMock ? () => Promise.resolve({}) : undefined,
-    queryKey: useMock ? undefined : NOTIFICATIONS_QUERY_KEY,
+    request: isMock ? () => Promise.resolve({}) : undefined,
+    queryKey: isMock ? undefined : NOTIFICATIONS_QUERY_KEY,
     applyOptimistic: (cache, { id }) => markNotificationRead(cache, id),
-    onOptimistic: useMock
-      ? ({ id }) => setMockNotifications((list) => markNotificationRead(list, id))
+    onOptimistic: isMock
+      ? ({ id }) => setMockNotifications(markNotificationRead(mockNotifications, id))
       : undefined,
     onError: () => handleError("Couldn't mark the notification as read."),
   });
@@ -277,18 +219,20 @@ export function useNotifications() {
   const markAllRead = useOptimisticMutation<unknown, void, ArtistNotification[]>({
     method: "post",
     endpoint: () => NOTIFICATION_ENDPOINTS.MARK_ALL_READ,
-    request: useMock ? () => Promise.resolve({}) : undefined,
-    queryKey: useMock ? undefined : NOTIFICATIONS_QUERY_KEY,
+    request: isMock ? () => Promise.resolve({}) : undefined,
+    queryKey: isMock ? undefined : NOTIFICATIONS_QUERY_KEY,
     applyOptimistic: (cache) => markAllNotificationsRead(cache),
-    onOptimistic: useMock ? () => setMockNotifications(markAllNotificationsRead) : undefined,
+    onOptimistic: isMock
+      ? () => setMockNotifications(markAllNotificationsRead(mockNotifications))
+      : undefined,
     onError: () => handleError("Couldn't mark notifications as read."),
   });
 
   return {
     notifications,
     unreadCount,
-    isLoading: !useMock && query.isLoading,
-    isError: !useMock && query.isError,
+    isLoading: isMock ? !notificationMocks : query.isLoading,
+    isError: !isMock && query.isError,
     refetch: query.refetch,
     markAsRead: (id: string) => markRead.mutate({ id }),
     markAllAsRead: () => markAllRead.mutate(),

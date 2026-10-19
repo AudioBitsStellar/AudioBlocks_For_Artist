@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { analytics } from "@/lib/analytics";
 import { featureFlags } from "@/lib/featureFlags";
 import MockDataBadge from "@/components/MockDataBadge";
+import { useMock } from "@/__mocks__/loadMock";
 import useMerchService, {
   MerchInventoryItem,
   MerchOrder,
@@ -22,57 +23,6 @@ import useMerchService, {
 } from "@/services/merchService";
 import EmptyState from "./shared/EmptyState";
 import { Skeleton, SkeletonList } from "./shared/Skeleton";
-
-const MOCK_INVENTORY: MerchInventoryItem[] = [
-  { id: 1, title: "Echoes of the Soul Tee", stock: 150, reserved: 12 },
-  { id: 2, title: "AudioBlocks Hoodie", stock: 45, reserved: 8 },
-  { id: 3, title: "Limited Edition Vinyl", stock: 200, reserved: 34 },
-  { id: 4, title: "Signed Poster", stock: 0, reserved: 0 },
-  { id: 5, title: "Sticker Pack", stock: 500, reserved: 67 },
-];
-
-const MOCK_ORDERS: MerchOrder[] = [
-  {
-    id: 101,
-    itemId: 1,
-    itemTitle: "Echoes of the Soul Tee",
-    quantity: 2,
-    price: "29.99",
-    status: "shipped",
-    createdAt: "2025-08-20T10:00:00Z",
-    updatedAt: "2025-08-22T14:30:00Z",
-  },
-  {
-    id: 102,
-    itemId: 3,
-    itemTitle: "Limited Edition Vinyl",
-    quantity: 1,
-    price: "49.99",
-    status: "pending",
-    createdAt: "2025-08-24T08:15:00Z",
-    updatedAt: "2025-08-24T08:15:00Z",
-  },
-  {
-    id: 103,
-    itemId: 5,
-    itemTitle: "Sticker Pack",
-    quantity: 3,
-    price: "9.99",
-    status: "processing",
-    createdAt: "2025-08-25T16:00:00Z",
-    updatedAt: "2025-08-25T16:00:00Z",
-  },
-  {
-    id: 104,
-    itemId: 2,
-    itemTitle: "AudioBlocks Hoodie",
-    quantity: 1,
-    price: "59.99",
-    status: "delivered",
-    createdAt: "2025-08-18T12:00:00Z",
-    updatedAt: "2025-08-21T09:00:00Z",
-  },
-];
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-warning/20 text-warning",
@@ -86,18 +36,18 @@ export default function MerchInventory() {
   const { useGetMerchOrders } = useMerchService();
   const { data: apiOrders, isLoading: ordersLoading } = useGetMerchOrders();
 
-  const [inventory, setInventory] = useState<MerchInventoryItem[]>(
-    featureFlags.useMockMerches ? MOCK_INVENTORY : []
-  );
-  const [orders] = useState<MerchOrder[]>(
-    featureFlags.useMockMerches ? MOCK_ORDERS : (apiOrders ?? [])
-  );
+  const merchMocks = useMock("merch", featureFlags.useMockMerches);
+
+  // Null until the first stock adjustment; until then the loaded fixture shows.
+  const [adjustedInventory, setInventory] = useState<MerchInventoryItem[] | null>(null);
+  const inventory = adjustedInventory ?? merchMocks?.MOCK_INVENTORY ?? [];
+  const orders: MerchOrder[] = merchMocks ? merchMocks.MOCK_ORDERS : (apiOrders ?? []);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"title" | "stock" | "reserved">("title");
   const [adjustingId, setAdjustingId] = useState<number | null>(null);
   const [adjustValue, setAdjustValue] = useState("");
 
-  const isLoading = ordersLoading && !featureFlags.useMockMerches;
+  const isLoading = featureFlags.useMockMerches ? !merchMocks : ordersLoading;
 
   const filteredInventory = inventory
     .filter((item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()))

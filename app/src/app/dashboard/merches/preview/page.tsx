@@ -4,9 +4,9 @@ import { useState } from "react";
 import { Monitor, Smartphone, ShoppingBag, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
-import { MOCK_MERCH_ITEMS } from "@/__mocks__/mockData";
+import { useMock } from "@/__mocks__/loadMock";
 import { featureFlags } from "@/lib/featureFlags";
-import useMerchService from "@/services/merchService";
+import useMerchService, { type MerchItem } from "@/services/merchService";
 
 type PreviewMode = "desktop" | "mobile";
 
@@ -26,7 +26,7 @@ function EmptyMerchState() {
   );
 }
 
-function MerchCard({ item, compact }: { item: (typeof MOCK_MERCH_ITEMS)[0]; compact: boolean }) {
+function MerchCard({ item, compact }: { item: MerchItem; compact: boolean }) {
   return (
     <div
       className={`overflow-hidden rounded-3xl border border-[#1F1F1F] bg-[#151818] shadow-lg transition-transform duration-200 hover:-translate-y-1 ${
@@ -78,7 +78,10 @@ export default function MerchPreviewPage() {
   const { useGetMerches } = useMerchService();
   const { data } = useGetMerches();
 
-  const items = featureFlags.useMockMerches ? MOCK_MERCH_ITEMS : (data?.items ?? MOCK_MERCH_ITEMS);
+  const merchMocks = useMock("merch", featureFlags.useMockMerches);
+
+  // An artist with no merch sees the empty state, never sample items.
+  const items = merchMocks ? merchMocks.MOCK_MERCH_ITEMS : (data?.items ?? []);
 
   const isMobile = mode === "mobile";
 

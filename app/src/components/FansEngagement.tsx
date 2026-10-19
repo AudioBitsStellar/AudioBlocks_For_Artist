@@ -5,31 +5,8 @@ import { ChevronDown } from "lucide-react";
 import { featureFlags } from "@/lib/featureFlags";
 import MockDataBadge from "@/components/MockDataBadge";
 import useFansEngagementServices from "@/services/fansEngagementService";
+import { useMock } from "@/__mocks__/loadMock";
 import { StreamingRegion, TopSong, TopStreamer } from "@/types";
-
-const MOCK_TOP_SONGS: TopSong[] = [
-  { rank: 1, name: "Tomothy Nguyen", listenings: 127 },
-  { rank: 2, name: "Tomothy Nguyen", listenings: 104 },
-  { rank: 3, name: "Evan Howard", listenings: 14 },
-  { rank: 4, name: "Victoria Robertson", listenings: 53 },
-  { rank: 5, name: "Leslie Cooper", listenings: 14 },
-];
-
-const MOCK_STREAMING_REGIONS: StreamingRegion[] = [
-  { name: "Nigeria", value: 45, color: "#9333EA" },
-  { name: "Cameroon", value: 20, color: "#EC4899" },
-  { name: "S/ Africa", value: 15, color: "#885FA8" },
-  { name: "USA", value: 15, color: "#8B2635" },
-  { name: "UK", value: 5, color: "#374151" },
-];
-
-const MOCK_TOP_STREAMERS: TopStreamer[] = [
-  { rank: 1, name: "Tomothy Nguyen", duration: "30d 24h 60m" },
-  { rank: 2, name: "Tomothy Nguyen", duration: "24d 24h 60m" },
-  { rank: 3, name: "Evan Howard", duration: "20d 24h 60m" },
-  { rank: 4, name: "Victoria Robertson", duration: "16d 24h 60m" },
-  { rank: 5, name: "Leslie Cooper", duration: "10d 24h 60m" },
-];
 
 function topStreamingRegionPercent(streamingRegions: StreamingRegion[]): number {
   return streamingRegions[0]?.value ?? 0;
@@ -181,16 +158,22 @@ function LiveFansEngagement() {
   );
 }
 
+function MockFansEngagement() {
+  const mocks = useMock("fansEngagement");
+  if (!mocks) return <FansEngagementSkeleton />;
+  return (
+    <FansEngagementGrid
+      topSongs={mocks.MOCK_TOP_SONGS}
+      streamingRegions={mocks.MOCK_STREAMING_REGIONS}
+      topStreamers={mocks.MOCK_TOP_STREAMERS}
+      isMock
+    />
+  );
+}
+
 export default function FansEngagement() {
   if (featureFlags.useMockFansEngagement) {
-    return (
-      <FansEngagementGrid
-        topSongs={MOCK_TOP_SONGS}
-        streamingRegions={MOCK_STREAMING_REGIONS}
-        topStreamers={MOCK_TOP_STREAMERS}
-        isMock
-      />
-    );
+    return <MockFansEngagement />;
   }
   return <LiveFansEngagement />;
 }

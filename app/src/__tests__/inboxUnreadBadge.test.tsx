@@ -1,5 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import MobileNav from "@/components/MobileNav";
 import { Sidebar } from "@/components/Sidebar";
 import {
@@ -14,6 +14,14 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard/overview",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
 }));
+
+// Artists-tab conversations only exist as mock fixtures.
+vi.mock("@/lib/featureFlags", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/featureFlags")>();
+  return { ...actual, featureFlags: { ...actual.featureFlags, useMockMessages: true } };
+});
+
+beforeAll(() => messageService.loadMockConversations());
 
 beforeEach(() => {
   fanMessaging.resetFanMessaging();
