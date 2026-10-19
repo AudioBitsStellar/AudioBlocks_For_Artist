@@ -17,8 +17,10 @@ import { toast } from "sonner";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { useEstimatedFee } from "@/hooks/useEstimatedFee";
 import { useState, useEffect } from "react";
-import { Loader2, Check, AlertCircle } from "lucide-react";
+import { Loader2, Check, AlertCircle, Copy } from "lucide-react";
 import { ApiEnvelope, SubmitSongTransferResponse } from "@/types/api";
+import { featureFlags } from "@/lib/featureFlags";
+import { translateContractError } from "@/lib/contractErrors";
 
 interface TransferSongButtonProps {
   songId: string;
@@ -51,6 +53,7 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
   const [txHash, setTxHash] = useState("");
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
+  const [copied, setCopied] = useState(false);
 
   const trimmedAddress = toAddress.trim();
   const isValidAddress = STELLAR_ADDRESS_RE.test(trimmedAddress);
@@ -139,16 +142,28 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
       });
       toast.success("Song transferred!");
     } catch (err: unknown) {
+      const contractError = translateContractError(err);
       const error = err as Error;
-      const reason = error?.message ?? "unknown";
+      const reason = contractError.message || error?.message || "unknown";
       analytics.mintFailed({ songId, reason });
 
-      if (reason.toLowerCase().includes("timeout") || reason.toLowerCase().includes("network")) {
+      if (contractError.category === "network" || reason.toLowerCase().includes("timeout")) {
         setStatus("timeout");
       } else {
         setStatus("failed");
       }
       setErrorMsg(reason);
+    }
+  };
+
+  const handleCopyRecipient = async () => {
+    if (!trimmedAddress) return;
+    try {
+      await navigator.clipboard.writeText(trimmedAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
     }
   };
 
@@ -304,6 +319,27 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
     );
   }
 
+  if (!featureFlags.enableSongTransfer) {
+    return (
+      <div
+        className="flex flex-col gap-1"
+        title="Song transfer is temporarily disabled pending backend contract relay support (#530)."
+      >
+        <button
+          disabled
+          aria-disabled="true"
+          title="Song transfer is temporarily disabled pending backend contract relay support (#530)."
+          className="opacity-60 cursor-not-allowed w-fit rounded-lg bg-[#2A2A2A] text-gray-400 font-semibold px-4 py-2 text-sm"
+        >
+          Transfer song (Disabled)
+        </button>
+        <p className="text-[10px] text-gray-400">
+          Transfers are temporarily disabled pending backend contract relay support (#530).
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={`transfer-to-${songId}`} className="sr-only">
@@ -328,6 +364,30 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
         <p id={`transfer-to-${songId}-error`} className="text-[10px] text-red-500" role="alert">
           You can&apos;t transfer a song to your own wallet.
         </p>
+      )}
+      {isValidAddress && !isSelfTransfer && (
+        <div className="p-3 bg-zinc-900 border border-zinc-700/60 rounded-lg flex flex-col gap-1.5 my-1">
+          <p className="text-xs text-amber-400 font-medium">
+            ⚠️ Transfers are permanent and irreversible.
+          </p>
+          <div className="flex items-center justify-between text-xs text-gray-300 bg-black/40 px-2 py-1.5 rounded">
+            <span>
+              Recipient:{" "}
+              <span className="font-mono text-gray-200">
+                {trimmedAddress.slice(0, 6)}...{trimmedAddress.slice(-4)}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={handleCopyRecipient}
+              className="flex items-center gap-1 text-[11px] text-pink-400 hover:text-pink-300 font-semibold px-1.5 py-0.5 rounded transition-colors"
+              aria-label="Copy recipient address"
+            >
+              <Copy size={12} aria-hidden="true" />
+              <span>{copied ? "Copied!" : "Copy"}</span>
+            </button>
+          </div>
+        </div>
       )}
       <button
         onClick={handleTransfer}

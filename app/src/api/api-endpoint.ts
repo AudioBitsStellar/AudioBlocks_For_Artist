@@ -43,7 +43,6 @@ export const EARNINGS_ENDPOINTS = {
   GET_EARNINGS: "/artist/earnings",
   GET_PLATFORM_REVENUE: "/artist/earnings/platforms",
   GET_PAYOUTS: "/artist/earnings/payouts",
-  WITHDRAW: "/artist/earnings/withdraw",
 };
 
 export const OVERVIEW_ENDPOINTS = {
@@ -157,9 +156,9 @@ export const MERCH_INVENTORY_ENDPOINTS = {
 };
 
 export const NOTIFICATION_ENDPOINTS = {
-  LIST: "/artist/notifications",
-  MARK_READ: (id: string) => `/artist/notifications/${id}/read`,
-  MARK_ALL_READ: "/artist/notifications/read-all",
+  LIST: "/notifications",
+  MARK_READ: (id: string) => `/notifications/${id}/read`,
+  MARK_ALL_READ: "/notifications/read-all",
 };
 
 // Public (unauthenticated) artist profile, read by the server-rendered

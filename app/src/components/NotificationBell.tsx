@@ -221,7 +221,7 @@ function NotificationItem({
   notification: ArtistNotification;
   onSelect: (notification: ArtistNotification) => void;
 }) {
-  const Icon = KIND_ICONS[notification.kind];
+  const Icon = KIND_ICONS[notification.kind] ?? Bell;
   const className = `flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--surface-raised)] focus-visible:outline-none focus-visible:bg-[var(--surface-raised)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--primary)] ${
     notification.read ? "" : "bg-[var(--surface-raised)]/50"
   }`;

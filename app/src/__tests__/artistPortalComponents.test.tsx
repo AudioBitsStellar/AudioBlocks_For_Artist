@@ -5,6 +5,17 @@ import PayoutHistory from "@/components/PayoutHistory";
 import TopTracksLeaderboard from "@/components/TopTracksLeaderboard";
 import WithdrawFunds from "@/components/WithdrawFunds";
 
+vi.mock("@/components/common/wallet/useStellarWallet", () => ({
+  useStellarWallet: () => ({
+    address: null,
+    isConnecting: false,
+    connect: vi.fn(),
+    restore: vi.fn(),
+    disconnect: vi.fn(),
+    signAndSubmit: vi.fn(),
+  }),
+}));
+
 const ADDRESS = "G" + "B".repeat(55);
 
 describe("TopTracksLeaderboard", () => {
@@ -65,39 +76,31 @@ describe("PayoutHistory", () => {
 });
 
 describe("WithdrawFunds", () => {
-  it("validates, confirms, and submits a withdrawal", async () => {
-    const onWithdraw = vi.fn().mockResolvedValue("tx-123");
-    render(<WithdrawFunds availableBalance="100" onWithdraw={onWithdraw} />);
+  it("renders on-chain payout wallet view with non-custodial explanation", () => {
+    render(<WithdrawFunds walletAddress={ADDRESS} availableBalance="100" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Review withdrawal" }));
-    expect(screen.getAllByRole("alert")).toHaveLength(2);
-    expect(onWithdraw).not.toHaveBeenCalled();
-
-    fireEvent.change(screen.getByLabelText("Amount (XLM)"), { target: { value: "25" } });
-    fireEvent.change(screen.getByLabelText("Destination Stellar address"), {
-      target: { value: ADDRESS },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Review withdrawal" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm withdrawal" }));
-
-    await waitFor(() => expect(screen.getByText("Withdrawal submitted.")).toBeTruthy());
-    expect(onWithdraw).toHaveBeenCalledWith({ amount: "25", destination: ADDRESS });
-    expect(screen.getByText(/tx-123/)).toBeTruthy();
+    expect(screen.getByText("Your payout wallet")).toBeTruthy();
+    expect(screen.getByText("Payout Address")).toBeTruthy();
+    expect(screen.getByText(/AudioBlocks is strictly/i)).toBeTruthy();
+    expect(screen.getByText(/non-custodial/i)).toBeTruthy();
+    expect(screen.getByText("Live On-Chain Balances")).toBeTruthy();
+    expect(screen.getByText("Move funds using your Stellar wallet")).toBeTruthy();
+    expect(screen.getByText("Recent Incoming Royalties")).toBeTruthy();
   });
 
-  it("shows a retryable error when the withdrawal fails", async () => {
-    const onWithdraw = vi.fn().mockRejectedValue(new Error("Network down"));
-    render(<WithdrawFunds availableBalance="100" onWithdraw={onWithdraw} />);
-
-    fireEvent.change(screen.getByLabelText("Amount (XLM)"), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText("Destination Stellar address"), {
-      target: { value: ADDRESS },
+  it("copies wallet address to clipboard when copy button is clicked", async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Review withdrawal" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm withdrawal" }));
 
-    expect(await screen.findByText("Network down")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(screen.getByRole("button", { name: "Confirm withdrawal" })).toBeTruthy();
+    render(<WithdrawFunds walletAddress={ADDRESS} />);
+    const copyBtn = screen.getByRole("button", { name: /copy wallet address/i });
+    fireEvent.click(copyBtn);
+
+    expect(writeTextMock).toHaveBeenCalledWith(ADDRESS);
+    await waitFor(() => expect(screen.getByText("Copied")).toBeTruthy());
   });
 });

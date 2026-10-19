@@ -39,6 +39,11 @@ export const featureFlags = {
    * `POST /auth/verify-email/request` exists.
    */
   useMockEmailVerification: true,
+  /**
+   * Song token transfer flow (#529). Gated behind a flag until backend
+   * relay endpoints (POST /song/:id/onchain/prepare-transfer) are supported.
+   */
+  enableSongTransfer: process.env.NEXT_PUBLIC_ENABLE_SONG_TRANSFER === "true",
 } as const;
 
 /* -------------------------------------------------------------------------- */

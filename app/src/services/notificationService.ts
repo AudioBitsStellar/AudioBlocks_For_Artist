@@ -149,6 +149,76 @@ const subscribeToStorage = (onChange: () => void) => {
  * whichever source is active — the notifications endpoint doesn't serve them
  * until the checker backend exists.
  */
+/**
+ * Maps backend notification types (sales, mint results, processing results, comment replies, follows)
+ * into frontend ArtistNotification shapes with deep links and category mapping.
+ */
+export function mapBackendNotification(raw: Record<string, any>): ArtistNotification {
+  const type = String(raw.kind || raw.type || "newFan");
+  let kind: NotificationEventKey = "newFan";
+  let defaultHref: string | undefined = undefined;
+
+  switch (type) {
+    case "sales":
+    case "sale":
+    case "earnings":
+      kind = "earnings";
+      defaultHref = "/dashboard/overview";
+      break;
+    case "mint":
+    case "mint_result":
+    case "mintResult":
+      kind = "earnings";
+      defaultHref = "/dashboard/my-music";
+      break;
+    case "processing":
+    case "processing_result":
+    case "processingResult":
+    case "qualityCheck":
+      kind = "qualityCheck";
+      defaultHref = "/dashboard/my-music";
+      break;
+    case "comment":
+    case "comment_reply":
+    case "commentReply":
+      kind = "newFan";
+      defaultHref = "/dashboard/messages";
+      break;
+    case "follow":
+    case "follows":
+    case "newFan":
+      kind = "newFan";
+      defaultHref = "/dashboard/messages";
+      break;
+    case "eventReminder":
+      kind = "eventReminder";
+      defaultHref = "/dashboard/events";
+      break;
+    default:
+      kind = "newFan";
+      break;
+  }
+
+  return {
+    id: String(raw.id ?? raw._id ?? Math.random().toString(36).substring(2)),
+    kind,
+    title: String(raw.title || "Notification"),
+    message: String(raw.message || raw.content || ""),
+    createdAt: String(raw.createdAt || raw.created_at || new Date().toISOString()),
+    read: Boolean(raw.read ?? raw.isRead ?? false),
+    href: typeof raw.href === "string" ? raw.href : defaultHref,
+  };
+}
+
+export function normalizeNotifications(
+  rawList: unknown
+): ArtistNotification[] {
+  if (!Array.isArray(rawList)) return [];
+  return rawList.map((item) =>
+    typeof item === "object" && item !== null ? mapBackendNotification(item) : (item as ArtistNotification)
+  );
+}
+
 export function useNotifications() {
   const handleError = useHandleError();
   const useMock = featureFlags.useMockNotifications;
@@ -173,7 +243,12 @@ export function useNotifications() {
     [preferencesSnapshot]
   );
 
-  const source = useMock ? mockNotifications : query.data;
+  const mappedData = useMemo(() => {
+    if (!query.data) return undefined;
+    return normalizeNotifications(query.data);
+  }, [query.data]);
+
+  const source = useMock ? mockNotifications : mappedData;
   // Quality checks the artist recorded in this browser (#465). They arrive
   // from localStorage rather than the notifications endpoint, which doesn't
   // serve them until the checker backend exists.
@@ -188,7 +263,7 @@ export function useNotifications() {
   // In mock mode there is no cached query to patch, so read state is
   // updated in local state instead (the simulated request never fails).
   const markRead = useOptimisticMutation<unknown, { id: string }, ArtistNotification[]>({
-    method: "patch",
+    method: "put",
     endpoint: ({ id }) => NOTIFICATION_ENDPOINTS.MARK_READ(id),
     request: useMock ? () => Promise.resolve({}) : undefined,
     queryKey: useMock ? undefined : NOTIFICATIONS_QUERY_KEY,
@@ -200,7 +275,7 @@ export function useNotifications() {
   });
 
   const markAllRead = useOptimisticMutation<unknown, void, ArtistNotification[]>({
-    method: "patch",
+    method: "post",
     endpoint: () => NOTIFICATION_ENDPOINTS.MARK_ALL_READ,
     request: useMock ? () => Promise.resolve({}) : undefined,
     queryKey: useMock ? undefined : NOTIFICATIONS_QUERY_KEY,
