@@ -8,7 +8,9 @@ import CommentModerationView from "@/components/CommentModerationView";
 import useCommentServices, { DashboardComment } from "@/services/commentService";
 import {
   bulkSetModerationStatus,
+  deleteCommentOnBackend,
   getModerationMap,
+  reportCommentToBackend,
   setModerationStatus,
   type ModerationMap,
   type ModerationStatus,
@@ -26,13 +28,19 @@ export default function ModerationPage() {
 
   const comments: DashboardComment[] = data?.data ?? [];
 
-  const handleModerate = (ids: string[], status: ModerationStatus) => {
+  const handleModerate = async (ids: string[], status: ModerationStatus) => {
     if (status === "removed" && ids.length === 1) {
       setPendingRemoval(ids[0]);
       return;
     }
 
-    if (ids.length === 1) {
+    if (status === "flagged") {
+      await Promise.all(ids.map((id) => reportCommentToBackend(id)));
+      setModeration(getModerationMap());
+    } else if (status === "removed") {
+      await Promise.all(ids.map((id) => deleteCommentOnBackend(id)));
+      setModeration(getModerationMap());
+    } else if (ids.length === 1) {
       setModeration(setModerationStatus(ids[0], status));
     } else {
       setModeration(bulkSetModerationStatus(ids, status));
@@ -49,9 +57,10 @@ export default function ModerationPage() {
     toast.success(`${ids.length} comment${ids.length > 1 ? "s" : ""} ${label}.`);
   };
 
-  const confirmRemoval = () => {
+  const confirmRemoval = async () => {
     if (!pendingRemoval) return;
-    setModeration(setModerationStatus(pendingRemoval, "removed", "Removed by the artist"));
+    await deleteCommentOnBackend(pendingRemoval);
+    setModeration(getModerationMap());
     toast.success("Comment removed from your feed.");
     setPendingRemoval(null);
   };

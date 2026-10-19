@@ -536,6 +536,8 @@ export interface DashboardComment {
   avatar?: string;
   attachmentUrl?: string;
   attachmentName?: string;
+  isArtist?: boolean;
+  songId?: string;
 }
 
 export interface CommentsResponse {

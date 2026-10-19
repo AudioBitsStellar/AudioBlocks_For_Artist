@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileFormSchema } from "@/types/formValidation";
 import MusicLoader from "@/components/MusicLoader";
-import useArtistServices from "@/services/artistServices";
+import useArtistServices, { mapBackendUserProfile } from "@/services/artistServices";
 const SetupArtistOnChainProfile = dynamic(
   () => import("@/components/common/wallet/SetupArtistOnChainProfile")
 );
@@ -64,7 +64,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"profile" | "settings" | "onchain">("profile");
   const { useUpdateArtistProfile, useGetArtistProfile } = useArtistServices();
   const updateProfileMutation = useUpdateArtistProfile();
-  const { isLoading: isProfileLoading } = useGetArtistProfile(true);
+  const { isLoading: isProfileLoading, data: profileResponse } = useGetArtistProfile(true);
   const toast = useToast();
   // RBAC – issue #173: settings switches are write-restricted, and we surface
   // the active role in the user profile section above the tabs.
@@ -93,6 +93,17 @@ export default function ProfilePage() {
   useEffect(() => {
     setVerificationStatus(getVerificationStatus());
   }, []);
+
+  useEffect(() => {
+    if (!profileResponse) return;
+    const profile = mapBackendUserProfile(profileResponse);
+    if (profile.username) setValue("username", profile.username);
+    if (profile.bio) setValue("bio", profile.bio);
+    if (profile.website) setValue("website", profile.website);
+    if (profile.twitter) setValue("twitter", profile.twitter);
+    if (profile.profileImage) setProfileImage(profile.profileImage);
+    if (profile.verificationStatus) setVerificationStatus(profile.verificationStatus);
+  }, [profileResponse, setValue]);
 
   const handleSimulateApproval = () => {
     setVerificationStatus(approveVerification());
