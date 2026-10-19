@@ -6,6 +6,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import FanInbox from "@/components/fanMessaging/FanInbox";
 import {
   getConversations,
+  loadMockConversations,
   sendMessage,
   formatMessageTime,
   formatConversationDate,
@@ -190,10 +191,24 @@ export default function MessagesPage() {
   const [tab, setTab] = useState<ConversationType>("fan");
   // The fan inbox owns its own list and thread (#419); the artist inbox below
   // is the pre-existing read/send view.
-  const artistConversations = getConversations("artist");
+  const [artistConversations, setArtistConversations] = useState(() => getConversations("artist"));
   const [selected, setSelected] = useState<Conversation | null>(
     artistConversations.length > 0 ? artistConversations[0] : null
   );
+
+  // Artist conversations only exist in mock mode, and arrive asynchronously.
+  useEffect(() => {
+    let cancelled = false;
+    void loadMockConversations().then(() => {
+      if (cancelled) return;
+      const loaded = getConversations("artist");
+      setArtistConversations(loaded);
+      setSelected((current) => current ?? loaded[0] ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   // Below `lg` the two panes don't fit side by side, so the thread replaces
   // the list once a conversation is picked (#422). At `lg` and up both panes
   // are always visible and this flag is irrelevant.

@@ -9,8 +9,8 @@ vi.mock("@/components/common/wallet/useStellarWallet", () => ({
   useStellarWallet: () => ({ address: wallet.address }),
 }));
 
+import { MOCK_ONCHAIN_SUMMARY } from "@/__mocks__/onchainStats";
 import {
-  MOCK_ONCHAIN_SUMMARY,
   countByOperationType,
   dayOf,
   formatAmount,

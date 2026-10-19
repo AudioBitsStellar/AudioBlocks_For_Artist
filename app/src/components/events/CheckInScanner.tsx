@@ -3,35 +3,18 @@
 import { useState } from "react";
 import { ScanLine, CheckCircle2, XCircle, Loader2, Users, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
+import { featureFlags } from "@/lib/featureFlags";
+import { loadMock, useMock } from "@/__mocks__/loadMock";
+import type { CheckInResult, CheckInStats } from "@/types";
 
-interface CheckInResult {
-  ticketId: string;
-  status: "valid" | "invalid" | "already_checked_in";
-  attendeeName?: string;
-}
-
-interface CheckInStats {
-  total: number;
-  checkedIn: number;
-  remaining: number;
-}
-
-const MOCK_CHECK_IN_RESULTS: Record<string, CheckInResult> = {
-  "TICKET-001": { ticketId: "TICKET-001", status: "valid", attendeeName: "Alice Johnson" },
-  "TICKET-002": { ticketId: "TICKET-002", status: "valid", attendeeName: "Bob Smith" },
-  "TICKET-003": {
-    ticketId: "TICKET-003",
-    status: "already_checked_in",
-    attendeeName: "Carol White",
-  },
-  "FAKE-001": { ticketId: "FAKE-001", status: "invalid" },
-};
+const EMPTY_STATS: CheckInStats = { total: 0, checkedIn: 0, remaining: 0 };
 
 export default function CheckInScanner({ eventId }: { eventId: string | number }) {
   const [manualInput, setManualInput] = useState("");
   const [lastResult, setLastResult] = useState<CheckInResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [stats] = useState<CheckInStats>({ total: 500, checkedIn: 127, remaining: 373 });
+  const eventMocks = useMock("events", featureFlags.useMockEvents);
+  const stats = eventMocks?.MOCK_CHECK_IN_STATS ?? EMPTY_STATS;
 
   const handleCheckIn = async (ticketId: string) => {
     setIsScanning(true);
@@ -40,7 +23,10 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
     // Simulate API call delay
     await new Promise((r) => setTimeout(r, 800));
 
-    const result = MOCK_CHECK_IN_RESULTS[ticketId] ?? {
+    const knownResults: Record<string, CheckInResult> = featureFlags.useMockEvents
+      ? (await loadMock("events")).MOCK_CHECK_IN_RESULTS
+      : {};
+    const result = knownResults[ticketId] ?? {
       ticketId,
       status: "invalid" as const,
     };
