@@ -79,12 +79,12 @@ export class OnchainService {
   /**
    * Save pending mint state to localStorage for resume support across reloads
    */
-  public static persistPendingMint(songId: string, txHash: string): void {
-    localStorage.setItem(`pending_mint_${songId}`, JSON.stringify({ txHash, timestamp: Date.now() }));
+  public static persistPendingMint(songId: string, txHash: string, networkId: string): void {
+    localStorage.setItem(`pending_mint_${networkId}_${songId}`, JSON.stringify({ txHash, timestamp: Date.now() }));
   }
 
-  public static getStoredPendingMint(songId: string): string | null {
-    const stored = localStorage.getItem(`pending_mint_${songId}`);
+  public static getStoredPendingMint(songId: string, networkId: string): string | null {
+    const stored = localStorage.getItem(`pending_mint_${networkId}_${songId}`);
     if (!stored) return null;
     try {
       const parsed = JSON.parse(stored);
@@ -94,8 +94,8 @@ export class OnchainService {
     }
   }
 
-  public static clearStoredPendingMint(songId: string): void {
-    localStorage.removeItem(`pending_mint_${songId}`);
+  public static clearStoredPendingMint(songId: string, networkId: string): void {
+    localStorage.removeItem(`pending_mint_${networkId}_${songId}`);
   }
 }
 

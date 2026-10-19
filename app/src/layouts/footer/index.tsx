@@ -2,6 +2,14 @@ import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEnvelope } from "reac
 import Image from "next/image";
 import Link from "next/link";
 
+const SOCIAL_LINKS = [
+  { icon: FaYoutube, url: "https://youtube.com", label: "YouTube" },
+  { icon: FaInstagram, url: "https://instagram.com", label: "Instagram" },
+  { icon: FaFacebookF, url: "https://facebook.com", label: "Facebook" },
+  { icon: FaTwitter, url: "https://twitter.com", label: "Twitter" },
+  { icon: FaEnvelope, url: "mailto:support@audioblocks.com", label: "Email" },
+];
+
 const Footer = () => {
   return (
     <>
@@ -21,12 +29,12 @@ const Footer = () => {
             <h3 className="text-[#5B5C61] font-semibold mb-4">Navigation</h3>
             <ul className="space-y-4 text-sm">
               <li>
-                <Link href="#" className="hover:text-white">
+                <Link href={process.env.NEXT_PUBLIC_LISTENER_APP_URL || "#"} className="hover:text-white">
                   Marketplace
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-white">
+                <Link href="/artist-portal" className="hover:text-white">
                   Artist Hub
                 </Link>
               </li>
@@ -38,17 +46,17 @@ const Footer = () => {
             <h3 className="text-[#5B5C61] font-semibold mb-4">Support</h3>
             <ul className="space-y-4 text-sm">
               <li>
-                <Link href="#" className="hover:text-white">
+                <Link href="#faq" className="hover:text-white">
                   FAQ
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-white">
+                <Link href="/privacy" className="hover:text-white">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-white">
+                <Link href="/terms" className="hover:text-white">
                   Terms of Service
                 </Link>
               </li>
@@ -63,21 +71,18 @@ const Footer = () => {
                 For recent updates and news follow our social media feeds.
               </p>
               <div className="flex space-x-4 text-xl">
-                <Link href="#" className="hover:text-white">
-                  <FaYoutube />
-                </Link>
-                <Link href="#" className="hover:text-white">
-                  <FaInstagram />
-                </Link>
-                <Link href="#" className="hover:text-white">
-                  <FaFacebookF />
-                </Link>
-                <Link href="#" className="hover:text-white">
-                  <FaTwitter />
-                </Link>
-                <Link href="#" className="hover:text-white">
-                  <FaEnvelope />
-                </Link>
+                {SOCIAL_LINKS.map(({ icon: Icon, url, label }) => (
+                  <Link
+                    key={label}
+                    href={url}
+                    className="hover:text-white"
+                    aria-label={label}
+                    target={url.startsWith("http") ? "_blank" : undefined}
+                    rel={url.startsWith("http") ? "noopener noreferrer" : undefined}
+                  >
+                    <Icon />
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
