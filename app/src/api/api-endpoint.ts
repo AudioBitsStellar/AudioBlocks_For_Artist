@@ -30,12 +30,6 @@ export const SONG_ONCHAIN_ENDPOINTS = {
   submitTransfer: (songId: string) => `/song/${songId}/onchain/submit-transfer`,
 };
 
-export const CONTRACT_UPGRADE_ENDPOINTS = {
-  PREPARE_UPGRADE: "/contract/onchain/prepare-upgrade",
-  SUBMIT_UPGRADE: "/contract/onchain/submit-upgrade",
-  GET_CONTRACT_INFO: (contractId: string) => `/contract/${contractId}/info`,
-};
-
 export const MERCH_ENDPOINTS = {
   LIST: "/artist/merches",
   CREATE: "/artist/merches",
@@ -105,9 +99,29 @@ export const SONG_ENDPOINTS = {
   REUPLOAD: (id: string | number) => `/song/${id}/versions`,
 };
 
+// Backend album resource is `/albums` (AlbumRoutes.ts), not `/artist/albums` (#528).
 export const ALBUM_ENDPOINTS = {
-  LIST: "/artist/albums",
-  CREATE: "/artist/albums",
+  LIST: "/albums",
+  LIST_FOR_ARTIST: (artistId: string) => `/albums?artistId=${encodeURIComponent(artistId)}`,
+  CREATE: "/albums",
+  GET: (albumId: string) => `/albums/${albumId}`,
+  /** Metadata and ordered track list (`trackIds`). */
+  UPDATE: (albumId: string) => `/albums/${albumId}`,
+  DELETE: (albumId: string) => `/albums/${albumId}`,
+};
+
+/**
+ * Artist verification (#524). Payload matches the backend ApplyVerificationDTO;
+ * admin review lives under `/admin/verifications`.
+ */
+export const VERIFICATION_ENDPOINTS = {
+  APPLY: "/artist/verification",
+  STATUS: "/artist/verification",
+};
+
+/** Server-recorded audit events for the artist workspace (#526). */
+export const AUDIT_LOG_ENDPOINTS = {
+  LIST: "/artist/audit-logs",
 };
 
 export const EVENTS_ENDPOINTS = {
