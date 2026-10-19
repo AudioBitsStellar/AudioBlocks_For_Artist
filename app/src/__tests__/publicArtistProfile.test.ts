@@ -68,3 +68,42 @@ describe("publicArtistProfile service (#384)", () => {
     expect(displayNameFromHandle("cool-band-name")).toBe("cool band name");
   });
 });
+
+describe("claim availability lookup", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("normalizes and encodes the handle without caching a missing profile", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.audioblocks.test/api/");
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue({ status: 404 } as Response);
+    const signal = new AbortController().signal;
+    expect(await fetchPublicArtistProfile(" @Solo & Sound ", signal)).toEqual({
+      status: "not-found",
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "https://api.audioblocks.test/api/artist/public/Solo%20%26%20Sound",
+      {
+        cache: "no-store",
+        signal,
+        headers: { Accept: "application/json" },
+      }
+    );
+  });
+
+  it.each([401, 403, 429, 500])("does not treat HTTP %i as an available handle", async (status) => {
+    vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.audioblocks.test");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({ status, ok: false } as Response);
+    expect(await fetchPublicArtistProfile("handle")).toEqual({ status: "unavailable" });
+  });
+
+  it("treats malformed success and network failures as unavailable", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.audioblocks.test");
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({ status: 200, ok: true, json: async () => ({}) } as Response)
+      .mockRejectedValueOnce(new Error("network"));
+    expect(await fetchPublicArtistProfile("handle")).toEqual({ status: "unavailable" });
+    expect(await fetchPublicArtistProfile("handle")).toEqual({ status: "unavailable" });
+  });
+});

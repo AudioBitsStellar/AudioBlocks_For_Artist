@@ -1,5 +1,5 @@
 /**
- * Server-side reader for a public artist profile (issue #421).
+ * Shared public artist reader for the server-rendered profile and claim availability.
  *
  * The `/artist/[handle]` route is server-rendered so its `<head>` can contain
  * the artist's real name, bio and avatar. That means the profile has to be
@@ -17,8 +17,10 @@
 
 import { PUBLIC_ARTIST_ENDPOINTS } from "@/api/api-endpoint";
 
-/** How long a rendered profile may be served before it is refetched. */
-const REVALIDATE_SECONDS = 300;
+/** Match public-route handles: trim whitespace and an optional @, preserving case. */
+export function normalizeArtistHandle(handle: string): string {
+  return handle.trim().replace(/^@/, "").trim();
+}
 
 export interface PublicArtistProfile {
   id: string;
@@ -85,15 +87,20 @@ function toPublicProfile(payload: unknown): PublicArtistProfile | null {
  * Fetches a public artist profile by handle. Safe to call during
  * `generateMetadata` — it never throws.
  */
-export async function fetchPublicArtistProfile(handle: string): Promise<PublicArtistProfileResult> {
+export async function fetchPublicArtistProfile(
+  handle: string,
+  signal?: AbortSignal
+): Promise<PublicArtistProfileResult> {
   // Tolerate a trailing slash so `…/api/` + `/artist/public/x` doesn't double up.
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
-  const normalizedHandle = handle.trim().replace(/^@/, "");
+  const normalizedHandle = normalizeArtistHandle(handle);
   if (!normalizedHandle || !baseUrl) return { status: "unavailable" };
 
   try {
     const response = await fetch(`${baseUrl}${PUBLIC_ARTIST_ENDPOINTS.PROFILE(normalizedHandle)}`, {
-      next: { revalidate: REVALIDATE_SECONDS },
+      // Do not cache a missing handle: it may be claimed immediately after this check.
+      cache: "no-store",
+      signal,
       headers: { Accept: "application/json" },
     });
 
