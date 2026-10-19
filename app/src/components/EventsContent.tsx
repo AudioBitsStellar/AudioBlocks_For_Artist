@@ -30,6 +30,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import useEventsService, { EventItem } from "@/services/eventsService";
+import type { EngagementTrendPoint, EventMetric } from "@/types/api";
 import { formatDate } from "@/utils/date";
 
 interface EventsContentProps {
@@ -53,6 +54,53 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknow
     </div>
   );
 };
+
+const PERIOD_DESCRIPTORS: Record<"7" | "30", string> = {
+  "7": "Last 7 days",
+  "30": "Last 30 days",
+};
+
+/**
+ * Builds the Fan Engagement summary cards for the selected trend window, so the
+ * cards change with the 7/30-day toggle. Gradients are reused from the API
+ * metrics by label. With no trend data, the API metrics are returned unchanged.
+ */
+export function summarizeEngagement(
+  trend: EngagementTrendPoint[],
+  period: "7" | "30",
+  apiMetrics: EventMetric[]
+): EventMetric[] {
+  if (trend.length === 0) return apiMetrics;
+
+  const gradientFor = (label: string) => apiMetrics.find((m) => m.label === label)?.gradient ?? "";
+  const descriptor = PERIOD_DESCRIPTORS[period];
+  const totalAttendees = trend.reduce((sum, point) => sum + point.attendees, 0);
+  const averageScore = trend.reduce((sum, point) => sum + point.score, 0) / trend.length;
+  const firstScore = trend[0].score;
+  const lastScore = trend[trend.length - 1].score;
+  const growth = firstScore === 0 ? 0 : ((lastScore - firstScore) / firstScore) * 100;
+
+  return [
+    {
+      label: "Total Fans Reached",
+      value: totalAttendees.toLocaleString("en-US"),
+      descriptor,
+      gradient: gradientFor("Total Fans Reached"),
+    },
+    {
+      label: "Avg Engagement Rate",
+      value: `${averageScore.toFixed(1)}%`,
+      descriptor,
+      gradient: gradientFor("Avg Engagement Rate"),
+    },
+    {
+      label: "Fan Growth",
+      value: `${growth > 0 ? "+" : ""}${growth.toFixed(1)}%`,
+      descriptor,
+      gradient: gradientFor("Fan Growth"),
+    },
+  ];
+}
 
 export default function EventsContent({ onNewEvent }: EventsContentProps) {
   const { useGetEvents, useDeleteEvent, useUpdateEvent } = useEventsService();
@@ -117,6 +165,10 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
   };
 
   const trendData = engPeriod === "7" ? engagementTrend.slice(-7) : engagementTrend;
+  const periodMetrics = useMemo(
+    () => summarizeEngagement(trendData, engPeriod, engagementMetrics),
+    [trendData, engPeriod, engagementMetrics]
+  );
 
   // Filter events based on search query and filter status
   const filteredEvents = useMemo(() => {
@@ -217,10 +269,10 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
             <h2 className="text-xl font-semibold text-text">Fan Engagement</h2>
           </div>
         </div>
-        {engagementMetrics.length > 0 ? (
+        {periodMetrics.length > 0 ? (
           <>
             <div className="grid gap-4 sm:grid-cols-3">
-              {engagementMetrics.map((metric) => (
+              {periodMetrics.map((metric) => (
                 <div
                   key={metric.label}
                   className="relative overflow-hidden rounded-3xl p-[1px] group"
