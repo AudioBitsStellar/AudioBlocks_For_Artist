@@ -13,6 +13,7 @@ import TransferSongButton from "@/components/common/wallet/TransferSongButton";
 import { useStellarWallet } from "@/components/common/wallet/useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
+import { featureFlags } from "@/lib/featureFlags";
 
 vi.mock("@/components/common/wallet/useStellarWallet", () => ({
   useStellarWallet: vi.fn(),
@@ -61,6 +62,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 describe("TransferSongButton", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (featureFlags as any).enableSongTransfer = true;
     mockIsFreighterAvailable.mockResolvedValue(true);
     mockSignTransactionXdr.mockResolvedValue("SIGNED_XDR_MOCK");
   });
@@ -241,5 +243,48 @@ describe("TransferSongButton", () => {
       expect(screen.getByText(/transfer failed/i)).toBeInTheDocument();
       expect(screen.getByText(/song is not minted yet/i)).toBeInTheDocument();
     });
+  });
+
+  it("shows irreversible warning and copy recipient action when a valid address is entered", () => {
+    mockUseStellarWallet.mockReturnValue({
+      address: MOCK_ADDRESS,
+      isConnecting: false,
+      connect: vi.fn(),
+      restore: vi.fn(),
+      disconnect: vi.fn(),
+      signAndSubmit: vi.fn(),
+    });
+    setupServices();
+
+    render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
+
+    fireEvent.change(screen.getByPlaceholderText(/recipient/i), {
+      target: { value: RECIPIENT },
+    });
+
+    expect(screen.getByText(/permanent and irreversible/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /copy recipient address/i })).toBeInTheDocument();
+  });
+
+  it("disables transfer button behind tooltip when enableSongTransfer is false", () => {
+    mockUseStellarWallet.mockReturnValue({
+      address: MOCK_ADDRESS,
+      isConnecting: false,
+      connect: vi.fn(),
+      restore: vi.fn(),
+      disconnect: vi.fn(),
+      signAndSubmit: vi.fn(),
+    });
+    setupServices();
+
+    const originalFlag = featureFlags.enableSongTransfer;
+    (featureFlags as any).enableSongTransfer = false;
+
+    render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
+
+    expect(screen.getByRole("button", { name: /disabled/i })).toBeDisabled();
+    expect(screen.getByText(/transfers are temporarily disabled/i)).toBeInTheDocument();
+
+    (featureFlags as any).enableSongTransfer = originalFlag;
   });
 });
