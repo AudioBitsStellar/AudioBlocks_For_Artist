@@ -1,12 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  beginTwoFactorSetup,
-  confirmTwoFactorSetup,
-  disableTwoFactor,
-  getSecuritySettings,
-  setLoginAlerts,
-} from "@/services/securitySettingsService";
-import {
   acceptInvite,
   clearInvites,
   createInvite,
@@ -24,59 +17,6 @@ import {
   restoreComment,
   setModerationStatus,
 } from "@/services/commentModerationService";
-
-describe("securitySettingsService", () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  it("defaults to 2FA disabled with login alerts on", () => {
-    const settings = getSecuritySettings();
-    expect(settings.twoFactorStatus).toBe("disabled");
-    expect(settings.provider).toBe("privy");
-    expect(settings.loginAlerts).toBe(true);
-  });
-
-  it("runs the enrolment flow and enables 2FA with recovery codes", () => {
-    const setup = beginTwoFactorSetup();
-    expect(setup.challenge).toMatch(/^\d{6}$/);
-    expect(setup.otpauthUri).toContain("otpauth://totp/");
-    expect(getSecuritySettings().twoFactorStatus).toBe("pending");
-
-    const wrong = confirmTwoFactorSetup("000000");
-    if (setup.challenge === "000000") {
-      expect(wrong.ok).toBe(true);
-    } else {
-      expect(wrong.ok).toBe(false);
-    }
-
-    const result = confirmTwoFactorSetup(setup.challenge);
-    expect(result.ok).toBe(true);
-    const settings = getSecuritySettings();
-    expect(settings.twoFactorStatus).toBe("enabled");
-    expect(settings.recoveryCodes?.length).toBeGreaterThan(0);
-  });
-
-  it("rejects malformed codes", () => {
-    beginTwoFactorSetup();
-    expect(confirmTwoFactorSetup("12")).toEqual({ ok: false, error: "Enter the 6-digit code." });
-  });
-
-  it("disables 2FA and clears enrolment state", () => {
-    const setup = beginTwoFactorSetup();
-    confirmTwoFactorSetup(setup.challenge);
-    disableTwoFactor();
-    const settings = getSecuritySettings();
-    expect(settings.twoFactorStatus).toBe("disabled");
-    expect(settings.recoveryCodes).toBeUndefined();
-    expect(settings.setup).toBeUndefined();
-  });
-
-  it("toggles login alerts", () => {
-    expect(setLoginAlerts(false).loginAlerts).toBe(false);
-    expect(getSecuritySettings().loginAlerts).toBe(false);
-  });
-});
 
 describe("collaboratorService", () => {
   beforeEach(() => {

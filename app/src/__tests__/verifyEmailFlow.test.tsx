@@ -1,175 +1,136 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import VerifyEmailPage from "@/app/verify-email/page";
-import EmailVerificationGate from "@/components/EmailVerificationGate";
-import {
-  getEmailVerificationStatus,
-  startVerification,
-  verifyEmailCode,
-} from "@/services/emailVerificationService";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const replace = vi.fn();
-const push = vi.fn();
+const { replace, push, verifyEmailTokenMock, invalidateQueries, emailState, refetch } = vi.hoisted(
+  () => ({
+    replace: vi.fn(),
+    push: vi.fn(),
+    verifyEmailTokenMock: vi.fn(),
+    invalidateQueries: vi.fn(async () => undefined),
+    emailState: { emailVerified: false as boolean | undefined },
+    refetch: vi.fn(async () => ({ isError: false, data: undefined })),
+  })
+);
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, replace, prefetch: vi.fn() }),
+  useRouter: () => ({ replace, push }),
+  useParams: () => ({ token: "link-token" }),
 }));
 
-vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries }),
 }));
 
-/** Issues a code and fails loudly if the service refused. */
-function issue(email = "artist@example.com"): string {
-  const result = startVerification(email);
-  if (!result.ok) throw new Error(`issuance failed: ${result.error}`);
-  return result.code;
-}
+vi.mock("@/services/emailVerificationService", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/services/emailVerificationService")>();
+  return { ...actual, verifyEmailToken: verifyEmailTokenMock };
+});
 
-/** Types a code into the split boxes one digit at a time. */
-async function typeCode(code: string, via: "user" | "event") {
-  const boxes = Array.from(
-    document.querySelectorAll<HTMLInputElement>('input[inputmode="numeric"]')
-  );
-  if (boxes.length !== code.length) throw new Error(`expected ${code.length} boxes`);
-  for (let index = 0; index < code.length; index += 1) {
-    if (via === "user") await userEvent.type(boxes[index], code[index]);
-    else fireEvent.change(boxes[index], { target: { value: code[index] } });
-  }
-}
+vi.mock("@/hooks/useEmailVerification", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/hooks/useEmailVerification")>();
+  return {
+    ...actual,
+    useEmailVerification: () => ({
+      emailVerified: emailState.emailVerified,
+      requiresVerification: emailState.emailVerified === false,
+      isLoading: false,
+      isError: false,
+      refetch,
+    }),
+  };
+});
 
-function codeBoxes(): HTMLElement[] {
-  return Array.from(document.querySelectorAll('input[inputmode="numeric"]'));
-}
+vi.mock("@/hooks/useHasHydrated", () => ({ useHasHydrated: () => true }));
 
-describe("Verify email step (#459)", () => {
+vi.mock("@/utils/jwt", () => ({ getEmailFromToken: () => "artist@example.com" }));
+
+vi.mock("@/api/session", () => ({ endSession: vi.fn(async () => undefined) }));
+
+import VerifyEmailPage from "@/app/verify-email/page";
+import VerifyEmailTokenPage from "@/app/verify-email/[token]/page";
+import EmailVerificationGate from "@/components/EmailVerificationGate";
+
+describe("verify-email check-inbox step (#519)", () => {
   beforeEach(() => {
-    localStorage.clear();
     vi.clearAllMocks();
+    emailState.emailVerified = false;
   });
 
-  it("asks for an address when no code has been issued", () => {
+  it("tells the artist which address the link went to", () => {
     render(<VerifyEmailPage />);
 
-    expect(screen.getByRole("heading", { name: /verify your email/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/^email/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /send code/i })).toBeInTheDocument();
-  });
-
-  it("refuses an invalid address without issuing a code", async () => {
-    render(<VerifyEmailPage />);
-
-    await userEvent.type(screen.getByLabelText(/^email/i), "not-an-email");
-    await userEvent.click(screen.getByRole("button", { name: /send code/i }));
-
-    expect(await screen.findByText(/enter a valid email address/i)).toBeInTheDocument();
-    expect(getEmailVerificationStatus()).toBe("unverified");
-  });
-
-  it("issues a code, shows the pending step, and reveals it for mocked delivery", async () => {
-    render(<VerifyEmailPage />);
-
-    await userEvent.type(screen.getByLabelText(/^email/i), "artist@example.com");
-    await userEvent.click(screen.getByRole("button", { name: /send code/i }));
-
-    expect(await screen.findByRole("heading", { name: /confirm your email/i })).toBeInTheDocument();
-    expect(codeBoxes()).toHaveLength(6);
+    expect(screen.getByRole("heading", { name: /check your inbox/i })).toBeInTheDocument();
     expect(screen.getByText("artist@example.com")).toBeInTheDocument();
-    expect(screen.getByText(/no email backend yet/i).textContent).toMatch(/\d{6}/);
   });
 
-  it("verifies the correct code and sends the artist to the dashboard", async () => {
-    const code = issue();
+  it("sends the artist on once the backend reports the email as verified", () => {
+    emailState.emailVerified = true;
     render(<VerifyEmailPage />);
 
-    await typeCode(code, "user");
-
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/dashboard/overview"));
-    expect(getEmailVerificationStatus()).toBe("verified");
-  });
-
-  it("reports a wrong code and counts the attempt down", async () => {
-    const code = issue();
-    render(<VerifyEmailPage />);
-
-    await typeCode(code === "111111" ? "222222" : "111111", "event");
-    fireEvent.click(screen.getByRole("button", { name: /verify email/i }));
-
-    expect(await screen.findByText(/that code isn/i)).toBeInTheDocument();
-    expect(screen.getByTestId("attempts-left")).toHaveTextContent("4 attempts left");
-    expect(getEmailVerificationStatus()).toBe("pending");
-    expect(replace).not.toHaveBeenCalled();
-  });
-
-  it("holds the resend button until the cooldown has run out", () => {
-    issue();
-    render(<VerifyEmailPage />);
-
-    expect(screen.getByRole("button", { name: /resend code in \d+s/i })).toBeDisabled();
-  });
-
-  it("returns to the address step without abandoning the outstanding code", async () => {
-    issue();
-    render(<VerifyEmailPage />);
-
-    await userEvent.click(screen.getByRole("button", { name: /use another address/i }));
-
-    expect(screen.getByRole("button", { name: /send code/i })).toBeInTheDocument();
-    expect(getEmailVerificationStatus()).toBe("pending");
-  });
-
-  it("redirects an already-verified artist away from the step", async () => {
-    verifyEmailCode(issue());
-    expect(getEmailVerificationStatus()).toBe("verified");
-
-    render(<VerifyEmailPage />);
-
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/dashboard/overview"));
-    expect(codeBoxes()).toHaveLength(0);
+    expect(replace).toHaveBeenCalledWith("/dashboard/overview");
   });
 });
 
-describe("Dashboard gate (#459)", () => {
+describe("verify-email link step (#519)", () => {
   beforeEach(() => {
-    localStorage.clear();
     vi.clearAllMocks();
   });
 
-  it("renders the dashboard for an account with no verification record", async () => {
+  it("consumes the token and shows success", async () => {
+    verifyEmailTokenMock.mockResolvedValueOnce({ ok: true });
+    render(<VerifyEmailTokenPage />);
+
+    expect(
+      await screen.findByRole("heading", { name: /your email is verified/i })
+    ).toBeInTheDocument();
+    expect(verifyEmailTokenMock).toHaveBeenCalledTimes(1);
+    expect(verifyEmailTokenMock).toHaveBeenCalledWith("link-token");
+    expect(invalidateQueries).toHaveBeenCalled();
+  });
+
+  it("explains an invalid or expired link", async () => {
+    verifyEmailTokenMock.mockResolvedValueOnce({ ok: false, reason: "invalid_or_expired" });
+    render(<VerifyEmailTokenPage />);
+
+    expect(
+      await screen.findByRole("heading", { name: /this link can.t be used/i })
+    ).toBeInTheDocument();
+  });
+
+  it("offers a retry when the backend is unavailable", async () => {
+    verifyEmailTokenMock.mockResolvedValueOnce({ ok: false, reason: "unavailable" });
+    render(<VerifyEmailTokenPage />);
+
+    expect(await screen.findByRole("button", { name: /try again/i })).toBeInTheDocument();
+  });
+});
+
+describe("EmailVerificationGate (#519)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("holds an unverified artist off the dashboard", async () => {
+    emailState.emailVerified = false;
     render(
       <EmailVerificationGate>
         <p>dashboard content</p>
       </EmailVerificationGate>
     );
 
-    expect(await screen.findByText("dashboard content")).toBeInTheDocument();
-    expect(replace).not.toHaveBeenCalled();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/verify-email"));
+    expect(screen.queryByText("dashboard content")).not.toBeInTheDocument();
   });
 
-  it("renders the dashboard once the address is verified", async () => {
-    verifyEmailCode(issue());
-
+  it("lets a verified artist through", () => {
+    emailState.emailVerified = true;
     render(
       <EmailVerificationGate>
         <p>dashboard content</p>
       </EmailVerificationGate>
     );
 
-    expect(await screen.findByText("dashboard content")).toBeInTheDocument();
+    expect(screen.getByText("dashboard content")).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
-  });
-
-  it("withholds the dashboard and redirects while a code is outstanding", () => {
-    issue();
-
-    const { container } = render(
-      <EmailVerificationGate>
-        <p>dashboard content</p>
-      </EmailVerificationGate>
-    );
-
-    expect(container).toBeEmptyDOMElement();
-    expect(replace).toHaveBeenCalledWith("/verify-email");
   });
 });

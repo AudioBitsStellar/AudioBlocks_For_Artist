@@ -31,7 +31,7 @@ export interface AuthUser {
    * Whether the address has passed onboarding verification (#459). Left
    * optional because the backend does not return it yet; `undefined` means
    * "unknown" and is treated as verified so existing accounts are not locked
-   * out — see `requiresEmailVerification()`.
+   * out — see `isEmailUnverified()`.
    */
   emailVerified?: boolean;
   aiStudioEnabled?: boolean;

@@ -1,5 +1,4 @@
-import Cookies from "js-cookie";
-
+import { readSessionClaims } from "@/api/session";
 import { isRole, type Role } from "@/types/role";
 
 interface DecodedTokenClaims {
@@ -12,28 +11,15 @@ interface DecodedTokenClaims {
   [key: string]: unknown;
 }
 
-function decodeBase64Url(segment: string): string {
-  const base64 = segment.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-  return atob(padded);
-}
-
 /**
- * Best-effort, unverified decode of the stored session JWT's payload segment.
- * Returns `null` on the server, when there is no token, or when the payload
- * is missing / not valid JSON. The signature is never checked here.
+ * Best-effort, unverified read of the session's JWT claims. The browser sees
+ * only the claims cookie (the payload, with no signature), since the token
+ * itself is httpOnly (#521). Returns `null` on the server or when there is no
+ * session. The signature is never checked here.
  */
 function readTokenClaims(): DecodedTokenClaims | null {
   if (typeof window === "undefined") return null;
-  try {
-    const token = Cookies.get("audioblocks_jwt") || localStorage.getItem("token");
-    if (!token) return null;
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-    return JSON.parse(decodeBase64Url(payload)) as DecodedTokenClaims;
-  } catch {
-    return null;
-  }
+  return readSessionClaims() as DecodedTokenClaims | null;
 }
 
 /**

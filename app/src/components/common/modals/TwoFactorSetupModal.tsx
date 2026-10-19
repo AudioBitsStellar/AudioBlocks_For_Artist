@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import Modal from "@/components/shared/Modal";
+import OtpInput from "@/components/shared/OtpInput";
 import {
-  beginTwoFactorSetup,
-  confirmTwoFactorSetup,
-  generateRecoveryCodes,
-  type TwoFactorSetup,
+  beginTwoFactorEnrollment,
+  confirmTwoFactorCode,
+  type TwoFactorEnrollment,
 } from "@/services/securitySettingsService";
 
 interface TwoFactorSetupModalProps {
@@ -18,44 +18,67 @@ interface TwoFactorSetupModalProps {
 
 type Step = "setup" | "verify" | "recovery";
 
+const CODE_LENGTH = 6;
+
+/**
+ * Enrols the artist in two-factor authentication through the backend (#518).
+ *
+ * The backend turns 2FA on as soon as enrolment starts. The modal therefore
+ * stays on the verify step until a code from the new authenticator is accepted,
+ * so the secret is never lost on a half-finished setup.
+ */
 export default function TwoFactorSetupModal({
   open,
   onOpenChange,
   onEnabled,
 }: TwoFactorSetupModalProps) {
   const [step, setStep] = useState<Step>("setup");
-  const [setup, setSetup] = useState<TwoFactorSetup | null>(null);
+  const [enrollment, setEnrollment] = useState<TwoFactorEnrollment | null>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [isBusy, setIsBusy] = useState(false);
 
   const reset = () => {
     setStep("setup");
-    setSetup(null);
+    setEnrollment(null);
     setCode("");
     setError("");
-    setRecoveryCodes([]);
+    setIsBusy(false);
   };
 
   const handleOpenChange = (next: boolean) => {
+    // Closing mid-verification would leave 2FA on with a secret nobody saved.
+    if (!next && step === "verify") return;
     if (!next) reset();
     onOpenChange(next);
   };
 
-  const handleStart = () => {
-    setSetup(beginTwoFactorSetup());
-    setStep("verify");
+  const handleStart = async () => {
+    setIsBusy(true);
+    try {
+      const result = await beginTwoFactorEnrollment();
+      setEnrollment(result);
+      setStep("verify");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not start two-factor setup.");
+    } finally {
+      setIsBusy(false);
+    }
   };
 
-  const handleVerify = () => {
-    const result = confirmTwoFactorSetup(code);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+  const handleVerify = async (submitted: string) => {
+    if (isBusy) return;
+    setIsBusy(true);
+    try {
+      await confirmTwoFactorCode(submitted);
+      setError("");
+      setStep("recovery");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That code is not correct.");
+      setCode("");
+    } finally {
+      setIsBusy(false);
     }
-    setRecoveryCodes(result.settings.recoveryCodes ?? generateRecoveryCodes(1));
-    setError("");
-    setStep("recovery");
   };
 
   const handleDone = () => {
@@ -66,7 +89,7 @@ export default function TwoFactorSetupModal({
 
   const copyCodes = async () => {
     try {
-      await navigator.clipboard.writeText(recoveryCodes.join("\n"));
+      await navigator.clipboard.writeText((enrollment?.backupCodes ?? []).join("\n"));
       toast.success("Recovery codes copied.");
     } catch {
       toast.error("Could not copy recovery codes.");
@@ -77,6 +100,7 @@ export default function TwoFactorSetupModal({
     <Modal
       open={open}
       onOpenChange={handleOpenChange}
+      showCloseButton={step !== "verify"}
       subtitle="Account security"
       title={step === "recovery" ? "Save your recovery codes" : "Set up two-factor authentication"}
       size="lg"
@@ -84,14 +108,18 @@ export default function TwoFactorSetupModal({
       {step === "setup" && (
         <div className="space-y-5 text-white">
           <p className="text-sm text-[#A3A3A3]">
-            Two-factor authentication is powered by Privy. Adding a second step at sign-in means a
-            stolen password is not enough to get into your artist account.
+            Adding a second step at sign-in means a stolen password is not enough to get into your
+            artist account.
           </p>
           <ul className="list-disc space-y-1 pl-5 text-sm text-[#A3A3A3]">
             <li>Open your authenticator app.</li>
-            <li>You&apos;ll add the secret shown in the next step.</li>
+            <li>Scan the QR code, or enter the secret, on the next step.</li>
             <li>Confirm with the 6-digit code it generates.</li>
           </ul>
+          <p className="text-sm text-[#A3A3A3]">
+            Two-factor authentication turns on as soon as you continue. Finish the next step in
+            one sitting.
+          </p>
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
@@ -103,7 +131,8 @@ export default function TwoFactorSetupModal({
             <button
               type="button"
               onClick={handleStart}
-              className="rounded-full bg-[#D2045B] px-5 py-2 text-sm font-semibold text-white hover:bg-[#B8043F]"
+              disabled={isBusy}
+              className="rounded-full bg-[#D2045B] px-5 py-2 text-sm font-semibold text-white hover:bg-[#B8043F] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Continue
             </button>
@@ -111,8 +140,19 @@ export default function TwoFactorSetupModal({
         </div>
       )}
 
-      {step === "verify" && setup && (
+      {step === "verify" && enrollment && (
         <div className="space-y-5 text-white">
+          <div className="flex flex-col items-center gap-3">
+            {/* The QR code is a data URL generated by the backend. */}
+            <img
+              src={enrollment.qrCodeDataUrl}
+              alt="QR code for your authenticator app"
+              width={180}
+              height={180}
+              className="rounded-xl bg-white p-2"
+            />
+          </div>
+
           <div>
             <label htmlFor="tfa-secret" className="text-sm font-medium">
               Setup secret
@@ -120,39 +160,37 @@ export default function TwoFactorSetupModal({
             <input
               id="tfa-secret"
               readOnly
-              value={setup.secret}
+              value={enrollment.secret}
               onFocus={(e) => e.target.select()}
               className="mt-2 w-full rounded-lg border border-[#2E2E2E] bg-[#1E1E1E] px-4 py-3 font-mono text-xs text-white focus:outline-none focus:border-[#D2045B]"
             />
             <p className="mt-1 text-xs text-[#A3A3A3]">
-              Add this secret to your authenticator app.
+              Scan the QR code, or add this secret to your authenticator app.
             </p>
           </div>
 
           <div>
-            <label htmlFor="tfa-code" className="text-sm font-medium">
+            <p id="tfa-code-label" className="text-sm font-medium">
               6-digit code
-            </label>
-            <input
-              id="tfa-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              aria-invalid={error ? "true" : "false"}
-              aria-describedby={error ? "tfa-code-error" : "tfa-code-hint"}
-              placeholder="000000"
-              className="mt-2 w-full rounded-lg border border-[#2E2E2E] bg-[#1E1E1E] px-4 py-3 tracking-[0.4em] text-white placeholder-[#A3A3A3] focus:outline-none focus:border-[#D2045B]"
-            />
+            </p>
+            <div className="mt-2" aria-labelledby="tfa-code-label">
+              <OtpInput
+                name="tfa-code"
+                value={code}
+                onChange={setCode}
+                onComplete={handleVerify}
+                disabled={isBusy}
+                length={CODE_LENGTH}
+                autoFocus
+              />
+            </div>
             {error ? (
               <p id="tfa-code-error" role="alert" className="mt-1 text-xs text-red-500">
                 {error}
               </p>
             ) : (
-              <p id="tfa-code-hint" className="mt-1 text-xs text-[#A3A3A3]">
-                Preview build challenge code:{" "}
-                <span data-testid="tfa-challenge">{setup.challenge}</span>
+              <p className="mt-1 text-xs text-[#A3A3A3]">
+                Enter the code from your app to finish. You can&apos;t close this step until you do.
               </p>
             )}
           </div>
@@ -160,15 +198,8 @@ export default function TwoFactorSetupModal({
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={() => setStep("setup")}
-              className="rounded-full border border-[#2A2A2A] px-5 py-2 text-sm font-semibold text-[#A3A3A3] hover:text-white"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              onClick={handleVerify}
-              disabled={code.length !== 6}
+              onClick={() => handleVerify(code)}
+              disabled={isBusy || code.length !== CODE_LENGTH}
               className="rounded-full bg-[#D2045B] px-5 py-2 text-sm font-semibold text-white hover:bg-[#B8043F] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Verify and enable
@@ -177,17 +208,17 @@ export default function TwoFactorSetupModal({
         </div>
       )}
 
-      {step === "recovery" && (
+      {step === "recovery" && enrollment && (
         <div className="space-y-5 text-white">
           <p className="text-sm text-[#A3A3A3]">
-            Store these recovery codes somewhere safe. Each one can be used once if you lose access
-            to your authenticator app.
+            Store these recovery codes somewhere safe. Each one works once if you lose access to
+            your authenticator app. They are shown only once, so copy them now.
           </p>
           <ul
             data-testid="recovery-codes"
             className="grid grid-cols-2 gap-2 rounded-2xl border border-[#2A2A2A] bg-[#161616] p-4 font-mono text-sm"
           >
-            {recoveryCodes.map((recoveryCode) => (
+            {enrollment.backupCodes.map((recoveryCode) => (
               <li key={recoveryCode}>{recoveryCode}</li>
             ))}
           </ul>
