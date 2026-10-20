@@ -1,10 +1,22 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import OverviewCards from "./OverviewCards";
+
+const storyQueryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
 
 const meta: Meta<typeof OverviewCards> = {
   title: "Dashboard/OverviewCards",
   component: OverviewCards,
   tags: ["autodocs"],
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={storyQueryClient}>
+        <Story />
+      </QueryClientProvider>
+    ),
+  ],
   parameters: {
     layout: "padded",
     docs: {
@@ -30,14 +42,14 @@ export const Default: Story = {};
 
 /** Tablet viewport to verify the 2-column grid layout. */
 export const TabletLayout: Story = {
-  parameters: {
-    viewport: { defaultViewport: "tablet" },
+  globals: {
+    viewport: "tablet",
   },
 };
 
 /** Mobile viewport — single-column stacked layout. */
 export const MobileLayout: Story = {
-  parameters: {
-    viewport: { defaultViewport: "mobile" },
+  globals: {
+    viewport: "mobile",
   },
 };

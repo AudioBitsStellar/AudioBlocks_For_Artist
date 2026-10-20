@@ -135,8 +135,8 @@ follow a green CI run.
 
 Storybook is the workshop for building and reviewing components in isolation.
 Config lives in [`.storybook/`](../app/.storybook) and uses the
-`@storybook/nextjs-vite` framework with the `essentials` and `interactions`
-addons.
+`@storybook/nextjs-vite` framework (Storybook 9) with the `a11y` addon.
+Controls, viewport, docs and toolbars are built into Storybook 9 core.
 
 ### Running it
 
@@ -155,8 +155,10 @@ Story files sit next to their component and match
   `Select.stories.tsx`, `Checkbox.stories.tsx`, `RadioButton.stories.tsx`,
   `FileUpload.stories.tsx`
 - Dashboard views — `TopHeader.stories.tsx`, `DashboardLayout.stories.tsx`,
-  `MyMusicContent.stories.tsx`, `MyAlbums.stories.tsx`,
-  `MerchesContent.stories.tsx`
+  `Sidebar.stories.tsx`, `OverviewCards.stories.tsx`,
+  `EarningsRoyalties.stories.tsx`, `MyMusicContent.stories.tsx`,
+  `MyAlbums.stories.tsx`, `MerchesContent.stories.tsx`
+- Feedback — `MusicLoader.stories.tsx`
 
 ### Writing a story
 
@@ -193,9 +195,10 @@ Guidelines:
   and permission-restricted variants where they exist.
 - `.storybook/preview.ts` registers **Mobile (375×667)**, **Tablet
   (768×1024)**, and **Desktop (1440×900)** viewports — use the toolbar
-  viewport switcher to check responsive behaviour.
-- Interactive flows can be scripted with a `play` function via
-  `@storybook/addon-interactions`.
+  viewport switcher, or pin one per story with
+  `globals: { viewport: "mobile" }`, to check responsive behaviour.
+- The `a11y` addon runs axe-core against each story and surfaces WCAG
+  violations in the Accessibility panel.
 - `npm run chromatic` publishes the build to Chromatic for visual regression
   review when a project token is configured.
 

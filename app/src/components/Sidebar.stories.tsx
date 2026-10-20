@@ -42,7 +42,7 @@ export const MobileOpen: Story = {
     open: true,
     onClose: () => {},
   },
-  parameters: {
-    viewport: { defaultViewport: "mobile" },
+  globals: {
+    viewport: "mobile",
   },
 };
