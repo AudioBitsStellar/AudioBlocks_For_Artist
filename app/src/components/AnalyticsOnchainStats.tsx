@@ -2,11 +2,11 @@
 
 /**
  * On-chain plays and sales in the analytics dashboard (#467), read from the
- * subgraph by `services/onchainAnalyticsService.ts` and gated behind the
+ * backend indexer by `services/onchainAnalyticsService.ts` and gated behind the
  * `artistOnchainAnalytics` rollout flag (#469).
  *
  * The panel is additive: the backend REST analytics already on this page keep
- * working when the subgraph is unconfigured, slow or wrong. That's why the
+ * working when the backend indexer is unconfigured, slow or wrong. That's why the
  * flag check lives in the outer component (an artist outside the rollout never
  * issues the request) and why every failure mode below renders a quiet note
  * rather than throwing into the page.
@@ -14,9 +14,10 @@
 
 import { useEffect, useState } from "react";
 import { Activity, DollarSign, PlayCircle, ShoppingBag } from "lucide-react";
+import MockDataBadge from "./MockDataBadge";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { getFreighterAddress } from "@/lib/freighter";
-import { isSubgraphConfigured } from "@/lib/subgraph";
+import { isIndexerConfigured } from "@/lib/onchainIndexer";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import useOnchainAnalyticsService, {
   indexerLagMinutes,
@@ -91,7 +92,10 @@ function OnchainStatsPanel({
       aria-label="On-chain plays and sales"
     >
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h3 className="text-white text-lg font-semibold">On-chain plays and sales</h3>
+        <h3 className="text-white text-lg font-semibold">
+          On-chain plays and sales
+          <MockDataBadge label="On-chain analytics" />
+        </h3>
         {isStaleData && data.indexedAt !== null && (
           <span
             className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400"
@@ -103,31 +107,49 @@ function OnchainStatsPanel({
         )}
       </div>
 
+      {data.totalPlays === null && (
+        <p className="text-gray-400 text-sm mb-4">
+          Artist-owned plays and sales aren&apos;t available from the indexer yet.{" "}
+          {data.eventCount ?? 0} account events indexed in this period.{" "}
+          <a
+            className="underline"
+            href="https://github.com/AudioBitsStellar/AudioBlock_Backend/issues/845"
+          >
+            Backend follow-up
+          </a>
+        </p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Stat
           icon={<PlayCircle className="w-4 h-4 text-pink-500" aria-hidden="true" />}
           label="Plays"
-          value={data.totalPlays.toLocaleString()}
+          value={data.totalPlays?.toLocaleString() ?? "Unavailable"}
         />
         <Stat
           icon={<ShoppingBag className="w-4 h-4 text-pink-500" aria-hidden="true" />}
           label="Sales"
-          value={data.totalSales.toLocaleString()}
+          value={data.totalSales?.toLocaleString() ?? "Unavailable"}
         />
         <Stat
           icon={<DollarSign className="w-4 h-4 text-pink-500" aria-hidden="true" />}
           label="Sale volume"
-          value={`${data.totalAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} XLM`}
+          value={
+            data.totalAmount === null
+              ? "Unavailable"
+              : `${data.totalAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} XLM`
+          }
         />
       </div>
 
       <p className="text-gray-500 text-xs mt-4 flex items-center gap-2">
         <Activity className="w-3.5 h-3.5" aria-hidden="true" />
-        {data.daily.length === 0
-          ? "No on-chain activity indexed for this artist in the period yet."
-          : `From ${data.daily.length} indexed day${data.daily.length === 1 ? "" : "s"}${
-              data.indexedBlock !== null ? ` at ledger ${data.indexedBlock.toLocaleString()}` : ""
-            }.`}
+        {data.totalPlays === null
+          ? "Event dates reflect ingestion time; artist totals require ownership attribution."
+          : data.daily.length === 0
+            ? "No on-chain activity indexed for this artist in the period yet."
+            : `From ${data.daily.length} indexed day${data.daily.length === 1 ? "" : "s"}${
+                data.indexedBlock !== null ? ` at ledger ${data.indexedBlock.toLocaleString()}` : ""
+              }.`}
       </p>
     </section>
   );
@@ -160,13 +182,13 @@ export default function AnalyticsOnchainStats({ period = 30 }: AnalyticsOnchainS
 
   if (!enabled) return null;
 
-  if (!isSubgraphConfigured()) {
+  if (!isIndexerConfigured()) {
     return (
       <section className="mt-8 bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6">
         <h3 className="text-white text-lg font-semibold mb-2">On-chain activity not set up</h3>
         <p className="text-gray-400 text-sm">
-          This deployment has no subgraph endpoint configured, so on-chain plays and sales are not
-          available yet.
+          This deployment has no backend indexer endpoint configured, so on-chain plays and sales
+          are not available yet.
         </p>
       </section>
     );
@@ -180,7 +202,7 @@ export default function AnalyticsOnchainStats({ period = 30 }: AnalyticsOnchainS
         </h3>
         <p className="text-gray-400 text-sm">
           {walletChecked
-            ? "Plays and sales are filed against your Stellar public key. Connect Freighter to see yours."
+            ? "Connect Freighter to see indexed events involving your Stellar account."
             : "Checking for a connected Stellar wallet…"}
         </p>
       </section>

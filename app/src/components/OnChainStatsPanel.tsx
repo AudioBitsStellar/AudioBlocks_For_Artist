@@ -3,7 +3,7 @@
 /**
  * On-chain stats for the connected artist's Stellar account (#466).
  *
- * Every number here is derived from Horizon's index of the ledger by
+ * Event counts come from the backend Soroban indexer through
  * `onchainStatsService`; this component only presents it. Styling uses theme
  * tokens exclusively so the panel follows the light/dark toggle (#463).
  */
@@ -71,10 +71,12 @@ function OperationBreakdown({ summary }: { summary: OnChainActivitySummary }) {
       className="rounded-lg border border-border bg-surface p-5"
     >
       <h2 id="onchain-operations-heading" className="text-base font-semibold text-text">
-        Operations by type
+        Indexed events by type
       </h2>
       {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-text-muted">No operations on this account yet.</p>
+        <p className="mt-3 text-sm text-text-muted">
+          No indexed events involving this account yet.
+        </p>
       ) : (
         <ul className="mt-4 space-y-3">
           {rows.map((row) => (
@@ -172,8 +174,12 @@ export default function OnChainStatsPanel() {
   if (!summary) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border bg-surface p-5 text-sm text-text-muted">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-        <span role="status">Reading your account from Horizon…</span>
+        <Loader2 className="h-4 w-4" aria-hidden="true" />
+        <span role="status">
+          {address
+            ? "Loading indexed account activity…"
+            : "Connect a wallet to see indexed activity."}
+        </span>
       </div>
     );
   }
@@ -226,27 +232,31 @@ export default function OnChainStatsPanel() {
         <KpiCard
           label="XLM balance"
           value={formatAmount(summary.xlmBalance)}
-          hint={`${summary.assets.length} other asset${summary.assets.length === 1 ? "" : "s"}`}
+          hint={
+            isMock
+              ? `${summary.assets.length} other assets`
+              : "Balances are not exposed by the indexer"
+          }
           icon={CircleDollarSign}
         />
         <KpiCard
-          label="Transactions"
+          label="Indexed transactions"
           value={String(summary.transactionCount)}
           hint={
-            summary.failedTransactionCount > 0
+            summary.failedTransactionCount !== null && summary.failedTransactionCount > 0
               ? `${summary.failedTransactionCount} failed`
-              : "None failed"
+              : "Successful indexed events only"
           }
           icon={RefreshCw}
         />
         <KpiCard
-          label="Operations"
+          label="Indexed events"
           value={String(summary.operationCount)}
           hint={`${Object.keys(summary.operationsByType).length} kinds`}
           icon={Coins}
         />
         <KpiCard
-          label="Active days"
+          label="Indexed days"
           value={String(summary.activeDays.length)}
           hint={`Since ${formatDateTime(summary.firstActivityAt)}`}
           icon={Wallet}
@@ -255,12 +265,13 @@ export default function OnChainStatsPanel() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <OperationBreakdown summary={summary} />
-        <HeldAssets summary={summary} />
+        {isMock && <HeldAssets summary={summary} />}
       </div>
 
       <p className="text-xs text-text-subtle">
-        Last activity {formatDateTime(summary.lastActivityAt)}. Counts cover the{" "}
-        {summary.operationCount} most recent operations Horizon has indexed for this account.
+        Last activity {formatDateTime(summary.lastActivityAt)}. Counts cover{" "}
+        {summary.operationCount} backend events involving this account. Dates reflect ingestion
+        time. Artist-owned plays and sales require backend ownership aggregates.
       </p>
     </div>
   );

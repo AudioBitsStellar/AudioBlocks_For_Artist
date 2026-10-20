@@ -1,11 +1,35 @@
 import { ANALYTICS_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
-import type { AgeDemographic, AnalyticsData, AnalyticsInsights, AnalyticsResponse, AnalyticsSummary, AnalyticsSummaryResponse, DemographicsData, DeviceDemographic, GenderDemographic, GeographicData, PlayTrendData } from "@/types/api";
+import type {
+  AgeDemographic,
+  AnalyticsData,
+  AnalyticsInsights,
+  AnalyticsResponse,
+  AnalyticsSummary,
+  AnalyticsSummaryResponse,
+  DemographicsData,
+  DeviceDemographic,
+  GenderDemographic,
+  GeographicData,
+  PlayTrendData,
+} from "@/types/api";
 
 // Response types live in the central `@/types/api` module (#140); re-exported
 // here so existing imports from this service keep working.
-export type { AgeDemographic, AnalyticsData, AnalyticsInsights, AnalyticsResponse, AnalyticsSummary, AnalyticsSummaryResponse, DemographicsData, DeviceDemographic, GenderDemographic, GeographicData, PlayTrendData } from "@/types/api";
+export type {
+  AgeDemographic,
+  AnalyticsData,
+  AnalyticsInsights,
+  AnalyticsResponse,
+  AnalyticsSummary,
+  AnalyticsSummaryResponse,
+  DemographicsData,
+  DeviceDemographic,
+  GenderDemographic,
+  GeographicData,
+  PlayTrendData,
+} from "@/types/api";
 
 const generateStablePlayTrends = (days: number): PlayTrendData[] => {
   const firstDate = Date.UTC(2026, 4, 3);
@@ -69,8 +93,12 @@ export function getAnalyticsData(period: "last30days" | "last90days"): Analytics
       listenerGrowthPercentage: 14.7,
     },
     playTrends,
-    geographicDistribution: mockGeographicData,
-    demographics: mockDemographicsData,
+    geographicDistribution:
+      process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true" ? mockGeographicData : [],
+    demographics:
+      process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
+        ? mockDemographicsData
+        : { age: [], gender: [], device: [] },
     period,
     insights: {
       peakListeningHours: "7 PM and 11 PM local time, with a secondary peak around 12 PM",

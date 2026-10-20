@@ -14,7 +14,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import ArtistSocialLinksSection from "@/components/artist/ArtistSocialLinksSection";
 
 interface ArtistProfilePageProps {
-  params: { handle: string };
+  params: Promise<{ handle: string }>;
 }
 
 const profilePath = (handle: string) => `/artist/${encodeURIComponent(handle)}`;
@@ -50,8 +50,12 @@ const jsonLdScript = (data: unknown) =>
  * backend outage can't push thin pages into search results.
  */
 export async function generateMetadata({ params }: ArtistProfilePageProps): Promise<Metadata> {
-  const handle = safeDecode(params.handle);
+  const handle = safeDecode((await params).handle);
   const result = await fetchPublicArtistProfile(handle);
+  if (result.status === "not-found") notFound();
+  if (result.status === "private") {
+    return { title: "Private artist profile", robots: { index: false, follow: false } };
+  }
   const profile = result.status === "ok" ? result.profile : undefined;
 
   return generateArtistMetadata({
@@ -168,12 +172,20 @@ function ProfileHeader({ profile }: { profile: PublicArtistProfile }) {
 }
 
 export default async function ArtistProfilePage({ params }: ArtistProfilePageProps) {
-  const handle = safeDecode(params.handle);
+  const handle = safeDecode((await params).handle);
   const result = await fetchPublicArtistProfile(handle);
 
   // Only a definitive 404 from the API means the artist does not exist; an
   // unreachable API still renders a (noindex) shell rather than a 404.
   if (result.status === "not-found") notFound();
+  if (result.status === "private") {
+    return (
+      <main id="main-content" className="mx-auto max-w-3xl px-4 py-10 text-white">
+        <h1 className="text-2xl font-bold">Private artist profile</h1>
+        <p className="mt-3 text-gray-400">This artist has chosen to keep their profile private.</p>
+      </main>
+    );
+  }
 
   const profile: PublicArtistProfile =
     result.status === "ok"

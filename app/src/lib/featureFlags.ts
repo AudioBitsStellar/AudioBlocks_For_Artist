@@ -26,7 +26,7 @@ export const featureFlags = {
   useMockMessages: globalMock,
   /** Notification bell dropdown in the top header — read state is kept locally when true */
   useMockNotifications: globalMock,
-  /** On-chain activity stats (#466) — read live from Horizon when false */
+  /** On-chain activity stats (#466) — read from the backend Soroban indexer when false */
   useMockOnChainStats: globalMock,
   /**
    * EarningsRoyalties is already wired to a real endpoint (#47),
@@ -81,7 +81,7 @@ export interface FeatureFlagDefinition {
 export const FEATURE_FLAGS: Record<FeatureFlagName, FeatureFlagDefinition> = {
   artistOnchainAnalytics: {
     description:
-      "On-chain plays and sales from the subgraph, shown as a section of the analytics dashboard.",
+      "On-chain plays and sales from the backend Soroban indexer, shown as a section of the analytics dashboard.",
     rolloutPercentage: 0,
     allowlist: [],
   },
