@@ -4,7 +4,7 @@ export const AUTH_ENDPOINTS = {
 };
 
 export const USER_ENDPOINTS = {
-  PROFILE: "/artist/profile",
+  PROFILE: "/users/profile",
   UPDATE_PROFILE: "/artist/update-profile",
 };
 
@@ -12,6 +12,7 @@ export const ARTIST_UPLOAD_ENDPOINTS = {
   UPLOAD_COVER: "/song/upload/cover",
   UPLOAD_CHUNK: "/song/upload/chunk",
   UPLOAD_SONG: "/song/upload/finalize",
+  TRANSCRIBE_LYRICS: "/song/upload/transcribe-lyrics",
 };
 
 // Soroban on-chain endpoints: the backend only builds/relays transactions,
@@ -29,12 +30,6 @@ export const SONG_ONCHAIN_ENDPOINTS = {
   submitTransfer: (songId: string) => `/song/${songId}/onchain/submit-transfer`,
 };
 
-export const CONTRACT_UPGRADE_ENDPOINTS = {
-  PREPARE_UPGRADE: "/contract/onchain/prepare-upgrade",
-  SUBMIT_UPGRADE: "/contract/onchain/submit-upgrade",
-  GET_CONTRACT_INFO: (contractId: string) => `/contract/${contractId}/info`,
-};
-
 export const MERCH_ENDPOINTS = {
   LIST: "/artist/merches",
   CREATE: "/artist/merches",
@@ -48,7 +43,6 @@ export const EARNINGS_ENDPOINTS = {
   GET_EARNINGS: "/artist/earnings",
   GET_PLATFORM_REVENUE: "/artist/earnings/platforms",
   GET_PAYOUTS: "/artist/earnings/payouts",
-  WITHDRAW: "/artist/earnings/withdraw",
 };
 
 export const ARTIST_STATS_ENDPOINTS = {
@@ -62,11 +56,15 @@ export const DASHBOARD_TRANSACTION_ENDPOINTS = {
 export const DASHBOARD_COMMENT_ENDPOINTS = {
   LIST: "/artist/comments",
   CREATE: "/artist/comments",
+  SONG_COMMENTS: (songId: string | number) => `/songs/${songId}/comments`,
+  CREATE_SONG_COMMENT: (songId: string | number) => `/songs/${songId}/comments`,
 };
 
 export const COMMENT_MODERATION_ENDPOINTS = {
-  UPDATE: (id: string | number) => `/artist/comments/${id}/moderation`,
-  BULK: "/artist/comments/moderation/bulk",
+  REPORT: (id: string | number) => `/comments/${id}/report`,
+  DELETE: (id: string | number) => `/comments/${id}`,
+  UPDATE: (id: string | number) => `/comments/${id}`,
+  BULK: "/comments/moderation/bulk",
 };
 
 export const COLLABORATOR_ENDPOINTS = {
@@ -75,6 +73,17 @@ export const COLLABORATOR_ENDPOINTS = {
   RESEND: (id: string) => `/artist/collaborators/invites/${id}/resend`,
   REVOKE: (id: string) => `/artist/collaborators/invites/${id}`,
   ACCEPT: "/artist/collaborators/invites/accept",
+  SONG_COLLABORATORS: (songId: string) => `/song/${songId}/collaborators`,
+  SONG_COLLABORATOR: (songId: string, userId: string) => `/song/${songId}/collaborators/${userId}`,
+  DISPUTE_SPLIT: (songId: string) => `/song/${songId}/collaborators/dispute`,
+};
+
+export const TEAM_ENDPOINTS = {
+  LIST: "/artist/team",
+  INVITE: "/artist/team/invite",
+  UPDATE: (id: string) => `/artist/team/${id}`,
+  REMOVE: (id: string) => `/artist/team/${id}`,
+  ACCEPT: "/artist/team/accept-invite",
 };
 
 export const SECURITY_ENDPOINTS = {
@@ -95,11 +104,36 @@ export const FANS_ENGAGEMENT_ENDPOINTS = {
 
 export const SONG_ENDPOINTS = {
   UPDATE: (id: string | number) => `/song/${id}`,
+  TAGS: (id: string | number) => `/song/${id}/tags`,
+  TRANSCRIBE_LYRICS: (id: string | number) => `/song/${id}/lyrics/transcribe`,
+  DRAFT_DESCRIPTION: (id: string | number) => `/ai/studio/songs/${id}/description`,
+  VERSIONS: (id: string | number) => `/song/${id}/versions`,
+  REUPLOAD: (id: string | number) => `/song/${id}/versions`,
 };
 
+// Backend album resource is `/albums` (AlbumRoutes.ts), not `/artist/albums` (#528).
 export const ALBUM_ENDPOINTS = {
-  LIST: "/artist/albums",
-  CREATE: "/artist/albums",
+  LIST: "/albums",
+  LIST_FOR_ARTIST: (artistId: string) => `/albums?artistId=${encodeURIComponent(artistId)}`,
+  CREATE: "/albums",
+  GET: (albumId: string) => `/albums/${albumId}`,
+  /** Metadata and ordered track list (`trackIds`). */
+  UPDATE: (albumId: string) => `/albums/${albumId}`,
+  DELETE: (albumId: string) => `/albums/${albumId}`,
+};
+
+/**
+ * Artist verification (#524). Payload matches the backend ApplyVerificationDTO;
+ * admin review lives under `/admin/verifications`.
+ */
+export const VERIFICATION_ENDPOINTS = {
+  APPLY: "/artist/verification",
+  STATUS: "/artist/verification",
+};
+
+/** Server-recorded audit events for the artist workspace (#526). */
+export const AUDIT_LOG_ENDPOINTS = {
+  LIST: "/artist/audit-logs",
 };
 
 export const EVENTS_ENDPOINTS = {
@@ -120,9 +154,9 @@ export const MERCH_INVENTORY_ENDPOINTS = {
 };
 
 export const NOTIFICATION_ENDPOINTS = {
-  LIST: "/artist/notifications",
-  MARK_READ: (id: string) => `/artist/notifications/${id}/read`,
-  MARK_ALL_READ: "/artist/notifications/read-all",
+  LIST: "/notifications",
+  MARK_READ: (id: string) => `/notifications/${id}/read`,
+  MARK_ALL_READ: "/notifications/read-all",
 };
 
 // Public (unauthenticated) artist profile, read by the server-rendered

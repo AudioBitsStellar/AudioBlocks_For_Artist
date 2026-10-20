@@ -363,7 +363,7 @@ export default function EarningsRoyalties() {
       ) : chartData.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="h-80" aria-label="Earnings and royalties chart">
+        <div className="h-80" aria-hidden="true">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
               <defs>

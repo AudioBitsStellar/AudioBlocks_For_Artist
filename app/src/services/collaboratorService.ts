@@ -10,6 +10,8 @@
  */
 
 import { ROLES, type Role } from "@/types/role";
+import { COLLABORATOR_ENDPOINTS } from "@/api/api-endpoint";
+import { createApiClient } from "@/api/axios";
 
 export type InviteStatus = "pending" | "accepted" | "revoked";
 
@@ -33,7 +35,28 @@ export interface CreateInviteInput {
 export type CreateInviteResult =
   { ok: true; invite: CollaboratorInvite } | { ok: false; error: string };
 
-const STORAGE_KEY = "audioblocks:collaborators:v1";
+export interface SongCollaborator {
+  id: string;
+  songId: string;
+  userId: string;
+  role: string;
+  royaltyShare: number;
+  status?: string;
+  user?: {
+    id: string;
+    username: string;
+    name?: string;
+    stellarPublicKey?: string;
+  };
+}
+
+/**
+ * Collaborator management decision (issue #522):
+ * - Song-level collaborators are the canonical backend model (`SongCollaborator` via `/api/song/:id/collaborators`),
+ *   supporting royalty shares and dispute handling.
+ * - Workspace-level invites are maintained in-memory and transitioned to backend endpoints, removing browser localStorage.
+ */
+let inMemoryInvites: CollaboratorInvite[] = [];
 
 const ROLE_LABELS: Record<Role, string> = {
   owner: "Owner",
@@ -85,29 +108,75 @@ function isInvite(value: unknown): value is CollaboratorInvite {
   );
 }
 
-/** All invites, oldest first. Corrupted storage reads as an empty list. */
+/** All invites, oldest first. */
 export function listInvites(): CollaboratorInvite[] {
-  if (typeof window === "undefined") return [];
+  return inMemoryInvites.filter(isInvite);
+}
+
+function persist(invites: CollaboratorInvite[]): CollaboratorInvite[] {
+  inMemoryInvites = invites;
+  return invites;
+}
+
+/**
+ * Song-level collaborator backend API integrations (Issue #522).
+ */
+export async function listSongCollaborators(songId: string): Promise<SongCollaborator[]> {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isInvite);
+    const client = await createApiClient();
+    const res = await client.get<{ success: boolean; data: SongCollaborator[] }>(
+      COLLABORATOR_ENDPOINTS.SONG_COLLABORATORS(songId)
+    );
+    return res.data?.data || [];
   } catch {
     return [];
   }
 }
 
-function persist(invites: CollaboratorInvite[]): CollaboratorInvite[] {
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(invites));
-    } catch {
-      // storage unavailable (private mode) – callers still get the result
-    }
+export async function addSongCollaborator(
+  songId: string,
+  payload: { userId?: string; username?: string; stellarAddress?: string; role: string; royaltyShare: number }
+): Promise<SongCollaborator | null> {
+  try {
+    const client = await createApiClient();
+    const res = await client.post<{ success: boolean; data: SongCollaborator }>(
+      COLLABORATOR_ENDPOINTS.SONG_COLLABORATORS(songId),
+      payload
+    );
+    return res.data?.data;
+  } catch {
+    return null;
   }
-  return invites;
+}
+
+export async function updateSongCollaborator(
+  songId: string,
+  userId: string,
+  payload: { role?: string; royaltyShare?: number }
+): Promise<SongCollaborator | null> {
+  try {
+    const client = await createApiClient();
+    const res = await client.put<{ success: boolean; data: SongCollaborator }>(
+      COLLABORATOR_ENDPOINTS.SONG_COLLABORATOR(songId, userId),
+      payload
+    );
+    return res.data?.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function removeSongCollaborator(
+  songId: string,
+  userId: string
+): Promise<boolean> {
+  try {
+    const client = await createApiClient();
+    await client.delete(COLLABORATOR_ENDPOINTS.SONG_COLLABORATOR(songId, userId));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

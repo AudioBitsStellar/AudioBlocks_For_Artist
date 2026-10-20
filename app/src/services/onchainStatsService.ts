@@ -2,8 +2,89 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchIndexedActivity, type IndexedActivity } from "@/lib/onchainIndexer";
 import { featureFlags } from "@/lib/featureFlags";
 import { type HorizonOperation, type HorizonTransaction } from "@/lib/horizon";
+import { useMock } from "@/__mocks__/loadMock";
+import {
+  fetchAccountBalances,
+  fetchAccountOperations,
+  fetchAccountTransactions,
+  fetchXlmBalance,
+  type HorizonOperation,
+  type HorizonTransaction,
+} from "@/lib/horizon";
 import { getActiveNetworkId } from "@/lib/stellarNetwork";
 import { useStellarWallet } from "@/components/common/wallet/useStellarWallet";
+
+export interface MintStatusResponse {
+  status: 'PENDING' | 'MINTED' | 'FAILED';
+  tokenId?: string;
+  txHash?: string;
+  error?: string;
+}
+
+export class OnchainService {
+  /**
+   * Poll Soroban RPC transaction status for a pending mint
+   */
+  public static async pollMintStatus(txHash: string): Promise<MintStatusResponse> {
+    try {
+      const response = await fetch(process.env.REACT_APP_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'getTransaction',
+          params: { hash: txHash },
+        }),
+      });
+
+      const data = await response.json();
+      const status = data?.result?.status;
+
+      if (status === 'SUCCESS') {
+        return {
+          status: 'MINTED',
+          tokenId: data.result.returnValue ? Buffer.from(data.result.returnValue, 'base64').toString() : 'token_id_placeholder',
+          txHash,
+        };
+      } else if (status === 'FAILED' || status === 'NOT_FOUND') {
+        // If not found after timeout or explicitly failed
+        return {
+          status: status === 'FAILED' ? 'FAILED' : 'PENDING',
+          txHash,
+          error: data?.result?.resultXdr ? 'Transaction execution failed' : undefined,
+        };
+      }
+
+      return { status: 'PENDING', txHash };
+    } catch (err) {
+      // Network hiccup during poll; keep pending until definitive resolution
+      return { status: 'PENDING', txHash };
+    }
+  }
+
+  /**
+   * Save pending mint state to localStorage for resume support across reloads
+   */
+  public static persistPendingMint(songId: string, txHash: string, networkId: string): void {
+    localStorage.setItem(`pending_mint_${networkId}_${songId}`, JSON.stringify({ txHash, timestamp: Date.now() }));
+  }
+
+  public static getStoredPendingMint(songId: string, networkId: string): string | null {
+    const stored = localStorage.getItem(`pending_mint_${networkId}_${songId}`);
+    if (!stored) return null;
+    try {
+      const parsed = JSON.parse(stored);
+      return parsed.txHash || null;
+    } catch {
+      return null;
+    }
+  }
+
+  public static clearStoredPendingMint(songId: string, networkId: string): void {
+    localStorage.removeItem(`pending_mint_${networkId}_${songId}`);
+  }
+}
 
 export interface HeldAsset {
   /** `"native"` for XLM, otherwise the trustline's asset code. */
@@ -219,6 +300,8 @@ export function summarizeIndexedActivity(
 export function useOnChainStats(): UseOnChainStatsResult {
   const { address } = useStellarWallet();
   const isMock = featureFlags.useMockOnChainStats;
+  const isMock = featureFlags.useMockOnChainStats || !address;
+  const onChainMocks = useMock("onchainStats", isMock);
   const [fetched, setFetched] = useState<OnChainActivitySummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -260,6 +343,10 @@ export function useOnChainStats(): UseOnChainStatsResult {
     address: address ?? null,
     isLoading: Boolean(address) && !isMock && isLoading,
     error: address && !isMock ? error : null,
+    summary: isMock ? (onChainMocks?.MOCK_ONCHAIN_SUMMARY ?? null) : fetched,
+    address: address ?? null,
+    isLoading: isLoading || (isMock && !onChainMocks),
+    error,
     isMock,
     refresh: load,
   };

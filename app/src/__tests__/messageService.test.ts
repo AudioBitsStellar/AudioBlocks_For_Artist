@@ -1,11 +1,20 @@
-import { describe, it, expect } from "vitest";
+import { beforeAll, describe, it, expect, vi } from "vitest";
 import { getUnreadTotal as getFanUnreadTotal } from "@/services/fanMessagingService";
 import {
   getConversations,
   getConversation,
   getTotalUnreadCount,
+  loadMockConversations,
   sendMessage,
 } from "@/services/messageService";
+
+// Artists-tab conversations only exist as mock fixtures.
+vi.mock("@/lib/featureFlags", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/featureFlags")>();
+  return { ...actual, featureFlags: { ...actual.featureFlags, useMockMessages: true } };
+});
+
+beforeAll(() => loadMockConversations());
 
 describe("messageService", () => {
   it("returns only fan conversations for type 'fan'", () => {

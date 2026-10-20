@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 
 export interface DashboardWidget {
   id: string;
@@ -51,10 +51,22 @@ function loadSaved(): { widgets: DashboardWidget[]; theme: DashboardTheme } | nu
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
   } catch {
     return null;
   }
+}
+
+function mergeWidgets(saved: DashboardWidget[] | undefined): DashboardWidget[] {
+  if (!saved || !Array.isArray(saved)) return DEFAULT_WIDGETS;
+  const savedMap = new Map(saved.map((w) => [w.id, w]));
+  const merged = DEFAULT_WIDGETS.map((def) => {
+    const savedWidget = savedMap.get(def.id);
+    return savedWidget ? { ...def, visible: savedWidget.visible, order: savedWidget.order } : def;
+  });
+  return merged.sort((a, b) => a.order - b.order);
 }
 
 function saveToDisk(widgets: DashboardWidget[], theme: DashboardTheme) {
@@ -67,9 +79,18 @@ function saveToDisk(widgets: DashboardWidget[], theme: DashboardTheme) {
 }
 
 export function DashboardCustomizationProvider({ children }: { children: ReactNode }) {
-  const saved = loadSaved();
-  const [widgets, setWidgets] = useState<DashboardWidget[]>(saved?.widgets ?? DEFAULT_WIDGETS);
-  const [theme, setThemeState] = useState<DashboardTheme>(saved?.theme ?? DEFAULT_THEME);
+  const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_WIDGETS);
+  const [theme, setThemeState] = useState<DashboardTheme>(DEFAULT_THEME);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  useEffect(() => {
+    const saved = loadSaved();
+    if (saved) {
+      setWidgets(mergeWidgets(saved.widgets));
+      setThemeState(saved.theme ?? DEFAULT_THEME);
+    }
+    setHasHydrated(true);
+  }, []);
 
   const toggleWidget = useCallback(
     (id: string) => {

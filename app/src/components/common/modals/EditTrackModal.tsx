@@ -3,13 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, Tag as TagIcon, X } from "lucide-react";
 import Modal from "@/components/shared/Modal";
-import { trackEditSchema } from "@/types/formValidation";
+import {
+  LYRICS_MAX_LENGTH,
+  normalizeSongTag,
+  SONG_LANGUAGES,
+  TAG_MAX_COUNT,
+  TAG_MAX_LENGTH,
+  trackEditSchema,
+} from "@/types/formValidation";
 import {
   describeVisibility,
   TRACK_VISIBILITY_OPTIONS,
   type TrackVisibility,
 } from "@/services/trackVisibilityService";
+import useTrackServices, { formatAiServiceError } from "@/services/trackService";
 import { MUSIC_GENRES } from "@/components/shared/music_genre";
 
 /** Max description length, matching the upload form (#396). */
@@ -25,6 +34,11 @@ export interface EditableTrackFields {
   genre: string;
   /** "" when not set. */
   description: string;
+  language?: string;
+  lyrics?: string;
+  lyricsRightsConfirmed?: boolean;
+  tags?: string[];
+  aiDescriptionApproved?: boolean;
 }
 
 interface EditTrackModalProps {
@@ -39,9 +53,18 @@ interface EditTrackModalProps {
     visibility: TrackVisibility;
     genre?: string;
     description?: string;
+    language?: string;
+    lyrics?: string;
+    lyricsRightsConfirmed?: boolean;
+    tags?: string[];
+    aiGeneratedDescription?: string;
+    aiDescriptionApproved?: boolean;
   } | null;
   /** Album names offered in the album picker. */
   albumOptions: string[];
+  /** Whether the artist has opted in to AI Studio features. Defaults to true when unspecified. */
+  aiStudioEnabled?: boolean;
+  onEnableAiStudio?: () => void;
   /** Called with the validated values. The modal closes right after, so callers should apply the edit optimistically. */
   onSave: (values: EditableTrackFields) => void;
 }
@@ -51,13 +74,32 @@ export default function EditTrackModal({
   onOpenChange,
   track,
   albumOptions,
+  aiStudioEnabled = true,
+  onEnableAiStudio,
   onSave,
 }: EditTrackModalProps) {
+  const { useDraftTrackDescription, useTranscribeTrackLyrics } = useTrackServices();
+  const draftDescriptionMutation = useDraftTrackDescription(track?.id ?? 0);
+  const transcribeLyricsMutation = useTranscribeTrackLyrics(track?.id ?? 0);
+
+  const [aiOptedIn, setAiOptedIn] = useState(aiStudioEnabled);
+  const [aiDraftText, setAiDraftText] = useState<string | null>(
+    track?.aiGeneratedDescription ?? null
+  );
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState("");
+  const [tagError, setTagError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAiOptedIn(aiStudioEnabled);
+  }, [aiStudioEnabled]);
+
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<EditableTrackFields>({
     resolver: zodResolver(trackEditSchema),
@@ -68,6 +110,11 @@ export default function EditTrackModal({
       visibility: track?.visibility ?? "private",
       genre: track?.genre ?? "",
       description: track?.description ?? "",
+      language: track?.language ?? "",
+      lyrics: track?.lyrics ?? "",
+      lyricsRightsConfirmed: track?.lyricsRightsConfirmed ?? Boolean(track?.lyrics?.trim()),
+      tags: track?.tags ?? [],
+      aiDescriptionApproved: track?.aiDescriptionApproved ?? false,
     },
   });
 
@@ -85,7 +132,16 @@ export default function EditTrackModal({
         visibility: current.visibility,
         genre: current.genre ?? "",
         description: current.description ?? "",
+        language: current.language ?? "",
+        lyrics: current.lyrics ?? "",
+        lyricsRightsConfirmed: current.lyricsRightsConfirmed ?? Boolean(current.lyrics?.trim()),
+        tags: current.tags ?? [],
+        aiDescriptionApproved: current.aiDescriptionApproved ?? false,
       });
+      setAiDraftText(current.aiGeneratedDescription ?? null);
+      setAiError(null);
+      setTagInput("");
+      setTagError(null);
     }
   }, [open, trackId, reset]);
 
@@ -119,6 +175,93 @@ export default function EditTrackModal({
   const selectedVisibility = watch("visibility");
   const titleLength = (watch("title") ?? "").length;
   const descriptionLength = (watch("description") ?? "").length;
+  const lyricsValue = watch("lyrics") ?? "";
+  const selectedTags = watch("tags") ?? [];
+
+  const handleAddTag = (raw: string) => {
+    const normalized = normalizeSongTag(raw);
+    if (!normalized) return;
+    if (normalized.length > TAG_MAX_LENGTH) {
+      setTagError(`Tag must be ${TAG_MAX_LENGTH} characters or less.`);
+      return;
+    }
+    if (selectedTags.includes(normalized)) {
+      setTagError(`Tag "${normalized}" is already added.`);
+      return;
+    }
+    if (selectedTags.length >= TAG_MAX_COUNT) {
+      setTagError(`Maximum limit of ${TAG_MAX_COUNT} tags reached.`);
+      return;
+    }
+    setTagError(null);
+    setValue("tags", [...selectedTags, normalized], { shouldDirty: true, shouldValidate: true });
+    setTagInput("");
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTagError(null);
+    setValue(
+      "tags",
+      selectedTags.filter((t) => t !== tagToRemove),
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      handleAddTag(tagInput);
+    } else if (e.key === "Backspace" && !tagInput && selectedTags.length > 0) {
+      e.preventDefault();
+      handleRemoveTag(selectedTags[selectedTags.length - 1]);
+    }
+  };
+
+  const handleDraftDescription = async () => {
+    setAiError(null);
+    try {
+      const res = await draftDescriptionMutation.mutateAsync({});
+      const draft = res?.data?.description ?? res?.description ?? "";
+      if (draft) {
+        setAiDraftText(draft);
+      }
+    } catch (err) {
+      setAiError(formatAiServiceError(err));
+    }
+  };
+
+  const handleApproveAiDraft = () => {
+    if (aiDraftText === null) return;
+    setValue("description", aiDraftText.slice(0, DESCRIPTION_MAX), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setValue("aiDescriptionApproved", true, { shouldDirty: true });
+    setAiDraftText(null);
+  };
+
+  const handleDiscardAiDraft = () => {
+    setAiDraftText(null);
+    setValue("aiDescriptionApproved", false, { shouldDirty: true });
+  };
+
+  const handleTranscribeLyrics = async () => {
+    setAiError(null);
+    try {
+      const res = await transcribeLyricsMutation.mutateAsync({
+        language: watch("language") || undefined,
+      });
+      const draftLyrics = res?.data?.lyrics ?? res?.lyrics ?? "";
+      if (draftLyrics) {
+        setValue("lyrics", draftLyrics, { shouldDirty: true, shouldValidate: true });
+        if (res?.data?.language && !watch("language")) {
+          setValue("language", res.data.language, { shouldDirty: true });
+        }
+      }
+    } catch (err) {
+      setAiError(formatAiServiceError(err));
+    }
+  };
 
   // Keep the track's current album selectable even if it isn't in the list.
   const albums =
@@ -241,18 +384,104 @@ export default function EditTrackModal({
           )}
         </div>
 
+        {/* Tags Editor */}
+        <div className="space-y-2">
+          <label htmlFor="edit-track-tag-input" className="text-sm font-medium text-white">
+            Tags (Max {TAG_MAX_COUNT})
+          </label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <TagIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <input
+                id="edit-track-tag-input"
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                disabled={selectedTags.length >= TAG_MAX_COUNT}
+                placeholder="Add tag and press Enter..."
+                className="w-full bg-[#18181B] border border-gray-700 text-white pl-9 pr-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:outline-none disabled:opacity-50"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => handleAddTag(tagInput)}
+              disabled={!tagInput.trim() || selectedTags.length >= TAG_MAX_COUNT}
+              className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-800 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-1"
+            >
+              <Plus className="h-4 w-4" /> Add
+            </button>
+          </div>
+          {tagError && (
+            <p className="text-xs text-red-400" role="alert">
+              {tagError}
+            </p>
+          )}
+          {selectedTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1" aria-label="Selected Tags">
+              {selectedTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-white/10 text-pink-300 rounded-full text-xs font-medium border border-pink-500/20"
+                >
+                  #{tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    aria-label={`Remove tag ${tag}`}
+                    className="hover:text-white transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label htmlFor="edit-track-description" className="text-sm font-medium text-white">
               Description
             </label>
-            <span
-              className={`text-xs ${descriptionLength > DESCRIPTION_MAX ? "text-red-500" : "text-gray-400"}`}
-              aria-live="polite"
-            >
-              {descriptionLength}/{DESCRIPTION_MAX}
-            </span>
+            <div className="flex items-center gap-3">
+              {aiOptedIn && (
+                <button
+                  type="button"
+                  onClick={handleDraftDescription}
+                  disabled={draftDescriptionMutation.isPending}
+                  className="text-xs font-medium text-[#D2045B] hover:underline disabled:opacity-50"
+                >
+                  {draftDescriptionMutation.isPending
+                    ? "Drafting..."
+                    : "Draft description with AI"}
+                </button>
+              )}
+              <span
+                className={`text-xs ${descriptionLength > DESCRIPTION_MAX ? "text-red-500" : "text-gray-400"}`}
+                aria-live="polite"
+              >
+                {descriptionLength}/{DESCRIPTION_MAX}
+              </span>
+            </div>
           </div>
+
+          {!aiOptedIn && (
+            <div className="flex items-center justify-between rounded-lg border border-[#2A2A2A] bg-[#161616] px-3 py-2 text-xs text-gray-300">
+              <span>Enable AI Studio to draft descriptions and transcribe lyrics.</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAiOptedIn(true);
+                  onEnableAiStudio?.();
+                }}
+                className="font-semibold text-[#D2045B] hover:underline"
+              >
+                Enable AI Studio
+              </button>
+            </div>
+          )}
+
           <textarea
             id="edit-track-description"
             rows={3}
@@ -267,7 +496,122 @@ export default function EditTrackModal({
               {errors.description.message}
             </p>
           )}
+
+          {aiDraftText !== null && (
+            <div className="space-y-2 rounded-lg border border-[#885FA8]/50 bg-[#161616] p-3">
+              <label htmlFor="edit-track-ai-draft" className="block text-xs font-medium text-white">
+                AI draft
+              </label>
+              <textarea
+                id="edit-track-ai-draft"
+                rows={3}
+                value={aiDraftText}
+                onChange={(e) => setAiDraftText(e.target.value)}
+                className="w-full resize-none rounded-lg border border-[#2A2A2A] bg-[#111111] px-3 py-2 text-sm text-white focus:border-[#885FA8] focus:outline-none"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleDiscardAiDraft}
+                  className="rounded-full px-3 py-1 text-xs font-semibold text-[#A3A3A3] hover:text-white"
+                >
+                  Discard
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApproveAiDraft}
+                  className="rounded-full bg-[#D2045B] px-4 py-1 text-xs font-semibold text-white hover:bg-[#B8043F]"
+                >
+                  Approve
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Language & Lyrics */}
+        <div className="space-y-2">
+          <label htmlFor="edit-track-language" className="text-sm font-medium text-white">
+            Language
+          </label>
+          <select
+            id="edit-track-language"
+            {...register("language")}
+            className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none"
+          >
+            <option value="">Not set</option>
+            {SONG_LANGUAGES.map((lang) => (
+              <option key={lang.value} value={lang.value}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label htmlFor="edit-track-lyrics" className="text-sm font-medium text-white">
+              Lyrics
+            </label>
+            <div className="flex items-center gap-3">
+              {aiOptedIn && (
+                <button
+                  type="button"
+                  onClick={handleTranscribeLyrics}
+                  disabled={transcribeLyricsMutation.isPending}
+                  className="text-xs font-medium text-[#D2045B] hover:underline disabled:opacity-50"
+                >
+                  {transcribeLyricsMutation.isPending ? "Transcribing..." : "Transcribe with AI"}
+                </button>
+              )}
+              <span className="text-xs text-gray-400">
+                {lyricsValue.length}/{LYRICS_MAX_LENGTH}
+              </span>
+            </div>
+          </div>
+          <textarea
+            id="edit-track-lyrics"
+            rows={4}
+            maxLength={LYRICS_MAX_LENGTH}
+            {...register("lyrics")}
+            placeholder="Paste or type song lyrics"
+            aria-invalid={errors.lyrics ? "true" : "false"}
+            aria-describedby={errors.lyrics ? "edit-track-lyrics-error" : undefined}
+            className={`w-full resize-none rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.lyrics ? "border-red-500" : "border-[#2A2A2A]"}`}
+          />
+          {errors.lyrics && (
+            <p id="edit-track-lyrics-error" role="alert" className="text-xs text-red-500">
+              {errors.lyrics.message}
+            </p>
+          )}
+
+          {Boolean(lyricsValue.trim()) && (
+            <div className="space-y-1 pt-1">
+              <label className="flex items-start gap-2 text-xs text-gray-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("lyricsRightsConfirmed")}
+                  className="mt-0.5 rounded border-[#2A2A2A] bg-[#161616] text-[#D2045B] focus:ring-[#885FA8]"
+                />
+                <span>
+                  I own or have licensed the rights to publish these lyrics{" "}
+                  <span className="text-[#D2045B]">*</span>
+                </span>
+              </label>
+              {errors.lyricsRightsConfirmed && (
+                <p className="text-xs text-red-500" role="alert">
+                  {errors.lyricsRightsConfirmed.message}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {aiError && (
+          <p role="alert" className="text-xs text-red-500">
+            {aiError}
+          </p>
+        )}
 
         {confirmDiscard && (
           <div

@@ -26,12 +26,19 @@ const getAvatarColor = (comment: DashboardComment, index: number) => {
   return avatarColors[index % avatarColors.length];
 };
 
-export default function Comments() {
+interface CommentsProps {
+  songId?: string;
+  isArtist?: boolean;
+}
+
+export default function Comments({ songId, isArtist = true }: CommentsProps = {}) {
   const [draft, setDraft] = useState("");
   const [attachment, setAttachment] = useState<File | undefined>();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { useGetComments, useCreateComment } = useCommentServices();
-  const { data, isLoading, isError, refetch } = useGetComments();
+  const { useGetComments, useGetSongComments, useCreateComment } = useCommentServices();
+  const globalCommentsQuery = useGetComments(!songId);
+  const songCommentsQuery = useGetSongComments(songId ?? "", Boolean(songId));
+  const { data, isLoading, isError, refetch } = songId ? songCommentsQuery : globalCommentsQuery;
   const createComment = useCreateComment();
   const comments = data?.data ?? [];
   const isNearLimit = draft.length >= COMMENT_WARN_THRESHOLD;
@@ -60,7 +67,7 @@ export default function Comments() {
     if (!comment) return;
 
     try {
-      await createComment.mutateAsync({ comment, attachment });
+      await createComment.mutateAsync({ comment, attachment, songId, isArtist });
       setDraft("");
       setAttachment(undefined);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -102,6 +109,11 @@ export default function Comments() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-white font-semibold text-sm">{sanitize(comment.name)}</span>
+                  {comment.isArtist && (
+                    <span className="rounded bg-[#D2045B]/20 text-[#D2045B] px-1.5 py-0.5 text-xs font-semibold">
+                      Artist
+                    </span>
+                  )}
                   <span className="text-gray-400 text-sm">{formatCommentTime(comment.time)}</span>
                 </div>
                 <p className="text-gray-300 text-sm">{sanitize(comment.comment)}</p>

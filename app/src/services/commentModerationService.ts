@@ -9,6 +9,9 @@
  * Pure functions – no React deps so it can be tested in isolation.
  */
 
+import { COMMENT_MODERATION_ENDPOINTS } from "@/api/api-endpoint";
+import { createApiClient } from "@/api/axios";
+
 export type ModerationStatus = "visible" | "hidden" | "flagged" | "removed";
 
 export interface ModerationRecord {
@@ -26,54 +29,59 @@ export const MODERATION_STATUS_LABELS: Record<ModerationStatus, string> = {
   removed: "Removed",
 };
 
-const STORAGE_KEY = "audioblocks:comment-moderation:v1";
+/**
+ * In-memory moderation map — removing localStorage persistence (#537).
+ * Real moderation decisions now flow to the backend flag/delete endpoints.
+ */
+let inMemoryModeration: ModerationMap = {};
 
 function normalizeId(id: string | number): string {
   return String(id);
 }
 
-/** Full moderation map keyed by comment id. Corrupted storage reads as empty. */
+/** Full moderation map keyed by comment id. */
 export function getModerationMap(): ModerationMap {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-
-    const map: ModerationMap = {};
-    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-      if (!value || typeof value !== "object") continue;
-      const record = value as Partial<ModerationRecord>;
-      if (
-        record.status === "visible" ||
-        record.status === "hidden" ||
-        record.status === "flagged" ||
-        record.status === "removed"
-      ) {
-        map[key] = {
-          status: record.status,
-          moderatedAt:
-            typeof record.moderatedAt === "string" ? record.moderatedAt : new Date().toISOString(),
-          reason: typeof record.reason === "string" ? record.reason : undefined,
-        };
-      }
-    }
-    return map;
-  } catch {
-    return {};
-  }
+  return { ...inMemoryModeration };
 }
 
 function persist(map: ModerationMap): ModerationMap {
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-    } catch {
-      // storage unavailable (private mode) – callers still get the result
-    }
-  }
+  inMemoryModeration = map;
   return map;
+}
+
+/**
+ * Report a comment to platform moderators via the backend flag endpoint.
+ */
+export async function reportCommentToBackend(
+  id: string | number,
+  reason: string = "Reported by artist"
+): Promise<boolean> {
+  try {
+    const client = await createApiClient();
+    await client.post(COMMENT_MODERATION_ENDPOINTS.REPORT(id), { reason });
+    setModerationStatus(id, "flagged", reason);
+    return true;
+  } catch {
+    setModerationStatus(id, "flagged", reason);
+    return false;
+  }
+}
+
+/**
+ * Delete a comment on an artist's song via the backend delete endpoint.
+ */
+export async function deleteCommentOnBackend(
+  id: string | number
+): Promise<boolean> {
+  try {
+    const client = await createApiClient();
+    await client.delete(COMMENT_MODERATION_ENDPOINTS.DELETE(id));
+    removeComment(id);
+    return true;
+  } catch {
+    removeComment(id);
+    return false;
+  }
 }
 
 /** Effective status for a single comment; anything unknown is "visible". */

@@ -33,6 +33,7 @@ const earningsApiResponse = {
 
 type FailureMode = "none" | "http";
 let failureMode: FailureMode;
+let earningsPayload = earningsApiResponse;
 let holdResponse: boolean;
 let requests: InternalAxiosRequestConfig[];
 let resolveHeldResponse: (() => void) | undefined;
@@ -66,13 +67,13 @@ function apiError(config: InternalAxiosRequestConfig): AxiosError {
 async function handleRequest(config: InternalAxiosRequestConfig): Promise<AxiosResponse> {
   if (holdResponse) {
     return new Promise((resolve) => {
-      resolveHeldResponse = () => resolve(response(config, earningsApiResponse));
+      resolveHeldResponse = () => resolve(response(config, earningsPayload));
     });
   }
 
   if (failureMode === "http") throw apiError(config);
   if (config.method?.toUpperCase() === "GET" && config.url === "/artist/earnings") {
-    return response(config, earningsApiResponse);
+    return response(config, earningsPayload);
   }
 
   throw new AxiosError(`No mock route for ${config.method} ${config.url}`, undefined, config);
@@ -108,6 +109,7 @@ function readBlob(blob: Blob): Promise<string> {
 
 beforeEach(() => {
   failureMode = "none";
+  earningsPayload = earningsApiResponse;
   holdResponse = false;
   requests = [];
   resolveHeldResponse = undefined;
@@ -212,6 +214,20 @@ describe("EarningsRoyalties integration", () => {
       "Month,Earnings,Royalties\r\nJan,800,600\r\nFeb,950,700\r\nMar,1100,900\r\nApr,1300,1050\r\nMay,1500,1200\r\nJun,1800,1400"
     );
     expect(revokedUrls).toEqual(["blob:earnings-report"]);
+  });
+
+  it("exports a header-only CSV when there is no earnings data", async () => {
+    earningsPayload = {
+      success: true,
+      data: { totalEarnings: 0, comparedToLastMonth: 0, data: [] },
+    };
+    renderEarnings();
+
+    expect(await screen.findByText("No earnings data yet")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Export earnings and royalties as CSV" }));
+
+    expect(downloadedAnchor?.download).toMatch(/^earnings_\d{4}-\d{2}\.csv$/);
+    expect(await readBlob(exportedBlob!)).toBe("Month,Earnings,Royalties");
   });
 
   it("filters the exported data to the selected date range", async () => {

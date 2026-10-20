@@ -11,6 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import NotificationBell from "@/components/NotificationBell";
+import { loadMock } from "@/__mocks__/loadMock";
 import { Sidebar } from "@/components/Sidebar";
 import { analytics } from "@/lib/analytics";
 
@@ -98,17 +99,21 @@ describe("analytics façade", () => {
 });
 
 describe("NotificationBell", () => {
-  const renderBell = () => {
+  const renderBell = async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    return render(
+    render(
       <QueryClientProvider client={qc}>
         <NotificationBell />
       </QueryClientProvider>
     );
+    // Let `useMock` hand the notification fixtures to the hook.
+    await act(async () => {
+      await loadMock("notifications");
+    });
   };
 
-  it("tracks opening the panel with the unread count at that moment", () => {
-    renderBell();
+  it("tracks opening the panel with the unread count at that moment", async () => {
+    await renderBell();
 
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: /notifications/i }));
@@ -117,8 +122,8 @@ describe("NotificationBell", () => {
     expect(mockTrack).toHaveBeenCalledWith("notifications_panel_opened", { unreadCount: 4 });
   });
 
-  it("tracks which kind of notification was clicked, without its text", () => {
-    renderBell();
+  it("tracks which kind of notification was clicked, without its text", async () => {
+    await renderBell();
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: /notifications/i }));
     });
@@ -133,8 +138,8 @@ describe("NotificationBell", () => {
     expect(JSON.stringify(call?.[1])).not.toContain("Tomothy");
   });
 
-  it("tracks marking everything read", () => {
-    renderBell();
+  it("tracks marking everything read", async () => {
+    await renderBell();
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: /notifications/i }));
     });

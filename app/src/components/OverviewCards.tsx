@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { featureFlags } from "@/lib/featureFlags";
-import { MOCK_OVERVIEW_CARDS } from "@/__mocks__/mockData";
+import { useMock } from "@/__mocks__/loadMock";
 import MockDataBadge from "@/components/MockDataBadge";
 import useOverviewServices, {
   type OverviewData,
   type StatsWindow,
 } from "@/services/overviewService";
 import OverviewRecentActivity from "./OverviewRecentActivity";
+import useOverviewServices from "@/services/overviewService";
+import type { OverviewKpi } from "@/types";
 
 interface KpiCard {
   title: string;
@@ -17,6 +19,11 @@ interface KpiCard {
 }
 
 function kpiToCards(data: OverviewData): KpiCard[] {
+function formatCurrency(n: number): string {
+  return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function kpiToCards(data: OverviewKpi): KpiCard[] {
   return [
     { title: "Songs Published", value: String(data.songsPublished), isFirst: true },
     { title: "Total Plays", value: data.totalPlays.toLocaleString("en-US"), isFirst: false },
@@ -160,6 +167,12 @@ function LiveOverviewCards({ window }: { window: StatsWindow }) {
   return <CardGrid cards={kpiToCards(data.data)} isMock={false} />;
 }
 
+function MockOverviewCards() {
+  const mocks = useMock("overview");
+  if (!mocks) return <OverviewCardsSkeleton />;
+  return <CardGrid cards={kpiToCards(mocks.MOCK_OVERVIEW_KPI)} isMock />;
+}
+
 export default function OverviewCards() {
   const [window, setWindow] = useState<StatsWindow>("30d");
   return (
@@ -186,6 +199,10 @@ export default function OverviewCards() {
       {featureFlags.useMockOverviewCards ? null : <OverviewRecentActivity window={window} />}
     </section>
   );
+  if (featureFlags.useMockOverviewCards) {
+    return <MockOverviewCards />;
+  }
+  return <LiveOverviewCards />;
 }
 
 export { OverviewCards };

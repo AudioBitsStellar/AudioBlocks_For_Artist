@@ -135,7 +135,7 @@ AudioBlocks_For_Artist/
 │   │   ├── utils/           # Helper functions
 │   │   ├── theme/           # Theme configuration
 │   │   ├── __tests__/       # Unit and integration tests
-│   │   └── __mocks__/       # Test mocks
+│   │   └── __mocks__/       # Mock-mode fixtures, loaded lazily via loadMock.ts
 │   ├── e2e/                 # Playwright E2E tests
 │   ├── .storybook/          # Storybook configuration
 │   ├── package.json
@@ -183,7 +183,7 @@ AudioBlocks_For_Artist/
 - **[Playwright 1](https://playwright.dev/)** - E2E testing
 
 ### Dev Tools
-- **[Storybook 8](https://storybook.js.org/)** - Component development environment
+- **[Storybook 9](https://storybook.js.org/)** - Component development environment
 - **[ESLint 9](https://eslint.org/)** - Linting
 - **[Prettier 3](https://prettier.io/)** - Code formatting
 - **[Husky 9](https://typicode.github.io/husky/)** - Git hooks
@@ -191,6 +191,7 @@ AudioBlocks_For_Artist/
 
 ### Monitoring
 - **[@sentry/nextjs 9](https://sentry.io/)** - Error tracking and performance monitoring
+- **[web-vitals](https://github.com/GoogleChrome/web-vitals)** - Core Web Vitals (LCP, FID, CLS, TTFB) reporting; see [`app/src/lib/webVitals.ts`](app/src/lib/webVitals.ts)
 
 ## 🏛️ Architecture
 
@@ -317,7 +318,6 @@ npm run storybook:build
 | `Dashboard/MyMusicContent` | Music library management surface |
 | `Dashboard/MyAlbums` | Album grid |
 | `Dashboard/MerchesContent` | Merchandise catalog manager |
-| `Web3/ContractUpgradePanel` | Soroban contract upgrade admin panel (#295) |
 
 Stories live alongside their components as `ComponentName.stories.tsx` inside `app/src/components/`.
 
@@ -359,24 +359,12 @@ The artist dashboard integrates with Stellar via the [Freighter browser wallet](
 curl "https://friendbot.stellar.org?addr=<YOUR_G_ADDRESS>"
 ```
 
-### Soroban Contract Upgrade (Admin Only)
+### Soroban Contract Upgrades
 
-Admin users can upgrade Soroban smart contracts in-place using the `ContractUpgradePanel`:
-
-```tsx
-import ContractUpgradePanel from "@/components/ContractUpgradePanel";
-import { signTransactionXdr } from "@stellar/freighter-api";
-
-<ContractUpgradePanel
-  contractId="CDLZFC..."           // Target contract (C-address)
-  adminAddress={connectedAddress}  // Must match on-chain admin
-  onSign={(xdr, { networkPassphrase }) =>
-    signTransactionXdr(xdr, { networkPassphrase })
-  }
-/>
-```
-
-See [`docs/SOROBAN_CONTRACT_UPGRADE_DESIGN.md`](docs/SOROBAN_CONTRACT_UPGRADE_DESIGN.md) for the full upgrade flow, Rust contract interface, and API endpoint details.
+Contract upgrades are a platform deployer/admin operation and are not part of the
+artist dashboard (#530). See
+[`docs/SOROBAN_CONTRACT_UPGRADE_DESIGN.md`](docs/SOROBAN_CONTRACT_UPGRADE_DESIGN.md)
+for the contract-level design.
 
 ---
 

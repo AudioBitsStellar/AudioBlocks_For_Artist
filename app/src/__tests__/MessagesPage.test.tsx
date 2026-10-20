@@ -2,6 +2,12 @@ import { describe, it, expect, beforeAll, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import MessagesPage from "@/app/dashboard/messages/page";
 
+// Artists-tab conversations only exist as mock fixtures.
+vi.mock("@/lib/featureFlags", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/featureFlags")>();
+  return { ...actual, featureFlags: { ...actual.featureFlags, useMockMessages: true } };
+});
+
 beforeAll(() => {
   // jsdom doesn't implement scrollIntoView; MessageThread calls it to keep
   // the latest message in view.
@@ -15,12 +21,12 @@ describe("MessagesPage", () => {
     expect(screen.queryAllByText("Jaden Cole")).toHaveLength(0);
   });
 
-  it("switches to artist conversations when the Artists tab is selected", () => {
+  it("switches to artist conversations when the Artists tab is selected", async () => {
     render(<MessagesPage />);
 
     fireEvent.click(screen.getByRole("tab", { name: "Artists" }));
 
-    expect(screen.getAllByText("Jaden Cole").length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Jaden Cole")).length).toBeGreaterThan(0);
     expect(screen.queryAllByText("Tomothy Nguyen")).toHaveLength(0);
   });
 

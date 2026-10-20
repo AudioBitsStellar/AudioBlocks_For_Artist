@@ -5,7 +5,7 @@ import { UploadSong } from "@/types";
 import { FinalizeSongResponse } from "@/types/api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { songFormSchema } from "@/types/formValidation";
+import { songFormSchema, LYRICS_MAX_LENGTH, SONG_LANGUAGES } from "@/types/formValidation";
 import { MUSIC_GENRES } from "../shared/music_genre";
 import useUploadServices from "@/services/uploadService";
 import {
@@ -13,11 +13,25 @@ import {
   NEW_TRACK_DEFAULT_VISIBILITY,
   TRACK_VISIBILITY_OPTIONS,
 } from "@/services/trackVisibilityService";
-import { splitFile, generateFileId } from "@/utils/chunkUploader";
+import {
+  splitFile,
+  generateFileId,
+  getMissingChunkIndices,
+  uploadChunksConcurrently,
+} from "@/utils/chunkUploader";
+import {
+  deleteUploadSession,
+  getPendingUploadSessions,
+  isSameFile,
+  saveUploadSession,
+  type UploadSession,
+} from "@/utils/uploadSessionStore";
 import MusicLoader from "../MusicLoader";
 import { useToast } from "@/hooks/useToastHandler";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFileDrop } from "@/hooks/useFileDrop";
+import { useLeaveGuard } from "@/hooks/useLeaveGuard";
+import ConfirmationDialog from "@/components/shared/ConfirmationDialog";
 import MintSongButton from "@/components/common/wallet/MintSongButton";
 import TransferSongButton from "@/components/common/wallet/TransferSongButton";
 import { analytics } from "@/lib/analytics";
@@ -43,7 +57,9 @@ const Song = () => {
   const [mintableSongId, setMintableSongId] = useState<string | null>(null);
   const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [failedChunkIndex, setFailedChunkIndex] = useState<number>(0);
+  const [isMinting, setIsMinting] = useState(false);
+  const [pendingSession, setPendingSession] = useState<UploadSession | null>(null);
+  const [resumingSession, setResumingSession] = useState<UploadSession | null>(null);
 
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<{
@@ -58,24 +74,22 @@ const Song = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // #128 — the shared usePost/axios client has no AbortSignal support, so
-  // cancellation is cooperative: the chunk loop below checks this ref
-  // between chunks and stops sending further chunks once it's set. The
-  // one already-in-flight request (if any) still completes server-side,
-  // but no further chunk requests are made and the UI reflects "cancelled"
-  // immediately.
   const cancelRequestedRef = useRef(false);
+  const uploadedChunksRef = useRef<number[]>([]);
 
-  const { useFinalizeUpload, useUploadChunk, useUploadCover } = useUploadServices();
+  const { useFinalizeUpload, useUploadChunk, useUploadCover, useTranscribeLyrics } =
+    useUploadServices();
   const uploadChunk = useUploadChunk();
   const uploadCover = useUploadCover();
   const finalizeUpload = useFinalizeUpload();
+  const transcribeLyrics = useTranscribeLyrics();
 
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting, isValid },
   } = useForm<UploadSong>({
     resolver: zodResolver(songFormSchema),
@@ -97,12 +111,20 @@ const Song = () => {
     }
   }, []);
 
+  useEffect(() => {
+    getPendingUploadSessions()
+      .then((sessions) => setPendingSession(sessions[0] ?? null))
+      .catch(() => setPendingSession(null));
+  }, []);
+
   const isBusy =
     isUploading ||
     isSubmitting ||
     uploadChunk.isPending ||
     uploadCover.isPending ||
     finalizeUpload.isPending;
+
+  const { pendingHref, confirmLeave, cancelLeave } = useLeaveGuard(isBusy || isMinting);
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,11 +172,23 @@ const Song = () => {
       return;
     }
 
+    if (resumingSession && !isSameFile(resumingSession, file)) {
+      setValidationError(`Select the same file to resume: ${resumingSession.fileName}`);
+      return;
+    }
+
     setValidationError(null);
     setAudioFile(file);
-    setFileId(generateFileId());
+    if (resumingSession) {
+      setFileId(resumingSession.fileId);
+      uploadedChunksRef.current = resumingSession.uploadedChunks;
+      setPendingSession(null);
+      setResumingSession(null);
+    } else {
+      setFileId(generateFileId());
+      uploadedChunksRef.current = [];
+    }
     setRetryCount(0);
-    setFailedChunkIndex(0);
     cancelRequestedRef.current = false;
     setPreviewUrl(URL.createObjectURL(file));
     setAudioMetadata(null);
@@ -173,27 +207,54 @@ const Song = () => {
     if (file) selectAudioFile(file);
   };
 
-  const uploadSongInChunks = async (file: File, fileId: string, startChunk = 0) => {
+  const persistUploadSession = (file: File, fileId: string, totalChunks: number) =>
+    saveUploadSession({
+      fileId,
+      fileName: file.name,
+      fileSize: file.size,
+      lastModified: file.lastModified,
+      totalChunks,
+      uploadedChunks: uploadedChunksRef.current,
+      updatedAt: Date.now(),
+    }).catch(() => {
+      // IndexedDB may be unavailable (e.g. private mode). The upload still runs; only resume is lost.
+    });
+
+  /**
+   * Uploads every chunk the server does not have yet, with a small number of
+   * requests in flight. Resolves to the total number of chunks in the file.
+   */
+  const uploadChunkIndices = async (file: File, fileId: string) => {
     const chunks = splitFile(file);
+    const totalChunks = chunks.length;
+    const missing = getMissingChunkIndices(totalChunks, uploadedChunksRef.current);
 
-    for (let i = startChunk; i < chunks.length; i++) {
-      if (cancelRequestedRef.current) {
-        setFailedChunkIndex(i);
-        throw new Error("UPLOAD_CANCELLED");
-      }
+    const updateProgress = () =>
+      setUploadProgress(Math.round((uploadedChunksRef.current.length / totalChunks) * 100));
 
-      const form = new FormData();
-      form.append("fileId", fileId);
-      form.append("chunkIndex", String(i));
-      form.append("chunk", chunks[i]);
+    updateProgress();
+    await persistUploadSession(file, fileId, totalChunks);
 
-      await uploadChunk.mutateAsync(form);
+    await uploadChunksConcurrently(
+      missing,
+      async (index) => {
+        const form = new FormData();
+        form.append("fileId", fileId);
+        form.append("chunkIndex", String(index));
+        form.append("chunk", chunks[index]);
 
-      const percent = Math.round(((i + 1) / chunks.length) * 100);
-      setUploadProgress(percent);
-    }
+        await uploadChunk.mutateAsync(form);
 
-    return chunks.length;
+        uploadedChunksRef.current = [...uploadedChunksRef.current, index];
+        updateProgress();
+        await persistUploadSession(file, fileId, totalChunks);
+      },
+      { isCancelled: () => cancelRequestedRef.current }
+    );
+
+    if (cancelRequestedRef.current) throw new Error("UPLOAD_CANCELLED");
+
+    return totalChunks;
   };
 
   // Drag-and-drop audio selection (#391). Disabled while submitting or while a
@@ -219,7 +280,7 @@ const Song = () => {
       setRetryCount((prev) => prev + 1);
       setUploadedFile((prev) => (prev ? { ...prev, status: "uploading" } : prev));
 
-      await uploadSongInChunks(audioFile, fileId, failedChunkIndex);
+      await uploadChunkIndices(audioFile, fileId);
 
       setUploadedFile((prev) => (prev ? { ...prev, status: "success" } : prev));
     } catch (err) {
@@ -236,12 +297,29 @@ const Song = () => {
 
   const handleDelete = () => {
     cancelRequestedRef.current = false;
+    if (fileId) void deleteUploadSession(fileId).catch(() => undefined);
+    uploadedChunksRef.current = [];
     setUploadedFile(null);
     setAudioFile(null);
     setFileId(null);
     setUploadProgress(0);
     setPreviewUrl(null);
     setAudioMetadata(null);
+  };
+
+  const handleResumeRequest = () => {
+    if (!pendingSession) return;
+    setValidationError(null);
+    setResumingSession(pendingSession);
+    fileInputRef.current?.click();
+  };
+
+  const handleDismissSession = () => {
+    if (!pendingSession) return;
+    void deleteUploadSession(pendingSession.fileId).catch(() => undefined);
+    setPendingSession(null);
+    setResumingSession(null);
+    setValidationError(null);
   };
 
   const onSubmit = async (data: UploadSong) => {
@@ -263,24 +341,8 @@ const Song = () => {
       setIsUploading(true);
       setUploadedFile((prev) => (prev ? { ...prev, status: "uploading" } : prev));
 
-      const chunks = splitFile(audioFile);
-      for (let i = 0; i < chunks.length; i++) {
-        if (cancelRequestedRef.current) {
-          setFailedChunkIndex(i);
-          throw new Error("UPLOAD_CANCELLED");
-        }
-
-        const form = new FormData();
-        form.append("fileId", fileId);
-        form.append("chunkIndex", String(i));
-        form.append("chunk", chunks[i]);
-
-        await uploadChunk.mutateAsync(form);
-
-        const percent = Math.round(((i + 1) / chunks.length) * 100);
-        setUploadProgress(percent);
-      }
-      const totalChunks = chunks.length;
+      // 1. Upload the chunks the server does not have yet
+      const totalChunks = await uploadChunkIndices(audioFile, fileId);
 
       // 2. Upload cover
       const coverForm = new FormData();
@@ -291,6 +353,7 @@ const Song = () => {
       const coverArtPath = coverRes.data.cover;
 
       // 3. Finalize
+      const trimmedLyrics = data.lyrics?.trim();
       const finalizeResult: FinalizeSongResponse = await finalizeUpload.mutateAsync({
         fileId: fileId,
         totalChunks: totalChunks,
@@ -302,7 +365,13 @@ const Song = () => {
         // A track the artist has just uploaded has not been heard by anyone
         // yet, so it starts out of sight until they choose otherwise (#458).
         visibility: data.visibility ?? NEW_TRACK_DEFAULT_VISIBILITY,
-        // marketPrice: data.marketPrice,
+        ...(data.language ? { language: data.language } : {}),
+        ...(trimmedLyrics
+          ? {
+              lyrics: sanitize(trimmedLyrics),
+              lyricsRightsConfirmed: Boolean(data.lyricsRightsConfirmed),
+            }
+          : {}),
       });
 
       const songId: string = finalizeResult?.data?.id ?? "";
@@ -321,6 +390,7 @@ const Song = () => {
       setUploadedFile((prev) => (prev ? { ...prev, status: "success" } : prev));
 
       clearSavedData();
+      void deleteUploadSession(fileId).catch(() => undefined);
       toast.success("Song uploaded successfully!");
 
       reset();
@@ -329,6 +399,7 @@ const Song = () => {
       setUploadedFile(null);
       setAudioFile(null);
       setFileId(null);
+      uploadedChunksRef.current = [];
     } catch (err: unknown) {
       const error = err as Error;
       if (error instanceof Error && error.message === "UPLOAD_CANCELLED") {
@@ -491,6 +562,106 @@ const Song = () => {
           </p>
         </div>
 
+        <div className="space-y-2">
+          <label htmlFor="song-language" className="text-sm font-medium text-white">
+            Language
+          </label>
+          <select
+            id="song-language"
+            {...register("language")}
+            defaultValue=""
+            className="w-full rounded-lg border border-[#2A2A2A] bg-[#161616] px-4 py-3 text-white focus:border-[#885FA8] focus:outline-none"
+          >
+            <option value="" className="bg-[#161616]">
+              Select language
+            </option>
+            {SONG_LANGUAGES.map((lang) => (
+              <option key={lang.value} value={lang.value} className="bg-[#161616]">
+                {lang.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label htmlFor="song-lyrics" className="text-sm font-medium text-white">
+              Lyrics
+            </label>
+            <div className="flex items-center gap-3">
+              {audioFile && (
+                <button
+                  type="button"
+                  disabled={transcribeLyrics.isPending || isBusy}
+                  onClick={async () => {
+                    try {
+                      const form = new FormData();
+                      form.append("audio", audioFile);
+                      if (watchedValues.language) form.append("language", watchedValues.language);
+                      const res = await transcribeLyrics.mutateAsync(form);
+                      const draftLyrics = res?.data?.lyrics ?? res?.lyrics ?? "";
+                      if (draftLyrics) {
+                        setValue("lyrics", draftLyrics, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                        if (res?.data?.language && !watchedValues.language) {
+                          setValue("language", res.data.language, { shouldDirty: true });
+                        }
+                        toast.success("AI lyrics draft ready for review");
+                      }
+                    } catch {
+                      // Handled by mutation onError
+                    }
+                  }}
+                  className="text-xs font-medium text-[#D2045B] hover:underline disabled:opacity-50"
+                >
+                  {transcribeLyrics.isPending ? "Transcribing..." : "Transcribe with AI"}
+                </button>
+              )}
+              <span className="text-[10px] text-gray-400">
+                {watchedValues.lyrics?.length ?? 0}/{LYRICS_MAX_LENGTH}
+              </span>
+            </div>
+          </div>
+          <textarea
+            id="song-lyrics"
+            rows={4}
+            maxLength={LYRICS_MAX_LENGTH}
+            {...register("lyrics")}
+            placeholder="Paste or type song lyrics"
+            aria-invalid={errors.lyrics ? "true" : "false"}
+            aria-describedby={errors.lyrics ? "song-lyrics-error" : undefined}
+            className={`w-full rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.lyrics ? "border-red-500" : "border-[#2A2A2A]"}`}
+          />
+          {errors.lyrics && (
+            <p id="song-lyrics-error" className="text-[10px] text-red-500" role="alert">
+              {errors.lyrics.message}
+            </p>
+          )}
+
+          {Boolean(watchedValues.lyrics?.trim()) && (
+            <div className="space-y-1 pt-1">
+              <label className="flex items-start gap-2 text-xs text-gray-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("lyricsRightsConfirmed")}
+                  className="mt-0.5 rounded border-[#2A2A2A] bg-[#161616] text-[#D2045B] focus:ring-[#885FA8]"
+                />
+                <span>
+                  I own or have licensed the rights to publish these lyrics{" "}
+                  <span className="text-[#D2045B]">*</span>
+                </span>
+              </label>
+              {errors.lyricsRightsConfirmed && (
+                <p className="text-[10px] text-red-500" role="alert">
+                  {errors.lyricsRightsConfirmed.message}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* <div className="space-y-2">
                     <label className="text-sm font-medium text-white">
                         Market Price <span className="text-[#D2045B]">*</span>
@@ -580,6 +751,30 @@ const Song = () => {
           style={{ height: "192.33px" }}
         >
           <h3 className="text-white font-semibold mb-3 text-sm">Upload Music</h3>
+
+          {pendingSession && !uploadedFile && (
+            <div className="mb-3 rounded-lg bg-[#1a1a1a] p-2" role="status">
+              <p className="text-xs text-[#A3A3A3] truncate">
+                Unfinished upload: <span className="text-white">{pendingSession.fileName}</span>
+              </p>
+              <div className="mt-1 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleResumeRequest}
+                  className="text-[10px] font-medium text-white underline hover:text-[#D2045B]"
+                >
+                  Resume upload
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDismissSession}
+                  className="text-[10px] font-medium text-[#A3A3A3] hover:text-white"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
 
           {!uploadedFile ? (
             <div
@@ -751,7 +946,7 @@ const Song = () => {
                 <p className="text-xs text-[#A3A3A3]">
                   Song uploaded. Once it&apos;s finished processing, mint it on-chain:
                 </p>
-                <MintSongButton songId={mintableSongId} />
+                <MintSongButton songId={mintableSongId} onMintingChange={setIsMinting} />
               </div>
               <div className="bg-[#1a1a1a] rounded-lg p-3 space-y-2">
                 <p className="text-xs text-[#A3A3A3]">
@@ -763,6 +958,16 @@ const Song = () => {
           )}
         </div>
       </div>
+
+      <ConfirmationDialog
+        isOpen={pendingHref !== null}
+        onClose={cancelLeave}
+        onConfirm={confirmLeave}
+        title="Leave this page?"
+        message="An upload or mint is still in progress. Leaving now will cancel it."
+        confirmText="Leave"
+        cancelText="Stay"
+      />
     </div>
   );
 };
