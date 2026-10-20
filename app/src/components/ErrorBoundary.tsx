@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, ReactNode, ErrorInfo } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { AlertTriangle, RefreshCw, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 
 interface FallbackProps {
@@ -40,7 +41,16 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("ErrorBoundary caught an error:", error, errorInfo);
+    }
+    // Boundaries swallow the error, so Sentry's global handler never sees it.
+    if (Sentry.getClient()) {
+      Sentry.captureException(error, {
+        contexts: { react: { componentStack: errorInfo.componentStack } },
+        tags: { boundary: this.props.fallbackTitle ?? "widget" },
+      });
+    }
     this.setState({ errorInfo });
   }
 
