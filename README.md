@@ -45,29 +45,35 @@ cd AudioBlocks_For_Artist
 
 ```bash
 cd app
-npm install
+npm ci --legacy-peer-deps
 ```
+
+> Note: `--legacy-peer-deps` is required because the project uses React 19, which some dev tooling packages haven't yet added peer-dep ranges for.
 
 ### 3. Configure Environment Variables
 
-Create a `.env.local` file in the `app` directory:
+Create a `.env.local` file in the `app` directory by copying the example:
 
-```env
-# API Configuration
-NEXT_PUBLIC_API_BASE_URL=https://api.audioblocks.com
-NEXT_PUBLIC_API_URL=https://api.audioblocks.com
-
-# Sentry Configuration (optional for error tracking)
-SENTRY_DSN=your-sentry-dsn
-SENTRY_ORG=your-org
-SENTRY_PROJECT=your-project
-
-# Stellar Configuration
-NEXT_PUBLIC_STELLAR_NETWORK=testnet
-NEXT_PUBLIC_STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
+```bash
+cd app
+cp .env.example .env.local
 ```
 
-See `app/.env.example` for a complete list of available environment variables.
+Then edit `.env.local` and set at minimum:
+
+```env
+# Required
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+NEXT_PUBLIC_PRIVY_APP_ID=your-privy-app-id
+PRIVY_APP_SECRET=your-privy-app-secret
+NEXT_PUBLIC_ANALYTICS_WRITE_KEY=your-analytics-write-key
+NEXT_PUBLIC_USE_MOCK_DATA=false
+
+# Optional
+NEXT_PUBLIC_LISTENER_APP_URL=https://audioblocks.io
+```
+
+See `app/.env.example` for a complete list with descriptions.
 
 ### 4. Run the Development Server
 
@@ -88,11 +94,11 @@ Run these commands from the `app` directory:
 | `npm start` | Run production server (requires build first) |
 | `npm run lint` | Run ESLint for code quality checks |
 | `npm run format` | Format code with Prettier |
-| `npm run test` | Run unit tests with Vitest |
+| `npm test -- --run` | Run unit tests once (non-watch mode) |
 | `npm run test:ui` | Open Vitest UI for interactive testing |
 | `npm run test:coverage` | Generate test coverage report |
 | `npm run test:e2e` | Run end-to-end tests with Playwright |
-| `npm run storybook` | Start Storybook component explorer |
+| `npm run storybook` | Start Storybook component explorer on port 6006 |
 | `npm run storybook:build` | Build static Storybook |
 
 ## 🏗️ Project Structure
@@ -370,13 +376,13 @@ for the contract-level design.
 
 ## 🐛 Troubleshooting
 
-### `npm install` peer dependency errors
+### `npm install` or `npm ci` peer dependency errors
 
 ```bash
-npm install --legacy-peer-deps
+npm ci --legacy-peer-deps
 ```
 
-The project uses React 19, which some dev tooling packages have not yet published peer-dep ranges for. `--legacy-peer-deps` is the project standard for clean installs.
+The project uses React 19, which some dev tooling packages have not yet published peer-dep ranges for. `--legacy-peer-deps` is the project standard for all installs. Use `npm ci` (not `npm install`) for consistent, reproducible builds.
 
 ### Freighter not detected
 

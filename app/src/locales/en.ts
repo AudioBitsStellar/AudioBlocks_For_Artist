@@ -2,12 +2,31 @@ const en = {
   // Navigation
   nav: {
     dashboard: "Dashboard",
+    overview: "Overview",
     myMusic: "My Music",
     analytics: "Analytics",
+    payouts: "Payouts",
     events: "Events",
+    merches: "Merches",
+    messages: "Messages",
+    collaborators: "Collaborators",
+    royaltySplits: "Royalty splits",
+    moderation: "Moderation",
+    premium: "Premium",
+    releaseNotes: "Release notes",
+    activityLog: "Activity Log",
+    referrals: "Referrals",
+    settings: "Settings",
+    artistSearch: "Artist Search",
+    
+    // Legal links
+    privacyCenter: "Privacy Center",
+    privacyPolicy: "Privacy Policy",
+    cookies: "Cookies",
+    
+    // Mobile nav
     merch: "Merch",
     profile: "Profile",
-    settings: "Settings",
     uploadMusic: "Upload Music",
   },
 
@@ -16,11 +35,23 @@ const en = {
     welcome: "Welcome",
     search: "Search by artists, songs or albums",
     searchMobile: "Search artists, songs or albums",
+    openSearch: "Open search",
     notifications: "Notifications and settings",
     switchToLight: "Switch to light mode",
     switchToDark: "Switch to dark mode",
     goToProfile: "Go to profile",
     openMenu: "Open navigation menu",
+    
+    // Settings sub-navigation
+    settingsProfile: "Profile",
+    settingsNotifications: "Notifications",
+    settingsSecurity: "Security",
+    settingsVerification: "Verification",
+    settingsWallet: "Wallet",
+    settingsLinkedAccounts: "Linked accounts",
+    settingsPayout: "Payout",
+    settingsNetwork: "Network",
+    settingsAppearance: "Appearance",
   },
 
   // Auth

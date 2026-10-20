@@ -3,12 +3,31 @@ import type { Translations } from "./en";
 const es: Translations = {
   nav: {
     dashboard: "Panel",
+    overview: "Resumen",
     myMusic: "Mi Música",
     analytics: "Analíticas",
+    payouts: "Pagos",
     events: "Eventos",
+    merches: "Mercancías",
+    messages: "Mensajes",
+    collaborators: "Colaboradores",
+    royaltySplits: "División de regalías",
+    moderation: "Moderación",
+    premium: "Premium",
+    releaseNotes: "Notas de lanzamiento",
+    activityLog: "Registro de actividad",
+    referrals: "Referencias",
+    settings: "Configuración",
+    artistSearch: "Buscar artistas",
+    
+    // Legal links
+    privacyCenter: "Centro de privacidad",
+    privacyPolicy: "Política de privacidad",
+    cookies: "Cookies",
+    
+    // Mobile nav
     merch: "Mercancía",
     profile: "Perfil",
-    settings: "Configuración",
     uploadMusic: "Subir Música",
   },
 
@@ -16,11 +35,23 @@ const es: Translations = {
     welcome: "Bienvenido",
     search: "Buscar artistas, canciones o álbumes",
     searchMobile: "Buscar artistas, canciones o álbumes",
+    openSearch: "Abrir búsqueda",
     notifications: "Notificaciones y ajustes",
     switchToLight: "Cambiar a modo claro",
     switchToDark: "Cambiar a modo oscuro",
     goToProfile: "Ir al perfil",
     openMenu: "Abrir menú de navegación",
+    
+    // Settings sub-navigation
+    settingsProfile: "Perfil",
+    settingsNotifications: "Notificaciones",
+    settingsSecurity: "Seguridad",
+    settingsVerification: "Verificación",
+    settingsWallet: "Billetera",
+    settingsLinkedAccounts: "Cuentas vinculadas",
+    settingsPayout: "Pagos",
+    settingsNetwork: "Red",
+    settingsAppearance: "Apariencia",
   },
 
   auth: {

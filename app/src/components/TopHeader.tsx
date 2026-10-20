@@ -11,6 +11,7 @@ import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
 import SearchModal from "./SearchModal";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
+import { useOptionalI18n } from "@/context/I18nContext";
 
 interface TopHeaderProps {
   onMenuClick: () => void;
@@ -38,11 +39,22 @@ export default function TopHeader({
 }: TopHeaderProps) {
   const { info: roleInfo, role: contextRole } = useRole();
   const { isDark, toggleTheme } = useTheme();
+  const i18n = useOptionalI18n();
   const [currentDate, setCurrentDate] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const activeRole: Role = userRole ?? contextRole ?? roleInfo.role;
+
+  // Translated labels with English fallbacks
+  const t = i18n?.t.header ?? {
+    openMenu: "Open navigation menu",
+    openSearch: "Open search",
+    search: "Search by artists, songs or albums",
+    switchToLight: "Switch to light mode",
+    switchToDark: "Switch to dark mode",
+    goToProfile: "Go to profile",
+  };
 
   // The dashboard shortcut hook broadcasts search requests to the shared header.
   useEffect(() => {
@@ -76,7 +88,7 @@ export default function TopHeader({
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <button
             onClick={onMenuClick}
-            aria-label="Open navigation menu"
+            aria-label={t.openMenu}
             aria-expanded={sidebarOpen}
             aria-controls="sidebar-nav"
             className="md:hidden text-[var(--text)] p-1 -ml-1 rounded focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
@@ -101,8 +113,8 @@ export default function TopHeader({
           <button
             onClick={() => setIsSearchOpen(true)}
             className="relative w-full group"
-            aria-label="Open search (⌘/Ctrl+K)"
-            title="Search (⌘/Ctrl+K)"
+            aria-label={`${t.openSearch} (⌘/Ctrl+K)`}
+            title={`${t.search} (⌘/Ctrl+K)`}
           >
             <Search
               className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors"
@@ -110,7 +122,7 @@ export default function TopHeader({
               aria-hidden="true"
             />
             <div className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded-lg pl-12 pr-4 py-3 text-[var(--text-subtle)] text-left group-hover:border-[var(--border)] transition-colors cursor-pointer">
-              Search by artists, songs or albums
+              {t.search}
             </div>
             <kbd className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-1 px-2 py-1 bg-[var(--surface)] border border-[var(--border-subtle)] rounded text-[10px] text-[var(--text-subtle)] font-mono">
               <span>⌘ / Ctrl</span>K
@@ -135,9 +147,9 @@ export default function TopHeader({
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={isDark ? t.switchToLight : t.switchToDark}
             aria-pressed={isDark}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            title={isDark ? t.switchToLight : t.switchToDark}
             className="text-[var(--text)] hover:text-[var(--text-muted)] transition-colors rounded p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
           >
             {isDark ? <Sun size={22} aria-hidden="true" /> : <Moon size={22} aria-hidden="true" />}
@@ -161,7 +173,7 @@ export default function TopHeader({
 
           <Link
             href="/dashboard/profile"
-            aria-label="Go to profile"
+            aria-label={t.goToProfile}
             className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-[var(--border)] hover:border-[var(--border-subtle)] transition-colors"
           >
             <div className="w-full h-full bg-[var(--secondary)] flex items-center justify-center">
