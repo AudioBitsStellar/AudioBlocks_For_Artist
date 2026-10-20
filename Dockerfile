@@ -6,17 +6,31 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY app/package.json app/package-lock.json ./
-RUN npm ci --ignore-scripts
+# Use --legacy-peer-deps to match CI until peer-dependency issues are resolved (#521).
+# TODO: remove this flag once npm audit is clean and peer conflicts are fixed.
+RUN npm ci --ignore-scripts --legacy-peer-deps
 
 # ── Stage 2: build ──────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY app/ .
+# Build-time arguments for environment variables that must be inlined at build time.
+# These are NEXT_PUBLIC_* values that cannot be set at runtime and must be
+# passed via --build-arg (see docker-compose.yml).
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_PRIVY_APP_ID
+ARG NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE
+ARG NEXT_PUBLIC_HORIZON_URL
 
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID
+ENV NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE=$NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE
+ENV NEXT_PUBLIC_HORIZON_URL=$NEXT_PUBLIC_HORIZON_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY app/ .
 
 RUN npm run build
 
@@ -41,3 +55,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]
+
