@@ -183,7 +183,7 @@ AudioBlocks_For_Artist/
 - **[Playwright 1](https://playwright.dev/)** - E2E testing
 
 ### Dev Tools
-- **[Storybook 8](https://storybook.js.org/)** - Component development environment
+- **[Storybook 9](https://storybook.js.org/)** - Component development environment
 - **[ESLint 9](https://eslint.org/)** - Linting
 - **[Prettier 3](https://prettier.io/)** - Code formatting
 - **[Husky 9](https://typicode.github.io/husky/)** - Git hooks
@@ -191,6 +191,7 @@ AudioBlocks_For_Artist/
 
 ### Monitoring
 - **[@sentry/nextjs 9](https://sentry.io/)** - Error tracking and performance monitoring
+- **[web-vitals](https://github.com/GoogleChrome/web-vitals)** - Core Web Vitals (LCP, FID, CLS, TTFB) reporting; see [`app/src/lib/webVitals.ts`](app/src/lib/webVitals.ts)
 
 ## 🏛️ Architecture
 

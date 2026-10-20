@@ -147,7 +147,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         }`}
       />
 
-      <aside
+      <div
         id="sidebar-nav"
         role={open ? "dialog" : "navigation"}
         aria-modal={open ? true : undefined}
@@ -259,7 +259,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             </Link>
           ))}
         </div>
-      </aside>
+      </div>
     </>
   );
 }
