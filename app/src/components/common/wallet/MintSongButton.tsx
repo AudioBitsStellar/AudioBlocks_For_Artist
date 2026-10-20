@@ -12,10 +12,12 @@ import { useState, useEffect } from "react";
 import { Loader2, Check, AlertCircle } from "lucide-react";
 import { ApiEnvelope, SubmitSongMintResponse } from "@/types/api";
 import { useEstimatedFee } from "@/hooks/useEstimatedFee";
+import { useFreighterNetworkCheck } from "@/hooks/useFreighterNetworkCheck";
 
 interface MintSongButtonProps {
   songId: string;
   albumId?: number;
+  onMintingChange?: (minting: boolean) => void;
 }
 
 type MintStatus =
@@ -36,12 +38,17 @@ interface MintTransactionDetails {
 
 const COOLDOWN_DURATION = 5;
 
-export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonProps) {
+export default function MintSongButton({
+  songId,
+  albumId = 0,
+  onMintingChange,
+}: MintSongButtonProps) {
   const { address } = useStellarWallet();
   const { usePrepareSongMint, useSubmitSongMint } = useOnchainServices();
   const prepareMutation = usePrepareSongMint(songId);
   const submitMutation = useSubmitSongMint(songId);
   const { estimate: gasEstimate } = useEstimatedFee();
+  const freighterCheck = useFreighterNetworkCheck();
 
   const [status, setStatus] = useState<MintStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -49,11 +56,14 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
 
+  const isMinting = ["preparing", "awaiting_signature", "submitting"].includes(status);
   const isBusy =
-    prepareMutation.isPending ||
-    submitMutation.isPending ||
-    ["preparing", "awaiting_signature", "submitting"].includes(status) ||
-    cooldownActive;
+    prepareMutation.isPending || submitMutation.isPending || isMinting || cooldownActive;
+  const isNetworkMismatch = freighterCheck.status === "mismatch";
+
+  useEffect(() => {
+    onMintingChange?.(isMinting);
+  }, [isMinting, onMintingChange]);
 
   useEffect(() => {
     if (!cooldownActive) return;
@@ -86,6 +96,12 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
 
     try {
       const prepared = await prepareMutation.mutateAsync({ albumId });
+
+      if (freighterCheck.status === "mismatch" || freighterCheck.actual !== prepared.data.networkPassphrase) {
+        setStatus("failed");
+        setErrorMsg(`Freighter network mismatch. Expected ${prepared.data.networkPassphrase === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}.`);
+        return;
+      }
 
       setStatus("awaiting_signature");
       let signedXdr: string;
@@ -201,6 +217,16 @@ export default function MintSongButton({ songId, albumId = 0 }: MintSongButtonPr
         >
           Install Freighter
         </a>
+      </div>
+    );
+  }
+
+  if (isNetworkMismatch) {
+    return (
+      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-yellow-600/30 rounded-lg">
+        <p className="text-xs text-yellow-500 font-medium">
+          Freighter is on {freighterCheck.actual === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}; switch it to {freighterCheck.expected === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"} to continue.
+        </p>
       </div>
     );
   }

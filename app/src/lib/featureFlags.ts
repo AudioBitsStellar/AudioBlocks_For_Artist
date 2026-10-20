@@ -22,6 +22,8 @@ export const featureFlags = {
   useMockTracks: globalMock,
   /** Fans Engagement widget (top songs, streaming regions, top streamers) — wired to real API when false */
   useMockFansEngagement: globalMock,
+  /** Artists-tab conversations in Messages — there is no artist-to-artist API yet, so the tab is empty when false */
+  useMockMessages: globalMock,
   /** Notification bell dropdown in the top header — read state is kept locally when true */
   useMockNotifications: globalMock,
   /** On-chain activity stats (#466) — read live from Horizon when false */
@@ -39,6 +41,11 @@ export const featureFlags = {
    * `POST /auth/verify-email/request` exists.
    */
   useMockEmailVerification: true,
+  /**
+   * Song token transfer flow (#529). Gated behind a flag until backend
+   * relay endpoints (POST /song/:id/onchain/prepare-transfer) are supported.
+   */
+  enableSongTransfer: process.env.NEXT_PUBLIC_ENABLE_SONG_TRANSFER === "true",
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -60,7 +67,7 @@ export const featureFlags = {
  *  4. a percentage bucket of the subject — stable, so an artist never sees a
  *     feature flicker between visits as the bucket is hash-based, not random.
  */
-export type FeatureFlagName = "artistOnchainAnalytics";
+export type FeatureFlagName = "artistOnchainAnalytics" | "teamManagement";
 
 export interface FeatureFlagDefinition {
   /** What the feature is, for whoever has to debug it later. */
@@ -75,6 +82,12 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, FeatureFlagDefinition> = {
   artistOnchainAnalytics: {
     description:
       "On-chain plays and sales from the subgraph, shown as a section of the analytics dashboard.",
+    rolloutPercentage: 0,
+    allowlist: [],
+  },
+  teamManagement: {
+    description:
+      "Backend-enforced multi-user artist team workspace and staff access management (#525).",
     rolloutPercentage: 0,
     allowlist: [],
   },

@@ -1,20 +1,8 @@
-/**
- * All mock data lives here. Once a surface's real API is live:
- *   1. Set its featureFlag to false
- *   2. Delete the relevant export from this file
- * No component logic needs to change.
- */
-
-// ─── Overview Cards ──────────────────────────────────────────────────────────
-export const MOCK_OVERVIEW_CARDS = [
-  { title: "Songs Published", value: "12", isFirst: true },
-  { title: "Total Earnings", value: "$3,250", isFirst: false },
-  { title: "Listeners Count", value: "$5,000.00", isFirst: false },
-  { title: "Most Streamed Region", value: "$50.00", isFirst: false },
-];
+import type { EngagementTrendPoint, EventItem, EventMetric } from "@/types/api";
+import type { CheckInResult, CheckInStats, EventTicket } from "@/types";
 
 // ─── Events ──────────────────────────────────────────────────────────────────
-export const MOCK_EVENT_METRICS = [
+export const MOCK_EVENT_METRICS: EventMetric[] = [
   {
     label: "Total Events",
     value: "12",
@@ -35,7 +23,7 @@ export const MOCK_EVENT_METRICS = [
   },
 ];
 
-export const MOCK_EVENTS = [
+export const MOCK_EVENTS: EventItem[] = [
   {
     id: 1,
     title: "Echoes of the Soul",
@@ -89,7 +77,7 @@ export const MOCK_EVENTS = [
 ];
 
 // ─── Event Fan Engagement ────────────────────────────────────────────────────
-export const MOCK_EVENT_ENGAGEMENT_METRICS = [
+export const MOCK_EVENT_ENGAGEMENT_METRICS: EventMetric[] = [
   {
     label: "Total Fans Reached",
     value: "8,432",
@@ -114,7 +102,7 @@ export const MOCK_EVENT_ENGAGEMENT_METRICS = [
  * Mock engagement trend data for the last 30 days.
  * Each entry records a date and the engagement score for that day.
  */
-export const MOCK_ENGAGEMENT_TREND: { date: string; score: number; attendees: number }[] = [
+export const MOCK_ENGAGEMENT_TREND: EngagementTrendPoint[] = [
   ...Array.from({ length: 30 }, (_, i) => {
     const d = new Date("2025-07-01");
     d.setDate(d.getDate() + i);
@@ -128,77 +116,23 @@ export const MOCK_ENGAGEMENT_TREND: { date: string; score: number; attendees: nu
   }),
 ];
 
-// ─── Merches ─────────────────────────────────────────────────────────────────
-export const MOCK_MERCH_METRICS = [
-  {
-    label: "Total Merch Items",
-    value: "24",
-    descriptor: "Live + Draft",
-    gradient: "from-[#D2045B]/60 via-[#885FA8]/40 to-[#4F46E5]/60",
-  },
-  {
-    label: "Merch Revenue",
-    value: "$3,250",
-    descriptor: "Past 30 days",
-    gradient: "from-[#1E1E1E] via-[#2A2A2A]/80 to-[#141414]",
-  },
-  {
-    label: "Average Basket",
-    value: "$68.40",
-    descriptor: "Per order",
-    gradient: "from-[#1E1E1E] via-[#2A2A2A]/80 to-[#141414]",
-  },
+// ─── Tickets & check-in ──────────────────────────────────────────────────────
+export const MOCK_TICKETS: EventTicket[] = [
+  { id: "TICK-001", attendeeName: "Alice Johnson", tier: "VIP", purchasedAt: "2025-08-20" },
+  { id: "TICK-002", attendeeName: "Bob Smith", tier: "General", purchasedAt: "2025-08-21" },
+  { id: "TICK-003", attendeeName: "Carol White", tier: "General", purchasedAt: "2025-08-22" },
+  { id: "TICK-004", attendeeName: "David Lee", tier: "VIP", purchasedAt: "2025-08-23" },
 ];
 
-export const MOCK_MERCH_ITEMS = [
-  {
-    id: 1,
-    title: "Echoes of the Soul",
-    detail: "100/1000 Units Left",
-    date: "24/08/2025",
-    time: "8:30PM",
-    price: "0.005ETH",
-    image:
-      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=400&q=80",
+export const MOCK_CHECK_IN_RESULTS: Record<string, CheckInResult> = {
+  "TICKET-001": { ticketId: "TICKET-001", status: "valid", attendeeName: "Alice Johnson" },
+  "TICKET-002": { ticketId: "TICKET-002", status: "valid", attendeeName: "Bob Smith" },
+  "TICKET-003": {
+    ticketId: "TICKET-003",
+    status: "already_checked_in",
+    attendeeName: "Carol White",
   },
-  {
-    id: 2,
-    title: "Echoes of the Soul",
-    detail: "100/1000 Units Left",
-    date: "24/08/2025",
-    time: "8:30PM",
-    price: "0.005ETH",
-    image:
-      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: 3,
-    title: "Echoes of the Soul",
-    detail: "100/1000 Units Left",
-    date: "24/08/2025",
-    time: "8:30PM",
-    price: "0.005ETH",
-    image:
-      "https://images.unsplash.com/photo-1516280440619-37996c4e5b4e?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: 4,
-    title: "Echoes of the Soul",
-    detail: "100/1000 Units Left",
-    date: "24/08/2025",
-    time: "8:30PM",
-    price: "0.005ETH",
-    image:
-      "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafbd?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: 5,
-    title: "Echoes of the Soul",
-    detail: "100/1000 Units Left",
-    date: "24/08/2025",
-    time: "8:30PM",
-    price: "0.005ETH",
-    image:
-      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=400&q=80",
-  },
-];
+  "FAKE-001": { ticketId: "FAKE-001", status: "invalid" },
+};
+
+export const MOCK_CHECK_IN_STATS: CheckInStats = { total: 500, checkedIn: 127, remaining: 373 };

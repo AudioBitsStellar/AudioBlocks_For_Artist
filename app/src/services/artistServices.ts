@@ -27,6 +27,55 @@ import type { ProfileResponse } from "@/types/api";
  * helper (or its equivalent idempotency guard) into `app/src/api/axios.ts`
  * so all services benefit from a single source of truth.
  */
+export interface MappedArtistProfile {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  bio: string;
+  profileImage: string;
+  website: string;
+  twitter: string;
+  stellarPublicKey: string;
+  stellarArtistId: string;
+  stellarArtistTokenId: string;
+  isVerified: boolean;
+  verificationStatus: "unverified" | "pending" | "verified";
+  createdAt: string;
+}
+
+/**
+ * Maps the backend user profile response (from GET /api/users/profile or GET /api/account/profile)
+ * to the dashboard's profile type, including Stellar fields and verification status.
+ */
+export function mapBackendUserProfile(response: unknown): MappedArtistProfile {
+  const raw =
+    response && typeof response === "object" && "data" in response
+      ? (response as { data: any }).data
+      : response && typeof response === "object" && "user" in response
+        ? (response as { user: any }).user
+        : (response as any) || {};
+
+  const isVerified = Boolean(raw.isVerified ?? raw.emailVerified ?? false);
+
+  return {
+    id: raw.id || "",
+    username: raw.username || "",
+    name: raw.name || "",
+    email: raw.email || "",
+    bio: raw.bio || "",
+    profileImage: raw.profileImage || raw.profileImageUrl || raw.avatarIpfsHash || "",
+    website: raw.website || "",
+    twitter: raw.twitter || raw.twitterUsername || "",
+    stellarPublicKey: raw.stellarPublicKey || raw.walletAddress || "",
+    stellarArtistId: raw.stellarArtistId || "",
+    stellarArtistTokenId: raw.stellarArtistTokenId || "",
+    isVerified,
+    verificationStatus: raw.verificationStatus || (isVerified ? "verified" : "unverified"),
+    createdAt: raw.createdAt || new Date().toISOString(),
+  };
+}
+
 function normalizeError(error: unknown): ApiError {
   if (
     error !== null &&

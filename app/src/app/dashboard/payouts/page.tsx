@@ -2,10 +2,7 @@
 
 import PayoutHistory from "@/components/PayoutHistory";
 import WithdrawFunds from "@/components/WithdrawFunds";
-import { EARNINGS_ENDPOINTS } from "@/api/api-endpoint";
-import { usePost } from "@/api/queryClient";
-import { DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
-import type { PayoutRecord, WithdrawInput } from "@/utils/artistPortal";
+import type { PayoutRecord } from "@/utils/artistPortal";
 
 // Placeholder data until GET /artist/earnings/payouts is served by the backend.
 const SAMPLE_PAYOUTS: PayoutRecord[] = [
@@ -31,10 +28,6 @@ const SAMPLE_PAYOUTS: PayoutRecord[] = [
 const SAMPLE_BALANCE = "250.5";
 
 export default function PayoutsPage() {
-  const withdraw = usePost<{ txHash: string }, WithdrawInput>(EARNINGS_ENDPOINTS.WITHDRAW, {
-    invalidateQueries: [DASHBOARD_QUERY_KEYS.earnings],
-  });
-
   return (
     <main className="p-6 space-y-6">
       <h1 className="text-white text-2xl font-bold">Royalties &amp; Payouts</h1>
@@ -42,10 +35,7 @@ export default function PayoutsPage() {
         <div className="lg:col-span-2">
           <PayoutHistory payouts={SAMPLE_PAYOUTS} />
         </div>
-        <WithdrawFunds
-          availableBalance={SAMPLE_BALANCE}
-          onWithdraw={async (input) => (await withdraw.mutateAsync(input)).txHash}
-        />
+        <WithdrawFunds availableBalance={SAMPLE_BALANCE} />
       </div>
     </main>
   );

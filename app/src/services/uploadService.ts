@@ -70,10 +70,23 @@ const useUploadServices = () => {
     });
   };
 
+  const useTranscribeLyrics = () => {
+    return usePost<{ data?: { lyrics?: string; language?: string }; lyrics?: string }>(
+      ARTIST_UPLOAD_ENDPOINTS.TRANSCRIBE_LYRICS,
+      {
+        onError(error: Error) {
+          handleError(error.message || "Failed to transcribe lyrics with AI.");
+        },
+      }
+    );
+  };
+
   return {
     useUploadChunk,
     useUploadCover,
     useFinalizeUpload,
+    useUploadSong: useFinalizeUpload,
+    useTranscribeLyrics,
   };
 };
 

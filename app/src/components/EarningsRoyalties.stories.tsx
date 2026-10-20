@@ -26,14 +26,14 @@ export const Default: Story = {};
 
 /** Tablet viewport — verifies chart responsiveness at 768 px. */
 export const TabletLayout: Story = {
-  parameters: {
-    viewport: { defaultViewport: "tablet" },
+  globals: {
+    viewport: "tablet",
   },
 };
 
 /** Mobile viewport — single-column stacked layout. */
 export const MobileLayout: Story = {
-  parameters: {
-    viewport: { defaultViewport: "mobile" },
+  globals: {
+    viewport: "mobile",
   },
 };

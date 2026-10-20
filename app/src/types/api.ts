@@ -34,6 +34,7 @@ export interface AuthUser {
    * out — see `requiresEmailVerification()`.
    */
   emailVerified?: boolean;
+  aiStudioEnabled?: boolean;
 }
 
 export interface AuthResponse {
@@ -189,6 +190,13 @@ export interface SongMeta {
    * how it behaved before the setting existed.
    */
   visibility?: TrackVisibility;
+  lyrics?: string;
+  language?: string;
+  lyricsRightsConfirmedAt?: string;
+  lyricsRightsConfirmedBy?: string;
+  tags?: string[];
+  aiGeneratedDescription?: string;
+  aiDescriptionApproved?: boolean;
   createdAt: string;
 }
 
@@ -207,12 +215,34 @@ export interface FinalizeSongPayload {
   coverArtPath: string;
   description: string;
   genre: string;
-  composer: string;
+  composer?: string;
+  composers?: string;
   /** Omitted means the server's default; the upload form sends `private` explicitly. */
   visibility?: TrackVisibility;
+  lyrics?: string;
+  language?: string;
+  lyricsRightsConfirmed?: boolean;
+  tags?: string[];
 }
 
 export type FinalizeSongResponse = ApiEnvelope<SongMeta>;
+
+export interface SongVersion {
+  id: string | number;
+  versionNumber: number;
+  createdAt: string;
+  durationSec?: number;
+  loudnessLufs?: number;
+  notes?: string;
+}
+
+export interface ReuploadSongDTO {
+  fileId: string;
+  totalChunks: number;
+  notes?: string;
+  durationSec?: number;
+  loudnessLufs?: number;
+}
 
 // ── Merch ──────────────────────────────────────────────────────────────────
 
@@ -506,6 +536,8 @@ export interface DashboardComment {
   avatar?: string;
   attachmentUrl?: string;
   attachmentName?: string;
+  isArtist?: boolean;
+  songId?: string;
 }
 
 export interface CommentsResponse {

@@ -23,3 +23,15 @@ app/.next/
 .mimo/
 *.mimo
 mimo
+
+# Local scratch files and directories (do not commit)
+pr.md
+pr*.md
+PR_BODY.md
+issue.md
+issue*.md
+.kilo/
+.kilo
+
+# AI tool configuration (share via docs if needed)
+.kiro/

@@ -8,6 +8,7 @@ import EmptyState from "@/components/shared/EmptyState";
 import ConfirmationDialog from "@/components/shared/ConfirmationDialog";
 import AuditTrailPanel from "@/components/AuditTrailPanel";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { useTeam } from "@/hooks/useTeam";
 import {
   ASSIGNABLE_ROLES,
@@ -83,8 +84,27 @@ export default function TeamPage() {
     setPendingRemoval(null);
   };
 
+  const isTeamEnabled = useFeatureFlag("teamManagement");
+
   // The roster lives in storage, which the server render cannot see.
   if (!hydrated) return null;
+
+  if (!isTeamEnabled) {
+    return (
+      <div className="space-y-8">
+        <Breadcrumb items={[{ label: "Team & staff", isActive: true }]} />
+        <header className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Artist workspace</p>
+          <h1 className="text-3xl font-bold text-text">Team &amp; staff</h1>
+        </header>
+        <EmptyState
+          icon={Users}
+          title="Team management is coming soon"
+          description="Server-enforced team roles and workspace invitations will be enabled once backend support lands."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

@@ -7,13 +7,13 @@ vi.mock("@/lib/featureFlags", () => ({
   featureFlags: { useMockOverviewCards: true },
 }));
 
-vi.mock("@/__mocks__/mockData", () => ({
-  MOCK_OVERVIEW_CARDS: [
-    { title: "Total Streams", value: "12,340", isFirst: true },
-    { title: "Monthly Listeners", value: "3,210", isFirst: false },
-    { title: "Revenue", value: "$540", isFirst: false },
-    { title: "New Fans", value: "87", isFirst: false },
-  ],
+vi.mock("@/__mocks__/overview", () => ({
+  MOCK_OVERVIEW_KPI: {
+    songsPublished: 87,
+    totalEarnings: 540,
+    listenersCount: 12340,
+    mostStreamedRegion: "Ghana",
+  },
 }));
 
 vi.mock("@/components/MockDataBadge", () => ({
@@ -21,29 +21,35 @@ vi.mock("@/components/MockDataBadge", () => ({
 }));
 
 describe("OverviewCards", () => {
-  it("renders the Overview heading", () => {
+  it("renders the Overview heading", async () => {
     render(<OverviewCards />);
+    await screen.findByText("Songs Published");
     expect(screen.getByText("Overview")).toBeInTheDocument();
   });
 
-  it("renders all card titles", () => {
+  it("shows the loading skeleton while the mock fixtures load", () => {
     render(<OverviewCards />);
-    expect(screen.getByText("Total Streams")).toBeInTheDocument();
-    expect(screen.getByText("Monthly Listeners")).toBeInTheDocument();
-    expect(screen.getByText("Revenue")).toBeInTheDocument();
-    expect(screen.getByText("New Fans")).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Loading overview" })).toBeInTheDocument();
   });
 
-  it("renders all card values", () => {
+  it("renders all card titles", async () => {
     render(<OverviewCards />);
+    expect(await screen.findByText("Songs Published")).toBeInTheDocument();
+    expect(screen.getByText("Total Earnings")).toBeInTheDocument();
+    expect(screen.getByText("Listeners Count")).toBeInTheDocument();
+    expect(screen.getByText("Most Streamed Region")).toBeInTheDocument();
+  });
+
+  it("renders all card values through the same formatting as the live API", async () => {
+    render(<OverviewCards />);
+    expect(await screen.findByText("87")).toBeInTheDocument();
+    expect(screen.getByText("$540.00")).toBeInTheDocument();
     expect(screen.getByText("12,340")).toBeInTheDocument();
-    expect(screen.getByText("3,210")).toBeInTheDocument();
-    expect(screen.getByText("$540")).toBeInTheDocument();
-    expect(screen.getByText("87")).toBeInTheDocument();
+    expect(screen.getByText("Ghana")).toBeInTheDocument();
   });
 
-  it("renders the mock data badge when useMockOverviewCards is true", () => {
+  it("renders the mock data badge when useMockOverviewCards is true", async () => {
     render(<OverviewCards />);
-    expect(screen.getByTestId("mock-badge")).toBeInTheDocument();
+    expect(await screen.findByTestId("mock-badge")).toBeInTheDocument();
   });
 });

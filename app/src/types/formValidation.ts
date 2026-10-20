@@ -23,25 +23,70 @@ const trackVisibilityField = z.enum(TRACK_VISIBILITIES as [TrackVisibility, ...T
  */
 const uploadVisibilityField = trackVisibilityField.default(NEW_TRACK_DEFAULT_VISIBILITY);
 
-export const songFormSchema = z.object({
-  visibility: uploadVisibilityField,
-  title: z
-    .string()
-    .min(1, "Song title is required")
-    .max(100, "Title must be 100 characters or less"),
-  description: z
-    .string()
-    .min(1, "Description is required")
-    .max(500, "Description must be 500 characters or less"),
-  genre: z
-    .string()
-    .min(1, "Please select a genre")
-    .refine((val) => MUSIC_GENRES.includes(val), "Invalid genre selection"),
-  composer: z
-    .string()
-    .min(1, "Composer name is required")
-    .max(100, "Composer name must be 100 characters or less"),
-});
+export const LYRICS_MAX_LENGTH = 10000;
+
+export const SONG_LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "es", label: "Spanish" },
+  { value: "fr", label: "French" },
+  { value: "pt", label: "Portuguese" },
+  { value: "de", label: "German" },
+  { value: "yo", label: "Yoruba" },
+  { value: "ig", label: "Igbo" },
+  { value: "ha", label: "Hausa" },
+  { value: "sw", label: "Swahili" },
+  { value: "other", label: "Other" },
+] as const;
+
+export const TAG_MAX_COUNT = 10;
+export const TAG_MAX_LENGTH = 30;
+
+/** Normalizes a tag input to a lowercase slug matching backend rules (`[a-z0-9-]`). */
+export function normalizeSongTag(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export const songFormSchema = z
+  .object({
+    visibility: uploadVisibilityField,
+    title: z
+      .string()
+      .min(1, "Song title is required")
+      .max(100, "Title must be 100 characters or less"),
+    description: z
+      .string()
+      .min(1, "Description is required")
+      .max(500, "Description must be 500 characters or less"),
+    genre: z
+      .string()
+      .min(1, "Please select a genre")
+      .refine((val) => MUSIC_GENRES.includes(val), "Invalid genre selection"),
+    composer: z
+      .string()
+      .min(1, "Composer name is required")
+      .max(100, "Composer name must be 100 characters or less"),
+    language: z.string().optional(),
+    lyrics: z
+      .string()
+      .max(LYRICS_MAX_LENGTH, `Lyrics must be ${LYRICS_MAX_LENGTH} characters or less`)
+      .optional(),
+    lyricsRightsConfirmed: z.boolean().optional(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.lyrics && values.lyrics.trim().length > 0 && !values.lyricsRightsConfirmed) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["lyricsRightsConfirmed"],
+        message: "You must confirm that you own or have licensed the rights to publish these lyrics",
+      });
+    }
+  });
 
 export const albumFormSchema = z.object({
   albumTitle: z
@@ -65,24 +110,51 @@ export const albumFormSchema = z.object({
     ),
 });
 
-export const trackEditSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(1, "Track title is required")
-    .max(100, "Title must be 100 characters or less"),
-  albumName: z
-    .string()
-    .trim()
-    .min(1, "Please select an album")
-    .max(100, "Album name must be 100 characters or less"),
-  visibility: trackVisibilityField,
-  // #396 — optional metadata; "" means "not set".
-  genre: z
-    .string()
-    .refine((val) => val === "" || MUSIC_GENRES.includes(val), "Invalid genre selection"),
-  description: z.string().trim().max(500, "Description must be 500 characters or less"),
-});
+export const trackEditSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "Track title is required")
+      .max(100, "Title must be 100 characters or less"),
+    albumName: z
+      .string()
+      .trim()
+      .min(1, "Please select an album")
+      .max(100, "Album name must be 100 characters or less"),
+    visibility: trackVisibilityField,
+    // #396 — optional metadata; "" means "not set".
+    genre: z
+      .string()
+      .refine((val) => val === "" || MUSIC_GENRES.includes(val), "Invalid genre selection"),
+    description: z.string().trim().max(500, "Description must be 500 characters or less"),
+    language: z.string().optional(),
+    lyrics: z
+      .string()
+      .max(LYRICS_MAX_LENGTH, `Lyrics must be ${LYRICS_MAX_LENGTH} characters or less`)
+      .optional(),
+    lyricsRightsConfirmed: z.boolean().optional(),
+    tags: z
+      .array(
+        z
+          .string()
+          .min(1)
+          .max(TAG_MAX_LENGTH, `Each tag must be ${TAG_MAX_LENGTH} characters or less`)
+          .regex(/^[a-z0-9-]+$/, "Tags must be lowercase letters, numbers, and hyphens")
+      )
+      .max(TAG_MAX_COUNT, `You can add at most ${TAG_MAX_COUNT} tags`)
+      .optional(),
+    aiDescriptionApproved: z.boolean().optional(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.lyrics && values.lyrics.trim().length > 0 && !values.lyricsRightsConfirmed) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["lyricsRightsConfirmed"],
+        message: "You must confirm that you own or have licensed the rights to publish these lyrics",
+      });
+    }
+  });
 
 export const profileFormSchema = z.object({
   username: z

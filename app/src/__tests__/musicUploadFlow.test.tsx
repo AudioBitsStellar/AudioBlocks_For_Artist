@@ -25,6 +25,10 @@ vi.mock("@/hooks/useToastHandler", () => ({
   }),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+}));
+
 vi.mock("@/hooks/useAutoSave", () => ({
   useAutoSave: () => ({
     restore: vi.fn().mockReturnValue(null),
