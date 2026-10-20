@@ -5,22 +5,16 @@ import { featureFlags } from "@/lib/featureFlags";
 import { useMock } from "@/__mocks__/loadMock";
 import MockDataBadge from "@/components/MockDataBadge";
 import useOverviewServices, {
-  type OverviewData,
   type StatsWindow,
 } from "@/services/overviewService";
 import OverviewRecentActivity from "./OverviewRecentActivity";
-import useOverviewServices from "@/services/overviewService";
 import type { OverviewKpi } from "@/types";
+import { formatAsset } from "@/utils/money";
 
 interface KpiCard {
   title: string;
   value: string;
   isFirst: boolean;
-}
-
-function kpiToCards(data: OverviewData): KpiCard[] {
-function formatCurrency(n: number): string {
-  return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function kpiToCards(data: OverviewKpi): KpiCard[] {
@@ -38,7 +32,7 @@ function kpiToCards(data: OverviewKpi): KpiCard[] {
       value: data.followersCount?.toLocaleString("en-US") ?? "Unavailable",
       isFirst: false,
     },
-    { title: "Royalty Revenue", value: `${data.earningsXlm} XLM`, isFirst: false },
+    { title: "Royalty Revenue", value: formatAsset(data.earningsXlm, "XLM"), isFirst: false },
   ];
 }
 
@@ -175,6 +169,11 @@ function MockOverviewCards() {
 
 export default function OverviewCards() {
   const [window, setWindow] = useState<StatsWindow>("30d");
+
+  if (featureFlags.useMockOverviewCards) {
+    return <MockOverviewCards />;
+  }
+
   return (
     <section className="space-y-6">
       <label className="text-sm text-gray-300 flex items-center gap-3">
@@ -191,18 +190,10 @@ export default function OverviewCards() {
           <option value="all-time">All time</option>
         </select>
       </label>
-      {featureFlags.useMockOverviewCards ? (
-        <CardGrid cards={MOCK_OVERVIEW_CARDS} isMock />
-      ) : (
-        <LiveOverviewCards window={window} />
-      )}
-      {featureFlags.useMockOverviewCards ? null : <OverviewRecentActivity window={window} />}
+      <LiveOverviewCards window={window} />
+      <OverviewRecentActivity window={window} />
     </section>
   );
-  if (featureFlags.useMockOverviewCards) {
-    return <MockOverviewCards />;
-  }
-  return <LiveOverviewCards />;
 }
 
 export { OverviewCards };

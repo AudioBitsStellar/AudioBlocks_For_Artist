@@ -1,8 +1,12 @@
 /**
  * Persistence for linked social / wallet accounts (#414).
  *
- * Mirrors the other local-first services: a memoised array mirrored into
- * `localStorage`, plus a reset seam so specs start clean.
+ * @deprecated This service is deprecated in favor of Privy's built-in
+ * account linking (usePrivy().linkGoogle, linkTwitter, linkWallet, etc.).
+ * Use usePrivy().user.linkedAccounts to read linked accounts instead.
+ *
+ * This file is kept for backwards compatibility during migration.
+ * New features should use Privy directly (#623).
  */
 
 import {

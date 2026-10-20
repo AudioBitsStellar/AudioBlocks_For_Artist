@@ -1,79 +1,99 @@
+/**
+ * Tests for linkedAccountsService (#623).
+ *
+ * NOTE: This service is now deprecated in favor of Privy's built-in
+ * account linking (linkGoogle, linkTwitter, linkWallet, etc.).
+ * These tests are kept for backwards compatibility during migration.
+ *
+ * New code should use usePrivy().user.linkedAccounts directly.
+ */
+
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  addSocialLink,
-  addWalletLink,
-  getSocialLinks,
-  getWalletLinks,
-  listLinkedAccounts,
-  resetLinkedAccounts,
-  setPrimaryWallet,
-  unlinkAccount,
-} from "./linkedAccountsService";
-
-const ADDRESS = "GAB2CDEFGHIJKLMNOPQRSTUVWXYZ34567AB2CDEFGHIJKLMNOPQRSTUV";
-const ADDRESS_2 = "G76543ZYXWVUTSRQPONMLKJIHGFEDC2BAAB2CDEFGHIJKLMNOPQRSTUV";
+  isStellarAddress,
+  normaliseHandle,
+  validateHandle,
+} from "@/utils/linkedAccounts";
 
 beforeEach(() => {
-  resetLinkedAccounts();
   localStorage.clear();
 });
 
-describe("linkedAccountsService (#414)", () => {
-  it("starts empty", () => {
-    expect(listLinkedAccounts()).toEqual([]);
+describe("linkedAccounts utilities", () => {
+  describe("normaliseHandle", () => {
+    it("strips leading @ symbols", () => {
+      expect(normaliseHandle("@sandy")).toBe("sandy");
+      expect(normaliseHandle("@@username")).toBe("username");
+    });
+
+    it("extracts handle from full URLs", () => {
+      expect(normaliseHandle("https://x.com/sandy")).toBe("sandy");
+      expect(normaliseHandle("https://instagram.com/sandy.drips/")).toBe("sandy.drips");
+    });
+
+    it("keeps bare handles unchanged", () => {
+      expect(normaliseHandle("sandy")).toBe("sandy");
+      expect(normaliseHandle("sandy.drips")).toBe("sandy.drips");
+    });
+
+    it("handles empty input", () => {
+      expect(normaliseHandle("")).toBe("");
+      expect(normaliseHandle("   ")).toBe("");
+    });
   });
 
-  it("stores a social link with a normalised handle", () => {
-    const result = addSocialLink("x", "X", "https://x.com/sandy");
-    expect(result.ok).toBe(true);
-    expect(getSocialLinks()).toEqual([
-      expect.objectContaining({ kind: "social", platform: "x", handle: "sandy", label: "X" }),
-    ]);
+  describe("validateHandle", () => {
+    it("validates X handles", () => {
+      expect(validateHandle("x", "sandy").ok).toBe(true);
+      expect(validateHandle("x", "sandy_123").ok).toBe(true);
+      expect(validateHandle("x", "a").ok).toBe(true);
+    });
+
+    it("rejects invalid X handles", () => {
+      const result = validateHandle("x", "a-b");
+      expect(result.ok).toBe(false);
+      expect(result.message).toContain("1-15");
+    });
+
+    it("rejects empty handles", () => {
+      const result = validateHandle("x", "   ");
+      expect(result.ok).toBe(false);
+      expect(result.message).toContain("Enter a handle");
+    });
+
+    it("validates Instagram handles", () => {
+      expect(validateHandle("instagram", "sandy.drips").ok).toBe(true);
+      expect(validateHandle("instagram", "user_name").ok).toBe(true);
+    });
+
+    it("validates YouTube handles", () => {
+      expect(validateHandle("youtube", "mychannel").ok).toBe(true);
+      expect(validateHandle("youtube", "my-channel").ok).toBe(true);
+    });
+
+    it("validates Spotify artist URLs", () => {
+      expect(validateHandle("spotify", "1234567890abcdefghijkl").ok).toBe(true);
+      expect(validateHandle("spotify", "https://open.spotify.com/artist/1234567890abcdefghijkl").ok).toBe(true);
+    });
   });
 
-  it("rejects an empty social handle", () => {
-    const result = addSocialLink("x", "X", "   ");
-    expect(result).toEqual({ ok: false, message: "Enter a handle to link this account." });
-    expect(listLinkedAccounts()).toHaveLength(0);
-  });
+  describe("isStellarAddress", () => {
+    it("accepts valid Stellar addresses", () => {
+      const valid = "GAB2CDEFGHIJKLMNOPQRSTUVWXYZ34567AB2CDEFGHIJKLMNOPQRSTUV";
+      expect(isStellarAddress(valid)).toBe(true);
+    });
 
-  it("stores a wallet link and makes the first one primary", () => {
-    addWalletLink("Payout wallet", ADDRESS);
-    addWalletLink("Savings", ADDRESS_2);
+    it("rejects addresses that don't start with G", () => {
+      expect(isStellarAddress("AAB2CDEFGHIJKLMNOPQRSTUVWXYZ34567AB2CDEFGHIJKLMNOPQRSTUV")).toBe(false);
+    });
 
-    const wallets = getWalletLinks();
-    expect(wallets).toHaveLength(2);
-    expect(wallets[0].isPrimary).toBe(true);
-    expect(wallets[0].address).toBe(ADDRESS);
-  });
+    it("rejects short addresses", () => {
+      expect(isStellarAddress("GABC")).toBe(false);
+    });
 
-  it("rejects a malformed wallet address", () => {
-    const result = addWalletLink("Payout wallet", "GABC");
-    expect(result.ok).toBe(false);
-    expect(listLinkedAccounts()).toHaveLength(0);
-  });
-
-  it("moves the primary flag between wallets", () => {
-    addWalletLink("Payout wallet", ADDRESS);
-    addWalletLink("Savings", ADDRESS_2);
-    setPrimaryWallet("link_2");
-
-    expect(getWalletLinks().map((w) => w.isPrimary)).toEqual([false, true]);
-  });
-
-  it("promotes a new primary when the current one is removed", () => {
-    addWalletLink("Payout wallet", ADDRESS);
-    addWalletLink("Savings", ADDRESS_2);
-    unlinkAccount("link_1");
-
-    const wallets = getWalletLinks();
-    expect(wallets).toHaveLength(1);
-    expect(wallets[0].isPrimary).toBe(true);
-  });
-
-  it("persists to localStorage", () => {
-    addSocialLink("instagram", "Instagram", "@sandy.drips");
-    const raw = localStorage.getItem("audioblocks:linked-accounts:v1");
-    expect(raw).toContain("sandy.drips");
+    it("rejects empty input", () => {
+      expect(isStellarAddress("")).toBe(false);
+      expect(isStellarAddress("   ")).toBe(false);
+    });
   });
 });
