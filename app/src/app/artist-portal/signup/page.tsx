@@ -1,27 +1,96 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import MusicLoader from "@/components/MusicLoader";
+import { usePost } from "@/api/queryClient";
+import { AUTH_ENDPOINTS } from "@/api/api-endpoint";
+import { AuthResponse } from "@/types";
+import { storeToken } from "@/services/authService";
+import { clearQueryCache } from "@/api/queryClientInstance";
+import Cookies from "js-cookie";
+import { toast } from "sonner";
+
+interface PrivyLoginRequest {
+  accessToken: string;
+}
 
 export default function ArtistSignupPage() {
   const router = useRouter();
-  const { ready, authenticated, login, user } = usePrivy();
+  const { ready, authenticated, login, user, getAccessToken, logout } = usePrivy();
+  const [isExchangingToken, setIsExchangingToken] = useState(false);
+
+  const privyLoginMutation = usePost<AuthResponse, PrivyLoginRequest>(
+    AUTH_ENDPOINTS.PRIVY_LOGIN,
+    {
+      onSuccess: (data) => {
+        // Store the backend token
+        Cookies.set("audioblocks_jwt", data.token);
+        storeToken(data.token);
+
+        // Clear React Query cache to ensure fresh data for new session
+        clearQueryCache();
+
+        // Route based on verification status or user setup status
+        // For now, we'll check if it's a new artist (no profile data yet)
+        const isNewArtist = !data.user.username;
+
+        if (isNewArtist) {
+          router.push("/onboarding");
+        } else {
+          router.push("/dashboard");
+        }
+      },
+      onError: (error) => {
+        setIsExchangingToken(false);
+        // Check if it's a 403 (non-artist account)
+        const apiError = error as any;
+        if (apiError?.status === 403) {
+          toast.error(
+            "Your Privy account is not registered as an artist. Please sign up as an artist."
+          );
+          logout();
+        } else {
+          toast.error("Failed to complete artist signup. Please try again.");
+          logout();
+        }
+      },
+    }
+  );
 
   useEffect(() => {
-    if (ready && authenticated && user) {
-      router.push("/dashboard");
+    // If already authenticated and ready, exchange the Privy token for backend session
+    if (ready && authenticated && user && !isExchangingToken) {
+      const exchangeToken = async () => {
+        setIsExchangingToken(true);
+        try {
+          const accessToken = await getAccessToken();
+          if (accessToken) {
+            privyLoginMutation.mutate({ accessToken });
+          } else {
+            toast.error("Failed to get Privy access token");
+            logout();
+          }
+        } catch (err) {
+          toast.error("Failed to authenticate with Privy");
+          logout();
+        } finally {
+          setIsExchangingToken(false);
+        }
+      };
+
+      exchangeToken();
     }
-  }, [ready, authenticated, user, router]);
+  }, [ready, authenticated, user, isExchangingToken, getAccessToken, logout, privyLoginMutation]);
 
   const handleLogin = () => {
     login();
   };
 
-  if (!ready) {
+  if (!ready || (authenticated && isExchangingToken)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <MusicLoader />
@@ -55,9 +124,10 @@ export default function ArtistSignupPage() {
             <button
               onClick={handleLogin}
               type="button"
-              className="w-full rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-6 py-4 transition-colors cursor-pointer"
+              disabled={isExchangingToken}
+              className="w-full rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-6 py-4 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign up as Artist
+              {isExchangingToken ? "Signing up..." : "Sign up as Artist"}
             </button>
 
             <div className="relative">
