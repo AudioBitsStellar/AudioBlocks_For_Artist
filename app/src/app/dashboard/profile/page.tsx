@@ -1,35 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import dynamic from "next/dynamic";
-import Breadcrumb from "@/components/Breadcrumb";
-import Image from "next/image";
+import { useState, useEffect } from "react";
+import { FormProvider } from "react-hook-form";
 import { updateProfilePayload } from "@/types";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { profileFormSchema } from "@/types/formValidation";
 import MusicLoader from "@/components/MusicLoader";
-import useArtistServices, { mapBackendUserProfile } from "@/services/artistServices";
-const SetupArtistOnChainProfile = dynamic(
-  () => import("@/components/common/wallet/SetupArtistOnChainProfile")
-);
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { analytics } from "@/lib/analytics";
-import { useToast } from "@/hooks/useToastHandler";
-import { useRole } from "@/hooks/useRole";
-import { ROLE_BADGE_STYLES, getSettingsRestrictionReason } from "@/types/role";
-import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
-import { encodeHtmlEntities } from "@/utils/textEncoder";
-import { PROFILE_IMAGE_RULES, toAcceptAttribute, validateFile } from "@/utils/fileValidation";
-import VerifiedBadge from "@/components/common/VerifiedBadge";
 import VerificationApplicationModal from "@/components/common/modals/VerificationApplicationModal";
 import {
   getVerificationStatus,
   approveVerification,
   type VerificationStatus,
 } from "@/services/verificationService";
-
-const ImageCropper = dynamic(() => import("@/components/ImageCropper"));
+import { analytics } from "@/lib/analytics";
+import { useProfileForm } from "@/hooks/useProfileForm";
+import ProfileHeader from "@/components/profile/ProfileHeader";
+import ProfileMediaEditor from "@/components/profile/ProfileMediaEditor";
+import ProfileBioForm from "@/components/profile/ProfileBioForm";
+import VerificationStatusCard from "@/components/profile/VerificationStatusCard";
+import ProfileSettingsTab from "@/components/profile/ProfileSettingsTab";
+import OnChainProfileTab from "@/components/profile/OnChainProfileTab";
 
 function ProfileFormSkeleton() {
   return (
@@ -62,199 +50,59 @@ function ProfileFormSkeleton() {
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"profile" | "settings" | "onchain">("profile");
-  const { useUpdateArtistProfile, useGetArtistProfile } = useArtistServices();
-  const updateProfileMutation = useUpdateArtistProfile();
-  const { isLoading: isProfileLoading, data: profileResponse } = useGetArtistProfile(true);
-  const toast = useToast();
-  // RBAC – issue #173: settings switches are write-restricted, and we surface
-  // the active role in the user profile section above the tabs.
-  const { role, info: roleInfo, can } = useRole();
-  const canEditSettings = can("settings:edit");
-
-  const {
-    register,
-    setValue,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitting, isValid },
-  } = useForm<updateProfilePayload>({
-    resolver: zodResolver(profileFormSchema),
-    mode: "onChange",
-  });
-
-  const bioLength = watch("bio")?.length ?? 0;
-
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-  const profileInputRef = useRef<HTMLInputElement>(null);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("unverified");
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
-
-  useEffect(() => {
-    setVerificationStatus(getVerificationStatus());
-  }, []);
-
-  useEffect(() => {
-    if (!profileResponse) return;
-    const profile = mapBackendUserProfile(profileResponse);
-    if (profile.username) setValue("username", profile.username);
-    if (profile.bio) setValue("bio", profile.bio);
-    if (profile.website) setValue("website", profile.website);
-    if (profile.twitter) setValue("twitter", profile.twitter);
-    if (profile.profileImage) setProfileImage(profile.profileImage);
-    if (profile.verificationStatus) setVerificationStatus(profile.verificationStatus);
-  }, [profileResponse, setValue]);
-
-  const handleSimulateApproval = () => {
-    setVerificationStatus(approveVerification());
-  };
   const [notifications, setNotifications] = useState({
     commentsOnSongs: false,
     salesAndRoyalties: true,
     platformAlerts: true,
   });
 
-  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const { formMethods, isProfileLoading, isSubmitting, onSubmit } = useProfileForm({
+    onProfileImageChange: setProfileImage,
+  });
 
-    const { valid, error } = validateFile(file, PROFILE_IMAGE_RULES);
-    if (!valid) {
-      toast.error(error ?? "Invalid profile image");
-      e.target.value = "";
-      return;
-    }
+  const { handleSubmit, formState: { isValid } } = formMethods;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setCropSrc(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  useEffect(() => {
+    setVerificationStatus(getVerificationStatus());
+  }, []);
 
-    // Reset input so the same file can be reselected after cancel
-    e.target.value = "";
+  const handleSimulateApproval = () => {
+    setVerificationStatus(approveVerification());
   };
 
-  const handleCropComplete = (blob: Blob) => {
-    const croppedFile = new File([blob], "profile-avatar.jpg", { type: "image/jpeg" });
-    // Cropping re-encodes the image, so re-check the size the backend will actually receive.
-    const { valid, error } = validateFile(croppedFile, PROFILE_IMAGE_RULES);
-    if (!valid) {
-      toast.error(error ?? "Invalid profile image");
-      setCropSrc(null);
-      return;
-    }
-    setValue("profileImage", croppedFile);
-    setProfileImage(URL.createObjectURL(blob));
-    setCropSrc(null);
+  const handleNotificationChange = (key: keyof typeof notifications) => {
+    setNotifications((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleCropStart = (src: string) => {
+    setCropSrc(src);
   };
 
   const handleCropCancel = () => {
     setCropSrc(null);
   };
 
-  const onSubmit = async (data: updateProfilePayload) => {
-    const formData = new FormData();
-
-    formData.append("username", data.username);
-    formData.append("bio", encodeHtmlEntities(data.bio || ""));
-    formData.append("website", data.website || "");
-    formData.append("twitter", data.twitter || "");
-
-    if (data.profileImage instanceof File) {
-      formData.append("profileImage", data.profileImage);
-    }
-
-    updateProfileMutation.mutate(formData, {
-      onSuccess: () => {
-        analytics.profileSaved({
-          hasImage: data.profileImage instanceof File,
-          hasWebsite: Boolean(data.website?.trim()),
-          hasTwitter: Boolean(data.twitter?.trim()),
-        });
-      },
-      onError: (err: unknown) => {
-        // Route through the shared error-recovery helpers so profile save
-        // behaves like the upload / mint flows (see utils/ERROR_RECOVERY.md).
-        const message = getErrorMessage(err);
-        toast.error(
-          isRetryableError(err)
-            ? `Couldn't save your profile — check your connection and try again. (${message})`
-            : message || "Couldn't save your profile."
-        );
-      },
-    });
+  const handleImageChange = (url: string) => {
+    setProfileImage(url);
   };
 
   return (
-    <>
-      <Breadcrumb items={[{ label: "Profile", isActive: true }]} />
+    <FormProvider {...formMethods}>
+      <ProfileHeader />
 
-      {/* Role indicator – issue #173 acceptance criteria */}
-      <div
-        data-testid="profile-role-indicator"
-        className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-[#2A2A2A] bg-[#161616] px-4 py-3"
-      >
-        <span
-          data-testid="profile-role-badge"
-          data-role={role}
-          aria-label={`Active role: ${role}`}
-          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide uppercase ${ROLE_BADGE_STYLES[role]}`}
-        >
-          {roleInfo.label}
-        </span>
-        <p className="text-xs text-[#A3A3A3]">
-          <span className="text-white font-medium">Workspace role:</span> {roleInfo.description}
-        </p>
-        {!canEditSettings && (
-          <span
-            data-testid="profile-role-readonly"
-            className="ml-auto text-[10px] uppercase tracking-wide rounded-md bg-[#2A2A2A] px-2 py-1 text-[#A3A3A3]"
-          >
-            Read-only
-          </span>
-        )}
-      </div>
-
-      {/* Verification – issue #313 */}
-      <div
-        data-testid="profile-verification"
-        className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#2A2A2A] bg-[#161616] px-4 py-3"
-      >
-        <div className="flex items-center gap-3">
-          {verificationStatus === "verified" && <VerifiedBadge />}
-          <p className="text-xs text-[#A3A3A3]">
-            {verificationStatus === "verified" && (
-              <span className="text-white font-medium">Your artist profile is verified.</span>
-            )}
-            {verificationStatus === "pending" && (
-              <span className="text-white font-medium">Verification application under review.</span>
-            )}
-            {verificationStatus === "unverified" && (
-              <>
-                <span className="text-white font-medium">Not verified.</span> Apply to get a
-                verified badge on your profile.
-              </>
-            )}
-          </p>
-        </div>
-        {verificationStatus === "unverified" && (
-          <button
-            onClick={() => setIsVerificationModalOpen(true)}
-            className="rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white text-sm font-semibold px-4 py-2 transition-colors"
-          >
-            Apply for Verification
-          </button>
-        )}
-        {verificationStatus === "pending" && process.env.NODE_ENV !== "production" && (
-          <button
-            onClick={handleSimulateApproval}
-            className="rounded-lg border border-[#2A2A2A] text-white text-xs font-semibold px-3 py-1.5 hover:bg-[#1E1E1E] transition-colors"
-          >
-            Simulate approval (dev)
-          </button>
-        )}
-      </div>
+      {/* Verification Status */}
+      <VerificationStatusCard
+        status={verificationStatus}
+        onApplyClick={() => setIsVerificationModalOpen(true)}
+        onSimulateApprovalClick={handleSimulateApproval}
+      />
 
       <VerificationApplicationModal
         open={isVerificationModalOpen}
@@ -308,7 +156,7 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      {/* Main Content - Two Columns */}
+      {/* Tab Content */}
       {activeTab === "profile" && isProfileLoading && <ProfileFormSkeleton />}
       {activeTab === "profile" && !isProfileLoading && (
         <div
@@ -317,122 +165,12 @@ export default function ProfilePage() {
           className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-16 mt-6"
         >
           {/* Left Column - Form Fields */}
-          <div className="space-y-5">
-            <div className="flex flex-col mt-7">
-              <label htmlFor="display-name" className="text-sm font-medium text-white mb-2">
-                Display name <span className="text-[#D2045B]">*</span>
-              </label>
-              <input
-                id="display-name"
-                {...register("username")}
-                placeholder="Add Display name"
-                maxLength={50}
-                aria-invalid={errors.username ? "true" : "false"}
-                aria-describedby={errors.username ? "username-error" : undefined}
-                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 w-full max-w-[660px] h-12 rounded-2xl"
-                style={{
-                  background: "#FFFFFF0A",
-                  backdropFilter: "blur(40px)",
-                  border: errors.username ? "1px solid #ef4444" : "none",
-                }}
-              />
-              {errors.username && (
-                <p id="username-error" className="text-[10px] text-red-500 mt-1" role="alert">
-                  {errors.username.message}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col mt-7">
-              <label htmlFor="short-bio" className="text-sm font-medium text-white mb-2">
-                Short bio
-              </label>
-              <textarea
-                id="short-bio"
-                {...register("bio")}
-                placeholder="Tell about yourself in a few words"
-                maxLength={500}
-                aria-invalid={errors.bio ? "true" : "false"}
-                aria-describedby={errors.bio ? "bio-error" : undefined}
-                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 py-3 resize-none w-full max-w-[660px] h-[120px] rounded-2xl"
-                style={{
-                  background: "#FFFFFF0A",
-                  backdropFilter: "blur(40px)",
-                  border: errors.bio ? "1px solid #ef4444" : "none",
-                }}
-              />
-              {errors.bio && (
-                <p id="bio-error" className="text-[10px] text-red-500 mt-1" role="alert">
-                  {errors.bio.message}
-                </p>
-              )}
-              <p
-                className={`text-[10px] mt-1 text-right ${
-                  bioLength >= 500
-                    ? "text-red-500"
-                    : bioLength >= 450
-                      ? "text-yellow-500"
-                      : "text-[#6F6F6F]"
-                }`}
-              >
-                {bioLength}/500
-              </p>
-            </div>
-
-            <div className="flex flex-col mt-7">
-              <label htmlFor="website-url" className="text-sm font-medium text-white mb-2">
-                Website URL
-              </label>
-              <input
-                id="website-url"
-                {...register("website")}
-                placeholder="https://"
-                maxLength={500}
-                aria-invalid={errors.website ? "true" : "false"}
-                aria-describedby={errors.website ? "website-error" : undefined}
-                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 w-full max-w-[660px] h-12 rounded-2xl"
-                style={{
-                  background: "#FFFFFF0A",
-                  backdropFilter: "blur(40px)",
-                  border: errors.website ? "1px solid #ef4444" : "none",
-                }}
-              />
-              {errors.website && (
-                <p id="website-error" className="text-[10px] text-red-500 mt-1" role="alert">
-                  {errors.website.message}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col mt-7">
-              <label htmlFor="twitter-username" className="text-sm font-medium text-white mb-2">
-                X (Twitter)
-              </label>
-              <input
-                id="twitter-username"
-                {...register("twitter")}
-                placeholder="Enter your X username"
-                maxLength={50}
-                aria-invalid={errors.twitter ? "true" : "false"}
-                aria-describedby={errors.twitter ? "twitter-error" : undefined}
-                className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 w-full max-w-[660px] h-12 rounded-2xl"
-                style={{
-                  background: "#FFFFFF0A",
-                  backdropFilter: "blur(40px)",
-                  border: errors.twitter ? "1px solid #ef4444" : "none",
-                }}
-              />
-              {errors.twitter && (
-                <p id="twitter-error" className="text-[10px] text-red-500 mt-1" role="alert">
-                  {errors.twitter.message}
-                </p>
-              )}
-            </div>
-
+          <div>
+            <ProfileBioForm />
             <button
               onClick={handleSubmit(onSubmit)}
               disabled={isSubmitting || !isValid}
-              className={` ${
+              className={`${
                 isSubmitting || !isValid ? "opacity-70 cursor-not-allowed" : ""
               } w-[131px] rounded-lg cursor-pointer bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-6 py-3 transition-colors mt-6`}
             >
@@ -441,182 +179,24 @@ export default function ProfilePage() {
           </div>
 
           {/* Right Column - Profile Image */}
-          <div className="border border-[#2A2A2A] mt-12 bg-[#161616] p-6 flex flex-col w-full max-w-[244px] h-[321px] rounded-2xl">
-            {profileImage ? (
-              <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
-                <Image
-                  src={profileImage}
-                  alt="Artist profile image"
-                  fill
-                  sizes="(max-width: 640px) 80px, (max-width: 1024px) 160px, 160px"
-                  className="object-cover"
-                  unoptimized
-                />
-              </div>
-            ) : (
-              <div className="w-full aspect-square rounded-lg bg-linear-to-br from-gray-600 to-gray-800 mb-4 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <svg
-                    className="w-24 h-24 text-gray-400"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-              </div>
-            )}
-
-            <h3 className="text-white font-semibold mb-2 text-sm">Profile</h3>
-            <p className="text-xs text-[#A3A3A3] mb-4 flex-1">
-              Make your artist profile stand out with a striking cover image
-            </p>
-
-            <input
-              type="file"
-              accept={toAcceptAttribute(PROFILE_IMAGE_RULES)}
-              className="hidden"
-              {...register("profileImage")}
-              ref={profileInputRef}
-              onChange={handleProfileImageUpload}
-              aria-label="Upload profile image"
-            />
-
-            <button
-              onClick={() => profileInputRef.current?.click()}
-              className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors text-sm"
-            >
-              Add Cover
-            </button>
-          </div>
+          <ProfileMediaEditor
+            profileImage={profileImage}
+            onImageChange={handleImageChange}
+            onCropStart={handleCropStart}
+            onCropCancel={handleCropCancel}
+            cropSrc={cropSrc}
+          />
         </div>
       )}
 
       {activeTab === "settings" && (
-        <div id="settings-panel" role="tabpanel" className="mt-6 space-y-6">
-          {/* Comments on songs */}
-          <div className="flex items-start justify-between p-6 rounded-lg  ">
-            <div className="flex-1 pr-6">
-              <h3 className="text-white font-semibold mb-2">Comments on songs</h3>
-              <p className="text-sm text-[#A3A3A3]">
-                Stay updated on feedback, reactions, and conversations around your tracks
-              </p>
-            </div>
-            <button
-              onClick={() =>
-                setNotifications((prev) => ({
-                  ...prev,
-                  commentsOnSongs: !prev.commentsOnSongs,
-                }))
-              }
-              role="switch"
-              disabled={!canEditSettings}
-              aria-checked={notifications.commentsOnSongs}
-              title={canEditSettings ? undefined : getSettingsRestrictionReason(role)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                notifications.commentsOnSongs ? "bg-[#D2045B]" : "bg-[#2A2A2A]"
-              } ${!canEditSettings ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <span
-                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                  notifications.commentsOnSongs ? "translate-x-6" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Sales and Royalties updates */}
-          <div className="flex items-start justify-between p-6 rounded-lg ">
-            <div className="flex-1 pr-6">
-              <h3 className="text-white font-semibold mb-2">Sales and Royalties updates</h3>
-              <p className="text-sm text-[#A3A3A3]">
-                Track your earnings and get notified about new sales and royalty payouts.
-              </p>
-            </div>
-            <button
-              onClick={() =>
-                setNotifications((prev) => ({
-                  ...prev,
-                  salesAndRoyalties: !prev.salesAndRoyalties,
-                }))
-              }
-              role="switch"
-              disabled={!canEditSettings}
-              aria-checked={notifications.salesAndRoyalties}
-              title={canEditSettings ? undefined : getSettingsRestrictionReason(role)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                notifications.salesAndRoyalties ? "bg-[#D2045B]" : "bg-[#2A2A2A]"
-              } ${!canEditSettings ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <span
-                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                  notifications.salesAndRoyalties ? "translate-x-6" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Platform Alerts */}
-          <div className="flex items-start justify-between p-6 rounded-lg ">
-            <div className="flex-1 pr-6">
-              <h3 className="text-white font-semibold mb-2">Platform Alerts</h3>
-              <p className="text-sm text-[#A3A3A3]">
-                Receive important updates about your account, platform changes, and security
-                notices.
-              </p>
-            </div>
-            <button
-              onClick={() =>
-                setNotifications((prev) => ({
-                  ...prev,
-                  platformAlerts: !prev.platformAlerts,
-                }))
-              }
-              role="switch"
-              disabled={!canEditSettings}
-              aria-checked={notifications.platformAlerts}
-              title={canEditSettings ? undefined : getSettingsRestrictionReason(role)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                notifications.platformAlerts ? "bg-[#D2045B]" : "bg-[#2A2A2A]"
-              } ${!canEditSettings ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <span
-                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                  notifications.platformAlerts ? "translate-x-6" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {!canEditSettings && (
-            <p className="text-xs text-[#A3A3A3] italic" data-testid="settings-readonly-notice">
-              {`You're signed in as a ${roleInfo.label.toLowerCase()} — settings are managed by the workspace owner.`}
-            </p>
-          )}
-        </div>
-      )}
-
-      {activeTab === "onchain" && (
-        <div id="onchain-panel" role="tabpanel" className="mt-6">
-          <ErrorBoundary
-            fallbackTitle="On-Chain Profile Error"
-            fallbackDescription="A wallet extension error or unexpected contract response prevented the on-chain tab from loading. Check your Freighter wallet connection and retry. Your profile editor tab remains accessible."
-            retryLabel="Retry / Reconnect"
-          >
-            <SetupArtistOnChainProfile />
-          </ErrorBoundary>
-        </div>
-      )}
-
-      {cropSrc && (
-        <ImageCropper
-          imageSrc={cropSrc}
-          aspect={1}
-          onCropComplete={handleCropComplete}
-          onCancel={handleCropCancel}
+        <ProfileSettingsTab
+          notifications={notifications}
+          onNotificationChange={handleNotificationChange}
         />
       )}
-    </>
+
+      {activeTab === "onchain" && <OnChainProfileTab />}
+    </FormProvider>
   );
 }

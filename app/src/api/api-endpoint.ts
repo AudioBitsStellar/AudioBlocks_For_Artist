@@ -1,6 +1,7 @@
 export const AUTH_ENDPOINTS = {
   REGISTER_EMAIL: "/auth/register-email",
   LOGIN_EMAIL: "/auth/login-email",
+  PRIVY_LOGIN: "/auth/privy/login",
 };
 
 export const USER_ENDPOINTS = {
