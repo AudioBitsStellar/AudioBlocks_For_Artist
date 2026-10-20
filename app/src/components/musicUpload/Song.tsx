@@ -305,6 +305,9 @@ const Song = () => {
     setUploadProgress(0);
     setPreviewUrl(null);
     setAudioMetadata(null);
+    setRetryCount(0);
+    setFailedChunkIndex(0);
+    setUploadError(null);
   };
 
   const handleResumeRequest = () => {
@@ -339,6 +342,7 @@ const Song = () => {
 
     try {
       setIsUploading(true);
+      setUploadError(null);
       setUploadedFile((prev) => (prev ? { ...prev, status: "uploading" } : prev));
 
       // 1. Upload the chunks the server does not have yet
@@ -387,6 +391,7 @@ const Song = () => {
       // a clear backend error if clicked too early.
       setMintableSongId(songId || null);
 
+      setUploadError(null);
       setUploadedFile((prev) => (prev ? { ...prev, status: "success" } : prev));
 
       clearSavedData();
@@ -410,6 +415,7 @@ const Song = () => {
       }
       console.error(err);
       const reason = getErrorMessage(err);
+      setUploadError(reason);
       analytics.uploadFailed({ fileId, reason });
       setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
       if (isRetryableError(err)) {
@@ -419,6 +425,23 @@ const Song = () => {
       }
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!audioFile || !fileId || retryCount >= MAX_RETRY_ATTEMPTS || retryInProgressRef.current) {
+      return;
+    }
+
+    retryInProgressRef.current = true;
+    try {
+      if (!(await trigger())) return;
+
+      cancelRequestedRef.current = false;
+      setRetryCount((prev) => prev + 1);
+      await onSubmit(getValues());
+    } finally {
+      retryInProgressRef.current = false;
     }
   };
 
@@ -852,7 +875,7 @@ const Song = () => {
                       {uploadedFile.status === "failed" && (
                         <span className="text-[10px] text-red-500 font-medium">
                           {retryCount >= MAX_RETRY_ATTEMPTS
-                            ? "Max retries reached"
+                            ? "Upload failed after max retries"
                             : "Upload failed"}
                         </span>
                       )}
@@ -877,6 +900,17 @@ const Song = () => {
                         </span>
                       )}
                     </div>
+                    {uploadedFile.status === "failed" && (
+                      <p
+                        className="text-[10px] text-red-400 truncate"
+                        role="alert"
+                        title={uploadError ?? undefined}
+                      >
+                        {retryCount >= MAX_RETRY_ATTEMPTS
+                          ? `Upload failed after ${MAX_RETRY_ATTEMPTS} retries. Start over to try again.`
+                          : (uploadError ?? "The upload failed. Try again.")}
+                      </p>
+                    )}
                     {uploadedFile.status === "uploading" && (
                       <div className="w-full bg-zinc-800 rounded-full h-1 mt-1.5 overflow-hidden">
                         <div
@@ -901,12 +935,21 @@ const Song = () => {
                   {uploadedFile.status === "failed" && retryCount < MAX_RETRY_ATTEMPTS && (
                     <button
                       onClick={handleRetry}
-                      className="p-1 text-[#A3A3A3] hover:text-white transition-colors"
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] text-[#A3A3A3] hover:text-white transition-colors"
                       disabled={isBusy}
                       title="Retry upload"
                       aria-label="Retry upload"
                     >
-                      <RotateCw size={14} />
+                      <RotateCw size={12} />
+                      Retry
+                    </button>
+                  )}
+                  {uploadedFile.status === "failed" && retryCount >= MAX_RETRY_ATTEMPTS && (
+                    <button
+                      onClick={handleDelete}
+                      className="px-2 py-1 text-[10px] font-medium text-white hover:text-[#D2045B] transition-colors"
+                    >
+                      Start over
                     </button>
                   )}
                   <button
