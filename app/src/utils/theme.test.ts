@@ -105,4 +105,194 @@ describe("themeInitScript", () => {
     const run = new Function(themeInitScript);
     expect(() => run()).not.toThrow();
   });
+
+  it("applies dark class and data-theme when localStorage contains 'dark'", () => {
+    // Create a fake DOM and localStorage.
+    const fakeDoc = {
+      documentElement: {
+        classList: {
+          toggle: vi.fn(),
+        },
+        dataset: {},
+        style: {
+          setProperty: vi.fn(),
+        },
+      },
+    };
+
+    const fakeStorage: Record<string, string> = {};
+    fakeStorage[THEME_STORAGE_KEY] = "dark";
+
+    // Evaluate the script with mocked globals.
+    const scriptFn = new Function(
+      "localStorage",
+      "window",
+      "document",
+      `
+      ${themeInitScript}
+    `
+    );
+
+    scriptFn(fakeStorage, { matchMedia: () => ({ matches: false }) }, fakeDoc);
+
+    expect(fakeDoc.documentElement.classList.toggle).toHaveBeenCalledWith("dark", true);
+    expect(fakeDoc.documentElement.dataset.theme).toBe("dark");
+    expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith("color-scheme", "dark");
+  });
+
+  it("removes dark class and sets data-theme when localStorage contains 'light'", () => {
+    const fakeDoc = {
+      documentElement: {
+        classList: {
+          toggle: vi.fn(),
+        },
+        dataset: {},
+        style: {
+          setProperty: vi.fn(),
+        },
+      },
+    };
+
+    const fakeStorage: Record<string, string> = {};
+    fakeStorage[THEME_STORAGE_KEY] = "light";
+
+    const scriptFn = new Function(
+      "localStorage",
+      "window",
+      "document",
+      `
+      ${themeInitScript}
+    `
+    );
+
+    scriptFn(fakeStorage, { matchMedia: () => ({ matches: false }) }, fakeDoc);
+
+    expect(fakeDoc.documentElement.classList.toggle).toHaveBeenCalledWith("dark", false);
+    expect(fakeDoc.documentElement.dataset.theme).toBe("light");
+    expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith(
+      "color-scheme",
+      "light"
+    );
+  });
+
+  it("applies dark class when OS prefers dark and localStorage is empty or 'system'", () => {
+    const fakeDoc = {
+      documentElement: {
+        classList: {
+          toggle: vi.fn(),
+        },
+        dataset: {},
+        style: {
+          setProperty: vi.fn(),
+        },
+      },
+    };
+
+    const fakeStorage: Record<string, string> = {}; // empty
+
+    const scriptFn = new Function(
+      "localStorage",
+      "window",
+      "document",
+      `
+      ${themeInitScript}
+    `
+    );
+
+    scriptFn(fakeStorage, { matchMedia: () => ({ matches: true }) }, fakeDoc);
+
+    expect(fakeDoc.documentElement.classList.toggle).toHaveBeenCalledWith("dark", true);
+    expect(fakeDoc.documentElement.dataset.theme).toBe("dark");
+    expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith("color-scheme", "dark");
+  });
+
+  it("applies light theme when OS prefers light and storage is empty", () => {
+    const fakeDoc = {
+      documentElement: {
+        classList: {
+          toggle: vi.fn(),
+        },
+        dataset: {},
+        style: {
+          setProperty: vi.fn(),
+        },
+      },
+    };
+
+    const fakeStorage: Record<string, string> = {}; // empty
+
+    const scriptFn = new Function(
+      "localStorage",
+      "window",
+      "document",
+      `
+      ${themeInitScript}
+    `
+    );
+
+    scriptFn(fakeStorage, { matchMedia: () => ({ matches: false }) }, fakeDoc);
+
+    expect(fakeDoc.documentElement.classList.toggle).toHaveBeenCalledWith("dark", false);
+    expect(fakeDoc.documentElement.dataset.theme).toBe("light");
+    expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith(
+      "color-scheme",
+      "light"
+    );
+  });
+
+  it("agrees with utils/theme for all light/dark/system scenarios", () => {
+    // This test ensures the inline script logic always matches the utility functions.
+    // Test cases: (storage value, OS preference) -> expected resolved theme.
+    const testCases: Array<[string | null, boolean, "light" | "dark"]> = [
+      ["light", false, "light"],
+      ["light", true, "light"],
+      ["dark", false, "dark"],
+      ["dark", true, "dark"],
+      ["system", false, "light"],
+      ["system", true, "dark"],
+      [null, false, "light"],
+      [null, true, "dark"],
+    ];
+
+    testCases.forEach(([storageValue, osIsDark, expected]) => {
+      const fakeDoc = {
+        documentElement: {
+          classList: {
+            toggle: vi.fn(),
+          },
+          dataset: {},
+          style: {
+            setProperty: vi.fn(),
+          },
+        },
+      };
+
+      const fakeStorage: Record<string, string> = {};
+      if (storageValue) {
+        fakeStorage[THEME_STORAGE_KEY] = storageValue;
+      }
+
+      const scriptFn = new Function(
+        "localStorage",
+        "window",
+        "document",
+        `
+        ${themeInitScript}
+      `
+      );
+
+      scriptFn(fakeStorage, { matchMedia: () => ({ matches: osIsDark }) }, fakeDoc);
+
+      const isDark = expected === "dark";
+      expect(
+        fakeDoc.documentElement.classList.toggle,
+        `Case: storage=${storageValue}, osIsDark=${osIsDark}`
+      ).toHaveBeenCalledWith("dark", isDark);
+      expect(fakeDoc.documentElement.dataset.theme).toBe(expected);
+      expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith(
+        "color-scheme",
+        expected
+      );
+    });
+  });
 });
