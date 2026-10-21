@@ -115,7 +115,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       }
       return response;
     },
-    async (error: AxiosError) => {
+    async (error: AxiosError<{ message?: string; error?: string; code?: string }>) => {
       const config = error.config as TrackedConfig | undefined;
 
       recordTiming(config);
