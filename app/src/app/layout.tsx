@@ -7,6 +7,8 @@ import Provider from "@/context/provider";
 import ThemeScript from "@/components/ThemeScript";
 import WebVitalsReporter from "@/components/WebVitalsReporter";
 import OfflineIndicator from "@/components/OfflineIndicator";
+import AnalyticsScript from "@/components/AnalyticsScript";
+import AnalyticsConsentBanner from "@/components/AnalyticsConsentBanner";
 import { Toaster } from "sonner";
 import { defaultMetadata } from "@/utils/metadata";
 
@@ -101,6 +103,8 @@ export default function RootLayout({
         <Provider>
           <OfflineIndicator />
           {children}
+          <AnalyticsConsentBanner />
+          <AnalyticsScript />
           <Toaster
             position="top-right"
             expand

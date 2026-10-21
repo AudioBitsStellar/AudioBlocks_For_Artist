@@ -20,7 +20,8 @@ const DEV_CONNECT_SOURCES = "http://localhost:*";
  * `unsafe-inline`, so the nonce is only included for production.
  */
 export function buildCsp({ isDev, nonce }: CspOptions): string {
-  const thirdPartyScripts = "https://js.stripe.com https://*.sentry.io";
+  // cdn.segment.com: the analytics provider, loaded only after consent (#668).
+  const thirdPartyScripts = "https://js.stripe.com https://*.sentry.io https://cdn.segment.com";
   const scriptSources = isDev
     ? `'self' 'unsafe-inline' 'unsafe-eval' ${thirdPartyScripts}`
     : `'self' 'nonce-${nonce ?? ""}' 'strict-dynamic' ${thirdPartyScripts}`;

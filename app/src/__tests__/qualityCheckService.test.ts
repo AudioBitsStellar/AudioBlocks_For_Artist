@@ -26,6 +26,7 @@ import {
   saveNotificationPreferences,
 } from "@/services/notificationPreferences";
 import { filterByPreferences, mergeById } from "@/services/notificationService";
+import { setAnalyticsConsent } from "@/lib/analyticsConsent";
 
 const CHECKS_KEY = "audioblocks:quality-checks:v1";
 const PREFS_KEY = "audioblocks:notification-preferences:v1";
@@ -265,6 +266,7 @@ describe("reporting to analytics", () => {
 
   beforeEach(() => {
     vi.stubEnv("NEXT_PUBLIC_ANALYTICS_WRITE_KEY", "write-key-under-test");
+    setAnalyticsConsent("accepted");
     Object.assign(window, { analytics: { track } });
   });
 

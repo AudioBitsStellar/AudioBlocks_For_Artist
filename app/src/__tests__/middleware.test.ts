@@ -152,6 +152,7 @@ describe("Middleware auth decision & returnTo validation", () => {
       for (const policy of [buildCsp({ isDev: true }), buildCsp({ isDev: false, nonce: "n" })]) {
         expect(scriptSrc(policy)).toContain("https://js.stripe.com");
         expect(scriptSrc(policy)).toContain("https://*.sentry.io");
+        expect(scriptSrc(policy)).toContain("https://cdn.segment.com");
         expect(policy).toContain("frame-ancestors 'none'");
         expect(policy).toContain("object-src 'none'");
       }
