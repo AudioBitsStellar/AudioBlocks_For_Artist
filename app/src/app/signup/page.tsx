@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import { toast } from "sonner";
 import MusicLoader from "@/components/MusicLoader";
+import { establishSession } from "@/api/session";
 import useAuthServices from "@/services/authService";
-import { startVerification } from "@/services/emailVerificationService";
 import { RegisterEmailPayload } from "@/types";
 
 type SignupFormValues = Omit<RegisterEmailPayload, "role">;
@@ -30,11 +29,18 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     try {
       const result = await registerMutation.mutateAsync({ ...data, role: "artist" });
-      Cookies.set("audioblocks_jwt", result.token);
-      // Onboarding doesn't end at account creation: issue the first email
-      // verification code (#459) and send the artist to enter it.
-      startVerification(data.email);
+      const stored = await establishSession({
+        token: result.token,
+        refreshToken: result.refreshToken,
+        twoFactorEnabled: false,
+      });
+      if (!stored) {
+        toast.error("We couldn't start your session. Please try again.");
+        return;
+      }
       toast.success("Account created successfully!");
+      // The verification link is in the artist's inbox. The dashboard gate sends
+      // them to the check-inbox step until the link is used (#519).
       router.push("/onboarding");
     } catch (err) {
       // onError on the mutation already toasts the message

@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { CODE_LENGTH } from "@/services/emailVerificationService";
+
+/** Length of the one-time codes used for two-factor authentication. */
+const DEFAULT_CODE_LENGTH = 6;
 
 export interface OtpInputProps {
-  /** The digits entered so far, as a plain string of at most `CODE_LENGTH`. */
+  /** The digits entered so far, as a plain string of at most `length` characters. */
   value: string;
   onChange: (value: string) => void;
   /** Fired once every box is filled, with the complete code. */
@@ -32,7 +34,7 @@ export default function OtpInput({
   onComplete,
   disabled = false,
   name = "otp",
-  length = CODE_LENGTH,
+  length = DEFAULT_CODE_LENGTH,
   autoFocus = false,
 }: OtpInputProps) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);

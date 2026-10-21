@@ -63,6 +63,8 @@ export interface RegisterEmailPayload {
 export interface LoginEmailPayload {
   email: string;
   password: string;
+  /** Second factor when retrying a login with a recovery code (#518). */
+  recoveryCode?: string;
 }
 
 export interface AuthUser {
@@ -73,12 +75,29 @@ export interface AuthUser {
   name?: string;
   /** See the note on `AuthUser` in `./api.ts` — optional until the backend returns it. */
   emailVerified?: boolean;
+  /** Whether the account has two-factor authentication on (#518). */
+  twoFactorEnabled?: boolean;
   aiStudioEnabled?: boolean;
 }
 
 export interface AuthResponse {
   user: AuthUser;
   token: string;
+  /** Renews the access token. Absent when the backend does not issue one (#521). */
+  refreshToken?: string;
+}
+
+/**
+ * Result of `POST /auth/login-email`. For an account with two-factor
+ * authentication the backend returns a challenge instead of a session, and the
+ * client completes it with the partial token (#518).
+ */
+export interface LoginEmailResponse {
+  user?: AuthUser;
+  token?: string;
+  refreshToken?: string;
+  twoFactorRequired?: boolean;
+  partialToken?: string;
 }
 
 export interface EarningsDataPoint {

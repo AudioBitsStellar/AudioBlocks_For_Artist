@@ -1,160 +1,182 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import useAuthServices, {
-  storeToken,
-  getStoredToken,
-  isTokenExpired,
-  clearTokens,
-  refreshAccessToken,
-} from "@/services/authService";
-import Cookies from "js-cookie";
+// @vitest-environment node
+//
+// Server-side session handling (#521): the same-origin backend proxy and the
+// session routes. The access token must never reach the browser, and an expired
+// access token must be renewed once without signing the artist out.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 
-// ── Mocks ────────────────────────────────────────────────────────────────────
+import { GET } from "@/app/api/backend/[...path]/route";
+import { POST as startSession } from "@/app/api/session/route";
+import { POST as refreshRoute } from "@/app/api/session/refresh/route";
 
-const mockMutateAsync = vi.fn();
+const BACKEND = "http://backend.test/api";
 
-vi.mock("@/api/queryClient", () => ({
-  usePost: vi.fn(
-    (endpoint: string, options?: { onSuccess?: () => void; onError?: (err: Error) => void }) => ({
-      mutateAsync: mockMutateAsync,
-      isPending: false,
-      options,
-    })
-  ),
-}));
+function makeToken(claims: Record<string, unknown>): string {
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${encode({ alg: "HS256", typ: "JWT" })}.${encode(claims)}.signature`;
+}
 
-vi.mock("@/hooks/useToastHandler", () => ({
-  useHandleError: () => vi.fn((msg: string) => msg),
-  useHandleSuccess: () => vi.fn((msg: string) => msg),
-}));
+const OLD_TOKEN = makeToken({ id: "user-1", exp: 1 });
+const NEW_TOKEN = makeToken({ id: "user-1", exp: 9999999999 });
+const REFRESH_TOKEN = "refresh-old";
 
-const FAKE_TOKEN = "header.payload.signature";
-const REFRESHED_TOKEN = "header2.payload2.signature2";
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
-describe("authService — unit tests", () => {
+function proxyRequest(cookies: Record<string, string>): NextRequest {
+  const cookie = Object.entries(cookies)
+    .map(([name, value]) => `${name}=${value}`)
+    .join("; ");
+  return new NextRequest("http://localhost:3000/api/backend/users/profile", {
+    headers: cookie ? { cookie } : {},
+  });
+}
+
+const profileParams = { params: Promise.resolve({ path: ["users", "profile"] }) };
+
+describe("backend proxy (#521)", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    localStorage.clear();
-    Cookies.remove("audioblocks_jwt");
+    process.env.NEXT_PUBLIC_API_BASE_URL = BACKEND;
   });
 
-  describe("useAuthServices hooks", () => {
-    it("provides useRegisterEmail and useLoginEmail hooks", () => {
-      const { result } = renderHook(() => useAuthServices());
-      expect(result.current.useRegisterEmail).toBeDefined();
-      expect(result.current.useLoginEmail).toBeDefined();
-    });
-
-    it("useRegisterEmail mutation executes successfully", async () => {
-      mockMutateAsync.mockResolvedValueOnce({
-        success: true,
-        token: FAKE_TOKEN,
-        user: { id: "1", role: "artist" },
-      });
-      const { result } = renderHook(() => useAuthServices());
-      const registerMutation = result.current.useRegisterEmail();
-
-      const payload = {
-        name: "Test Artist",
-        username: "testartist",
-        email: "artist@example.com",
-        password: "password123",
-        role: "artist" as const,
-      };
-
-      const res = await registerMutation.mutateAsync(payload);
-      expect(res.success).toBe(true);
-      expect(res.token).toBe(FAKE_TOKEN);
-    });
-
-    it("useRegisterEmail surfaces errors on duplicate email or failure", async () => {
-      mockMutateAsync.mockRejectedValueOnce(new Error("Email already registered"));
-      const { result } = renderHook(() => useAuthServices());
-      const registerMutation = result.current.useRegisterEmail();
-
-      const payload = {
-        name: "Test Artist",
-        username: "testartist",
-        email: "duplicate@example.com",
-        password: "password123",
-        role: "artist" as const,
-      };
-
-      await expect(registerMutation.mutateAsync(payload)).rejects.toThrow(
-        "Email already registered"
-      );
-    });
-
-    it("useLoginEmail mutation executes login successfully", async () => {
-      mockMutateAsync.mockResolvedValueOnce({
-        success: true,
-        token: FAKE_TOKEN,
-        user: { id: "1", role: "artist" },
-      });
-      const { result } = renderHook(() => useAuthServices());
-      const loginMutation = result.current.useLoginEmail();
-
-      const payload = {
-        email: "artist@example.com",
-        password: "password123",
-      };
-
-      const res = await loginMutation.mutateAsync(payload);
-      expect(res.success).toBe(true);
-      expect(res.token).toBe(FAKE_TOKEN);
-    });
-
-    it("useLoginEmail fails with invalid credentials", async () => {
-      mockMutateAsync.mockRejectedValueOnce(new Error("Invalid email or password"));
-      const { result } = renderHook(() => useAuthServices());
-      const loginMutation = result.current.useLoginEmail();
-
-      const payload = {
-        email: "wrong@example.com",
-        password: "wrongpassword",
-      };
-
-      await expect(loginMutation.mutateAsync(payload)).rejects.toThrow("Invalid email or password");
-    });
-
-    it("useLoginEmail handles network errors gracefully", async () => {
-      mockMutateAsync.mockRejectedValueOnce(new Error("Network error: Unable to connect"));
-      const { result } = renderHook(() => useAuthServices());
-      const loginMutation = result.current.useLoginEmail();
-
-      await expect(
-        loginMutation.mutateAsync({ email: "test@example.com", password: "password" })
-      ).rejects.toThrow("Network error: Unable to connect");
-    });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.NEXT_PUBLIC_API_BASE_URL;
   });
 
-  describe("Token management & Refresh flow", () => {
-    it("stores token and retrieves valid token", () => {
-      storeToken(FAKE_TOKEN, 3600);
-      expect(getStoredToken()).toBe(FAKE_TOKEN);
-      expect(isTokenExpired()).toBe(false);
+  it("forwards the request with the httpOnly access token as a Bearer header", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ success: true, data: { id: "user-1" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(proxyRequest({ audioblocks_session: OLD_TOKEN }), profileParams);
+
+    expect(response.status).toBe(200);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(`${BACKEND}/users/profile`);
+    const headers = new Headers(init.headers);
+    expect(headers.get("authorization")).toBe(`Bearer ${OLD_TOKEN}`);
+    expect(headers.get("cookie")).toBeNull();
+  });
+
+  it("renews an expired access token once and retries the request", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ message: "expired" }, 401))
+      .mockResolvedValueOnce(
+        jsonResponse({ success: true, token: NEW_TOKEN, refreshToken: "refresh-new" })
+      )
+      .mockResolvedValueOnce(jsonResponse({ success: true, data: { id: "user-1" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      proxyRequest({ audioblocks_session: OLD_TOKEN, audioblocks_refresh: REFRESH_TOKEN }),
+      profileParams
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `${BACKEND}/auth/refresh`,
+      expect.objectContaining({ method: "POST" })
+    );
+    const [, retryInit] = fetchMock.mock.calls[2] as unknown as [string, RequestInit];
+    expect(new Headers(retryInit.headers).get("authorization")).toBe(`Bearer ${NEW_TOKEN}`);
+    expect(response.cookies.get("audioblocks_session")?.value).toBe(NEW_TOKEN);
+    expect(response.cookies.get("audioblocks_refresh")?.value).toBe("refresh-new");
+  });
+
+  it("clears the session when the refresh token is refused", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ message: "expired" }, 401))
+      .mockResolvedValueOnce(jsonResponse({ message: "revoked" }, 401));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      proxyRequest({ audioblocks_session: OLD_TOKEN, audioblocks_refresh: REFRESH_TOKEN }),
+      profileParams
+    );
+
+    expect(response.status).toBe(401);
+    expect(response.cookies.get("audioblocks_session")?.value).toBe("");
+    expect(response.cookies.get("audioblocks_refresh")?.value).toBe("");
+  });
+
+  it("answers 502 when the backend cannot be reached", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      })
+    );
+
+    const response = await GET(proxyRequest({}), profileParams);
+
+    expect(response.status).toBe(502);
+  });
+});
+
+describe("session routes (#521)", () => {
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = BACKEND;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.NEXT_PUBLIC_API_BASE_URL;
+  });
+
+  it("stores the access token in an httpOnly cookie and exposes only the claims", async () => {
+    const request = new NextRequest("http://localhost:3000/api/session", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+      body: JSON.stringify({ token: OLD_TOKEN, refreshToken: REFRESH_TOKEN }),
     });
 
-    it("refreshes token when current token is expired", async () => {
-      storeToken(FAKE_TOKEN, -10);
-      expect(isTokenExpired()).toBe(true);
+    const response = await startSession(request);
 
-      const refreshFn = vi.fn().mockResolvedValueOnce({ token: REFRESHED_TOKEN, expiresIn: 3600 });
-      const token = await refreshAccessToken(refreshFn);
+    expect(response.status).toBe(200);
+    expect(response.cookies.get("audioblocks_session")?.httpOnly).toBe(true);
+    expect(response.cookies.get("audioblocks_refresh")?.httpOnly).toBe(true);
+    const claims = response.cookies.get("audioblocks_session_claims");
+    expect(claims?.httpOnly).toBeFalsy();
+    expect(claims?.value).toBe(OLD_TOKEN.split(".")[1]);
+  });
 
-      expect(refreshFn).toHaveBeenCalledTimes(1);
-      expect(token).toBe(REFRESHED_TOKEN);
-      expect(getStoredToken()).toBe(REFRESHED_TOKEN);
+  it("refuses a session start from a foreign origin", async () => {
+    const request = new NextRequest("http://localhost:3000/api/session", {
+      method: "POST",
+      headers: { origin: "https://attacker.test", "content-type": "application/json" },
+      body: JSON.stringify({ token: OLD_TOKEN }),
     });
 
-    it("clears session tokens and cookies on logout", () => {
-      storeToken(FAKE_TOKEN, 3600);
-      Cookies.set("audioblocks_jwt", FAKE_TOKEN);
+    const response = await startSession(request);
 
-      clearTokens();
+    expect(response.status).toBe(403);
+    expect(response.cookies.get("audioblocks_session")).toBeUndefined();
+  });
 
-      expect(getStoredToken()).toBeNull();
-      expect(Cookies.get("audioblocks_jwt")).toBeUndefined();
+  it("renews the session from the refresh cookie", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => jsonResponse({ success: true, token: NEW_TOKEN, refreshToken: "next" }))
+    );
+    const request = new NextRequest("http://localhost:3000/api/session/refresh", {
+      method: "POST",
+      headers: {
+        origin: "http://localhost:3000",
+        cookie: `audioblocks_refresh=${REFRESH_TOKEN}`,
+      },
     });
+
+    const response = await refreshRoute(request);
+
+    expect(response.status).toBe(200);
+    expect(response.cookies.get("audioblocks_session")?.value).toBe(NEW_TOKEN);
   });
 });

@@ -8,12 +8,10 @@ export interface ReleaseInput {
 }
 
 export class ReleaseService {
-  private static baseUrl = process.env.REACT_APP_API_URL || 'https://api.audiobits.io';
+  private static baseUrl = '/api/backend';
 
   public static async getReleases(): Promise<any[]> {
-    const res = await fetch(`${this.baseUrl}/releases`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
-    });
+    const res = await fetch(`${this.baseUrl}/releases`);
     if (!res.ok) throw new Error('Failed to fetch releases');
     return res.json();
   }
@@ -23,7 +21,6 @@ export class ReleaseService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
       },
       body: JSON.stringify(input),
     });
@@ -36,7 +33,6 @@ export class ReleaseService {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
       },
       body: JSON.stringify(input),
     });
