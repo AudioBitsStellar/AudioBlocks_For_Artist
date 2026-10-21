@@ -1,6 +1,7 @@
 import { ARTIST_UPLOAD_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
+import { TOAST_IDS } from "@/lib/toastIds";
 import { UploadChunkResponse, UploadSong } from "@/types";
 import { UploadCoverResponse as UploadCoverResponseType } from "@/types/api";
 import { SONG_PUBLISHED_INVALIDATIONS } from "@/api/cachePolicy";
@@ -11,36 +12,35 @@ const useUploadServices = () => {
 
   /**
    * Uploads one chunk of a song's audio file as part of a chunked upload.
+   * Chunks don't toast on success (a song is dozens of chunks); the upload's
+   * single success toast comes from `useFinalizeUpload`.
    *
    * @returns A React Query mutation: call `.mutate(formData)` or `.mutateAsync(formData)` with a `FormData` containing `fileId`, `chunkIndex`, and `chunk`.
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useUploadChunk = () => {
     return usePost<UploadChunkResponse>(ARTIST_UPLOAD_ENDPOINTS.UPLOAD_CHUNK, {
-      onSuccess(response: { message?: string }) {
-        handleSuccess(response.message || "Chunk uploaded successfully!");
-        return response;
-      },
       onError(error: Error) {
-        handleError(error.message || "Failed to upload chunk.");
+        handleError(error.message || "Failed to upload chunk.", undefined, {
+          id: TOAST_IDS.upload,
+        });
       },
     });
   };
 
   /**
-   * Uploads a song's cover art.
+   * Uploads a song's cover art. Like chunks, this is one step of the upload,
+   * so it only toasts on failure.
    *
    * @returns A React Query mutation: call `.mutate(formData)` or `.mutateAsync(formData)` with a `FormData` containing `fileId` and `cover`.
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useUploadCover = () => {
     return usePost<UploadCoverResponseType>(ARTIST_UPLOAD_ENDPOINTS.UPLOAD_COVER, {
-      onSuccess(response: { message?: string }) {
-        handleSuccess(response.message || "Cover uploaded successfully!");
-        return response;
-      },
       onError(error: Error) {
-        handleError(error.message || "Failed to upload cover.");
+        handleError(error.message || "Failed to upload cover.", undefined, {
+          id: TOAST_IDS.upload,
+        });
       },
     });
   };
@@ -57,10 +57,12 @@ const useUploadServices = () => {
   const useFinalizeUpload = () => {
     return usePost<UploadSong>(ARTIST_UPLOAD_ENDPOINTS.UPLOAD_SONG, {
       onSuccess(response: { message?: string }) {
-        handleSuccess(response.message || "Song uploaded successfully!");
+        handleSuccess(response.message || "Song uploaded successfully!", { id: TOAST_IDS.upload });
       },
       onError(error: Error) {
-        handleError(error.message || "Failed to finalize upload.");
+        handleError(error.message || "Failed to finalize upload.", undefined, {
+          id: TOAST_IDS.upload,
+        });
       },
       // A newly-published song changes songsPublished/totalEarnings on the
       // overview dashboard (issue #121), plus the statistics and recent

@@ -16,6 +16,7 @@ const SetupArtistOnChainProfile = dynamic(
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { analytics } from "@/lib/analytics";
 import { useToast } from "@/hooks/useToastHandler";
+import { TOAST_IDS } from "@/lib/toastIds";
 import { useRole } from "@/hooks/useRole";
 import { ROLE_BADGE_STYLES, getSettingsRestrictionReason } from "@/types/role";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
@@ -176,11 +177,14 @@ export default function ProfilePage() {
       onError: (err: unknown) => {
         // Route through the shared error-recovery helpers so profile save
         // behaves like the upload / mint flows (see utils/ERROR_RECOVERY.md).
+        // Shares the service toast's id, so this replaces it instead of stacking.
         const message = getErrorMessage(err);
         toast.error(
           isRetryableError(err)
             ? `Couldn't save your profile — check your connection and try again. (${message})`
-            : message || "Couldn't save your profile."
+            : message || "Couldn't save your profile.",
+          undefined,
+          { id: TOAST_IDS.profileSave }
         );
       },
     });

@@ -28,6 +28,7 @@ import {
 } from "@/utils/uploadSessionStore";
 import MusicLoader from "../MusicLoader";
 import { useToast } from "@/hooks/useToastHandler";
+import { TOAST_IDS } from "@/lib/toastIds";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFileDrop } from "@/hooks/useFileDrop";
 import { useLeaveGuard } from "@/hooks/useLeaveGuard";
@@ -384,7 +385,7 @@ const Song = () => {
 
       clearSavedData();
       void deleteUploadSession(fileId).catch(() => undefined);
-      toast.success("Song uploaded successfully!");
+      toast.success("Song uploaded successfully!", { id: TOAST_IDS.upload });
       setAnnouncement(`${audioFile.name} uploaded successfully`);
       lastMilestoneRef.current = 0;
 
@@ -400,7 +401,7 @@ const Song = () => {
       if (error instanceof Error && error.message === "UPLOAD_CANCELLED") {
         setUploadedFile((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
         setAnnouncement(`Upload of ${audioFile.name} cancelled`);
-        toast.success("Upload cancelled");
+        toast.success("Upload cancelled", { id: TOAST_IDS.upload });
         setIsUploading(false);
         return;
       }
@@ -411,9 +412,11 @@ const Song = () => {
       setAnnouncement(`Upload of ${audioFile.name} failed. ${reason}`);
       setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
       if (isRetryableError(err)) {
-        toast.error(`Upload failed — tap retry to try again. (${reason})`);
+        toast.error(`Upload failed — tap retry to try again. (${reason})`, undefined, {
+          id: TOAST_IDS.upload,
+        });
       } else {
-        toast.error(`Upload failed: ${reason}`);
+        toast.error(`Upload failed: ${reason}`, undefined, { id: TOAST_IDS.upload });
       }
     } finally {
       setIsUploading(false);
