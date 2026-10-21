@@ -15,6 +15,7 @@ vi.mock("@/services/uploadService", () => ({
     useUploadChunk: () => ({ mutateAsync: mockMutateChunk, isPending: false }),
     useUploadCover: () => ({ mutateAsync: mockMutateCover, isPending: false }),
     useFinalizeUpload: () => ({ mutateAsync: mockMutateFinalize, isPending: false }),
+    useTranscribeLyrics: () => ({ mutateAsync: vi.fn(), isPending: false }),
   }),
 }));
 
@@ -140,7 +141,8 @@ describe("Music Upload Flow Integration", () => {
 
     // Check that mint button is displayed
     expect(screen.getByTestId("mint-song-btn")).toBeInTheDocument();
-  });
+    // Typing every field with userEvent is slow; give it room on CI.
+  }, 20_000);
 
   it("shows validation error for oversized files", async () => {
     const user = userEvent.setup();
@@ -179,7 +181,10 @@ describe("Music Upload Flow Integration", () => {
     const uploadedChunkIndexes = mockMutateChunk.mock.calls.map(([form]) =>
       (form as FormData).get("chunkIndex")
     );
-    expect(uploadedChunkIndexes).toEqual(["0", "1", "1", "2"]);
+    // Chunks upload in parallel, so the first pass tries every chunk; the
+    // retry then uploads only the one that failed (chunk 1).
+    expect(uploadedChunkIndexes.slice(0, 3).sort()).toEqual(["0", "1", "2"]);
+    expect(uploadedChunkIndexes.slice(3)).toEqual(["1"]);
   });
 
   it("shows a terminal error and start-over action after three retries", async () => {
