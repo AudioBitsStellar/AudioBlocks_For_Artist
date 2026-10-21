@@ -1,54 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wallet, RefreshCw, ExternalLink } from "lucide-react";
+import { Wallet, RefreshCw, ExternalLink, AlertCircle } from "lucide-react";
 import { useFreighter } from "@/lib/freighter";
+import { useStellarNetwork } from "@/components/contexts/StellarNetworkContext";
+import { fetchAccountBalances, explorerAccountUrl } from "@/lib/horizon";
 import { toast } from "sonner";
-
-interface WalletBalance {
-  native: number;
-  assetCode: string;
-  assetIssuer: string;
-}
+import { useQuery } from "@tanstack/react-query";
 
 export default function WalletSettingsPage() {
   const { address, isConnected, connect, disconnect } = useFreighter();
-  const [balance, setBalance] = useState<WalletBalance | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const { network } = useStellarNetwork();
 
-  const fetchBalance = async () => {
-    if (!address) return;
-    setIsLoading(true);
-    try {
-      // Fetch native XLM balance from Horizon
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_HORIZON_URL || "https://horizon-testnet.stellar.org"}/accounts/${address}`
-      );
-      if (!response.ok) throw new Error("Failed to fetch balance");
-      const data = await response.json();
-      const nativeBalance = data.balances?.find(
-        (b: { asset_type: string }) => b.asset_type === "native"
-      );
-      setBalance({
-        native: nativeBalance ? parseFloat(nativeBalance.balance) : 0,
-        assetCode: "XLM",
-        assetIssuer: "",
-      });
-      setLastChecked(new Date());
-    } catch (err) {
-      toast.error("Failed to fetch wallet balance");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+  const {
+    data: balances,
+    isLoading,
+    refetch,
+    error,
+  } = useQuery({
+    queryKey: ["wallet-balance", address, network.id],
+    queryFn: async () => {
+      if (!address) return null;
+      return await fetchAccountBalances(address);
+    },
+    enabled: isConnected && !!address,
+    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: true,
+  });
+
+  const isUnfunded = balances === null && !error;
+  const nativeBalance = balances?.find((b) => b.asset_type === "native");
+  const xlmAmount = nativeBalance ? parseFloat(nativeBalance.balance) : 0;
+
+  const handleRefresh = () => {
+    refetch();
   };
 
-  useEffect(() => {
-    if (isConnected && address) {
-      fetchBalance();
-    }
-  }, [isConnected, address]);
+  const friendbotUrl = network.id === "testnet" && address
+    ? `https://friendbot.stellar.org?addr=${address}`
+    : null;
 
   return (
     <div className="space-y-6">
@@ -90,7 +80,7 @@ export default function WalletSettingsPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text">Balance</h3>
               <button
-                onClick={fetchBalance}
+                onClick={handleRefresh}
                 disabled={isLoading}
                 className="p-2 rounded-full text-text-muted hover:text-text hover:bg-surface-raised transition-colors disabled:opacity-50"
                 title="Refresh balance"
@@ -100,7 +90,39 @@ export default function WalletSettingsPage() {
               </button>
             </div>
 
-            {balance ? (
+            {error ? (
+              <div className="bg-surface-raised rounded-xl p-4 space-y-3 border border-red-500/20">
+                <div className="flex items-center gap-3 text-red-400">
+                  <AlertCircle size={20} />
+                  <p className="text-sm">Failed to fetch wallet balance. Please try again.</p>
+                </div>
+              </div>
+            ) : isUnfunded ? (
+              <div className="bg-surface-raised rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                    <AlertCircle size={20} className="text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-text">Account Not Funded</p>
+                    <p className="text-xs text-text-muted">
+                      This account needs to be funded with at least 1 XLM to be active on the network.
+                    </p>
+                  </div>
+                </div>
+                {friendbotUrl && (
+                  <a
+                    href={friendbotUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                  >
+                    Fund with Friendbot (Testnet)
+                    <ExternalLink size={12} />
+                  </a>
+                )}
+              </div>
+            ) : balances ? (
               <div className="bg-surface-raised rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -108,15 +130,15 @@ export default function WalletSettingsPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-text">
-                      {balance.native.toFixed(4)} {balance.assetCode}
+                      {xlmAmount.toFixed(4)} XLM
                     </p>
                     <p className="text-xs text-text-muted">
-                      Last checked: {lastChecked?.toLocaleTimeString() || "Never"}
+                      Network: {network.label}
                     </p>
                   </div>
                 </div>
                 <a
-                  href={`https://stellar.expert/explorer/testnet/account/${address}`}
+                  href={explorerAccountUrl(address!)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"

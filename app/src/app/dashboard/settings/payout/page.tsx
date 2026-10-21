@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DollarSign, CheckCircle, AlertCircle } from "lucide-react";
+import { DollarSign, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface PayoutMethod {
@@ -13,8 +13,10 @@ interface PayoutMethod {
 }
 
 const STORAGE_KEY = "audioblocks:payout-methods:v1";
-
 const DEFAULT_METHODS: PayoutMethod[] = [];
+
+// Feature flag: set to true when backend endpoint is ready
+const BACKEND_PERSISTENCE_ENABLED = false;
 
 export default function PayoutSettingsPage() {
   const [methods, setMethods] = useState<PayoutMethod[]>(DEFAULT_METHODS);
@@ -86,6 +88,21 @@ export default function PayoutSettingsPage() {
           Configure how you receive royalty payments and earnings from your music.
         </p>
       </div>
+
+      {/* Warning Banner - Backend not ready */}
+      {!BACKEND_PERSISTENCE_ENABLED && (
+        <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-4 flex items-start gap-3">
+          <AlertTriangle size={20} className="text-yellow-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-semibold text-yellow-500 mb-1">Not Saved Yet</p>
+            <p className="text-text-muted">
+              Payout settings are currently stored locally in your browser only. Your settings will
+              not sync across devices and will be lost if you clear browser data. Backend
+              persistence is coming soon.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border-subtle bg-surface p-6 space-y-6">
         {/* Existing Methods */}

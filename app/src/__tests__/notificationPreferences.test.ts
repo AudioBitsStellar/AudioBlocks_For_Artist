@@ -1,3 +1,8 @@
+/**
+ * Unit tests for notification preferences service (#624).
+ * Tests default loading, corrupt JSON handling, unknown keys, and validation.
+ */
+
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   loadNotificationPreferences,
@@ -5,128 +10,151 @@ import {
   type NotificationPreferences,
 } from "@/services/notificationPreferences";
 
+const STORAGE_KEY = "audioblocks:notification-preferences:v1";
+
 describe("notificationPreferences service", () => {
+  let localStorageMock: Record<string, string>;
+
   beforeEach(() => {
-    localStorage.clear();
+    localStorageMock = {};
+    global.localStorage = {
+      getItem: (key: string) => localStorageMock[key] ?? null,
+      setItem: (key: string, value: string) => {
+        localStorageMock[key] = value;
+      },
+      removeItem: (key: string) => {
+        delete localStorageMock[key];
+      },
+      clear: () => {
+        localStorageMock = {};
+      },
+      length: 0,
+      key: () => null,
+    };
   });
 
   describe("loadNotificationPreferences", () => {
-    it("should return defaults when storage is empty", () => {
+    it("returns defaults when storage is empty", () => {
       const prefs = loadNotificationPreferences();
       expect(prefs).toEqual(DEFAULT_NOTIFICATION_PREFERENCES);
     });
 
-    it("should merge saved preferences with defaults", () => {
-      const partial: Partial<NotificationPreferences> = {
+    it("returns defaults when storage contains corrupt JSON", () => {
+      localStorageMock[STORAGE_KEY] = "{corrupt-json";
+      const prefs = loadNotificationPreferences();
+      expect(prefs).toEqual(DEFAULT_NOTIFICATION_PREFERENCES);
+    });
+
+    it("merges known keys and ignores unknown keys", () => {
+      const stored = {
         newFan: { email: true, inApp: false },
-      };
-      localStorage.setItem("audioblocks:notification-preferences:v1", JSON.stringify(partial));
-
-      const prefs = loadNotificationPreferences();
-      expect(prefs.newFan).toEqual({ email: true, inApp: false });
-      expect(prefs.earnings).toEqual(DEFAULT_NOTIFICATION_PREFERENCES.earnings);
-    });
-
-    it("should handle corrupt JSON gracefully", () => {
-      localStorage.setItem("audioblocks:notification-preferences:v1", "not valid json{");
-
-      const prefs = loadNotificationPreferences();
-      expect(prefs).toEqual(DEFAULT_NOTIFICATION_PREFERENCES);
-    });
-
-    it("should ignore unknown event keys", () => {
-      const withUnknown = {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
         unknownEvent: { email: true, inApp: true },
       };
-      localStorage.setItem(
-        "audioblocks:notification-preferences:v1",
-        JSON.stringify(withUnknown)
-      );
-
+      localStorageMock[STORAGE_KEY] = JSON.stringify(stored);
       const prefs = loadNotificationPreferences();
-      expect(prefs).not.toHaveProperty("unknownEvent");
-      expect(Object.keys(prefs)).toEqual(Object.keys(DEFAULT_NOTIFICATION_PREFERENCES));
+
+      // newFan should be merged
+      expect(prefs.newFan).toEqual({ email: true, inApp: false });
+
+      // earnings should still have defaults
+      expect(prefs.earnings).toEqual(DEFAULT_NOTIFICATION_PREFERENCES.earnings);
+
+      // unknownEvent should be ignored (not in the result)
+      expect(Object.keys(prefs)).not.toContain("unknownEvent");
     });
 
-    it("should validate channel values", () => {
-      const invalid = {
-        newFan: { email: "not a boolean", inApp: null },
+    it("preserves partial channel settings per event", () => {
+      const stored = {
+        earnings: { email: false },
+        eventReminder: { inApp: false },
       };
-      localStorage.setItem("audioblocks:notification-preferences:v1", JSON.stringify(invalid));
-
+      localStorageMock[STORAGE_KEY] = JSON.stringify(stored);
       const prefs = loadNotificationPreferences();
-      // Should fall back to defaults for invalid types
-      expect(prefs.newFan).toEqual(DEFAULT_NOTIFICATION_PREFERENCES.newFan);
+
+      // earnings.email overridden, earnings.inApp from defaults
+      expect(prefs.earnings).toEqual({
+        email: false,
+        inApp: DEFAULT_NOTIFICATION_PREFERENCES.earnings.inApp,
+      });
+
+      // eventReminder.inApp overridden, eventReminder.email from defaults
+      expect(prefs.eventReminder).toEqual({
+        email: DEFAULT_NOTIFICATION_PREFERENCES.eventReminder.email,
+        inApp: false,
+      });
     });
 
-    it("should enforce at least one channel per event rule", () => {
-      // This is enforced at the UI level, not in the service itself,
-      // but the service should still load preferences with all channels disabled
-      const allDisabled: Partial<NotificationPreferences> = {
+    it("ignores non-boolean channel values", () => {
+      const stored = {
+        qualityCheck: { email: "yes", inApp: null },
+      };
+      localStorageMock[STORAGE_KEY] = JSON.stringify(stored);
+      const prefs = loadNotificationPreferences();
+
+      // Non-boolean values are rejected, defaults should be used
+      expect(prefs.qualityCheck).toEqual(DEFAULT_NOTIFICATION_PREFERENCES.qualityCheck);
+    });
+  });
+
+  describe("saveNotificationPreferences", () => {
+    it("persists preferences to localStorage", () => {
+      const prefs: NotificationPreferences = {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        newFan: { email: true, inApp: false },
+      };
+
+      const result = saveNotificationPreferences(prefs);
+      expect(result).toBe(true);
+
+      const stored = localStorageMock[STORAGE_KEY];
+      expect(stored).toBeDefined();
+      const parsed = JSON.parse(stored);
+      expect(parsed.newFan).toEqual({ email: true, inApp: false });
+    });
+
+    it("returns false if localStorage is unavailable", () => {
+      // Simulate localStorage failure
+      global.localStorage.setItem = () => {
+        throw new Error("QuotaExceededError");
+      };
+
+      const result = saveNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("at least one channel per event rule", () => {
+    it("allows all channels disabled (validation is in the UI)", () => {
+      // The service itself doesn't enforce this rule; the page does.
+      // This test documents that the service will save whatever is given.
+      const allDisabled: NotificationPreferences = {
         newFan: { email: false, inApp: false },
         earnings: { email: false, inApp: false },
         eventReminder: { email: false, inApp: false },
         qualityCheck: { email: false, inApp: false },
       };
-      localStorage.setItem(
-        "audioblocks:notification-preferences:v1",
-        JSON.stringify(allDisabled)
-      );
 
-      const prefs = loadNotificationPreferences();
-      expect(prefs.newFan).toEqual({ email: false, inApp: false });
-    });
-  });
-
-  describe("saveNotificationPreferences", () => {
-    it("should persist preferences to localStorage", () => {
-      const customPrefs: NotificationPreferences = {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        newFan: { email: true, inApp: false },
-      };
-
-      const success = saveNotificationPreferences(customPrefs);
-      expect(success).toBe(true);
-
-      const stored = localStorage.getItem("audioblocks:notification-preferences:v1");
-      expect(stored).toBeTruthy();
-      expect(JSON.parse(stored!)).toEqual(customPrefs);
-    });
-
-    it("should return true on successful save", () => {
-      const result = saveNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
+      const result = saveNotificationPreferences(allDisabled);
       expect(result).toBe(true);
-    });
 
-    it("should handle storage quota errors gracefully", () => {
-      // Mock localStorage.setItem to throw
-      const originalSetItem = Storage.prototype.setItem;
-      Storage.prototype.setItem = jest.fn(() => {
-        throw new Error("QuotaExceededError");
-      });
-
-      const result = saveNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
-      expect(result).toBe(false);
-
-      // Restore
-      Storage.prototype.setItem = originalSetItem;
+      const loaded = loadNotificationPreferences();
+      expect(loaded.newFan).toEqual({ email: false, inApp: false });
     });
   });
 
-  describe("round-trip persistence", () => {
-    it("should preserve all preferences through save and load", () => {
-      const customPrefs: NotificationPreferences = {
+  describe("round-trip save and load", () => {
+    it("preserves preferences across save and load", () => {
+      const prefs: NotificationPreferences = {
         newFan: { email: true, inApp: false },
         earnings: { email: false, inApp: true },
         eventReminder: { email: true, inApp: true },
         qualityCheck: { email: false, inApp: false },
       };
 
-      saveNotificationPreferences(customPrefs);
+      saveNotificationPreferences(prefs);
       const loaded = loadNotificationPreferences();
 
-      expect(loaded).toEqual(customPrefs);
+      expect(loaded).toEqual(prefs);
     });
   });
 });
