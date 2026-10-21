@@ -5,6 +5,7 @@ import { ScanLine, CheckCircle2, XCircle, Loader2, Users, UserCheck, UserX } fro
 import { toast } from "sonner";
 import { featureFlags } from "@/lib/featureFlags";
 import { loadMock, useMock } from "@/__mocks__/loadMock";
+import { MockDataBadge } from "@/components/common/MockDataBadge";
 import type { CheckInResult, CheckInStats } from "@/types";
 
 const EMPTY_STATS: CheckInStats = { total: 0, checkedIn: 0, remaining: 0 };
@@ -13,19 +14,25 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
   const [manualInput, setManualInput] = useState("");
   const [lastResult, setLastResult] = useState<CheckInResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const eventMocks = useMock("events", featureFlags.useMockEvents);
-  const stats = eventMocks?.MOCK_CHECK_IN_STATS ?? EMPTY_STATS;
+  const [localCheckedIn, setLocalCheckedIn] = useState(0);
+  
+  const isMockMode = featureFlags.useMockEvents;
+  const eventMocks = useMock("events", isMockMode);
+  const stats = isMockMode && eventMocks ? eventMocks.MOCK_CHECK_IN_STATS : EMPTY_STATS;
 
   const handleCheckIn = async (ticketId: string) => {
     setIsScanning(true);
     setLastResult(null);
 
-    // Simulate API call delay
-    await new Promise((r) => setTimeout(r, 800));
+    // Simulate API call delay only in mock mode
+    if (isMockMode) {
+      await new Promise((r) => setTimeout(r, 800));
+    }
 
-    const knownResults: Record<string, CheckInResult> = featureFlags.useMockEvents
+    const knownResults: Record<string, CheckInResult> = isMockMode && eventMocks
       ? (await loadMock("events")).MOCK_CHECK_IN_RESULTS
       : {};
+    
     const result = knownResults[ticketId] ?? {
       ticketId,
       status: "invalid" as const,
@@ -34,7 +41,9 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
     setLastResult(result);
     setIsScanning(false);
 
+    // Update local check-in count when successful
     if (result.status === "valid") {
+      setLocalCheckedIn((prev) => prev + 1);
       toast.success(`Checked in: ${result.attendeeName ?? ticketId}`);
     } else if (result.status === "already_checked_in") {
       toast.warning(`Already checked in: ${result.attendeeName ?? ticketId}`);
@@ -50,14 +59,39 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
     setManualInput("");
   };
 
+  // Adjust stats to show local check-ins in non-mock mode
+  const displayStats = isMockMode 
+    ? stats 
+    : {
+        total: stats.total,
+        checkedIn: localCheckedIn,
+        remaining: Math.max(0, stats.total - localCheckedIn),
+      };
+
   return (
     <div className="space-y-8">
+      {isMockMode && <MockDataBadge />}
+      
+      {!isMockMode && stats.total === 0 && (
+        <div
+          className="rounded-2xl border border-[#2E2E2E] bg-[#151818] p-4 text-center"
+          role="alert"
+        >
+          <p className="text-sm text-[#A3A3A3]">
+            ⚠️ Ticketing is in preview — check-ins aren't saved yet.
+          </p>
+          <p className="text-xs text-[#6F6F6F] mt-1">
+            Check-in counts are tracked locally for this session only.
+          </p>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "Total Tickets", value: stats.total, icon: Users, color: "text-white" },
-          { label: "Checked In", value: stats.checkedIn, icon: UserCheck, color: "text-green-400" },
-          { label: "Remaining", value: stats.remaining, icon: UserX, color: "text-[#A3A3A3]" },
+          { label: "Total Tickets", value: displayStats.total, icon: Users, color: "text-white" },
+          { label: "Checked In", value: displayStats.checkedIn, icon: UserCheck, color: "text-green-400" },
+          { label: "Remaining", value: displayStats.remaining, icon: UserX, color: "text-[#A3A3A3]" },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-[#1F1F1F] bg-[#151818] p-5">
             <div className="flex items-center justify-between mb-2">
@@ -141,67 +175,71 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
             </button>
           </form>
 
-          {/* Quick test buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="text-xs text-[#6F6F6F]">Quick test:</span>
-            {["TICKET-001", "TICKET-003", "FAKE-001"].map((id) => (
-              <button
-                key={id}
-                onClick={() => handleCheckIn(id)}
-                disabled={isScanning}
-                className="rounded-full border border-[#2E2E2E] px-3 py-1 text-xs font-mono text-[#A3A3A3] transition-colors hover:border-[#885FA8] hover:text-white disabled:opacity-50"
-              >
-                {id}
-              </button>
-            ))}
-          </div>
+          {/* Quick test buttons - only show in mock mode */}
+          {isMockMode && (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="text-xs text-[#6F6F6F]">Quick test:</span>
+              {["TICKET-001", "TICKET-003", "FAKE-001"].map((id) => (
+                <button
+                  key={id}
+                  onClick={() => handleCheckIn(id)}
+                  disabled={isScanning}
+                  className="rounded-full border border-[#2E2E2E] px-3 py-1 text-xs font-mono text-[#A3A3A3] transition-colors hover:border-[#885FA8] hover:text-white disabled:opacity-50"
+                >
+                  {id}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Recent check-ins */}
-      <div className="rounded-2xl border border-[#1F1F1F] bg-[#151818] p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Recent Check-ins</h3>
-        <div className="space-y-3">
-          {[
-            {
-              ticketId: "TICKET-127",
-              name: "Maria Garcia",
-              time: "2 min ago",
-              status: "valid" as const,
-            },
-            {
-              ticketId: "TICKET-126",
-              name: "James Wilson",
-              time: "5 min ago",
-              status: "valid" as const,
-            },
-            {
-              ticketId: "TICKET-125",
-              name: "Sarah Chen",
-              time: "8 min ago",
-              status: "already_checked_in" as const,
-            },
-          ].map((ci) => (
-            <div
-              key={ci.ticketId}
-              className="flex items-center justify-between rounded-xl bg-[#111111] px-4 py-3"
-            >
-              <div className="flex items-center gap-3">
-                {ci.status === "valid" ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-400" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-yellow-400" />
-                )}
-                <div>
-                  <p className="text-sm font-medium text-white">{ci.name}</p>
-                  <p className="text-xs text-[#6F6F6F] font-mono">{ci.ticketId}</p>
+      {/* Recent check-ins - only show in mock mode */}
+      {isMockMode && (
+        <div className="rounded-2xl border border-[#1F1F1F] bg-[#151818] p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Recent Check-ins</h3>
+          <div className="space-y-3">
+            {[
+              {
+                ticketId: "TICKET-127",
+                name: "Maria Garcia",
+                time: "2 min ago",
+                status: "valid" as const,
+              },
+              {
+                ticketId: "TICKET-126",
+                name: "James Wilson",
+                time: "5 min ago",
+                status: "valid" as const,
+              },
+              {
+                ticketId: "TICKET-125",
+                name: "Sarah Chen",
+                time: "8 min ago",
+                status: "already_checked_in" as const,
+              },
+            ].map((ci) => (
+              <div
+                key={ci.ticketId}
+                className="flex items-center justify-between rounded-xl bg-[#111111] px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  {ci.status === "valid" ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-400" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-yellow-400" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-white">{ci.name}</p>
+                    <p className="text-xs text-[#6F6F6F] font-mono">{ci.ticketId}</p>
+                  </div>
                 </div>
+                <span className="text-xs text-[#A3A3A3]">{ci.time}</span>
               </div>
-              <span className="text-xs text-[#A3A3A3]">{ci.time}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
