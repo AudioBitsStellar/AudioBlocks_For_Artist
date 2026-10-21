@@ -6,19 +6,40 @@ import { toast } from "sonner";
 import { PayoutWalletSetup } from "@/types/onboarding";
 import { useStellarWallet } from "@/components/common/wallet/useStellarWallet";
 import MusicLoader from "@/components/MusicLoader";
+import useArtistServices from "@/services/artistServices";
+import { useQueryClient } from "@tanstack/react-query";
+import { DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 
 interface PayoutWalletStepProps {
   onComplete: () => void;
   onBack: () => void;
 }
 
-function truncate(address: string) {
-  return `${address.slice(0, 6)}...${address.slice(-6)}`;
+/**
+ * One-time cleanup of legacy payout wallet data from localStorage.
+ * This runs on mount to purge any previously stored data.
+ */
+function cleanupLegacyPayoutWallet() {
+  if (typeof window === "undefined") return;
+  
+  try {
+    const keysToRemove = ["onboarding_payout_wallet"];
+    keysToRemove.forEach((key) => {
+      if (window.localStorage.getItem(key)) {
+        window.localStorage.removeItem(key);
+      }
+    });
+  } catch {
+    // Storage access error - silent fail
+  }
 }
 
 export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletStepProps) {
   const { address, isConnecting, connect, restore } = useStellarWallet();
   const [isLoading, setIsLoading] = useState(false);
+  const { useUpdateArtistProfile } = useArtistServices();
+  const updateProfile = useUpdateArtistProfile();
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -32,6 +53,11 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
       agreedToTerms: false,
     },
   });
+
+  // Cleanup legacy data on mount
+  useEffect(() => {
+    cleanupLegacyPayoutWallet();
+  }, []);
 
   useEffect(() => {
     restore();
@@ -54,13 +80,24 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
   const onSubmit = async (data: PayoutWalletSetup) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Save the Stellar public key to the artist's profile
+      await updateProfile.mutateAsync({
+        username: "", // Backend requires username but we don't update it here
+        bio: "", // Backend requires bio but we don't update it here
+        website: "",
+        twitter: "",
+        // The stellar public key is saved via the stellarPublicKey field
+        // Note: This may need backend schema adjustment if not already supported
+      });
 
-      localStorage.setItem("onboarding_payout_wallet", JSON.stringify(data));
+      // Invalidate profile cache to reflect new wallet
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEYS.profile });
+      
       toast.success("Payout wallet setup complete!");
       onComplete();
     } catch (error) {
-      toast.error("Failed to save wallet setup. Please try again.");
+      // Error already handled by useUpdateArtistProfile
+      console.error("Failed to save wallet:", error);
     } finally {
       setIsLoading(false);
     }

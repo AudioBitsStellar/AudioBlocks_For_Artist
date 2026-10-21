@@ -35,3 +35,6 @@ issue*.md
 
 # AI tool configuration (share via docs if needed)
 .kiro/
+
+# IDE settings
+.vscode/
