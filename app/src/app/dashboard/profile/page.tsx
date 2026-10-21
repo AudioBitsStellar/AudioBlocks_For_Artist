@@ -146,7 +146,10 @@ export default function ProfilePage() {
       return;
     }
     setValue("profileImage", croppedFile);
-    setProfileImage(URL.createObjectURL(blob));
+    setProfileImage((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(blob);
+    });
     setCropSrc(null);
   };
 
@@ -619,6 +622,7 @@ export default function ProfilePage() {
           aspect={1}
           onCropComplete={handleCropComplete}
           onCancel={handleCropCancel}
+          onReselect={() => profileInputRef.current?.click()}
         />
       )}
     </>
