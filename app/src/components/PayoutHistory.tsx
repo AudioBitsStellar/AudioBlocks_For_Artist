@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Receipt, Printer } from "lucide-react";
+import { explorerTxUrl } from "@/lib/horizon";
 import {
   filterPayouts,
   totalCompletedPayouts,
@@ -35,7 +36,7 @@ export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
       payout.source,
       payout.status,
       payout.txHash || "",
-      payout.txHash ? `https://stellar.expert/explorer/public/tx/${payout.txHash}` : "",
+      payout.txHash ? explorerTxUrl(payout.txHash) : "",
     ]);
 
     const csvContent = [
@@ -124,7 +125,7 @@ export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
                 <td>
                   {p.txHash ? (
                     <a
-                      href={`https://stellar.expert/explorer/public/tx/${p.txHash}`}
+                      href={explorerTxUrl(p.txHash)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-pink-500 underline"

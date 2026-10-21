@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Globe, Radio, ExternalLink, ShieldCheck, Share2 } from "lucide-react";
+import { explorerAccountUrl } from "@/lib/horizon";
 import { socialProfileUrl, SocialPlatformId } from "@/utils/linkedAccounts";
 
 export interface SocialLinkItem {
@@ -56,7 +57,9 @@ export default function ArtistSocialLinksSection({
       platform: "stellar",
       handle: `${stellarAddress.slice(0, 6)}...${stellarAddress.slice(-6)}`,
       label: "Stellar Account",
-      url: `https://stellar.expert/explorer/public/account/${stellarAddress}`,
+      url: // Public profiles are viewed by fans whose active network says nothing about
+      // the artist; production artist addresses live on mainnet, so pin it.
+      explorerAccountUrl(stellarAddress, "public"),
       verified: true,
     });
   }
