@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   estimateOperationFeeXlm,
   explorerAccountUrl,
+  explorerContractUrl,
   explorerTxUrl,
   fetchAccountBalances,
   fetchAccountOperations,
@@ -139,6 +140,24 @@ describe("lib/horizon", () => {
       expect(explorerAccountUrl("GABC")).toBe(
         "https://stellar.expert/explorer/public/account/GABC"
       );
+    });
+  });
+
+  describe("explorer links (#663)", () => {
+    it("builds contract links for both networks", () => {
+      process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+      expect(explorerContractUrl("CABC")).toBe("https://stellar.expert/explorer/testnet/contract/CABC");
+      process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE =
+        "Public Global Stellar Network ; September 2015";
+      expect(explorerContractUrl("CABC")).toBe("https://stellar.expert/explorer/public/contract/CABC");
+    });
+
+    it("lets callers pin a network regardless of the active one", () => {
+      process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+      expect(explorerAccountUrl("GABC", "public")).toBe(
+        "https://stellar.expert/explorer/public/account/GABC"
+      );
+      expect(explorerTxUrl("H", "public")).toBe("https://stellar.expert/explorer/public/tx/H");
     });
   });
 

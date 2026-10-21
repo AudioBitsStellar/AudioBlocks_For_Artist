@@ -134,16 +134,30 @@ export async function fetchAccountOperations(
   return page._embedded?.records ?? [];
 }
 
-/** Builds a stellar.expert explorer link for a transaction hash, network-aware. */
-export function explorerTxUrl(hash: string): string {
-  const network = getActiveNetworkId() === "testnet" ? "testnet" : "public";
-  return `https://stellar.expert/explorer/${network}/tx/${hash}`;
+/** stellar.expert's path segment for a network: it calls mainnet "public". */
+export type ExplorerNetwork = "testnet" | "public";
+
+function explorerBase(network?: ExplorerNetwork): string {
+  const segment = network ?? (getActiveNetworkId() === "testnet" ? "testnet" : "public");
+  return `https://stellar.expert/explorer/${segment}`;
 }
 
-/** Builds a stellar.expert explorer link for an account, network-aware. */
-export function explorerAccountUrl(address: string): string {
-  const network = getActiveNetworkId() === "testnet" ? "testnet" : "public";
-  return `https://stellar.expert/explorer/${network}/account/${address}`;
+/**
+ * Builds a stellar.expert link for a transaction hash. Follows the active
+ * network unless `network` is given.
+ */
+export function explorerTxUrl(hash: string, network?: ExplorerNetwork): string {
+  return `${explorerBase(network)}/tx/${hash}`;
+}
+
+/** Builds a stellar.expert link for an account. Follows the active network unless `network` is given. */
+export function explorerAccountUrl(address: string, network?: ExplorerNetwork): string {
+  return `${explorerBase(network)}/account/${address}`;
+}
+
+/** Builds a stellar.expert link for a Soroban contract. Follows the active network unless `network` is given. */
+export function explorerContractUrl(id: string, network?: ExplorerNetwork): string {
+  return `${explorerBase(network)}/contract/${id}`;
 }
 
 /** Fetches Horizon's live network-wide fee percentiles (in stroops per operation). */

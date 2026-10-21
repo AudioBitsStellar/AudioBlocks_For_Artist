@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Wallet, ExternalLink, Copy, Check, ArrowDownLeft, ShieldCheck, RefreshCw } from "lucide-react";
-import { fetchAccountBalances, type HorizonBalance } from "@/lib/horizon";
+import { explorerAccountUrl, explorerTxUrl, fetchAccountBalances, type HorizonBalance } from "@/lib/horizon";
 import { useStellarWallet } from "@/components/common/wallet/useStellarWallet";
-import { getActiveNetworkId } from "@/lib/stellarNetwork";
 
 interface PayoutWalletProps {
   /** Optional balance or address props for backward compatibility */
@@ -56,7 +55,6 @@ export default function WithdrawFunds({ walletAddress, availableBalance }: Payou
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const networkId = typeof window !== "undefined" ? getActiveNetworkId() : "testnet";
 
   const loadBalances = async () => {
     if (!address) return;
@@ -126,7 +124,7 @@ export default function WithdrawFunds({ walletAddress, availableBalance }: Payou
               <span>{copied ? "Copied" : "Copy"}</span>
             </button>
             <a
-              href={`https://stellar.expert/explorer/${networkId}/account/${address}`}
+              href={explorerAccountUrl(address)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
@@ -208,7 +206,7 @@ export default function WithdrawFunds({ walletAddress, availableBalance }: Payou
               <div className="text-right">
                 <p className="font-mono font-medium text-emerald-400">+{r.amount} {r.asset}</p>
                 <a
-                  href={`https://stellar.expert/explorer/${networkId}/tx/${r.txHash}`}
+                  href={explorerTxUrl(r.txHash)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[10px] text-gray-400 hover:text-white flex items-center gap-0.5 justify-end"
