@@ -9,7 +9,7 @@ import { useState } from "react";
 import { analytics } from "@/lib/analytics";
 
 type Mode = "song" | "album";
-const Upload_Music = () => {
+const UploadMusic = () => {
   const [mode, setMode] = useState<Mode>("song");
   const route = useRouter();
 
@@ -70,4 +70,4 @@ const Upload_Music = () => {
   );
 };
 
-export default Upload_Music;
+export default UploadMusic;
