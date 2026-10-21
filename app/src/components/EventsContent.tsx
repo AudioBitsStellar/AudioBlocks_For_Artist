@@ -31,7 +31,7 @@ import {
 } from "recharts";
 import useEventsService, { EventItem } from "@/services/eventsService";
 import type { EngagementTrendPoint, EventMetric } from "@/types/api";
-import { formatDate } from "@/utils/date";
+import { formatDate, isEventUpcoming } from "@/utils/date";
 
 interface EventsContentProps {
   onNewEvent: () => void;
@@ -185,12 +185,10 @@ export default function EventsContent({ onNewEvent }: EventsContentProps) {
     }
 
     if (filterStatus !== "all") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      result = result.filter((event) => {
-        const eventDate = new Date(event.date);
-        return filterStatus === "upcoming" ? eventDate >= today : eventDate < today;
-      });
+      const now = new Date();
+      result = result.filter(
+        (event) => isEventUpcoming(event, now) === (filterStatus === "upcoming")
+      );
     }
 
     return result;
