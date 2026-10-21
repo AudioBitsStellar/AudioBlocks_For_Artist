@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { isTokenExpired, clearTokens, getStoredToken } from "@/services/authService";
+import { endSession, getSessionExpiresAt, hasSession, isSessionExpired } from "@/api/session";
 
 /** Minutes before expiry to show the warning modal */
 const WARNING_BEFORE_EXPIRY_MS = 5 * 60 * 1000;
@@ -28,12 +28,12 @@ interface UseSessionTimeoutReturn {
 }
 
 /**
- * Monitors the auth token and fires a warning before it expires.
+ * Monitors the session and fires a warning before the access token expires.
  *
  * Usage:
  * ```tsx
  * const { showWarning, secondsRemaining, extendSession, logout } =
- *   useSessionTimeout({ onRefresh: refreshToken, onLogout: router.push('/login') });
+ *   useSessionTimeout({ onRefresh: refreshSession, onLogout: () => router.push('/login') });
  * ```
  */
 export function useSessionTimeout({
@@ -48,16 +48,15 @@ export function useSessionTimeout({
   // Calculate seconds remaining until token expiry
   const getSecondsRemaining = useCallback((): number => {
     if (typeof window === "undefined") return 0;
-    const expiry = localStorage.getItem("token_expiry");
-    if (!expiry) return Infinity;
-    return Math.max(0, Math.floor((Number(expiry) - Date.now()) / 1000));
+    const expiresAt = getSessionExpiresAt();
+    if (expiresAt === null) return Infinity;
+    return Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
   }, []);
 
   // Periodic check
   useEffect(() => {
     const interval = setInterval(() => {
-      const token = getStoredToken();
-      if (!token) {
+      if (!hasSession()) {
         setShowWarning(false);
         return;
       }
@@ -65,9 +64,9 @@ export function useSessionTimeout({
       const secs = getSecondsRemaining();
       setSecondsRemaining(secs);
 
-      if (secs === 0 && isTokenExpired()) {
+      if (secs === 0 && isSessionExpired()) {
         // Token already expired — clean up and notify
-        clearTokens();
+        void endSession();
         setShowWarning(false);
         onLogoutRef.current?.();
       } else if (secs > 0 && secs * 1000 <= WARNING_BEFORE_EXPIRY_MS) {
@@ -86,13 +85,13 @@ export function useSessionTimeout({
     if (success) {
       setShowWarning(false);
     } else {
-      clearTokens();
+      void endSession();
       onLogoutRef.current?.();
     }
   }, [onRefresh]);
 
   const logout = useCallback(() => {
-    clearTokens();
+    void endSession();
     setShowWarning(false);
     onLogoutRef.current?.();
   }, []);

@@ -1,187 +1,171 @@
-import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
 import Cookies from "js-cookie";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
-  storeToken,
-  getStoredToken,
-  isTokenExpired,
-  clearTokens,
-  refreshAccessToken,
-} from "@/services/authService";
-import { getEmailVerificationStatus, startVerification } from "@/services/emailVerificationService";
+  endSession,
+  establishSession,
+  getSessionExpiresAt,
+  hasSession,
+  isSessionExpired,
+  purgeLegacyTokenStorage,
+  readSessionClaims,
+  refreshSession,
+} from "@/api/session";
+import { CLAIMS_COOKIE, LEGACY_JWT_COOKIE, TWO_FACTOR_COOKIE } from "@/lib/session";
 
-// A syntactically well-formed (but unsigned/fake) JWT: header.payload.signature.
-const FAKE_TOKEN = "header.payload.signature";
-const OTHER_FAKE_TOKEN = "header2.payload2.signature2";
+/** Builds an unsigned JWT with the given claims. The client never checks signatures. */
+function makeToken(claims: Record<string, unknown>): string {
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${encode({ alg: "HS256", typ: "JWT" })}.${encode(claims)}.signature`;
+}
 
-describe("authService — token management", () => {
+const nowSeconds = () => Math.floor(Date.now() / 1000);
+
+/** Mirrors what the server sets after a session starts: only the payload is readable. */
+function setClaimsCookie(token: string): void {
+  Cookies.set(CLAIMS_COOKIE, token.split(".")[1]);
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+describe("browser session (#521)", () => {
   beforeEach(() => {
     localStorage.clear();
-    Cookies.remove("audioblocks_jwt");
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    for (const name of [CLAIMS_COOKIE, TWO_FACTOR_COOKIE, LEGACY_JWT_COOKIE]) {
+      Cookies.remove(name);
+    }
+    localStorage.clear();
+    vi.unstubAllGlobals();
   });
 
-  describe("storeToken / getStoredToken", () => {
-    it("stores a token to localStorage and reads it back", () => {
-      storeToken(FAKE_TOKEN);
-      expect(localStorage.getItem("token")).toBe(FAKE_TOKEN);
-      expect(getStoredToken()).toBe(FAKE_TOKEN);
+  describe("establishSession", () => {
+    it("hands the tokens to the server and leaves nothing in localStorage", async () => {
+      localStorage.setItem("token", "legacy-token");
+      localStorage.setItem("token_expiry", "123");
+      const fetchMock = vi.fn(async () => jsonResponse({ success: true }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const token = makeToken({ role: "artist", exp: nowSeconds() + 900 });
+      const stored = await establishSession({ token, refreshToken: "refresh-1" });
+
+      expect(stored).toBe(true);
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/session",
+        expect.objectContaining({ method: "POST", credentials: "same-origin" })
+      );
+      const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(JSON.parse(init.body as string)).toMatchObject({
+        token,
+        refreshToken: "refresh-1",
+      });
+      expect(localStorage.length).toBe(0);
     });
 
-    it("returns null when no token has been stored", () => {
-      expect(getStoredToken()).toBeNull();
-    });
+    it("reports failure when the server refuses the session", async () => {
+      vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ success: false }, 400)));
 
-    it("overwrites a previously stored token", () => {
-      storeToken(FAKE_TOKEN);
-      storeToken(OTHER_FAKE_TOKEN);
-      expect(getStoredToken()).toBe(OTHER_FAKE_TOKEN);
-    });
+      const stored = await establishSession({ token: makeToken({ exp: nowSeconds() + 60 }) });
 
-    it("falls back to the audioblocks_jwt cookie when localStorage is empty", () => {
-      Cookies.set("audioblocks_jwt", FAKE_TOKEN);
-      expect(getStoredToken()).toBe(FAKE_TOKEN);
-    });
-  });
-
-  describe("malformed / corrupted tokens", () => {
-    it("treats an empty string as no token", () => {
-      storeToken("");
-      expect(getStoredToken()).toBeNull();
-    });
-
-    it("rejects a token that is not in header.payload.signature shape", () => {
-      localStorage.setItem("token", "not-a-real-jwt");
-      expect(getStoredToken()).toBeNull();
-    });
-
-    it("rejects a token with too many segments", () => {
-      localStorage.setItem("token", "a.b.c.d");
-      expect(getStoredToken()).toBeNull();
-    });
-
-    it("rejects a token with an empty segment", () => {
-      localStorage.setItem("token", "header..signature");
-      expect(getStoredToken()).toBeNull();
+      expect(stored).toBe(false);
     });
   });
 
-  describe("isTokenExpired", () => {
-    it("is false when no expiry was ever recorded", () => {
-      storeToken(FAKE_TOKEN);
-      expect(isTokenExpired()).toBe(false);
+  describe("readable claims", () => {
+    it("reads role and expiry from the claims cookie", () => {
+      const exp = nowSeconds() + 900;
+      setClaimsCookie(makeToken({ role: "artist", exp }));
+
+      expect(hasSession()).toBe(true);
+      expect(readSessionClaims()).toMatchObject({ role: "artist", exp });
+      expect(getSessionExpiresAt()).toBe(exp * 1000);
     });
 
-    it("is false for a token stored with a future expiry", () => {
-      storeToken(FAKE_TOKEN, 3600);
-      expect(isTokenExpired()).toBe(false);
+    it("reports no session when the claims cookie is absent", () => {
+      expect(hasSession()).toBe(false);
+      expect(readSessionClaims()).toBeNull();
+      expect(getSessionExpiresAt()).toBeNull();
     });
 
-    it("is true once the recorded expiry has passed", () => {
-      storeToken(FAKE_TOKEN, -1);
-      expect(isTokenExpired()).toBe(true);
+    it("treats an access token whose exp has passed as expired", () => {
+      setClaimsCookie(makeToken({ exp: nowSeconds() - 1 }));
+
+      expect(isSessionExpired()).toBe(true);
     });
 
-    it("is true at the exact expiry instant", () => {
-      const now = 1_750_000_000_000;
-      vi.spyOn(Date, "now").mockReturnValue(now);
-      localStorage.setItem("token_expiry", String(now));
+    it("treats a session with no exp claim as not expired", () => {
+      setClaimsCookie(makeToken({ role: "artist" }));
 
-      expect(isTokenExpired()).toBe(true);
-    });
-
-    it("treats a corrupted expiry timestamp as expired", () => {
-      localStorage.setItem("token_expiry", "not-a-timestamp");
-
-      expect(isTokenExpired()).toBe(true);
+      expect(isSessionExpired()).toBe(false);
     });
   });
 
-  describe("clearTokens (logout cleanup)", () => {
-    it("removes the stored token, its expiry, and the auth cookie", () => {
-      storeToken(FAKE_TOKEN, 3600);
-      Cookies.set("audioblocks_jwt", FAKE_TOKEN);
+  describe("refreshSession", () => {
+    it("returns true when the server renews the access token", async () => {
+      const fetchMock = vi.fn(async () => jsonResponse({ success: true }));
+      vi.stubGlobal("fetch", fetchMock);
 
-      clearTokens();
+      await expect(refreshSession()).resolves.toBe(true);
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/session/refresh",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
 
+    it("returns false when the refresh token is no longer accepted", async () => {
+      vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ success: false }, 401)));
+
+      await expect(refreshSession()).resolves.toBe(false);
+    });
+  });
+
+  describe("endSession", () => {
+    it("clears the readable cookies and asks the server to end the session", async () => {
+      setClaimsCookie(makeToken({ exp: nowSeconds() + 900 }));
+      Cookies.set(TWO_FACTOR_COOKIE, "1");
+      const fetchMock = vi.fn(async () => jsonResponse({ success: true }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await endSession();
+
+      expect(Cookies.get(CLAIMS_COOKIE)).toBeUndefined();
+      expect(Cookies.get(TWO_FACTOR_COOKIE)).toBeUndefined();
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/session",
+        expect.objectContaining({ method: "DELETE", keepalive: true })
+      );
+    });
+
+    it("never throws when the server cannot be reached", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          throw new TypeError("network down");
+        })
+      );
+
+      await expect(endSession()).resolves.toBeUndefined();
+    });
+  });
+
+  describe("purgeLegacyTokenStorage", () => {
+    it("removes the raw JWT that pre-#521 builds kept in cookies and localStorage", () => {
+      Cookies.set(LEGACY_JWT_COOKIE, makeToken({ exp: nowSeconds() + 900 }));
+      localStorage.setItem("token", "legacy-token");
+      localStorage.setItem("audioblocks:security-settings:v1", '{"setup":{}}');
+
+      purgeLegacyTokenStorage();
+
+      expect(Cookies.get(LEGACY_JWT_COOKIE)).toBeUndefined();
       expect(localStorage.getItem("token")).toBeNull();
-      expect(localStorage.getItem("token_expiry")).toBeNull();
-      expect(Cookies.get("audioblocks_jwt")).toBeUndefined();
-      expect(getStoredToken()).toBeNull();
-    });
-
-    it("is safe to call when nothing was ever stored", () => {
-      expect(() => clearTokens()).not.toThrow();
-      expect(getStoredToken()).toBeNull();
-    });
-
-    it("also drops an outstanding email verification code (#459)", () => {
-      storeToken(FAKE_TOKEN, 3600);
-      const issued = startVerification("artist@example.com");
-      if (!issued.ok) throw new Error("issuance should succeed");
-      expect(getEmailVerificationStatus()).toBe("pending");
-
-      clearTokens();
-
-      // Otherwise the next artist on this browser would be gated on a code
-      // that was sent to someone else's address.
-      expect(getEmailVerificationStatus()).toBe("unverified");
-    });
-  });
-
-  describe("refreshAccessToken", () => {
-    it("returns the current token without refreshing when it is not expired", async () => {
-      storeToken(FAKE_TOKEN, 3600);
-      const refresh = vi.fn();
-
-      const result = await refreshAccessToken(refresh);
-
-      expect(result).toBe(FAKE_TOKEN);
-      expect(refresh).not.toHaveBeenCalled();
-    });
-
-    it("calls refresh and stores the new token when the current one is expired", async () => {
-      storeToken(FAKE_TOKEN, -1);
-      const refresh = vi.fn().mockResolvedValue({ token: OTHER_FAKE_TOKEN, expiresIn: 3600 });
-
-      const result = await refreshAccessToken(refresh);
-
-      expect(refresh).toHaveBeenCalledTimes(1);
-      expect(result).toBe(OTHER_FAKE_TOKEN);
-      expect(getStoredToken()).toBe(OTHER_FAKE_TOKEN);
-      expect(isTokenExpired()).toBe(false);
-    });
-
-    it("calls refresh when there is no stored token at all", async () => {
-      const refresh = vi.fn().mockResolvedValue({ token: FAKE_TOKEN, expiresIn: 3600 });
-
-      const result = await refreshAccessToken(refresh);
-
-      expect(refresh).toHaveBeenCalledTimes(1);
-      expect(result).toBe(FAKE_TOKEN);
-    });
-
-    it("clears tokens and returns null when refresh fails", async () => {
-      storeToken(FAKE_TOKEN, -1);
-      const refresh = vi.fn().mockRejectedValue(new Error("refresh failed"));
-
-      const result = await refreshAccessToken(refresh);
-
-      expect(result).toBeNull();
-      expect(getStoredToken()).toBeNull();
-    });
-
-    it("clears state when refresh returns a malformed token", async () => {
-      storeToken(FAKE_TOKEN, -1);
-      const refresh = vi.fn().mockResolvedValue({ token: "not-a-jwt", expiresIn: 3600 });
-
-      const result = await refreshAccessToken(refresh);
-
-      expect(result).toBeNull();
-      expect(localStorage.getItem("token")).toBeNull();
-      expect(getStoredToken()).toBeNull();
+      expect(localStorage.getItem("audioblocks:security-settings:v1")).toBeNull();
     });
   });
 });

@@ -1,9 +1,13 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { ArtistBasicInfo } from "@/types/onboarding";
 import MusicLoader from "@/components/MusicLoader";
+import useArtistServices from "@/services/artistServices";
+import { useQueryClient } from "@tanstack/react-query";
+import { DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 
 interface BasicInfoStepProps {
   onComplete: () => void;
@@ -24,6 +28,25 @@ const GENRES = [
   "Other",
 ];
 
+/**
+ * One-time cleanup of legacy basic info data from localStorage.
+ * This runs on mount to purge any previously stored data.
+ */
+function cleanupLegacyBasicInfo() {
+  if (typeof window === "undefined") return;
+  
+  try {
+    const keysToRemove = ["onboarding_basic_info"];
+    keysToRemove.forEach((key) => {
+      if (window.localStorage.getItem(key)) {
+        window.localStorage.removeItem(key);
+      }
+    });
+  } catch {
+    // Storage access error - silent fail
+  }
+}
+
 export default function BasicInfoStep({ onComplete }: BasicInfoStepProps) {
   const {
     register,
@@ -35,16 +58,35 @@ export default function BasicInfoStep({ onComplete }: BasicInfoStepProps) {
   });
 
   const selectedGenres = watch("genre") || [];
+  const { useUpdateArtistProfile } = useArtistServices();
+  const updateProfile = useUpdateArtistProfile();
+  const queryClient = useQueryClient();
+
+  // Cleanup legacy data on mount
+  useEffect(() => {
+    cleanupLegacyBasicInfo();
+  }, []);
 
   const onSubmit = async (data: ArtistBasicInfo) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Save to backend profile API
+      await updateProfile.mutateAsync({
+        username: data.artistName,
+        bio: data.bio,
+        website: data.website || "",
+        twitter: data.socialMedia?.twitter || "",
+        // Note: Genre and other social media fields may need backend schema updates
+        // For now, we save what the profile endpoint accepts
+      });
 
-      localStorage.setItem("onboarding_basic_info", JSON.stringify(data));
+      // Invalidate profile cache to reflect new data
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEYS.profile });
+      
       toast.success("Basic information saved!");
       onComplete();
     } catch (error) {
-      toast.error("Failed to save information. Please try again.");
+      // Error already handled by useUpdateArtistProfile
+      console.error("Failed to save basic info:", error);
     }
   };
 

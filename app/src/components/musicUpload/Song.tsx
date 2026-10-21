@@ -37,6 +37,8 @@ import TransferSongButton from "@/components/common/wallet/TransferSongButton";
 import { analytics } from "@/lib/analytics";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { sanitize } from "@/utils/sanitize";
+import UploadProgressBar from "./UploadProgressBar";
+import { milestoneMessage, nextMilestone } from "./uploadAnnouncements";
 import { extractAudioMetadata, formatDuration, type AudioMetadata } from "@/utils/audioMetadata";
 import {
   AUDIO_FILE_RULES,
@@ -57,6 +59,8 @@ const Song = () => {
   const [mintableSongId, setMintableSongId] = useState<string | null>(null);
   const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [announcement, setAnnouncement] = useState("");
+  const lastMilestoneRef = useRef(0);
   const [isMinting, setIsMinting] = useState(false);
   const [pendingSession, setPendingSession] = useState<UploadSession | null>(null);
   const [resumingSession, setResumingSession] = useState<UploadSession | null>(null);
@@ -286,6 +290,7 @@ const Song = () => {
     } catch (err) {
       if (err instanceof Error && err.message === "UPLOAD_CANCELLED") {
         setUploadedFile((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
+        setAnnouncement(`Upload of ${audioFile.name} cancelled`);
         toast.success("Upload cancelled");
         return;
       }
@@ -295,7 +300,18 @@ const Song = () => {
     }
   };
 
+  // Announce 25/50/75/100% through the polite live region, not every percent.
+  useEffect(() => {
+    if (!isUploading || !audioFile) return;
+    const milestone = nextMilestone(uploadProgress, lastMilestoneRef.current);
+    if (milestone === null) return;
+    lastMilestoneRef.current = milestone;
+    setAnnouncement(milestoneMessage(audioFile.name, milestone));
+  }, [uploadProgress, isUploading, audioFile]);
+
   const handleDelete = () => {
+    lastMilestoneRef.current = 0;
+    setAnnouncement("");
     cancelRequestedRef.current = false;
     if (fileId) void deleteUploadSession(fileId).catch(() => undefined);
     uploadedChunksRef.current = [];
@@ -397,6 +413,8 @@ const Song = () => {
       clearSavedData();
       void deleteUploadSession(fileId).catch(() => undefined);
       toast.success("Song uploaded successfully!");
+      setAnnouncement(`${audioFile.name} uploaded successfully`);
+      lastMilestoneRef.current = 0;
 
       reset();
       setCoverImage(null);
@@ -409,6 +427,7 @@ const Song = () => {
       const error = err as Error;
       if (error instanceof Error && error.message === "UPLOAD_CANCELLED") {
         setUploadedFile((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
+        setAnnouncement(`Upload of ${audioFile.name} cancelled`);
         toast.success("Upload cancelled");
         setIsUploading(false);
         return;
@@ -417,6 +436,7 @@ const Song = () => {
       const reason = getErrorMessage(err);
       setUploadError(reason);
       analytics.uploadFailed({ fileId, reason });
+      setAnnouncement(`Upload of ${audioFile.name} failed. ${reason}`);
       setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
       if (isRetryableError(err)) {
         toast.error(`Upload failed — tap retry to try again. (${reason})`);
@@ -439,6 +459,7 @@ const Song = () => {
 
       cancelRequestedRef.current = false;
       setRetryCount((prev) => prev + 1);
+      setAnnouncement(`Retrying upload of ${audioFile.name}`);
       await onSubmit(getValues());
     } finally {
       retryInProgressRef.current = false;
@@ -858,6 +879,10 @@ const Song = () => {
             aria-label="Upload audio file"
           />
 
+          <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+            {announcement}
+          </div>
+
           <div className="shrink-0">
             <p className="text-xs font-semibold text-white mb-1.5">Uploaded</p>
             {uploadedFile ? (
@@ -912,12 +937,7 @@ const Song = () => {
                       </p>
                     )}
                     {uploadedFile.status === "uploading" && (
-                      <div className="w-full bg-zinc-800 rounded-full h-1 mt-1.5 overflow-hidden">
-                        <div
-                          className="bg-pink-500 h-1 rounded-full transition-all duration-200"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      </div>
+                      <UploadProgressBar fileName={uploadedFile.name} progress={uploadProgress} />
                     )}
                   </div>
                 </div>

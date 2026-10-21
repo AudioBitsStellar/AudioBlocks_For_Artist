@@ -1,22 +1,33 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
-import Cookies from "js-cookie";
 import { getCSRFToken, getCSRFTokenHeader, refreshCSRFToken } from "@/utils/csrfToken";
 import { isRetryableError, calculateBackoff } from "@/utils/retry";
 import { apiMonitor } from "@/utils/apiPerformanceMonitor";
-import { clearEmailVerification } from "@/services/emailVerificationService";
+import { API_PROXY_BASE_URL, endSession } from "@/api/session";
 
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return Cookies.get("audioblocks_jwt") || localStorage.getItem("token") || null;
+/**
+ * Ends the browser session. The access token lives in an httpOnly cookie that
+ * only the server can clear, so this asks the server to do it.
+ */
+export function clearSession(): void {
+  void endSession();
 }
 
-export function clearSession(): void {
-  Cookies.remove("audioblocks_jwt");
-  localStorage.removeItem("token");
-  // Onboarding state is per-artist: leaving a pending code behind would show
-  // the previous artist's address (and gate the dashboard) for whoever signs in
-  // next on this browser.
-  clearEmailVerification();
+/**
+ * Credential endpoints where a 401 means a wrong password or code. Treating it
+ * as an expired session would redirect to /login in the middle of the attempt.
+ */
+const CREDENTIAL_PATHS = [
+  "/auth/login",
+  "/auth/login-email",
+  "/auth/register-email",
+  "/auth/2fa/validate",
+  "/auth/2fa/verify",
+  "/auth/2fa/disable",
+];
+
+function isCredentialRequest(url?: string): boolean {
+  if (!url) return false;
+  return CREDENTIAL_PATHS.includes(url.split("?")[0]);
 }
 
 // Normalized error shape exposed to callers / React Query
@@ -59,6 +70,8 @@ export function resetRedirectState(): void {
 type TrackedConfig = InternalAxiosRequestConfig & {
   _retry?: number;
   _retryCount?: number;
+  /** Set once a request is replayed after the proxy refreshed the session. */
+  _sessionRetried?: boolean;
   /** High-resolution timestamp set when the request left the client (#163). */
   _perfStart?: number;
 };
@@ -74,22 +87,17 @@ function recordTiming(config: TrackedConfig | undefined): void {
 }
 
 export const createApiClient = async (): Promise<AxiosInstance> => {
+  // Requests go to the same-origin proxy, which attaches the httpOnly access
+  // token server-side (#521). Nothing auth-related is read in the browser.
   const apiClient = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api",
+    baseURL: API_PROXY_BASE_URL,
     timeout: 15000,
     headers: {
       "Content-Type": "application/json",
     },
   });
 
-  // Read the token fresh on every request, not just at client creation time,
-  // so a login that happens after this module loads is picked up.
   apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     // Add CSRF token for state-changing requests
     const method = config.method?.toUpperCase();
     if (method && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
@@ -133,7 +141,14 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       }
 
       if (error.response?.status === 401 && typeof window !== "undefined") {
-        if (!redirecting) {
+        // The proxy renewed the session but could not replay a streamed upload.
+        // Replay it once; the body is re-sendable on the client.
+        if (error.response.headers["x-session-refreshed"] === "1" && config && !config._sessionRetried) {
+          config._sessionRetried = true;
+          return apiClient(config);
+        }
+
+        if (!redirecting && !isCredentialRequest(config?.url)) {
           redirecting = true;
           clearSession();
           window.location.href = "/login";

@@ -1,10 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
+import { useCurrencyPreference } from "@/context/CurrencyPreferenceContext";
+import type { CurrencyCode, DisplayStyle } from "@/utils/money";
 
 export default function CurrencyPreferencesPage() {
-  const [currency, setCurrency] = useState("USD");
-  const [displayFormat, setDisplayFormat] = useState("SYMBOL"); // SYMBOL or CODE
+  const { currency: savedCurrency, displayFormat: savedDisplayFormat, savePreference } = useCurrencyPreference();
+  const [currency, setCurrency] = useState<CurrencyCode>(savedCurrency);
+  const [displayFormat, setDisplayFormat] = useState<DisplayStyle>(savedDisplayFormat);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await savePreference({ currency, displayFormat });
+      toast.success("Currency preferences saved");
+    } catch (error) {
+      toast.error("Failed to save preferences");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -17,10 +34,13 @@ export default function CurrencyPreferencesPage() {
 
       <div className="space-y-4 max-w-md bg-surface p-6 rounded-xl border border-border">
         <div className="space-y-2">
-          <label className="text-sm font-medium">Preferred Currency</label>
+          <label htmlFor="currency-select" className="text-sm font-medium">
+            Preferred Currency
+          </label>
           <select
+            id="currency-select"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
             className="w-full bg-background border border-border rounded-lg p-2 text-text"
           >
             <option value="USD">USD ($) - US Dollar</option>
@@ -31,20 +51,31 @@ export default function CurrencyPreferencesPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Display Format</label>
+          <label htmlFor="format-select" className="text-sm font-medium">
+            Display Format
+          </label>
           <select
+            id="format-select"
             value={displayFormat}
-            onChange={(e) => setDisplayFormat(e.target.value)}
+            onChange={(e) => setDisplayFormat(e.target.value as DisplayStyle)}
             className="w-full bg-background border border-border rounded-lg p-2 text-text"
           >
-            <option value="SYMBOL">Symbol (e.g., $100)</option>
-            <option value="CODE">Code (e.g., 100 USD)</option>
+            <option value="symbol">Symbol (e.g., $100)</option>
+            <option value="code">Code (e.g., 100 USD)</option>
           </select>
         </div>
 
-        <button className="px-4 py-2 bg-primary text-primary-contrast rounded-lg font-medium hover:opacity-90 transition-opacity">
-          Save Preferences
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="px-4 py-2 bg-primary text-primary-contrast rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? "Saving..." : "Save Preferences"}
         </button>
+
+        <p className="text-xs text-text-muted">
+          Preferences are saved on this device. Backend sync coming soon.
+        </p>
       </div>
     </div>
   );

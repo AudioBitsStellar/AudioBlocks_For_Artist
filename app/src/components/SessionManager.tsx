@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useCallback, createContext, useContext, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { isTokenExpired, getStoredToken, clearTokens, storeToken } from "@/services/authService";
+import {
+  endSession,
+  getSessionExpiresAt,
+  hasSession,
+  isSessionExpired,
+  refreshSession,
+} from "@/api/session";
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -44,11 +50,9 @@ export function useSession() {
 
 interface SessionProviderProps {
   children: ReactNode;
-  /** Called when the token needs refreshing */
-  onRefreshToken?: () => Promise<{ token: string; expiresIn?: number }>;
 }
 
-export function SessionProvider({ children, onRefreshToken }: SessionProviderProps) {
+export function SessionProvider({ children }: SessionProviderProps) {
   const router = useRouter();
   const [state, setState] = useState<SessionState>({
     isValid: true,
@@ -56,23 +60,29 @@ export function SessionProvider({ children, onRefreshToken }: SessionProviderPro
     showWarning: false,
   });
 
-  /** Get seconds until expiry from localStorage */
+  /** Seconds until the access token expires, from the readable claims cookie. */
   const getSecondsUntilExpiry = useCallback((): number | null => {
-    if (typeof window === "undefined") return null;
-    const expiry = localStorage.getItem("token_expiry");
-    if (!expiry) return null;
-    const expiryMs = Number(expiry);
-    if (isNaN(expiryMs)) return null;
+    const expiryMs = getSessionExpiresAt();
+    if (expiryMs === null) return null;
     return Math.max(0, Math.floor((expiryMs - Date.now()) / 1000));
   }, []);
 
-  /** Check session validity */
-  const checkSession = useCallback(() => {
-    const token = getStoredToken();
-    if (!token || isTokenExpired()) {
-      setState({ isValid: false, expiresIn: 0, showWarning: false });
-      clearTokens();
-      router.push("/login");
+  /** Ends the session and sends the artist to log in again. */
+  const expire = useCallback(() => {
+    setState({ isValid: false, expiresIn: 0, showWarning: false });
+    void endSession();
+    router.push("/login");
+  }, [router]);
+
+  /** Check session validity. An expired access token is renewed first if possible. */
+  const checkSession = useCallback(async () => {
+    if (!hasSession()) {
+      expire();
+      return;
+    }
+
+    if (isSessionExpired() && !(await refreshSession())) {
+      expire();
       return;
     }
 
@@ -80,33 +90,31 @@ export function SessionProvider({ children, onRefreshToken }: SessionProviderPro
     const showWarning = expiresIn !== null && expiresIn <= WARNING_THRESHOLD_SECONDS;
 
     setState({ isValid: true, expiresIn, showWarning });
-  }, [getSecondsUntilExpiry, router]);
+  }, [expire, getSecondsUntilExpiry]);
 
   /** Attempt to extend the session */
   const extendSession = useCallback(async () => {
-    if (!onRefreshToken) return;
-
-    try {
-      const { token, expiresIn } = await onRefreshToken();
-      storeToken(token, expiresIn);
-      setState((prev) => ({ ...prev, showWarning: false }));
-    } catch {
-      clearTokens();
-      router.push("/login");
+    const renewed = await refreshSession();
+    if (!renewed) {
+      expire();
+      return;
     }
-  }, [onRefreshToken, router]);
+    setState((prev) => ({ ...prev, showWarning: false }));
+  }, [expire]);
 
   /** Log out */
   const logout = useCallback(() => {
-    clearTokens();
+    void endSession();
     setState({ isValid: false, expiresIn: 0, showWarning: false });
     router.push("/login");
   }, [router]);
 
   // Periodic session check
   useEffect(() => {
-    checkSession();
-    const interval = setInterval(checkSession, CHECK_INTERVAL_MS);
+    void checkSession();
+    const interval = setInterval(() => {
+      void checkSession();
+    }, CHECK_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [checkSession]);
 

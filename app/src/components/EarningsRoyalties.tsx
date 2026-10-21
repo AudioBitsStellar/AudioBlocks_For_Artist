@@ -18,7 +18,10 @@ import useEarningsServices from "@/services/earningsService";
 import { EarningsDataPoint } from "@/types";
 import { colorTokens } from "@/theme/colors";
 import { getDisplayNameFromToken } from "@/utils/jwt";
-import { escapeCsvValue, downloadCsv } from "@/utils/csv";
+import { formatMoney } from "@/utils/money";
+import { useCurrencyPreference } from "@/context/CurrencyPreferenceContext";
+import { formatMoney } from "@/utils/money";
+import { useCurrencyPreference } from "@/context/CurrencyPreferenceContext";
 
 const PRINT_TARGET_ID = "earnings-report-print";
 const PRINT_BODY_CLASS = "printing-earnings-report";
@@ -127,6 +130,7 @@ const EmptyState = () => (
 export default function EarningsRoyalties() {
   const { useGetEarnings } = useEarningsServices();
   const { data: response, isLoading, isError, refetch } = useGetEarnings(true);
+  const { currency, displayFormat } = useCurrencyPreference();
 
   const summary = response?.data;
   const chartData: EarningsDataPoint[] = summary?.data ?? [];
@@ -142,8 +146,8 @@ export default function EarningsRoyalties() {
     diff === 0
       ? "Same as last month"
       : diff > 0
-        ? `$${diff.toLocaleString()} more than last month`
-        : `$${Math.abs(diff).toLocaleString()} less than last month`;
+        ? `${formatMoney(diff, { currency, display: displayFormat })} more than last month`
+        : `${formatMoney(Math.abs(diff), { currency, display: displayFormat })} less than last month`;
 
   const availablePayout = Math.max(totalEarnings, 0);
   const payoutHistory = [
@@ -210,7 +214,7 @@ export default function EarningsRoyalties() {
           ) : (
             <div className="flex items-baseline gap-4">
               <p className="text-text text-3xl font-bold">
-                ${totalEarnings.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                {formatMoney(totalEarnings, { currency, display: displayFormat })}
               </p>
               <p className="text-text-muted text-sm">{diffLabel}</p>
             </div>
@@ -296,7 +300,7 @@ export default function EarningsRoyalties() {
             <div>
               <p className="text-xs uppercase tracking-wide text-text-muted">Available balance</p>
               <p className="text-2xl font-bold text-text">
-                ${availablePayout.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                {formatMoney(availablePayout, { currency, display: displayFormat })}
               </p>
             </div>
             <button
@@ -317,7 +321,7 @@ export default function EarningsRoyalties() {
               <li key={payout.id} className="flex items-center justify-between gap-3 text-sm">
                 <div>
                   <p className="font-medium text-text">
-                    ${payout.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    {formatMoney(payout.amount, { currency, display: displayFormat })}
                   </p>
                   <p className="text-text-muted">{payout.requestedAt}</p>
                 </div>
