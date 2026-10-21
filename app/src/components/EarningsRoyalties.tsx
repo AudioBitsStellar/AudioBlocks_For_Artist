@@ -37,11 +37,6 @@ const AREA_STOP_B = colorTokens.secondary.default;
 
 const CSV_HEADERS = ["Month", "Earnings", "Royalties"];
 
-function escapeCsvValue(value: string | number): string {
-  const stringValue = String(value);
-  return /[",\n\r]/.test(stringValue) ? `"${stringValue.replace(/"/g, '""')}"` : stringValue;
-}
-
 function getCurrentMonthFilename(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -196,17 +191,7 @@ export default function EarningsRoyalties() {
     if (typeof window === "undefined" || typeof document === "undefined") return;
 
     const csv = createEarningsCsv(filteredChartData);
-    const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = getCurrentMonthFilename();
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadCsv(csv, getCurrentMonthFilename());
   }, [filteredChartData]);
 
   return (

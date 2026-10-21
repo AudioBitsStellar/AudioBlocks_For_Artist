@@ -259,4 +259,54 @@ body {
   @page {
     margin: 1.5cm;
   }
+
+  /* ─── Print stylesheet: Payout History (issue #618) ─────────────────────
+     Clean, readable payout history table for printing. */
+  @page {
+    margin: 1.5cm;
+  }
+
+  /* Hide controls and buttons when printing */
+  button,
+  select,
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Ensure tables print correctly */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: auto;
+    background: #ffffff;
+    color: #111111;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  th,
+  td {
+    padding: 8px;
+    border: 1px solid #cccccc;
+    text-align: left;
+  }
+
+  /* Reset backgrounds and borders for print */
+  * {
+    background: #ffffff !important;
+    color: #111111 !important;
+    border-color: #cccccc !important;
+  }
+
+  /* Preserve link underlines for visibility */
+  a {
+    text-decoration: underline !important;
+  }
 }
