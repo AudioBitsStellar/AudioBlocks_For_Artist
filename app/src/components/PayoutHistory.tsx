@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Receipt } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Receipt, Printer } from "lucide-react";
 import {
   filterPayouts,
   totalCompletedPayouts,
   type PayoutRecord,
   type PayoutStatus,
 } from "@/utils/artistPortal";
+import { escapeCsvValue, downloadCsv } from "@/utils/csv";
 
 interface PayoutHistoryProps {
   payouts: PayoutRecord[];
@@ -24,6 +25,36 @@ const FILTERS: (PayoutStatus | "all")[] = ["all", "completed", "pending", "faile
 export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
   const [status, setStatus] = useState<PayoutStatus | "all">("all");
   const rows = filterPayouts(payouts, status);
+
+  const handleExportCsv = useCallback(() => {
+    const headers = ["Date", "Amount", "Asset", "Source", "Status", "Transaction Hash", "Explorer URL"];
+    const csvRows = rows.map((payout) => [
+      payout.date,
+      payout.amount,
+      "XLM",
+      payout.source,
+      payout.status,
+      payout.txHash || "",
+      payout.txHash ? `https://stellar.expert/explorer/public/tx/${payout.txHash}` : "",
+    ]);
+
+    const csvContent = [
+      headers.map(escapeCsvValue).join(","),
+      ...csvRows.map((row) => row.map(escapeCsvValue).join(",")),
+    ].join("\r\n");
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const filename = `payouts_${year}-${month}.csv`;
+
+    downloadCsv(csvContent, filename);
+  }, [rows]);
+
+  const handlePrint = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.print();
+  }, []);
 
   return (
     <div className="bg-[#1f2622] border border-[#2d3d2d] rounded-lg p-6">
@@ -48,28 +79,17 @@ export default function PayoutHistory({ payouts }: PayoutHistoryProps) {
             </select>
           </label>
           <button
-            onClick={() => {
-              const csvContent =
-                "data:text/csv;charset=utf-8,ID,Date,Amount,Source,Status\n" +
-                rows.map((r) => `${r.id},${r.date},${r.amount},${r.source},${r.status}`).join("\n");
-              const link = document.createElement("a");
-              link.setAttribute("href", encodeURI(csvContent));
-              link.setAttribute("download", "earnings_export.csv");
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
+            onClick={handleExportCsv}
             className="text-sm bg-[#2d3d2d] text-white rounded px-3 py-1 hover:bg-[#3d4d3d] transition-colors"
           >
             Export CSV
           </button>
           <button
-            onClick={() => {
-              alert("PDF export initiated. Downloading shortly...");
-            }}
-            className="text-sm bg-primary text-primary-contrast rounded px-3 py-1 hover:opacity-90 transition-opacity"
+            onClick={handlePrint}
+            className="text-sm bg-primary text-primary-contrast rounded px-3 py-1 hover:opacity-90 transition-opacity flex items-center gap-1.5"
           >
-            Export PDF
+            <Printer size={14} aria-hidden="true" />
+            Print
           </button>
         </div>
       </div>
