@@ -366,6 +366,12 @@ artist dashboard (#530). See
 [`docs/SOROBAN_CONTRACT_UPGRADE_DESIGN.md`](docs/SOROBAN_CONTRACT_UPGRADE_DESIGN.md)
 for the contract-level design.
 
+### Dashboard ↔ backend API contract
+
+[`docs/api-contract.md`](docs/api-contract.md) maps each endpoint in
+`app/src/api/api-endpoint.ts` to its backend route, and lists the services that
+keep data in `localStorage` instead of calling the API.
+
 ---
 
 ## 🐛 Troubleshooting

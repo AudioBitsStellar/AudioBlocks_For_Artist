@@ -138,6 +138,21 @@ export default function SetupArtistOnChainProfile() {
 
       <ConnectStellarWalletButton />
 
+      {["preparing", "awaiting_signature", "submitting"].includes(status) && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex flex-col gap-1 p-3 bg-zinc-900 border border-[#2A2A2A] rounded-lg"
+        >
+          <p className="text-xs text-[#A3A3A3] font-medium">
+            {status === "preparing" && "Preparing the profile transaction..."}
+            {status === "awaiting_signature" &&
+              "Waiting for you to sign the transaction in Freighter..."}
+            {status === "submitting" && "Submitting the transaction to Stellar..."}
+          </p>
+        </div>
+      )}
+
       {status === "not_installed" && (
         <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-yellow-600/30 rounded-lg">
           <p className="text-xs text-yellow-500 font-medium">Freighter wallet not detected.</p>
@@ -165,8 +180,12 @@ export default function SetupArtistOnChainProfile() {
       )}
 
       {status === "timeout" && (
-        <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg">
+        <div
+          role="alert"
+          className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg"
+        >
           <p className="text-xs text-red-500 font-medium">Request timed out or network error.</p>
+          {errorMsg && <p className="text-xs text-red-400 wrap-break-word">{errorMsg}</p>}
           <button
             onClick={handleSetup}
             className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs w-fit"
@@ -177,7 +196,10 @@ export default function SetupArtistOnChainProfile() {
       )}
 
       {status === "failed" && (
-        <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg">
+        <div
+          role="alert"
+          className="flex flex-col gap-2 p-3 bg-zinc-900 border border-red-600/30 rounded-lg"
+        >
           <p className="text-xs text-red-500 font-medium">Setup failed: {errorMsg}</p>
           <button
             onClick={handleSetup}
