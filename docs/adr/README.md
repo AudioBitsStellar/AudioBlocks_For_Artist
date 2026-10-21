@@ -1,35 +1,51 @@
-# Architecture Decision Records (#265)
+# Architecture Decision Records (ADRs)
 
-This directory records the significant architectural decisions behind the
-artist dashboard — the ones that are expensive to reverse or that a new
-contributor would otherwise have to reconstruct by reading commit history.
+This directory contains Architecture Decision Records (ADRs) for the AudioBlocks For Artist project. ADRs document significant architectural decisions, including the context, decision, rationale, and consequences.
+
+## What is an ADR?
+
+An Architecture Decision Record (ADR) is a document that captures an important architectural decision made along with its context and consequences. ADRs help teams:
+- Understand why certain decisions were made
+- Onboard new team members faster
+- Revisit decisions when context changes
+- Maintain architectural consistency
 
 ## Format
 
-Each ADR is a single Markdown file named `NNNN-short-title.md` and follows
-the same shape:
+Each ADR follows this structure:
+- **Status**: Accepted, Deprecated, Superseded
+- **Context**: The situation that led to the decision
+- **Decision**: What was decided
+- **Rationale**: Why this decision was made
+- **Consequences**: Positive and negative outcomes
+- **Implementation Notes**: Practical guidance
 
-- **Status** — `Accepted`, `Superseded by ADR-XXXX`, or `Proposed`.
-- **Context** — the problem being solved and the constraints in play.
-- **Decision** — what was actually decided.
-- **Consequences** — what this makes easy, what it makes harder, and any
-  follow-up it implies.
+## Current ADRs
 
-## When to add one
+- [ADR-0001](./0001-react-query-for-data-fetching.md) - Use React Query for Data Fetching and State Management
+- [ADR-0002](./0002-stellar-soroban-blockchain-integration.md) - Stellar and Soroban Smart Contracts for Blockchain Integration
+- [ADR-0003](./0003-nextjs-app-router-architecture.md) - Next.js App Router for Application Framework
+- [ADR-0004](./0004-playwright-for-e2e-testing.md) - Playwright for End-to-End Testing
 
-Add an ADR when a change picks between real alternatives and the choice
-will be non-obvious to someone reading the code later — a new dependency,
-a data-flow boundary (e.g. what talks to the backend vs. what talks to
-Stellar directly), or a decision that trades off correctness/security
-against convenience. Routine feature work, bug fixes, and refactors that
-don't change those boundaries don't need one.
+## Creating a New ADR
 
-## Index
+When making a significant architectural decision:
+1. Copy an existing ADR as a template
+2. Number it sequentially (0005, 0006, etc.)
+3. Fill in all sections with clear, concise information
+4. Get team review and approval
+5. Update this README with a link to the new ADR
 
-| ADR | Title |
-| --- | --- |
-| [0001](0001-react-query-for-server-state.md) | Use TanStack React Query for server state |
-| [0002](0002-soroban-prepare-sign-submit-split.md) | Split Soroban transactions into backend-prepare / Freighter-sign / backend-submit |
-| [0003](0003-freighter-as-sole-wallet-provider.md) | Freighter as the sole supported wallet provider |
-| [0004](0004-direct-horizon-reads-from-the-browser.md) | Read-only Stellar queries go directly from the browser to Horizon |
-| [0005](0005-pr-preview-deployments.md) | PR preview deployments run on `pull_request` and skip fork PRs |
+## When to Create an ADR
+
+Create an ADR when:
+- Choosing a major technology or framework
+- Making a significant change to system architecture
+- Establishing coding patterns or conventions
+- Deciding on infrastructure or deployment strategies
+- Any decision that will affect multiple team members or components
+
+You don't need an ADR for:
+- Minor implementation details
+- Temporary workarounds
+- Obvious or trivial decisions
