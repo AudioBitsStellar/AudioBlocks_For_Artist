@@ -42,10 +42,12 @@ describe("TopTracksLeaderboard", () => {
 
 describe("ListenerMap", () => {
   it("renders a tile per region and an accessible table", () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK_DATA", "true");
     render(<ListenerMap data={[{ country: "Nigeria", region: "Africa", plays: 50 }]} />);
     expect(screen.getByRole("img", { name: "Listeners by world region" })).toBeTruthy();
     expect(screen.getByRole("rowheader", { name: "Africa" })).toBeTruthy();
     expect(screen.getByTitle("Nigeria").getAttribute("data-intensity")).toBe("4");
+    vi.unstubAllEnvs();
   });
 });
 

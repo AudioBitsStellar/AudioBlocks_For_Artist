@@ -1,10 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { featureFlags } from "@/lib/featureFlags";
 import { useMock } from "@/__mocks__/loadMock";
 import MockDataBadge from "@/components/MockDataBadge";
-import useOverviewServices from "@/services/overviewService";
+import useOverviewServices, {
+  type StatsWindow,
+} from "@/services/overviewService";
+import OverviewRecentActivity from "./OverviewRecentActivity";
 import type { OverviewKpi } from "@/types";
+import { formatAsset } from "@/utils/money";
 
 interface KpiCard {
   title: string;
@@ -12,20 +17,22 @@ interface KpiCard {
   isFirst: boolean;
 }
 
-function formatCurrency(n: number): string {
-  return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 function kpiToCards(data: OverviewKpi): KpiCard[] {
   return [
     { title: "Songs Published", value: String(data.songsPublished), isFirst: true },
-    { title: "Total Earnings", value: formatCurrency(data.totalEarnings), isFirst: false },
+    { title: "Total Plays", value: data.totalPlays.toLocaleString("en-US"), isFirst: false },
     {
-      title: "Listeners Count",
+      title: "Unique Listeners",
       value: data.listenersCount.toLocaleString("en-US"),
       isFirst: false,
     },
-    { title: "Most Streamed Region", value: data.mostStreamedRegion, isFirst: false },
+    { title: "Saves", value: data.saves.toLocaleString("en-US"), isFirst: false },
+    {
+      title: "Followers",
+      value: data.followersCount?.toLocaleString("en-US") ?? "Unavailable",
+      isFirst: false,
+    },
+    { title: "Royalty Revenue", value: formatAsset(data.earningsXlm, "XLM"), isFirst: false },
   ];
 }
 
@@ -134,9 +141,9 @@ function OverviewCardsSkeleton() {
   );
 }
 
-function LiveOverviewCards() {
+function LiveOverviewCards({ window }: { window: StatsWindow }) {
   const { useGetOverviewKpi } = useOverviewServices();
-  const { data, isLoading, isError } = useGetOverviewKpi();
+  const { data, isLoading, isError } = useGetOverviewKpi(window);
 
   if (isLoading) return <OverviewCardsSkeleton />;
 
@@ -145,7 +152,7 @@ function LiveOverviewCards() {
       <div>
         <h2 className="text-white text-lg font-semibold mb-4">Overview</h2>
         <p className="text-red-400 text-sm">
-          Failed to load overview data. Please try again later.
+          Artist statistics are unavailable. Please try again later.
         </p>
       </div>
     );
@@ -161,10 +168,32 @@ function MockOverviewCards() {
 }
 
 export default function OverviewCards() {
+  const [window, setWindow] = useState<StatsWindow>("30d");
+
   if (featureFlags.useMockOverviewCards) {
     return <MockOverviewCards />;
   }
-  return <LiveOverviewCards />;
+
+  return (
+    <section className="space-y-6">
+      <label className="text-sm text-gray-300 flex items-center gap-3">
+        Statistics period
+        <select
+          aria-label="Statistics period"
+          className="rounded bg-[#1f2622] border border-gray-700 p-2"
+          value={window}
+          onChange={(event) => setWindow(event.target.value as StatsWindow)}
+        >
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+          <option value="all-time">All time</option>
+        </select>
+      </label>
+      <LiveOverviewCards window={window} />
+      <OverviewRecentActivity window={window} />
+    </section>
+  );
 }
 
 export { OverviewCards };

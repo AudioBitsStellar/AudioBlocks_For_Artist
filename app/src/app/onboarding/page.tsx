@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { hasSession } from "@/api/session";
 import { OnboardingStep } from "@/types/onboarding";
 import BasicInfoStep from "@/components/onboarding/BasicInfoStep";
 import VerificationStep from "@/components/onboarding/VerificationStep";
@@ -14,8 +14,7 @@ export default function OnboardingPage() {
   const [completedSteps, setCompletedSteps] = useState<OnboardingStep[]>([]);
 
   useEffect(() => {
-    const token = Cookies.get("audioblocks_jwt");
-    if (!token) {
+    if (!hasSession()) {
       router.push("/login");
     }
   }, [router]);

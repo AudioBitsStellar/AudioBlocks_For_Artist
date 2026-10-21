@@ -2,11 +2,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { RoleProvider } from "@/context/RoleContext";
+import { CLAIMS_COOKIE } from "@/lib/session";
 import { useRole } from "@/hooks/useRole";
 
-vi.mock("js-cookie", () => ({
-  default: { get: vi.fn(() => undefined) },
+// The access token is httpOnly, so the browser only sees the claims cookie (#521).
+const { cookieStore } = vi.hoisted(() => ({
+  cookieStore: {} as Record<string, string | undefined>,
 }));
+
+vi.mock("js-cookie", () => ({
+  default: { get: (name: string) => cookieStore[name], set: vi.fn(), remove: vi.fn() },
+}));
+
+function setSession(token: string): void {
+  cookieStore[CLAIMS_COOKIE] = token.split(".")[1] ?? token;
+}
+
+function clearSession(): void {
+  for (const key of Object.keys(cookieStore)) delete cookieStore[key];
+}
 
 function tokenWith(claims: Record<string, unknown>): string {
   const b64 = (obj: unknown) =>
@@ -30,14 +44,14 @@ function RoleProbe() {
 
 describe("RoleProvider — session role resolution", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearSession();
   });
   afterEach(() => {
-    localStorage.clear();
+    clearSession();
   });
 
   it("uses an explicit initialRole when given", () => {
-    localStorage.setItem("token", tokenWith({ role: "viewer" }));
+    setSession(tokenWith({ role: "viewer" }));
     render(
       <RoleProvider initialRole="manager">
         <RoleProbe />
@@ -47,7 +61,7 @@ describe("RoleProvider — session role resolution", () => {
   });
 
   it("derives the role from the session JWT when no initialRole is given", () => {
-    localStorage.setItem("token", tokenWith({ role: "manager" }));
+    setSession(tokenWith({ role: "manager" }));
     render(
       <RoleProvider>
         <RoleProbe />

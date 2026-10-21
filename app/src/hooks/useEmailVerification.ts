@@ -1,43 +1,42 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import {
-  getEmailVerificationServerState,
-  getEmailVerificationState,
-  subscribeToEmailVerification,
-  type EmailVerificationState,
-  type EmailVerificationStatus,
-} from "@/services/emailVerificationService";
+import { USER_ENDPOINTS } from "@/api/api-endpoint";
+import { useGet } from "@/api/queryClient";
+import { isEmailUnverified } from "@/services/emailVerificationService";
 
-export interface UseEmailVerificationReturn {
-  /** Full record: address, attempt count, cooldown timestamp. */
-  state: EmailVerificationState;
-  status: EmailVerificationStatus;
-  /**
-   * True only while a code is outstanding. An account with no record is not
-   * treated as blocked, so artists who registered before this step shipped are
-   * never locked out.
-   */
-  requiresVerification: boolean;
+/**
+ * Shared by the dashboard gate, the check-inbox step and the link step, so all
+ * three agree on one answer and a verified link updates the gate at once.
+ */
+export const EMAIL_VERIFICATION_QUERY_KEY = ["auth", "email-verification"] as const;
+
+/** `GET /users/profile` wraps the profile in `data`. */
+interface ProfileResponse {
+  success?: boolean;
+  data?: { emailVerified?: boolean | null };
+}
+
+/** The `emailVerified` flag from a profile response, or `undefined` when absent. */
+export function readEmailVerified(response: ProfileResponse | undefined): boolean | undefined {
+  const value = response?.data?.emailVerified;
+  return typeof value === "boolean" ? value : undefined;
 }
 
 /**
- * Live view of the artist's onboarding email verification (#459).
- *
- * Backed by `useSyncExternalStore` rather than a mount-time effect, so the
- * dashboard gate and the verification step agree with the moment a code is
- * issued or spent — not just with when they first rendered.
+ * Live view of the signed-in artist's email verification, read from the backend
+ * profile. Nothing is cached in browser storage (#519).
  */
-export function useEmailVerification(): UseEmailVerificationReturn {
-  const state = useSyncExternalStore(
-    subscribeToEmailVerification,
-    getEmailVerificationState,
-    getEmailVerificationServerState
-  );
+export function useEmailVerification() {
+  const query = useGet<ProfileResponse>(EMAIL_VERIFICATION_QUERY_KEY, USER_ENDPOINTS.PROFILE, {
+    staleTime: 0,
+  });
+  const emailVerified = readEmailVerified(query.data);
 
   return {
-    state,
-    status: state.status,
-    requiresVerification: state.status === "pending",
+    emailVerified,
+    requiresVerification: isEmailUnverified(emailVerified),
+    isLoading: query.isPending,
+    isError: query.isError,
+    refetch: query.refetch,
   };
 }

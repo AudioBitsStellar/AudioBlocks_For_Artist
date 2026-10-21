@@ -1,5 +1,5 @@
 /**
- * Shared public artist reader for the server-rendered profile and claim availability.
+ * Server-side reader for a public artist profile (issue #421).
  *
  * The `/artist/[handle]` route is server-rendered so its `<head>` can contain
  * the artist's real name, bio and avatar. That means the profile has to be
@@ -9,7 +9,7 @@
  * Every failure mode is reported instead of thrown so the route can decide what
  * to render:
  *  - `ok`         → profile found
- *  - `not-found`  → the API says this handle does not exist (route 404s)
+ *  - `not-found`  → the API says this ID does not exist (route 404s)
  *  - `unavailable`→ the API is unreachable / misconfigured (route degrades and
  *                    asks not to be indexed, so a broken backend never floods
  *                    the index with thin pages)
@@ -17,10 +17,8 @@
 
 import { PUBLIC_ARTIST_ENDPOINTS } from "@/api/api-endpoint";
 
-/** Match public-route handles: trim whitespace and an optional @, preserving case. */
-export function normalizeArtistHandle(handle: string): string {
-  return handle.trim().replace(/^@/, "").trim();
-}
+/** How long a rendered profile may be served before it is refetched. */
+const REVALIDATE_SECONDS = 300;
 
 export interface PublicArtistProfile {
   id: string;
@@ -47,70 +45,63 @@ export interface PublicArtistProfile {
 
 export type PublicArtistProfileResult =
   | { status: "ok"; profile: PublicArtistProfile }
+  | { status: "private" }
   | { status: "not-found" }
   | { status: "unavailable" };
 
 function toPublicProfile(payload: unknown): PublicArtistProfile | null {
-  const data = (payload as { data?: unknown })?.data ?? payload;
+  const data = (payload as { data?: unknown })?.data;
   if (!data || typeof data !== "object") return null;
-
-  const record = data as Record<string, unknown>;
-  if (typeof record.handle !== "string" || !record.handle) return null;
-
+  const { profile, openGraph } = data as {
+    profile?: Record<string, unknown>;
+    openGraph?: Record<string, unknown>;
+  };
+  if (!profile || typeof profile.id !== "string") return null;
+  const text = (value: unknown) => (typeof value === "string" && value ? value : undefined);
   return {
-    id:
-      typeof record.id === "string" || typeof record.id === "number"
-        ? String(record.id)
-        : record.handle,
-    handle: record.handle,
-    name: typeof record.name === "string" && record.name ? record.name : `@${record.handle}`,
-    bio: typeof record.bio === "string" ? record.bio : undefined,
-    profileImage: typeof record.profileImage === "string" ? record.profileImage : undefined,
-    website: typeof record.website === "string" ? record.website : undefined,
-    twitter: typeof record.twitter === "string" ? record.twitter : undefined,
-    genres: Array.isArray(record.genres)
-      ? record.genres.filter((g): g is string => typeof g === "string")
-      : undefined,
-    songCount: typeof record.songCount === "number" ? record.songCount : undefined,
-    albumCount: typeof record.albumCount === "number" ? record.albumCount : undefined,
-    listenersCount: typeof record.listenersCount === "number" ? record.listenersCount : undefined,
-    followersCount: typeof record.followersCount === "number" ? record.followersCount : undefined,
-    joinedAt: typeof record.joinedAt === "string" ? record.joinedAt : undefined,
-    status:
-      record.status === "verified" || record.status === "pending" || record.status === "unverified"
-        ? record.status
-        : undefined,
+    id: profile.id,
+    handle: text(profile.username) ?? profile.id,
+    name: text(openGraph?.title) ?? text(profile.name) ?? text(profile.username) ?? "Artist",
+    bio: text(openGraph?.description) ?? text(profile.bio),
+    profileImage: text(openGraph?.image) ?? text(profile.profileImage),
+    website: text(profile.website),
+    twitter: text(profile.twitterUsername),
   };
 }
 
-/**
- * Fetches a public artist profile by handle. Safe to call during
- * `generateMetadata` — it never throws.
- */
+/** ID-based URLs match the backend's canonical /artist/:id/metadata contract. */
 export async function fetchPublicArtistProfile(
-  handle: string,
-  signal?: AbortSignal
+  artistId: string
 ): Promise<PublicArtistProfileResult> {
-  // Tolerate a trailing slash so `…/api/` + `/artist/public/x` doesn't double up.
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
-  const normalizedHandle = normalizeArtistHandle(handle);
-  if (!normalizedHandle || !baseUrl) return { status: "unavailable" };
-
+  const id = artistId.trim();
+  if (!id || !baseUrl) return { status: "unavailable" };
+  // User IDs are UUIDs. Handles cannot be resolved by the current backend.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return { status: "not-found" };
+  }
   try {
-    const response = await fetch(`${baseUrl}${PUBLIC_ARTIST_ENDPOINTS.PROFILE(normalizedHandle)}`, {
-      // Do not cache a missing handle: it may be claimed immediately after this check.
+    // The metadata route does not check isProfilePublic. Always check the
+    // privacy endpoint first and do not cache this decision.
+    const visibility = await fetch(`${baseUrl}${PUBLIC_ARTIST_ENDPOINTS.VISIBILITY(id)}`, {
       cache: "no-store",
-      signal,
       headers: { Accept: "application/json" },
     });
-
+    if (visibility.status === 404) return { status: "not-found" };
+    if (visibility.status === 403) return { status: "private" };
+    if (!visibility.ok) return { status: "unavailable" };
+    const publicBody = await visibility.json();
+    if (publicBody?.data?.private === true) return { status: "private" };
+    if (publicBody?.data?.id !== id) return { status: "unavailable" };
+    const response = await fetch(`${baseUrl}${PUBLIC_ARTIST_ENDPOINTS.PROFILE(id)}`, {
+      next: { revalidate: REVALIDATE_SECONDS },
+      headers: { Accept: "application/json" },
+    });
     if (response.status === 404) return { status: "not-found" };
+    if (response.status === 403) return { status: "private" };
     if (!response.ok) return { status: "unavailable" };
-
-    // A 200 we can't parse is a contract mismatch, not a missing artist:
-    // degrade (noindex) rather than 404 a profile that really exists.
     const profile = toPublicProfile(await response.json());
-    return profile ? { status: "ok", profile } : { status: "unavailable" };
+    return profile && profile.id === id ? { status: "ok", profile } : { status: "unavailable" };
   } catch {
     return { status: "unavailable" };
   }

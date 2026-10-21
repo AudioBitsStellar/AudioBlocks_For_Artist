@@ -1,7 +1,7 @@
 /**
  * The on-chain analytics section (#467) and the rollout gate in front of it
  * (#469): what an artist sees for each failure mode, and the guarantee that an
- * artist outside the rollout never causes a subgraph request.
+ * artist outside the rollout never causes a backend indexer request.
  */
 
 import { render, screen, waitFor } from "@testing-library/react";
@@ -10,12 +10,12 @@ import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import AnalyticsOnchainStats from "@/components/AnalyticsOnchainStats";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { getFreighterAddress } from "@/lib/freighter";
-import { isSubgraphConfigured, type ArtistOnchainStats } from "@/lib/subgraph";
+import { isIndexerConfigured, type ArtistOnchainStats } from "@/lib/onchainIndexer";
 import useOnchainAnalyticsService, { indexerLagMinutes } from "@/services/onchainAnalyticsService";
 
 vi.mock("@/hooks/useFeatureFlag", () => ({ useFeatureFlag: vi.fn() }));
 vi.mock("@/lib/freighter", () => ({ getFreighterAddress: vi.fn() }));
-vi.mock("@/lib/subgraph", () => ({ isSubgraphConfigured: vi.fn() }));
+vi.mock("@/lib/onchainIndexer", () => ({ isIndexerConfigured: vi.fn() }));
 vi.mock("@/services/onchainAnalyticsService", () => ({
   default: vi.fn(),
   indexerLagMinutes: vi.fn(() => 45),
@@ -25,7 +25,7 @@ const ARTIST = "GAZR3A7XTESTARTISTADDRESSABCDEFGHIJKLMNOPQRSTUVWXY";
 
 const mockUseFeatureFlag = useFeatureFlag as Mock;
 const mockGetFreighterAddress = getFreighterAddress as Mock;
-const mockIsSubgraphConfigured = isSubgraphConfigured as Mock;
+const mockIsIndexerConfigured = isIndexerConfigured as Mock;
 const mockService = useOnchainAnalyticsService as Mock;
 const mockIndexerLagMinutes = indexerLagMinutes as Mock;
 
@@ -50,7 +50,7 @@ function renderPanel() {
 describe("AnalyticsOnchainStats", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsSubgraphConfigured.mockReturnValue(true);
+    mockIsIndexerConfigured.mockReturnValue(true);
     mockGetFreighterAddress.mockResolvedValue(ARTIST);
     mockService.mockReturnValue({ useGetOnchainStats: mockUseGetOnchainStats });
     mockUseGetOnchainStats.mockReturnValue({
@@ -80,12 +80,26 @@ describe("AnalyticsOnchainStats", () => {
   });
 
   describe("when enabled", () => {
+    it("shows unavailable aggregates instead of participant-derived artist totals", async () => {
+      mockUseFeatureFlag.mockReturnValue(true);
+      mockUseGetOnchainStats.mockReturnValue({
+        data: statsOver({ totalPlays: null, totalSales: null, totalAmount: null, eventCount: 3 }),
+        isLoading: false,
+        isError: false,
+        isStaleData: false,
+        refetch: vi.fn(),
+      });
+      renderPanel();
+      await waitFor(() => expect(screen.getAllByText("Unavailable")).toHaveLength(3));
+      expect(screen.getByText(/3 account events indexed/)).toBeInTheDocument();
+    });
+
     beforeEach(() => {
       mockUseFeatureFlag.mockReturnValue(true);
     });
 
     it("explains that the deployment has no indexer instead of erroring", async () => {
-      mockIsSubgraphConfigured.mockReturnValue(false);
+      mockIsIndexerConfigured.mockReturnValue(false);
 
       renderPanel();
 
@@ -160,7 +174,7 @@ describe("AnalyticsOnchainStats", () => {
       expect(screen.queryByText(/On-chain activity unavailable/)).not.toBeInTheDocument();
     });
 
-    it("offers a retry when the subgraph fails, and refetches on click", async () => {
+    it("offers a retry when the backend indexer fails, and refetches on click", async () => {
       const refetch = vi.fn();
       mockUseGetOnchainStats.mockReturnValue({
         data: undefined,

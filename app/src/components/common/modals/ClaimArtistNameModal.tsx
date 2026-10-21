@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, memo } from "react";
 import { useRouter } from "next/navigation";
 import { artistNameSchema } from "@/types/formValidation";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { fetchPublicArtistProfile, normalizeArtistHandle } from "@/lib/publicArtistProfile";
+import { fetchArtistHandleProfile, normalizeArtistHandle } from "@/lib/claimArtistHandle";
 import useArtistServices from "@/services/artistServices";
 
 interface ClaimArtistNameModalProps {
@@ -27,7 +27,13 @@ function ClaimArtistNameFlow({ onOpenChange }: Pick<ClaimArtistNameModalProps, "
   const mounted = useRef(false);
   const title = useRef<HTMLHeadingElement>(null);
   const router = useRouter();
-  const { useUpdateArtistProfile } = useArtistServices();
+  const { useUpdateArtistProfile, useGetArtistProfile } = useArtistServices();
+  const profile = useGetArtistProfile(true);
+  const artistId = profile.data?.user.id;
+  const profilePath =
+    artistId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(artistId)
+      ? `/artist/${encodeURIComponent(artistId)}`
+      : null;
   const updateProfile = useUpdateArtistProfile();
   const handle = normalizeArtistHandle(artistName);
   const debouncedHandle = useDebouncedValue(handle, 500);
@@ -61,7 +67,7 @@ function ClaimArtistNameFlow({ onOpenChange }: Pick<ClaimArtistNameModalProps, "
       return;
     const controller = new AbortController();
     let current = true;
-    void fetchPublicArtistProfile(handle, controller.signal)
+    void fetchArtistHandleProfile(handle, controller.signal)
       .then((result) => {
         if (!current) return;
         setAvailability({
@@ -254,7 +260,7 @@ function ClaimArtistNameFlow({ onOpenChange }: Pick<ClaimArtistNameModalProps, "
                 void complete();
               }}
             >
-              <p className="mb-6 break-all text-[#C9C9C9]">Your public profile: /artist/{handle}</p>
+              <p className="mb-6 break-all text-[#C9C9C9]">Your artist handle: @{handle}</p>
               <p
                 role="status"
                 aria-live="polite"
@@ -293,10 +299,10 @@ function ClaimArtistNameFlow({ onOpenChange }: Pick<ClaimArtistNameModalProps, "
                 className={buttonClass}
                 onClick={() => {
                   onOpenChange(false);
-                  router.push(`/artist/${encodeURIComponent(handle)}`);
+                  if (profilePath) router.push(profilePath);
                 }}
               >
-                View public profile
+                {profilePath ? "View public profile" : "Done"}
               </button>
             </div>
           )}

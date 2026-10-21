@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RoleProvider } from "@/context/RoleContext";
 import TopHeader from "./TopHeader";
+
+const storyQueryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
 
 const meta: Meta<typeof TopHeader> = {
   title: "Layout/TopHeader",
@@ -11,9 +16,11 @@ const meta: Meta<typeof TopHeader> = {
   },
   decorators: [
     (Story) => (
-      <RoleProvider>
-        <Story />
-      </RoleProvider>
+      <QueryClientProvider client={storyQueryClient}>
+        <RoleProvider>
+          <Story />
+        </RoleProvider>
+      </QueryClientProvider>
     ),
   ],
 };

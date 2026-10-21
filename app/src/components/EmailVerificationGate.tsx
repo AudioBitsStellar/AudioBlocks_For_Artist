@@ -3,29 +3,25 @@
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
-import { useHasHydrated } from "@/hooks/useHasHydrated";
 
 /**
- * Holds the dashboard back until an artist has confirmed their email address
- * (#459).
+ * Holds the dashboard back until the backend reports the artist's email as
+ * verified (#459, #519).
  *
- * Only artists with a verification code currently pending are diverted. An
- * account with no record on file — anyone who registered before this step
- * existed, or a session issued by a backend that doesn't track it — passes
- * straight through, so the gate can never lock an existing artist out.
+ * Only an explicit `emailVerified: false` is diverted. An account without that
+ * field passes straight through, and so does a failed profile request, so the
+ * gate can never lock an existing artist out.
  *
- * Nothing renders until hydration: the answer comes from storage, which the
- * server render cannot see.
+ * Nothing renders while the profile loads, because the answer is not known yet.
  */
 export default function EmailVerificationGate({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const hydrated = useHasHydrated();
-  const { requiresVerification } = useEmailVerification();
+  const { requiresVerification, isLoading } = useEmailVerification();
 
   useEffect(() => {
     if (requiresVerification) router.replace("/verify-email");
   }, [requiresVerification, router]);
 
-  if (!hydrated || requiresVerification) return null;
+  if (isLoading || requiresVerification) return null;
   return <>{children}</>;
 }

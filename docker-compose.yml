@@ -23,6 +23,15 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runner
+      args:
+        # Pass build-time environment variables to the builder stage.
+        # These are NEXT_PUBLIC_* values inlined at build time.
+        # Set these to your deployment environment's values.
+        # Defaults below are for local development — override in production.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3000/api}
+        NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID}
+        NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE: ${NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE:-Test SDF Network ; September 2015}
+        NEXT_PUBLIC_HORIZON_URL: ${NEXT_PUBLIC_HORIZON_URL:-https://horizon-testnet.stellar.org}
     ports:
       - "3000:3000"
     environment:
@@ -32,3 +41,4 @@ services:
     restart: unless-stopped
     profiles:
       - prod
+

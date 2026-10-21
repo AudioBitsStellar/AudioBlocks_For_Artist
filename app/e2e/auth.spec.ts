@@ -3,13 +3,13 @@
 // The auth API is mocked via page.route() rather than hitting a real
 // backend — matching the actual request shape found in
 // src/services/authService.ts and src/api/axios.ts:
-//   - baseURL: http://localhost:3000/api (NEXT_PUBLIC_API_BASE_URL override)
+//   - baseURL: http://localhost:3000/api/backend (same-origin proxy, #521)
 //   - POST /auth/register-email  -> { user, token }
 //   - POST /auth/login-email     -> { user, token }
-// On success, both pages store the JWT via js-cookie ("audioblocks_jwt").
-// Signup continues into the onboarding email verification step (#459) and
-// login only goes straight to /dashboard when the account is already
-// verified.
+// On success, both pages store the session in httpOnly cookies ("audioblocks_session").
+// Signup continues into onboarding. The dashboard gate sends an unverified
+// artist to the check-inbox step (#519), and login only goes straight to
+// /dashboard when the backend reports the email as verified.
 //
 // Prerequisites:
 //   npx playwright install chromium
@@ -28,8 +28,8 @@ const AUTH_USER = {
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.fake-signature-for-e2e-tests";
 
 test.describe("Signup flow", () => {
-  test("fills the form, submits, and continues to email verification", async ({ page }) => {
-    await page.route("**/api/auth/register-email", async (route) => {
+  test("fills the form, submits, and continues to onboarding", async ({ page }) => {
+    await page.route("**/api/backend/auth/register-email", async (route) => {
       expect(route.request().method()).toBe("POST");
       const body = route.request().postDataJSON();
       expect(body).toMatchObject({
@@ -51,26 +51,14 @@ test.describe("Signup flow", () => {
     await page.fill("#signup-password", "supersecret123");
     await page.getByRole("button", { name: "Sign up" }).click();
 
-    // Signup no longer ends on the dashboard: the artist lands on the email
-    // verification step (#459), which holds the code until it is confirmed.
-    await page.waitForURL("**/verify-email");
-    await expect(page.getByRole("heading", { name: /confirm your email/i })).toBeVisible();
-
-    const dashboard = page.waitForURL("**/dashboard/**");
-    const code = (await page.getByText(/no email backend yet/i).textContent())?.match(/\d{6}/)?.[0];
-    if (!code) throw new Error("verification code was not surfaced for mocked delivery");
-    for (const digit of code.split("")) {
-      await page.keyboard.press(digit);
-    }
-    await page.getByRole("button", { name: "Verify email" }).click();
-    await dashboard;
-
-    // Past the gate, the dashboard renders.
-    await expect(page.getByRole("main")).toBeVisible();
+    // Signup continues into onboarding. The verification link is in the artist's
+    // inbox, and the dashboard gate holds them until it is used (#519).
+    await page.waitForURL("**/onboarding");
+    await expect(page).toHaveURL(/\/onboarding/);
   });
 
   test("shows an error message when signing up with an existing email", async ({ page }) => {
-    await page.route("**/api/auth/register-email", async (route) => {
+    await page.route("**/api/backend/auth/register-email", async (route) => {
       await route.fulfill({
         status: 409,
         contentType: "application/json",
@@ -90,7 +78,7 @@ test.describe("Signup flow", () => {
 
 test.describe("Login flow", () => {
   test("enters credentials, submits, and reaches the dashboard", async ({ page }) => {
-    await page.route("**/api/auth/login-email", async (route) => {
+    await page.route("**/api/backend/auth/login-email", async (route) => {
       expect(route.request().method()).toBe("POST");
       const body = route.request().postDataJSON();
       expect(body).toMatchObject({
@@ -114,7 +102,7 @@ test.describe("Login flow", () => {
   });
 
   test("sends an unverified account to the verification step instead", async ({ page }) => {
-    await page.route("**/api/auth/login-email", async (route) => {
+    await page.route("**/api/backend/auth/login-email", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -131,13 +119,13 @@ test.describe("Login flow", () => {
     await page.getByRole("button", { name: "Log in" }).click();
 
     await page.waitForURL("**/verify-email");
-    await expect(page.getByRole("heading", { name: /^verify your email$/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /check your inbox/i })).toBeVisible();
   });
 
   test("shows an error message for an invalid password and stays on the login page", async ({
     page,
   }) => {
-    await page.route("**/api/auth/login-email", async (route) => {
+    await page.route("**/api/backend/auth/login-email", async (route) => {
       await route.fulfill({
         status: 401,
         contentType: "application/json",
@@ -155,13 +143,32 @@ test.describe("Login flow", () => {
   });
 });
 
-test.describe("Email verification gate (#459)", () => {
-  test("bounces an artist with a code still pending back off the dashboard", async ({ page }) => {
-    await page.route("**/api/auth/register-email", async (route) => {
+test.describe("Email verification gate (#519)", () => {
+  test("holds an unverified artist off the dashboard until the emailed link is used", async ({
+    page,
+  }) => {
+    // The backend is the only source of truth: the profile says whether the email is verified.
+    let verified = false;
+    await page.route("**/api/backend/auth/register-email", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ user: AUTH_USER, token: AUTH_TOKEN }),
+      });
+    });
+    await page.route("**/api/backend/users/profile", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { ...AUTH_USER, emailVerified: verified } }),
+      });
+    });
+    await page.route("**/api/backend/auth/verify-email/**", async (route) => {
+      verified = true;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, message: "Email verified successfully" }),
       });
     });
 
@@ -171,24 +178,19 @@ test.describe("Email verification gate (#459)", () => {
     await page.fill("#signup-email", "gated@example.com");
     await page.fill("#signup-password", "supersecret123");
     await page.getByRole("button", { name: "Sign up" }).click();
-    await page.waitForURL("**/verify-email");
+    await page.waitForURL("**/onboarding");
 
-    // Typing the dashboard address, or following a bookmark, must not get past
-    // the gate — the whole point of #459 is that the gate is not one-way.
+    // Typing the dashboard address, or following a bookmark, must not get past the gate.
     await page.goto("/dashboard/overview");
     await page.waitForURL("**/verify-email");
-    await expect(page.getByRole("heading", { name: /confirm your email/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /check your inbox/i })).toBeVisible();
 
-    const codeText = await page.getByText(/no email backend yet/i).textContent();
-    const code = codeText?.match(/\d{6}/)?.[0];
-    if (!code) throw new Error("verification code was not surfaced for mocked delivery");
-    for (const digit of code.split("")) {
-      await page.keyboard.press(digit);
-    }
-    await page.getByRole("button", { name: "Verify email" }).click();
+    // Opening the emailed link verifies the account, and the dashboard opens.
+    await page.goto("/verify-email/test-token");
+    await expect(page.getByRole("heading", { name: /your email is verified/i })).toBeVisible();
 
-    // Confirming releases the gate, and the artist keeps the page they aimed at.
-    await page.waitForURL("**/dashboard/overview");
+    await page.goto("/dashboard/overview");
+    await expect(page).toHaveURL(/\/dashboard\/overview/);
   });
 });
 

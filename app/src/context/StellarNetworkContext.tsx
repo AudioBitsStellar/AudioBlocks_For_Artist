@@ -7,6 +7,8 @@
  */
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { toast } from "sonner";
+import { queryClient } from "@/api/queryClientInstance";
 import {
   getActiveNetworkId,
   getNetworkConfig,
@@ -30,6 +32,11 @@ export function StellarNetworkProvider({ children }: { children: ReactNode }) {
   const setNetworkId = useCallback((id: StellarNetworkId) => {
     setActiveNetworkId(id);
     setNetworkIdState(id);
+    queryClient.invalidateQueries();
+    const label = getNetworkConfig(id).label;
+    toast.success(`Switched to ${label} — reloading on-chain data`, {
+      duration: 3000,
+    });
   }, []);
 
   return (

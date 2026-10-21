@@ -7,15 +7,18 @@ import { StellarNetworkProvider } from "./StellarNetworkContext";
 import { PlaybackProvider } from "./PlaybackContext";
 import { ThemeProvider } from "./ThemeContext";
 import PrivyProvider from "./PrivyProvider";
+import { CurrencyPreferenceProvider } from "./CurrencyPreferenceContext";
 
 const Provider = ({ children }: { children: ReactNode }) => {
   return (
     <PrivyProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <StellarNetworkProvider>
-            <PlaybackProvider>{children}</PlaybackProvider>
-          </StellarNetworkProvider>
+          <CurrencyPreferenceProvider>
+            <StellarNetworkProvider>
+              <PlaybackProvider>{children}</PlaybackProvider>
+            </StellarNetworkProvider>
+          </CurrencyPreferenceProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </PrivyProvider>

@@ -12,7 +12,7 @@
 
 import { test, expect } from "@playwright/test";
 
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = "http://localhost:3000/api/backend";
 
 const ARTIST_USER = {
   id: "artist-123",
@@ -61,6 +61,15 @@ test.describe("Artist Signup to First Upload Journey", () => {
           body: JSON.stringify({ error: "Invalid registration data" }),
         });
       }
+    });
+
+    // The dashboard gate reads the verification state from the profile (#519).
+    await page.route(`${API_BASE_URL}/users/profile`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { ...ARTIST_USER, emailVerified: true } }),
+      });
     });
 
     // Mock dashboard analytics
@@ -196,7 +205,7 @@ test.describe("Artist Signup to First Upload Journey", () => {
 
     // Step 7: Verify JWT token is stored
     const cookies = await page.context().cookies();
-    const jwtCookie = cookies.find((c) => c.name === "audioblocks_jwt");
+    const jwtCookie = cookies.find((c) => c.name === "audioblocks_session");
     expect(jwtCookie).toBeDefined();
     expect(jwtCookie?.value).toBe(AUTH_TOKEN);
 
@@ -313,7 +322,7 @@ test.describe("Artist Signup to First Upload Journey", () => {
 
     // Verify JWT still present
     const cookies = await page.context().cookies();
-    const jwtCookie = cookies.find((c) => c.name === "audioblocks_jwt");
+    const jwtCookie = cookies.find((c) => c.name === "audioblocks_session");
     expect(jwtCookie?.value).toBe(AUTH_TOKEN);
 
     // Step 3: Navigate to upload page
@@ -322,7 +331,7 @@ test.describe("Artist Signup to First Upload Journey", () => {
 
     // Step 4: Verify JWT still present
     const cookies2 = await page.context().cookies();
-    const jwtCookie2 = cookies2.find((c) => c.name === "audioblocks_jwt");
+    const jwtCookie2 = cookies2.find((c) => c.name === "audioblocks_session");
     expect(jwtCookie2?.value).toBe(AUTH_TOKEN);
   });
 });

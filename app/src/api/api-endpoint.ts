@@ -1,6 +1,8 @@
 export const AUTH_ENDPOINTS = {
   REGISTER_EMAIL: "/auth/register-email",
   LOGIN_EMAIL: "/auth/login-email",
+  /** Consumes the one-time token from the verification email (#519). */
+  VERIFY_EMAIL: (token: string) => `/auth/verify-email/${token}`,
 };
 
 export const USER_ENDPOINTS = {
@@ -45,10 +47,8 @@ export const EARNINGS_ENDPOINTS = {
   GET_PAYOUTS: "/artist/earnings/payouts",
 };
 
-export const OVERVIEW_ENDPOINTS = {
-  GET_OVERVIEW: "/artist/overview",
-  GET_STATISTICS: "/artist/statistics",
-  GET_RECENT_ACTIVITY: "/artist/recent-activity",
+export const ARTIST_STATS_ENDPOINTS = {
+  STATS: (id: string) => `/artists/${encodeURIComponent(id)}/stats`,
 };
 
 export const DASHBOARD_TRANSACTION_ENDPOINTS = {
@@ -88,11 +88,12 @@ export const TEAM_ENDPOINTS = {
   ACCEPT: "/artist/team/accept-invite",
 };
 
+/** Email/password two-factor authentication, served by the backend (#518). */
 export const SECURITY_ENDPOINTS = {
-  TWO_FACTOR_STATUS: "/artist/security/2fa",
-  TWO_FACTOR_SETUP: "/artist/security/2fa/setup",
-  TWO_FACTOR_VERIFY: "/artist/security/2fa/verify",
-  TWO_FACTOR_DISABLE: "/artist/security/2fa/disable",
+  TWO_FACTOR_ENABLE: "/auth/2fa/enable",
+  TWO_FACTOR_VERIFY: "/auth/2fa/verify",
+  TWO_FACTOR_DISABLE: "/auth/2fa/disable",
+  TWO_FACTOR_VALIDATE: "/auth/2fa/validate",
 };
 
 export const ANALYTICS_ENDPOINTS = {
@@ -164,7 +165,8 @@ export const NOTIFICATION_ENDPOINTS = {
 // Public (unauthenticated) artist profile, read by the server-rendered
 // /artist/[handle] route so its SEO metadata is real rather than a placeholder.
 export const PUBLIC_ARTIST_ENDPOINTS = {
-  PROFILE: (handle: string) => `/artist/public/${encodeURIComponent(handle)}`,
+  PROFILE: (id: string) => `/artist/${encodeURIComponent(id)}/metadata`,
+  VISIBILITY: (id: string) => `/users/${encodeURIComponent(id)}/public`,
 };
 
 // Admin-only artist discovery. `search` is the free-text query typed by the

@@ -1,114 +1,183 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, Link2, Plus, Star, Trash2, Wallet } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, Check, Link2, Loader2, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { usePrivy } from "@privy-io/react-auth";
 import ConfirmationDialog from "@/components/shared/ConfirmationDialog";
 import EmptyState from "@/components/shared/EmptyState";
 import {
-  addSocialLink,
-  addWalletLink,
-  getSocialLinks,
-  getWalletLinks,
-  setPrimaryWallet,
-  unlinkAccount,
-  type LinkedAccount,
-} from "@/services/linkedAccountsService";
-import {
-  isHandleTaken,
   SOCIAL_PLATFORMS,
   socialProfileUrl,
-  validateHandle,
   type SocialPlatformId,
 } from "@/utils/linkedAccounts";
 
-const platformLabel = (platform?: SocialPlatformId) =>
-  SOCIAL_PLATFORMS.find((entry) => entry.id === platform)?.label ?? "Social";
+type LinkedAccountDisplay = {
+  id: string;
+  type: string;
+  label: string;
+  handle?: string;
+  address?: string;
+  verified: boolean;
+};
+
+function mapPrivyAccounts(privyUser: any): LinkedAccountDisplay[] {
+  if (!privyUser?.linkedAccounts) return [];
+
+  return privyUser.linkedAccounts.map((account: any, index: number) => {
+    const baseId = `${account.type}-${index}`;
+    
+    switch (account.type) {
+      case "google_oauth":
+        return {
+          id: baseId,
+          type: "google",
+          label: "Google",
+          handle: account.email || "Connected",
+          verified: account.verified || false,
+        };
+      case "twitter_oauth":
+        return {
+          id: baseId,
+          type: "x",
+          label: "X (Twitter)",
+          handle: account.username ? `@${account.username}` : "Connected",
+          verified: account.verified || false,
+        };
+      case "email":
+        return {
+          id: baseId,
+          type: "email",
+          label: "Email",
+          handle: account.address,
+          verified: account.verified || false,
+        };
+      case "wallet":
+        return {
+          id: baseId,
+          type: "wallet",
+          label: "Wallet",
+          address: account.address,
+          verified: true,
+        };
+      default:
+        return {
+          id: baseId,
+          type: account.type,
+          label: account.type,
+          handle: "Connected",
+          verified: account.verified || false,
+        };
+    }
+  });
+}
 
 export default function LinkedAccountsPage() {
-  const [social, setSocial] = useState<LinkedAccount[]>([]);
-  const [wallets, setWallets] = useState<LinkedAccount[]>([]);
-  const [platform, setPlatform] = useState<SocialPlatformId>("x");
-  const [handle, setHandle] = useState("");
-  const [walletAddress, setWalletAddress] = useState("");
+  const { user, linkGoogle, linkTwitter, linkEmail, linkWallet, unlinkGoogle, unlinkTwitter, unlinkEmail, unlinkWallet, ready } = usePrivy();
+  const [accounts, setAccounts] = useState<LinkedAccountDisplay[]>([]);
+  const [pendingLink, setPendingLink] = useState<string | null>(null);
+  const [pendingUnlink, setPendingUnlink] = useState<LinkedAccountDisplay | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pendingRemoval, setPendingRemoval] = useState<LinkedAccount | null>(null);
-
-  const hydrate = () => {
-    setSocial(getSocialLinks());
-    setWallets(getWalletLinks());
-  };
 
   useEffect(() => {
-    hydrate();
-  }, []);
-
-  const meta = SOCIAL_PLATFORMS.find((entry) => entry.id === platform)!;
-
-  const socialError = useMemo(() => {
-    if (!handle.trim()) return null;
-    const result = validateHandle(platform, handle);
-    if (!result.ok) return result.message;
-    if (isHandleTaken(platform, result.handle, social)) {
-      return `You already link ${platformLabel(platform)} as @${result.handle}.`;
+    if (ready && user) {
+      setAccounts(mapPrivyAccounts(user));
     }
-    return null;
-  }, [handle, platform, social]);
+  }, [ready, user]);
 
-  const walletError = useMemo(() => {
-    if (!walletAddress.trim()) return null;
-    return addWalletLink("", walletAddress).ok
-      ? null
-      : "Enter a valid Stellar address that starts with G.";
-  }, [walletAddress]);
+  const socialAccounts = accounts.filter((acc) => acc.type !== "wallet" && acc.type !== "email");
+  const walletAccounts = accounts.filter((acc) => acc.type === "wallet");
+  const loginMethods = accounts.filter((acc) => acc.type === "email" || acc.type === "google" || acc.type === "x");
 
-  const handleAddSocial = () => {
-    const result = validateHandle(platform, handle);
-    if (!result.ok) {
-      setError(result.message);
-      return;
-    }
-    if (isHandleTaken(platform, result.handle, social)) {
-      setError(`You already link ${platformLabel(platform)} as @${result.handle}.`);
-      return;
-    }
-    const added = addSocialLink(platform, meta.label, result.handle);
-    if (!added.ok) {
-      setError(added.message);
-      return;
-    }
-    setHandle("");
+  const handleLinkGoogle = async () => {
+    setPendingLink("google");
     setError(null);
-    toast.success(`${meta.label} linked.`);
-    hydrate();
+    try {
+      await linkGoogle();
+      toast.success("Google linked successfully");
+    } catch (err: any) {
+      setError(err.message || "Failed to link Google account");
+      toast.error("Failed to link Google account");
+    } finally {
+      setPendingLink(null);
+    }
   };
 
-  const handleAddWallet = () => {
-    const added = addWalletLink("Payout wallet", walletAddress);
-    if (!added.ok) {
-      setError(added.message);
+  const handleLinkTwitter = async () => {
+    setPendingLink("twitter");
+    setError(null);
+    try {
+      await linkTwitter();
+      toast.success("X (Twitter) linked successfully");
+    } catch (err: any) {
+      setError(err.message || "Failed to link X account");
+      toast.error("Failed to link X account");
+    } finally {
+      setPendingLink(null);
+    }
+  };
+
+  const handleLinkWallet = async () => {
+    setPendingLink("wallet");
+    setError(null);
+    try {
+      await linkWallet();
+      toast.success("Wallet linked successfully");
+    } catch (err: any) {
+      setError(err.message || "Failed to link wallet");
+      toast.error("Failed to link wallet");
+    } finally {
+      setPendingLink(null);
+    }
+  };
+
+  const handleUnlink = async () => {
+    if (!pendingUnlink) return;
+
+    // Prevent unlinking the last login method
+    if (loginMethods.length <= 1 && (pendingUnlink.type === "email" || pendingUnlink.type === "google" || pendingUnlink.type === "x")) {
+      toast.error("You must keep at least one login method");
+      setPendingUnlink(null);
       return;
     }
-    setWalletAddress("");
-    setError(null);
-    toast.success("Wallet linked.");
-    hydrate();
+
+    try {
+      switch (pendingUnlink.type) {
+        case "google":
+          await unlinkGoogle(pendingUnlink.handle || "");
+          break;
+        case "x":
+          await unlinkTwitter(pendingUnlink.handle || "");
+          break;
+        case "email":
+          await unlinkEmail(pendingUnlink.handle || "");
+          break;
+        case "wallet":
+          await unlinkWallet(pendingUnlink.address || "");
+          break;
+      }
+      toast.success("Account unlinked successfully");
+      setPendingUnlink(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to unlink account");
+      setPendingUnlink(null);
+    }
   };
 
-  const handleRemove = () => {
-    if (!pendingRemoval) return;
-    unlinkAccount(pendingRemoval.id);
-    setPendingRemoval(null);
-    toast.success("Account unlinked.");
-    hydrate();
-  };
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-text">Linked accounts</h2>
         <p className="text-sm text-text-muted">
-          Connect the social profiles and payout wallets fans and collaborators should find you on.
+          Connect social profiles and wallets through verified OAuth. Your linked accounts are synced across all your devices.
         </p>
       </div>
 
@@ -120,32 +189,33 @@ export default function LinkedAccountsPage() {
           Social profiles
         </h3>
 
-        {social.length === 0 ? (
+        {socialAccounts.length === 0 ? (
           <EmptyState
             icon={Link2}
             title="No socials linked"
-            description="Link a profile so fans can follow and share your music."
+            description="Link verified social profiles so fans can follow you."
           />
         ) : (
           <ul className="divide-y divide-border-subtle">
-            {social.map((account) => (
+            {socialAccounts.map((account) => (
               <li key={account.id} className="flex items-center gap-3 py-3">
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-text">{account.label}</span>
-                  <a
-                    href={socialProfileUrl(account.platform!, account.handle)}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="block truncate text-xs text-primary hover:underline"
-                  >
-                    @{account.handle}
-                  </a>
+                  <span className="block text-sm font-semibold text-text flex items-center gap-2">
+                    {account.label}
+                    {account.verified && (
+                      <Check size={14} className="text-primary" aria-label="Verified" />
+                    )}
+                  </span>
+                  <span className="block truncate text-xs text-text-muted">
+                    {account.handle}
+                  </span>
                 </span>
                 <button
                   type="button"
-                  onClick={() => setPendingRemoval(account)}
+                  onClick={() => setPendingUnlink(account)}
+                  disabled={loginMethods.length <= 1 && (account.type === "email" || account.type === "google" || account.type === "x")}
                   aria-label={`Unlink ${account.label}`}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted transition-colors hover:text-error focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted transition-colors hover:text-error focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 size={16} aria-hidden="true" />
                 </button>
@@ -155,56 +225,26 @@ export default function LinkedAccountsPage() {
         )}
 
         <div className="space-y-3 border-t border-border-subtle pt-4">
-          <label htmlFor="linked-platform" className="block text-sm font-medium text-text">
-            Platform
-          </label>
-          <select
-            id="linked-platform"
-            value={platform}
-            onChange={(event) => {
-              setPlatform(event.target.value as SocialPlatformId);
-              setError(null);
-            }}
-            className="w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-text focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            {SOCIAL_PLATFORMS.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-
-          <label htmlFor="linked-handle" className="block text-sm font-medium text-text">
-            Handle
-          </label>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              id="linked-handle"
-              value={handle}
-              onChange={(event) => {
-                setHandle(event.target.value);
-                setError(null);
-              }}
-              placeholder={meta.placeholder}
-              aria-invalid={socialError ? true : undefined}
-              aria-describedby={socialError ? "linked-handle-error" : undefined}
-              className="flex-1 rounded-full border border-border bg-surface-sunken px-4 py-2 text-sm text-text placeholder:text-text-subtle focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            />
             <button
               type="button"
-              onClick={handleAddSocial}
-              disabled={Boolean(socialError)}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              onClick={handleLinkGoogle}
+              disabled={pendingLink === "google"}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-surface-sunken border border-border px-5 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <Plus size={16} aria-hidden="true" />
-              Link {meta.label}
+              {pendingLink === "google" ? <Loader2 size={16} className="animate-spin" /> : null}
+              Link Google
+            </button>
+            <button
+              type="button"
+              onClick={handleLinkTwitter}
+              disabled={pendingLink === "twitter"}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-surface-sunken border border-border px-5 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              {pendingLink === "twitter" ? <Loader2 size={16} className="animate-spin" /> : null}
+              Link X (Twitter)
             </button>
           </div>
-          {socialError && (
-            <p id="linked-handle-error" role="alert" className="text-xs text-error">
-              {socialError}
-            </p>
-          )}
         </div>
       </section>
 
@@ -216,15 +256,15 @@ export default function LinkedAccountsPage() {
           Wallets
         </h3>
 
-        {wallets.length === 0 ? (
+        {walletAccounts.length === 0 ? (
           <EmptyState
             icon={Wallet}
             title="No wallets linked"
-            description="Add a Stellar address to receive royalties and payouts."
+            description="Link a wallet to receive royalties and payouts on-chain."
           />
         ) : (
           <ul className="divide-y divide-border-subtle">
-            {wallets.map((account) => (
+            {walletAccounts.map((account) => (
               <li key={account.id} className="flex items-center gap-3 py-3">
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold text-text">{account.label}</span>
@@ -232,25 +272,9 @@ export default function LinkedAccountsPage() {
                     {account.address}
                   </span>
                 </span>
-                {account.isPrimary ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                    <Star size={12} aria-hidden="true" /> Primary
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPrimaryWallet(account.id);
-                      hydrate();
-                    }}
-                    className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-text-muted transition-colors hover:text-text"
-                  >
-                    Make primary
-                  </button>
-                )}
                 <button
                   type="button"
-                  onClick={() => setPendingRemoval(account)}
+                  onClick={() => setPendingUnlink(account)}
                   aria-label={`Unlink ${account.label}`}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted transition-colors hover:text-error focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
@@ -262,37 +286,15 @@ export default function LinkedAccountsPage() {
         )}
 
         <div className="space-y-3 border-t border-border-subtle pt-4">
-          <label htmlFor="linked-wallet" className="block text-sm font-medium text-text">
-            Stellar address
-          </label>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              id="linked-wallet"
-              value={walletAddress}
-              onChange={(event) => {
-                setWalletAddress(event.target.value);
-                setError(null);
-              }}
-              placeholder="G…"
-              aria-invalid={walletError ? true : undefined}
-              aria-describedby={walletError ? "linked-wallet-error" : undefined}
-              className="flex-1 rounded-full border border-border bg-surface-sunken px-4 py-2 font-mono text-xs text-text placeholder:text-text-subtle focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            />
-            <button
-              type="button"
-              onClick={handleAddWallet}
-              disabled={Boolean(walletError)}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <Plus size={16} aria-hidden="true" />
-              Link wallet
-            </button>
-          </div>
-          {walletError && (
-            <p id="linked-wallet-error" role="alert" className="text-xs text-error">
-              {walletError}
-            </p>
-          )}
+          <button
+            type="button"
+            onClick={handleLinkWallet}
+            disabled={pendingLink === "wallet"}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            {pendingLink === "wallet" ? <Loader2 size={16} className="animate-spin" /> : null}
+            Link wallet
+          </button>
         </div>
       </section>
 
@@ -308,17 +310,17 @@ export default function LinkedAccountsPage() {
 
       <p className="flex items-center gap-2 text-xs text-text-subtle">
         <Check size={14} aria-hidden="true" />
-        Only accounts you own are shown. Unlinking never affects your releases or payouts.
+        All accounts are verified through OAuth. You cannot unlink your last login method.
       </p>
 
       <ConfirmationDialog
-        isOpen={Boolean(pendingRemoval)}
-        onClose={() => setPendingRemoval(null)}
-        onConfirm={handleRemove}
+        isOpen={Boolean(pendingUnlink)}
+        onClose={() => setPendingUnlink(null)}
+        onConfirm={handleUnlink}
         title="Unlink this account?"
         message={
-          pendingRemoval
-            ? `${pendingRemoval.label} (${pendingRemoval.handle}) will be removed from your linked accounts.`
+          pendingUnlink
+            ? `${pendingUnlink.label} (${pendingUnlink.handle || pendingUnlink.address}) will be removed from your linked accounts.`
             : ""
         }
         confirmText="Unlink"

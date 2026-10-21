@@ -2,19 +2,26 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { axe } from "vitest-axe";
 import ClaimArtistNameModal from "@/components/common/modals/ClaimArtistNameModal";
-import { fetchPublicArtistProfile } from "@/lib/publicArtistProfile";
-import type { PublicArtistProfileResult } from "@/lib/publicArtistProfile";
+import { fetchArtistHandleProfile } from "@/lib/claimArtistHandle";
+import type { PublicArtistProfileResult } from "@/lib/claimArtistHandle";
 
-const { save, push } = vi.hoisted(() => ({ save: vi.fn(), push: vi.fn() }));
+const { save, push, profileQuery } = vi.hoisted(() => ({
+  save: vi.fn(),
+  push: vi.fn(),
+  profileQuery: vi.fn(),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/services/artistServices", () => ({
-  default: () => ({ useUpdateArtistProfile: () => ({ mutateAsync: save }) }),
+  default: () => ({
+    useUpdateArtistProfile: () => ({ mutateAsync: save }),
+    useGetArtistProfile: profileQuery,
+  }),
 }));
-vi.mock("@/lib/publicArtistProfile", async (original) => ({
-  ...(await original<typeof import("@/lib/publicArtistProfile")>()),
-  fetchPublicArtistProfile: vi.fn(),
+vi.mock("@/lib/claimArtistHandle", async (original) => ({
+  ...(await original<typeof import("@/lib/claimArtistHandle")>()),
+  fetchArtistHandleProfile: vi.fn(),
 }));
-const lookup = vi.mocked(fetchPublicArtistProfile);
+const lookup = vi.mocked(fetchArtistHandleProfile);
 const change = (name: string) =>
   fireEvent.change(screen.getByRole("textbox", { name: "Artist handle" }), {
     target: { value: name },
@@ -42,6 +49,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   lookup.mockReset().mockResolvedValue({ status: "not-found" });
   save.mockReset().mockResolvedValue({ success: true });
+  profileQuery.mockReturnValue({ data: { user: { id: "12345678-1234-1234-1234-123456789abc" } } });
 });
 afterEach(() => {
   cleanup();
@@ -49,6 +57,19 @@ afterEach(() => {
 });
 
 describe("ClaimArtistNameModal", () => {
+  it("does not offer a broken handle URL when the artist ID is unavailable", async () => {
+    profileQuery.mockReturnValue({ data: undefined });
+    const close = vi.fn();
+    render(<ClaimArtistNameModal open onOpenChange={close} />);
+    await available();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Complete" }));
+    });
+    expect(screen.queryByRole("button", { name: "View public profile" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(close).toHaveBeenCalledWith(false);
+    expect(push).not.toHaveBeenCalled();
+  });
   it("debounces and announces a taken name, preventing progression", async () => {
     lookup.mockResolvedValue({
       status: "ok",
@@ -143,7 +164,7 @@ describe("ClaimArtistNameModal", () => {
     expect(screen.getByRole("heading", { name: "Artist handle saved" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "View public profile" }));
     expect(close).toHaveBeenCalledWith(false);
-    expect(push).toHaveBeenCalledWith("/artist/Solo.Sound");
+    expect(push).toHaveBeenCalledWith("/artist/12345678-1234-1234-1234-123456789abc");
   });
 
   it("handles a save-time 409 and requires a different handle", async () => {
