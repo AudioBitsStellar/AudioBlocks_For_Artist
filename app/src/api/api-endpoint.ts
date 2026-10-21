@@ -45,13 +45,10 @@ export const EARNINGS_ENDPOINTS = {
   GET_EARNINGS: "/artist/earnings",
   GET_PLATFORM_REVENUE: "/artist/earnings/platforms",
   GET_PAYOUTS: "/artist/earnings/payouts",
-  WITHDRAW: "/artist/earnings/withdraw",
 };
 
-export const OVERVIEW_ENDPOINTS = {
-  GET_OVERVIEW: "/artist/overview",
-  GET_STATISTICS: "/artist/statistics",
-  GET_RECENT_ACTIVITY: "/artist/recent-activity",
+export const ARTIST_STATS_ENDPOINTS = {
+  STATS: (id: string) => `/artists/${encodeURIComponent(id)}/stats`,
 };
 
 export const DASHBOARD_TRANSACTION_ENDPOINTS = {
@@ -160,15 +157,16 @@ export const MERCH_INVENTORY_ENDPOINTS = {
 };
 
 export const NOTIFICATION_ENDPOINTS = {
-  LIST: "/artist/notifications",
-  MARK_READ: (id: string) => `/artist/notifications/${id}/read`,
-  MARK_ALL_READ: "/artist/notifications/read-all",
+  LIST: "/notifications",
+  MARK_READ: (id: string) => `/notifications/${id}/read`,
+  MARK_ALL_READ: "/notifications/read-all",
 };
 
 // Public (unauthenticated) artist profile, read by the server-rendered
 // /artist/[handle] route so its SEO metadata is real rather than a placeholder.
 export const PUBLIC_ARTIST_ENDPOINTS = {
-  PROFILE: (handle: string) => `/artist/public/${encodeURIComponent(handle)}`,
+  PROFILE: (id: string) => `/artist/${encodeURIComponent(id)}/metadata`,
+  VISIBILITY: (id: string) => `/users/${encodeURIComponent(id)}/public`,
 };
 
 // Admin-only artist discovery. `search` is the free-text query typed by the

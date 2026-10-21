@@ -4,6 +4,9 @@ import { useState } from "react";
 import PathBreadcrumb from "@/components/PathBreadcrumb";
 import { EventTicketQR } from "@/components/events/EventTicketQR";
 import { Ticket, Plus, Loader2 } from "lucide-react";
+import { useMock } from "@/__mocks__/loadMock";
+import { featureFlags } from "@/lib/featureFlags";
+import type { EventTicket } from "@/types";
 
 interface TicketsPageProps {
   params: {
@@ -11,23 +14,10 @@ interface TicketsPageProps {
   };
 }
 
-interface TicketEntry {
-  id: string;
-  attendeeName: string;
-  tier: string;
-  purchasedAt: string;
-}
-
-const MOCK_TICKETS: TicketEntry[] = [
-  { id: "TICK-001", attendeeName: "Alice Johnson", tier: "VIP", purchasedAt: "2025-08-20" },
-  { id: "TICK-002", attendeeName: "Bob Smith", tier: "General", purchasedAt: "2025-08-21" },
-  { id: "TICK-003", attendeeName: "Carol White", tier: "General", purchasedAt: "2025-08-22" },
-  { id: "TICK-004", attendeeName: "David Lee", tier: "VIP", purchasedAt: "2025-08-23" },
-];
-
 export default function TicketsPage({ params }: TicketsPageProps) {
-  const [tickets] = useState<TicketEntry[]>(MOCK_TICKETS);
-  const [selectedTicket, setSelectedTicket] = useState<TicketEntry | null>(null);
+  const eventMocks = useMock("events", featureFlags.useMockEvents);
+  const tickets: EventTicket[] = eventMocks?.MOCK_TICKETS ?? [];
+  const [selectedTicket, setSelectedTicket] = useState<EventTicket | null>(null);
 
   return (
     <div className="space-y-8">

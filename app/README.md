@@ -171,7 +171,6 @@ Two more optional variables are relevant to the Artist Portal surfaces:
 
 | Variable                    | Effect when unset                                                                                       |
 | --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUBGRAPH_URL`  | The analytics dashboard omits its on-chain plays/sales section entirely — no request, no error state.   |
 | `NEXT_PUBLIC_FEATURE_FLAGS` | Rollout flags fall back to their configured percentage, e.g. `artistOnchainAnalytics=true` to force on. |
 
 ### Feature flags and gradual rollout

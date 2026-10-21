@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { axe } from "vitest-axe";
 import NotificationBell from "@/components/NotificationBell";
+import { loadMock } from "@/__mocks__/loadMock";
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   saveNotificationPreferences,
@@ -13,9 +14,10 @@ vi.mock("@/lib/featureFlags", () => ({
   featureFlags: { useMockNotifications: true },
 }));
 
-function renderBell(ui = <NotificationBell />) {
+/** Renders the bell, then lets `useMock` hand it the notification fixtures. */
+async function renderBell(ui = <NotificationBell />) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const result = render(
     <QueryClientProvider client={qc}>
       <div>
         {ui}
@@ -23,6 +25,10 @@ function renderBell(ui = <NotificationBell />) {
       </div>
     </QueryClientProvider>
   );
+  await act(async () => {
+    await loadMock("notifications");
+  });
+  return result;
 }
 
 const getBell = () => screen.getByRole("button", { name: /^notifications/i });
@@ -38,16 +44,16 @@ beforeEach(() => {
 });
 
 describe("NotificationBell", () => {
-  it("shows the unread count from mock notifications and starts closed", () => {
-    renderBell();
+  it("shows the unread count from mock notifications and starts closed", async () => {
+    await renderBell();
 
     expect(getBell()).toHaveAccessibleName("Notifications (4 unread)");
     expect(getBell()).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("region", { name: "Notifications" })).not.toBeInTheDocument();
   });
 
-  it("opens a dropdown listing notifications newest first", () => {
-    renderBell();
+  it("opens a dropdown listing notifications newest first", async () => {
+    await renderBell();
     const panel = openDropdown();
 
     expect(getBell()).toHaveAttribute("aria-expanded", "true");
@@ -58,8 +64,8 @@ describe("NotificationBell", () => {
     expect(within(panel).getAllByTestId("notification-unread-dot")).toHaveLength(4);
   });
 
-  it("marks a notification as read when it is selected", () => {
-    renderBell();
+  it("marks a notification as read when it is selected", async () => {
+    await renderBell();
     const panel = openDropdown();
     const link = within(panel).getByRole("link", { name: /started following you/i });
     // jsdom can't navigate; stop the anchor's default action after onClick runs.
@@ -72,8 +78,8 @@ describe("NotificationBell", () => {
     expect(getBell()).toHaveAccessibleName("Notifications (3 unread)");
   });
 
-  it("marks everything as read and disables the action afterwards", () => {
-    renderBell();
+  it("marks everything as read and disables the action afterwards", async () => {
+    await renderBell();
     const panel = openDropdown();
     const markAll = within(panel).getByRole("button", { name: /mark all as read/i });
 
@@ -87,8 +93,8 @@ describe("NotificationBell", () => {
     expect(within(getBell()).queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
-  it("closes on Escape and returns focus to the bell", () => {
-    renderBell();
+  it("closes on Escape and returns focus to the bell", async () => {
+    await renderBell();
     openDropdown();
 
     act(() => {
@@ -99,8 +105,8 @@ describe("NotificationBell", () => {
     expect(getBell()).toHaveFocus();
   });
 
-  it("closes when clicking outside", () => {
-    renderBell();
+  it("closes when clicking outside", async () => {
+    await renderBell();
     openDropdown();
 
     act(() => {
@@ -110,8 +116,8 @@ describe("NotificationBell", () => {
     expect(screen.queryByRole("region", { name: "Notifications" })).not.toBeInTheDocument();
   });
 
-  it("links to the notification settings page", () => {
-    renderBell();
+  it("links to the notification settings page", async () => {
+    await renderBell();
     const panel = openDropdown();
 
     expect(within(panel).getByRole("link", { name: "Notification settings" })).toHaveAttribute(
@@ -120,12 +126,12 @@ describe("NotificationBell", () => {
     );
   });
 
-  it("hides kinds the artist muted for in-app delivery", () => {
+  it("hides kinds the artist muted for in-app delivery", async () => {
     saveNotificationPreferences({
       ...DEFAULT_NOTIFICATION_PREFERENCES,
       newFan: { email: false, inApp: false },
     });
-    renderBell();
+    await renderBell();
     const panel = openDropdown();
 
     expect(within(panel).getAllByRole("listitem")).toHaveLength(5);
@@ -133,28 +139,28 @@ describe("NotificationBell", () => {
     expect(getBell()).toHaveAccessibleName("Notifications (3 unread)");
   });
 
-  it("shows an empty state when every kind is muted", () => {
+  it("shows an empty state when every kind is muted", async () => {
     saveNotificationPreferences({
       newFan: { email: false, inApp: false },
       earnings: { email: false, inApp: false },
       eventReminder: { email: false, inApp: false },
       qualityCheck: { email: false, inApp: false },
     });
-    renderBell();
+    await renderBell();
     const panel = openDropdown();
 
     expect(within(panel).getByText(/all caught up/i)).toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: /mark all as read/i })).toBeDisabled();
   });
 
-  it("respects an explicit notificationCount override", () => {
-    renderBell(<NotificationBell notificationCount={null} />);
+  it("respects an explicit notificationCount override", async () => {
+    await renderBell(<NotificationBell notificationCount={null} />);
 
     expect(within(getBell()).queryByTestId("notification-count")).not.toBeInTheDocument();
   });
 
   it("open dropdown has no axe violations", async () => {
-    const { container } = renderBell();
+    const { container } = await renderBell();
     openDropdown();
 
     expect(await axe(container)).toHaveNoViolations();

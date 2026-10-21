@@ -22,15 +22,30 @@ export const featureFlags = {
   useMockTracks: globalMock,
   /** Fans Engagement widget (top songs, streaming regions, top streamers) — wired to real API when false */
   useMockFansEngagement: globalMock,
+  /** Artists-tab conversations in Messages — there is no artist-to-artist API yet, so the tab is empty when false */
+  useMockMessages: globalMock,
   /** Notification bell dropdown in the top header — read state is kept locally when true */
   useMockNotifications: globalMock,
-  /** On-chain activity stats (#466) — read live from Horizon when false */
+  /** On-chain activity stats (#466) — read from the backend Soroban indexer when false */
   useMockOnChainStats: globalMock,
   /**
    * EarningsRoyalties is already wired to a real endpoint (#47),
    * so its flag is always false regardless of the global toggle.
    */
   useMockEarnings: false,
+  /**
+   * Onboarding email verification (#459). There is no code-delivery endpoint
+   * yet, so codes are issued and revealed locally — the only alternative is a
+   * step nobody can complete. Intentionally NOT tied to `globalMock`, which
+   * defaults to false; flip this to false and wire an email send once
+   * `POST /auth/verify-email/request` exists.
+   */
+  useMockEmailVerification: true,
+  /**
+   * Song token transfer flow (#529). Gated behind a flag until backend
+   * relay endpoints (POST /song/:id/onchain/prepare-transfer) are supported.
+   */
+  enableSongTransfer: process.env.NEXT_PUBLIC_ENABLE_SONG_TRANSFER === "true",
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -66,7 +81,7 @@ export interface FeatureFlagDefinition {
 export const FEATURE_FLAGS: Record<FeatureFlagName, FeatureFlagDefinition> = {
   artistOnchainAnalytics: {
     description:
-      "On-chain plays and sales from the subgraph, shown as a section of the analytics dashboard.",
+      "On-chain plays and sales from the backend Soroban indexer, shown as a section of the analytics dashboard.",
     rolloutPercentage: 0,
     allowlist: [],
   },

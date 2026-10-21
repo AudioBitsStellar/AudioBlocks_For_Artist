@@ -9,8 +9,8 @@ vi.mock("@/components/common/wallet/useStellarWallet", () => ({
   useStellarWallet: () => ({ address: wallet.address }),
 }));
 
+import { MOCK_ONCHAIN_SUMMARY } from "@/__mocks__/onchainStats";
 import {
-  MOCK_ONCHAIN_SUMMARY,
   countByOperationType,
   dayOf,
   formatAmount,
@@ -24,7 +24,6 @@ import {
 } from "@/services/onchainStatsService";
 import type { HorizonOperation, HorizonTransaction } from "@/lib/horizon";
 
-const RPC_URL = "https://horizon-testnet.stellar.org";
 const ADDRESS = "GCONNECTEDACCOUNT1234567890ABCDEFGHIJKLMNOPQRSTUVWXY";
 
 const tx = (hash: string, createdAt: string, successful = true): HorizonTransaction => ({
@@ -47,23 +46,8 @@ const op = (id: string, type: string, createdAt: string): HorizonOperation => ({
   created_at: createdAt,
 });
 
-/** Routes the four Horizon reads `useOnChainStats` performs to fixed payloads. */
-function stubHorizon(pages: {
-  balances?: unknown;
-  transactions?: HorizonTransaction[];
-  operations?: HorizonOperation[];
-}) {
-  const fetchMock = vi.fn(async (rawUrl: string) => {
-    const body = rawUrl.includes("/operations")
-      ? { _embedded: { records: pages.operations ?? [] } }
-      : rawUrl.includes("/transactions")
-        ? { _embedded: { records: pages.transactions ?? [] } }
-        : { id: ADDRESS, balances: pages.balances ?? [] };
-    return { ok: true, status: 200, json: async () => body };
-  });
-  vi.stubGlobal("fetch", fetchMock);
-  return fetchMock;
-}
+const indexer = vi.hoisted(() => ({ fetch: vi.fn() }));
+vi.mock("@/lib/onchainIndexer", () => ({ fetchIndexedActivity: indexer.fetch }));
 
 describe("onchainStatsService display helpers", () => {
   it("keeps both ends of an address recognisable", () => {
@@ -245,107 +229,46 @@ describe("MOCK_ONCHAIN_SUMMARY", () => {
   });
 });
 
-describe("useOnChainStats", () => {
-  const originalEnv = { ...process.env };
-
+describe("useOnChainStats via backend indexer", () => {
   beforeEach(() => {
     flags.useMockOnChainStats = false;
     wallet.address = ADDRESS;
-    process.env.NEXT_PUBLIC_STELLAR_RPC_URL = RPC_URL;
-    process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
-    window.localStorage.removeItem("audioblocks:stellar-network:v1");
+    indexer.fetch.mockReset().mockResolvedValue([]);
   });
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
-    vi.unstubAllGlobals();
-  });
-
-  it("derives the connected artist's summary from Horizon", async () => {
-    const fetchMock = stubHorizon({
-      balances: [
-        { asset_type: "native", balance: "500.0000000" },
-        { asset_type: "credit_alphanum4", asset_code: "ABX", balance: "10.0000000" },
-      ],
-      transactions: [tx("tx_a", "2026-09-26T18:04:00Z"), tx("tx_b", "2026-09-21T20:41:00Z", false)],
-      operations: [
-        op("o1", "payment", "2026-09-26T18:04:00Z"),
-        op("o2", "invoke_host_function", "2026-09-21T20:41:00Z"),
-      ],
-    });
-
+  it("derives indexed event and transaction counts", async () => {
+    indexer.fetch.mockResolvedValue([
+      { id: "a", eventType: "mint", txHash: "tx1", createdAt: "2026-09-01T00:00:00Z" },
+      { id: "b", eventType: "mint", txHash: "tx1", createdAt: "2026-09-01T00:00:00Z" },
+    ]);
     const { result } = renderHook(() => useOnChainStats());
-
     await waitFor(() => expect(result.current.summary).not.toBeNull());
-
-    expect(result.current.isMock).toBe(false);
-    expect(result.current.isLoading).toBe(false);
     expect(result.current.summary).toMatchObject({
-      address: ADDRESS,
-      network: "testnet",
-      xlmBalance: "500.0000000",
-      transactionCount: 2,
-      failedTransactionCount: 1,
+      transactionCount: 1,
       operationCount: 2,
-      operationsByType: { payment: 1, invoke_host_function: 1 },
-      assets: [{ code: "ABX", balance: "10.0000000" }],
+      operationsByType: { mint: 2 },
+      xlmBalance: "",
+      failedTransactionCount: null,
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      `${RPC_URL}/accounts/${ADDRESS}/operations?order=desc&limit=200`
-    );
+    expect(indexer.fetch).toHaveBeenCalledWith(ADDRESS);
   });
-
-  it("settles back to not-loading when Horizon fails, and keeps the error for the UI", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) }))
-    );
-
-    const { result } = renderHook(() => useOnChainStats());
-
-    await waitFor(() => expect(result.current.error).not.toBeNull());
-
-    expect(result.current.summary).toBeNull();
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.error).toMatch(/503/);
-  });
-
-  it("falls back to the sample summary for signed-out artists instead of fetching", async () => {
+  it("keeps disconnected live artists out of demo mode", () => {
     wallet.address = null;
-    const fetchMock = stubHorizon({});
-
     const { result } = renderHook(() => useOnChainStats());
-
-    await waitFor(() => expect(result.current.summary).not.toBeNull());
-
-    expect(result.current.isMock).toBe(true);
-    expect(result.current.summary).toBe(MOCK_ONCHAIN_SUMMARY);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.summary).toBeNull();
+    expect(result.current.isMock).toBe(false);
+    expect(indexer.fetch).not.toHaveBeenCalled();
   });
-
-  it("honours the mock-data feature flag even with a wallet connected", async () => {
+  it("uses the fixture only for explicit mock mode", () => {
     flags.useMockOnChainStats = true;
-    const fetchMock = stubHorizon({});
-
     const { result } = renderHook(() => useOnChainStats());
-
-    await waitFor(() => expect(result.current.summary).not.toBeNull());
-
-    expect(result.current.isMock).toBe(true);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.summary).toBe(MOCK_ONCHAIN_SUMMARY);
+    expect(indexer.fetch).not.toHaveBeenCalled();
   });
-
-  it("re-reads Horizon when refresh() is called", async () => {
-    const fetchMock = stubHorizon({
-      transactions: [tx("tx_a", "2026-09-26T18:04:00Z")],
-      operations: [op("o1", "payment", "2026-09-26T18:04:00Z")],
-    });
-
+  it("exposes backend failures for retry", async () => {
+    indexer.fetch.mockRejectedValue(new Error("Indexer unavailable"));
     const { result } = renderHook(() => useOnChainStats());
-    await waitFor(() => expect(result.current.summary).not.toBeNull());
-
-    const callsAfterFirstLoad = fetchMock.mock.calls.length;
-    result.current.refresh();
-    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(callsAfterFirstLoad));
+    await waitFor(() => expect(result.current.error).toBe("Indexer unavailable"));
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.summary).toBeNull();
   });
 });

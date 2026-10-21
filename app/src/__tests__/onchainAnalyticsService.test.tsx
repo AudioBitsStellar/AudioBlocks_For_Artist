@@ -9,9 +9,9 @@ import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import {
   fetchArtistOnchainStats,
-  isSubgraphConfigured,
+  isIndexerConfigured,
   type ArtistOnchainStats,
-} from "@/lib/subgraph";
+} from "@/lib/onchainIndexer";
 import useOnchainAnalyticsService, {
   INDEXER_STALE_AFTER_MS,
   indexerLagMinutes,
@@ -19,14 +19,14 @@ import useOnchainAnalyticsService, {
 } from "@/services/onchainAnalyticsService";
 
 vi.mock("@tanstack/react-query", () => ({ useQuery: vi.fn() }));
-vi.mock("@/lib/subgraph", () => ({
+vi.mock("@/lib/onchainIndexer", () => ({
   fetchArtistOnchainStats: vi.fn(),
-  isSubgraphConfigured: vi.fn(),
+  isIndexerConfigured: vi.fn(),
 }));
 
 const mockUseQuery = useQuery as Mock;
 const mockFetchStats = fetchArtistOnchainStats as Mock;
-const mockIsConfigured = isSubgraphConfigured as Mock;
+const mockIsConfigured = isIndexerConfigured as Mock;
 
 const ARTIST = "GAZR3A7XTESTARTISTADDRESSABCDEFGHIJKLMNOPQRSTUVWXY";
 
@@ -73,7 +73,7 @@ describe("onchainAnalyticsService", () => {
       expect(options().enabled).toBe(false);
     });
 
-    it("stays disabled on a deployment that has no subgraph configured", () => {
+    it("stays disabled on a deployment that has no backend indexer configured", () => {
       mockIsConfigured.mockReturnValue(false);
 
       const { result } = renderHook(() => useOnchainAnalyticsService().useGetOnchainStats(ARTIST));

@@ -230,7 +230,7 @@ export default function AnalyticsDashboard() {
       )}
 
       {/* On-chain plays and sales (#467). Deliberately outside the block above:
-          a subgraph or backend outage should only cost you its own section. */}
+          an indexer or backend outage should only cost you its own section. */}
       <AnalyticsOnchainStats />
     </>
   );

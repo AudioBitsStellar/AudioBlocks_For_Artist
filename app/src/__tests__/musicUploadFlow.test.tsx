@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Song from "@/components/musicUpload/Song";
+import { CHUNK_SIZE } from "@/utils/chunkUploader";
 
 const mockMutateChunk = vi.fn().mockResolvedValue({});
 const mockMutateCover = vi.fn().mockResolvedValue({ data: { cover: "ipfs://cover_hash" } });
@@ -60,9 +61,30 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
+async function prepareUpload(audioFile: File) {
+  const user = userEvent.setup();
+  render(<Song />, { wrapper: Wrapper });
+
+  await user.type(screen.getByLabelText(/Song Title/i), "Retry Test Song");
+  await user.type(screen.getByLabelText(/Song Description/i), "Testing upload recovery.");
+  await user.selectOptions(screen.getByLabelText(/Genre/i), "Afrobeats");
+  await user.type(screen.getByLabelText(/Composer/i), "Test Composer");
+  await user.upload(screen.getByLabelText(/Upload audio file/i), audioFile);
+  await user.upload(
+    screen.getByLabelText(/Upload cover image/i),
+    new File(["image content"], "cover.png", { type: "image/png" })
+  );
+
+  return user;
+}
+
 describe("Music Upload Flow Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: vi.fn(() => "blob:test-audio"),
+    });
   });
 
   it("completes the full music upload flow", async () => {
@@ -137,5 +159,47 @@ describe("Music Upload Flow Integration", () => {
     // Submit should be disabled
     const submitBtn = screen.getByRole("button", { name: /Add Music/i });
     expect(submitBtn).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("resumes from the failed chunk and completes the upload on retry", async () => {
+    mockMutateChunk
+      .mockResolvedValueOnce({})
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockResolvedValue({});
+
+    const user = await prepareUpload(
+      new File([new Uint8Array(CHUNK_SIZE * 2 + 16)], "retry.mp3", { type: "audio/mpeg" })
+    );
+    await user.click(screen.getByRole("button", { name: /Add Music/i }));
+
+    const retryButton = await screen.findByRole("button", { name: "Retry upload" });
+    await user.click(retryButton);
+
+    await waitFor(() => expect(mockMutateFinalize).toHaveBeenCalledTimes(1));
+    const uploadedChunkIndexes = mockMutateChunk.mock.calls.map(([form]) =>
+      (form as FormData).get("chunkIndex")
+    );
+    expect(uploadedChunkIndexes).toEqual(["0", "1", "1", "2"]);
+  });
+
+  it("shows a terminal error and start-over action after three retries", async () => {
+    mockMutateChunk.mockRejectedValue(new Error("Network error"));
+
+    const user = await prepareUpload(
+      new File(["audio content"], "retry-limit.mp3", { type: "audio/mpeg" })
+    );
+    await user.click(screen.getByRole("button", { name: /Add Music/i }));
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const retryButton = await screen.findByRole("button", { name: "Retry upload" });
+      await user.click(retryButton);
+      await waitFor(() => expect(mockMutateChunk).toHaveBeenCalledTimes(attempt + 2));
+    }
+
+    expect(
+      await screen.findByText(/Upload failed after 3 retries\. Start over to try again\./i)
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry upload" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start over" })).toBeInTheDocument();
   });
 });
