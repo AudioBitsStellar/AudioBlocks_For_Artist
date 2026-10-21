@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   NOTIFICATION_EVENT_LABELS,
+  loadNotificationPreferences,
   type NotificationPreferences,
   type NotificationEventKey,
   type NotificationChannel,
@@ -26,18 +27,10 @@ export default function NotificationPreferencesPage() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "success">("idle");
   const firstToggleRef = useRef<HTMLInputElement>(null);
 
-  // Hydrate from localStorage on mount (SSR-safe). Done once so we always
+  // Hydrate from the service on mount (SSR-safe). Done once so we always
   // paint the same defaults server- and client-side, then upgrade.
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("audioblocks:notification-preferences:v1");
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<NotificationPreferences>;
-        setPrefs({ ...DEFAULT_NOTIFICATION_PREFERENCES, ...parsed });
-      }
-    } catch {
-      // ignore – keep defaults
-    }
+    setPrefs(loadNotificationPreferences());
     setIsHydrated(true);
   }, []);
 
