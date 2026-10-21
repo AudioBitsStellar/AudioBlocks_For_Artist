@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { act, render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Toaster, toast } from "sonner";
@@ -10,6 +10,14 @@ import {
   useHandleSuccess,
   useToast,
 } from "@/hooks/useToastHandler";
+
+// jsdom has no pointer capture; sonner calls it on pointerdown (swipe-to-dismiss).
+beforeAll(() => {
+  if (!Element.prototype.setPointerCapture) {
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+  }
+});
 
 // sonner doesn't render its <ol> until there's at least one toast.
 const toastList = () => screen.getByRole("region", { name: /notifications/i });
