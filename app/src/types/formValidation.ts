@@ -25,6 +25,10 @@ const uploadVisibilityField = trackVisibilityField.default(NEW_TRACK_DEFAULT_VIS
 
 export const LYRICS_MAX_LENGTH = 10000;
 
+/** Track title and description limits, shared by the inputs and the schemas. */
+export const TRACK_TITLE_MAX_LENGTH = 100;
+export const TRACK_DESCRIPTION_MAX_LENGTH = 500;
+
 export const SONG_LANGUAGES = [
   { value: "en", label: "English" },
   { value: "es", label: "Spanish" },
@@ -58,11 +62,14 @@ export const songFormSchema = z
     title: z
       .string()
       .min(1, "Song title is required")
-      .max(100, "Title must be 100 characters or less"),
+      .max(TRACK_TITLE_MAX_LENGTH, `Title must be ${TRACK_TITLE_MAX_LENGTH} characters or less`),
     description: z
       .string()
       .min(1, "Description is required")
-      .max(500, "Description must be 500 characters or less"),
+      .max(
+        TRACK_DESCRIPTION_MAX_LENGTH,
+        `Description must be ${TRACK_DESCRIPTION_MAX_LENGTH} characters or less`
+      ),
     genre: z
       .string()
       .min(1, "Please select a genre")

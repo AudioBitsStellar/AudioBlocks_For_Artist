@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { UploadCloud, Music, CheckCircle2, AlertCircle } from "lucide-react";
 import { GenreTagSelector } from "@/components/GenreTagSelector";
+import CharacterCount from "@/components/common/CharacterCount";
 import useUploadServices from "@/services/uploadService";
 import { useRouter } from "next/navigation";
+import { TRACK_DESCRIPTION_MAX_LENGTH, TRACK_TITLE_MAX_LENGTH } from "@/types/formValidation";
 
 export const TrackUploadPage: React.FC = () => {
   const router = useRouter();
@@ -139,14 +141,23 @@ export const TrackUploadPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <label htmlFor="track-title" className="block text-sm font-medium text-gray-200 mb-1">
-                Track Title <span className="text-pink-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="track-title" className="block text-sm font-medium text-gray-200">
+                  Track Title <span className="text-pink-500">*</span>
+                </label>
+                <CharacterCount
+                  id="track-title-count"
+                  length={title.length}
+                  max={TRACK_TITLE_MAX_LENGTH}
+                />
+              </div>
               <input
                 id="track-title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                maxLength={TRACK_TITLE_MAX_LENGTH}
+                aria-describedby="track-title-count"
                 placeholder="e.g. Celestial Beats"
                 required
                 className="w-full bg-[#18181B] border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:outline-none"
@@ -154,14 +165,23 @@ export const TrackUploadPage: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="track-desc" className="block text-sm font-medium text-gray-200 mb-1">
-                Description
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="track-desc" className="block text-sm font-medium text-gray-200">
+                  Description
+                </label>
+                <CharacterCount
+                  id="track-desc-count"
+                  length={description.length}
+                  max={TRACK_DESCRIPTION_MAX_LENGTH}
+                />
+              </div>
               <textarea
                 id="track-desc"
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                maxLength={TRACK_DESCRIPTION_MAX_LENGTH}
+                aria-describedby="track-desc-count"
                 placeholder="Story behind the song..."
                 className="w-full bg-[#18181B] border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:outline-none"
               />

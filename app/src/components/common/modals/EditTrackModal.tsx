@@ -5,12 +5,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Tag as TagIcon, X } from "lucide-react";
 import Modal from "@/components/shared/Modal";
+import CharacterCount from "@/components/common/CharacterCount";
 import {
   LYRICS_MAX_LENGTH,
   normalizeSongTag,
   SONG_LANGUAGES,
   TAG_MAX_COUNT,
   TAG_MAX_LENGTH,
+  TRACK_DESCRIPTION_MAX_LENGTH,
+  TRACK_TITLE_MAX_LENGTH,
   trackEditSchema,
 } from "@/types/formValidation";
 import {
@@ -22,9 +25,9 @@ import useTrackServices, { formatAiServiceError } from "@/services/trackService"
 import { MUSIC_GENRES } from "@/components/shared/music_genre";
 
 /** Max description length, matching the upload form (#396). */
-const DESCRIPTION_MAX = 500;
+const DESCRIPTION_MAX = TRACK_DESCRIPTION_MAX_LENGTH;
 /** Max title length, matching trackEditSchema. */
-const TITLE_MAX = 100;
+const TITLE_MAX = TRACK_TITLE_MAX_LENGTH;
 
 export interface EditableTrackFields {
   title: string;
@@ -457,12 +460,11 @@ export default function EditTrackModal({
                     : "Draft description with AI"}
                 </button>
               )}
-              <span
-                className={`text-xs ${descriptionLength > DESCRIPTION_MAX ? "text-red-500" : "text-gray-400"}`}
-                aria-live="polite"
-              >
-                {descriptionLength}/{DESCRIPTION_MAX}
-              </span>
+              <CharacterCount
+                id="edit-track-description-count"
+                length={descriptionLength}
+                max={DESCRIPTION_MAX}
+              />
             </div>
           </div>
 
@@ -486,8 +488,13 @@ export default function EditTrackModal({
             id="edit-track-description"
             rows={3}
             {...register("description")}
+            maxLength={DESCRIPTION_MAX}
             aria-invalid={errors.description ? "true" : "false"}
-            aria-describedby={errors.description ? "edit-track-description-error" : undefined}
+            aria-describedby={
+              errors.description
+                ? "edit-track-description-count edit-track-description-error"
+                : "edit-track-description-count"
+            }
             placeholder="Tell listeners about this track"
             className={`w-full resize-none rounded-lg border bg-[#161616] px-4 py-3 text-white placeholder:text-[#6F6F6F] focus:border-[#885FA8] focus:outline-none ${errors.description ? "border-red-500" : "border-[#2A2A2A]"}`}
           />
@@ -506,6 +513,7 @@ export default function EditTrackModal({
                 id="edit-track-ai-draft"
                 rows={3}
                 value={aiDraftText}
+                maxLength={DESCRIPTION_MAX}
                 onChange={(e) => setAiDraftText(e.target.value)}
                 className="w-full resize-none rounded-lg border border-[#2A2A2A] bg-[#111111] px-3 py-2 text-sm text-white focus:border-[#885FA8] focus:outline-none"
               />
