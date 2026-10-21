@@ -1,10 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { NextRequest } from "next/server";
 import {
+  buildCsp,
+  generateNonce,
   getMiddlewareDecision,
   isTokenExpired,
+  middleware,
   sanitizeReturnTo,
   type MiddlewareRequestLike,
 } from "../../middleware";
+
+function scriptSrc(policy: string): string {
+  return policy.split("; ").find((directive) => directive.startsWith("script-src ")) ?? "";
+}
 
 function createMockJwt(expInSeconds: number): string {
   const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
@@ -112,6 +120,97 @@ describe("Middleware auth decision & returnTo validation", () => {
       const req = mockRequest("/admin/moderation", "", { "privy-token": validToken });
 
       expect(getMiddlewareDecision(req)).toEqual({ type: "next" });
+    });
+  });
+
+  describe("buildCsp", () => {
+    it("allows eval and inline scripts in development for HMR", () => {
+      const script = scriptSrc(buildCsp({ isDev: true }));
+
+      expect(script).toContain("'unsafe-eval'");
+      expect(script).toContain("'unsafe-inline'");
+      expect(script).not.toContain("nonce-");
+    });
+
+    it("allows localhost connections in development only", () => {
+      expect(buildCsp({ isDev: true })).toContain(
+        "connect-src 'self' https: ws: wss: http://localhost:*"
+      );
+      expect(buildCsp({ isDev: false, nonce: "abc" })).not.toContain("localhost");
+    });
+
+    it("blocks eval and inline scripts in production, allowing only the nonce", () => {
+      const script = scriptSrc(buildCsp({ isDev: false, nonce: "abc123" }));
+
+      expect(script).not.toContain("'unsafe-eval'");
+      expect(script).not.toContain("'unsafe-inline'");
+      expect(script).toContain("'nonce-abc123'");
+      expect(script).toContain("'strict-dynamic'");
+    });
+
+    it("keeps the third-party script and frame hosts in both environments", () => {
+      for (const policy of [buildCsp({ isDev: true }), buildCsp({ isDev: false, nonce: "n" })]) {
+        expect(scriptSrc(policy)).toContain("https://js.stripe.com");
+        expect(scriptSrc(policy)).toContain("https://*.sentry.io");
+        expect(policy).toContain("frame-ancestors 'none'");
+        expect(policy).toContain("object-src 'none'");
+      }
+    });
+  });
+
+  describe("generateNonce", () => {
+    it("returns a fresh base64 value on every call", () => {
+      const first = generateNonce();
+      const second = generateNonce();
+
+      expect(first).toMatch(/^[A-Za-z0-9+/]+=*$/);
+      expect(first).not.toBe(second);
+    });
+  });
+
+  describe("middleware CSP headers", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it("sets a nonce-based report-only policy on public responses in production", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      const response = middleware(new NextRequest("http://localhost/login"));
+      const reported = response.headers.get("Content-Security-Policy-Report-Only") ?? "";
+      const nonce = /'nonce-([^']+)'/.exec(scriptSrc(reported))?.[1];
+
+      expect(nonce).toBeTruthy();
+      expect(scriptSrc(reported)).not.toContain("'unsafe-inline'");
+      expect(response.headers.get("Content-Security-Policy")).toBeNull();
+    });
+
+    it("forwards the same nonce policy to the app so Next.js can apply it", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      const response = middleware(new NextRequest("http://localhost/login"));
+      const reported = response.headers.get("Content-Security-Policy-Report-Only");
+      const forwarded = response.headers.get("x-middleware-request-content-security-policy");
+
+      expect(forwarded).toBe(reported);
+    });
+
+    it("does not forward a nonce policy in development", () => {
+      vi.stubEnv("NODE_ENV", "development");
+      const response = middleware(new NextRequest("http://localhost/login"));
+
+      expect(response.headers.get("x-middleware-request-content-security-policy")).toBeNull();
+      expect(response.headers.get("Content-Security-Policy-Report-Only")).toContain(
+        "'unsafe-eval'"
+      );
+    });
+
+    it("sets the report-only policy on redirects too", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      const response = middleware(new NextRequest("http://localhost/dashboard"));
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get("Content-Security-Policy-Report-Only")).toContain(
+        "default-src 'self'"
+      );
     });
   });
 });
