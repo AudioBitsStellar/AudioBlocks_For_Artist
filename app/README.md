@@ -225,3 +225,17 @@ and on-chain actions all require it.
   chunked-upload services `Song.tsx` already uses.
 - Several dashboard widgets (overview KPIs, events, merches, "My Music")
   currently render static/mock data rather than live data from the backend.
+
+## Artist-handle claims
+
+The public profile reader uses UUIDs and checks profile visibility before reading
+metadata. It cannot determine whether a username is available. The claim modal
+uses a separate, uncached handle lookup and links a saved profile by its UUID.
+
+`NEXT_PUBLIC_ARTIST_HANDLE_LOOKUP_ENABLED` defaults to false. Enable it only after
+deploying and verifying `GET /artist/public/:handle`: existing handles must return
+a profile with a `handle` field, and only genuinely missing handles may return
+404. The profile PATCH endpoint must enforce unique usernames and return 409 on
+conflict. Missing-route 404 responses are not a valid availability contract.
+Until that backend dependency is available, the modal reports that it cannot
+check availability and prevents claiming; UUID public profiles remain usable.
