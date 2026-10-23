@@ -16,19 +16,30 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { subscribeToInboxUnread } from "@/services/inboxEvents";
 import { getTotalUnreadCount } from "@/services/messageService";
+import { useOptionalI18n } from "@/context/I18nContext";
 
 const items = [
-  { name: "Overview", icon: Home, href: "/dashboard/overview" },
-  { name: "My Music", icon: Music, href: "/dashboard/my-music" },
-  { name: "Merches", icon: Tag, href: "/dashboard/merches" },
-  { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
-  { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },
+  { key: "overview", icon: Home, href: "/dashboard/overview" },
+  { key: "myMusic", icon: Music, href: "/dashboard/my-music" },
+  { key: "merches", icon: Tag, href: "/dashboard/merches" },
+  { key: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
+  { key: "messages", icon: MessageSquare, href: "/dashboard/messages" },
 ];
+
+// English fallbacks when I18n is not yet mounted
+const fallbackLabels: Record<string, string> = {
+  overview: "Overview",
+  myMusic: "My Music",
+  merches: "Merches",
+  analytics: "Analytics",
+  messages: "Messages",
+};
 
 const MESSAGES_HREF = "/dashboard/messages";
 
 export default function MobileNav() {
   const pathname = usePathname() ?? "";
+  const i18n = useOptionalI18n();
   // Starts at 0 so server and client render the same markup; the real count
   // is read after mount and kept live via the inbox change event (#146).
   const [unreadCount, setUnreadCount] = useState(0);
@@ -45,6 +56,14 @@ export default function MobileNav() {
     return subscribeToInboxUnread(refresh);
   }, []);
 
+  // Get translated label or fallback to English
+  const getLabel = (key: string): string => {
+    if (i18n && i18n.t.nav[key as keyof typeof i18n.t.nav]) {
+      return i18n.t.nav[key as keyof typeof i18n.t.nav];
+    }
+    return fallbackLabels[key] || key;
+  };
+
   return (
     <nav
       aria-label="Primary"
@@ -56,7 +75,7 @@ export default function MobileNav() {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
-            <li key={item.name} className="flex-1">
+            <li key={item.key} className="flex-1">
               <Link
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
@@ -76,7 +95,7 @@ export default function MobileNav() {
                     </span>
                   )}
                 </span>
-                <span className="truncate">{item.name}</span>
+                <span className="truncate">{getLabel(item.key)}</span>
               </Link>
             </li>
           );

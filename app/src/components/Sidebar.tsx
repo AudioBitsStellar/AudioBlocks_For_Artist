@@ -26,36 +26,61 @@ import { getTotalUnreadCount } from "@/services/messageService";
 import { subscribeToInboxUnread } from "@/services/inboxEvents";
 import { analytics } from "@/lib/analytics";
 import { isAdminSession } from "@/utils/jwt";
+import { useOptionalI18n } from "@/context/I18nContext";
 
 const navItems = [
-  { name: "Overview", icon: Home, href: "/dashboard/overview" },
-  { name: "My Music", icon: Music, href: "/dashboard/my-music" },
-  { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
-  { name: "Payouts", icon: Wallet, href: "/dashboard/payouts" },
-  { name: "Events", icon: Calendar, href: "/dashboard/events" },
-  { name: "Merches", icon: Tag, href: "/dashboard/merches" },
-  { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },
-  { name: "Collaborators", icon: Users, href: "/dashboard/collaborators" },
-  { name: "Royalty splits", icon: Percent, href: "/dashboard/collaborators/royalties" },
-  { name: "Moderation", icon: ShieldAlert, href: "/dashboard/moderation" },
-  { name: "Premium", icon: Star, href: "/dashboard/premium" },
-  { name: "Release notes", icon: Megaphone, href: "/dashboard/changelog" },
-  { name: "Activity Log", icon: History, href: "/dashboard/activity-log" },
-  { name: "Referrals", icon: Users, href: "/dashboard/referrals" },
-  { name: "Settings", icon: SettingsIcon, href: "/dashboard/settings/notifications" },
+  { key: "overview", icon: Home, href: "/dashboard/overview" },
+  { key: "myMusic", icon: Music, href: "/dashboard/my-music" },
+  { key: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
+  { key: "payouts", icon: Wallet, href: "/dashboard/payouts" },
+  { key: "events", icon: Calendar, href: "/dashboard/events" },
+  { key: "merches", icon: Tag, href: "/dashboard/merches" },
+  { key: "messages", icon: MessageSquare, href: "/dashboard/messages" },
+  { key: "collaborators", icon: Users, href: "/dashboard/collaborators" },
+  { key: "royaltySplits", icon: Percent, href: "/dashboard/collaborators/royalties" },
+  { key: "moderation", icon: ShieldAlert, href: "/dashboard/moderation" },
+  { key: "premium", icon: Star, href: "/dashboard/premium" },
+  { key: "releaseNotes", icon: Megaphone, href: "/dashboard/changelog" },
+  { key: "activityLog", icon: History, href: "/dashboard/activity-log" },
+  { key: "referrals", icon: Users, href: "/dashboard/referrals" },
+  { key: "settings", icon: SettingsIcon, href: "/dashboard/settings/notifications" },
 ];
 
 /** Admin-only surfaces, appended to the nav for admin sessions (#420). */
-const adminNavItems = [{ name: "Artist Search", icon: Search, href: "/admin/artists" }];
+const adminNavItems = [{ key: "artistSearch", icon: Search, href: "/admin/artists" }];
 
 const legalLinks = [
-  { name: "Privacy Center", href: "/privacy-center" },
-  { name: "Privacy Policy", href: "/privacy-policy" },
-  { name: "Cookies", href: "/cookies" },
+  { key: "privacyCenter", href: "/privacy-center" },
+  { key: "privacyPolicy", href: "/privacy-policy" },
+  { key: "cookies", href: "/cookies" },
 ];
+
+// English fallbacks when I18n is not yet mounted
+const fallbackLabels: Record<string, string> = {
+  overview: "Overview",
+  myMusic: "My Music",
+  analytics: "Analytics",
+  payouts: "Payouts",
+  events: "Events",
+  merches: "Merches",
+  messages: "Messages",
+  collaborators: "Collaborators",
+  royaltySplits: "Royalty splits",
+  moderation: "Moderation",
+  premium: "Premium",
+  releaseNotes: "Release notes",
+  activityLog: "Activity Log",
+  referrals: "Referrals",
+  settings: "Settings",
+  artistSearch: "Artist Search",
+  privacyCenter: "Privacy Center",
+  privacyPolicy: "Privacy Policy",
+  cookies: "Cookies",
+};
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const i18n = useOptionalI18n();
   const navItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   // Read after mount: the session token lives in cookies/localStorage, so the
   // admin role cannot be resolved during SSR.
@@ -95,6 +120,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   );
 
   const visibleNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
+
+  // Get translated label or fallback to English
+  const getLabel = (key: string): string => {
+    if (i18n && i18n.t.nav[key as keyof typeof i18n.t.nav]) {
+      return i18n.t.nav[key as keyof typeof i18n.t.nav];
+    }
+    return fallbackLabels[key] || key;
+  };
 
   useEffect(() => {
     if (!open) {
@@ -210,13 +243,13 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
             return (
               <Link
-                key={item.name}
+                key={item.key}
                 href={item.href}
                 ref={(element) => {
                   navItemRefs.current[index] = element;
                 }}
                 onClick={() => {
-                  analytics.navItemClicked({ item: item.name, href: item.href });
+                  analytics.navItemClicked({ item: getLabel(item.key), href: item.href });
                   onClose();
                 }}
                 onKeyDown={(event) => handleNavKeyDown(event, index)}
@@ -228,7 +261,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 aria-current={isActive ? "page" : undefined}
               >
                 <Icon size={20} aria-hidden="true" />
-                <span className={`flex-1 ${isActive ? "font-medium" : ""}`}>{item.name}</span>
+                <span className={`flex-1 ${isActive ? "font-medium" : ""}`}>{getLabel(item.key)}</span>
                 {unread > 0 && (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-contrast">
                     {unread}
@@ -250,12 +283,12 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         <div className="space-y-2 p-4" aria-label="Legal links">
           {legalLinks.map((link) => (
             <Link
-              key={link.name}
+              key={link.key}
               href={link.href}
               onClick={onClose}
               className="block rounded-lg px-4 py-1 text-xs text-text-muted transition-colors hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              {link.name}
+              {getLabel(link.key)}
             </Link>
           ))}
         </div>

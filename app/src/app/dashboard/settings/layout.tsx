@@ -13,21 +13,44 @@ import {
   User,
   Wallet,
 } from "lucide-react";
+import { useOptionalI18n } from "@/context/I18nContext";
 
 const settingsNav = [
-  { name: "Profile", icon: User, href: "/dashboard/profile" },
-  { name: "Notifications", icon: Bell, href: "/dashboard/settings/notifications" },
-  { name: "Security", icon: ShieldCheck, href: "/dashboard/settings/security" },
-  { name: "Verification", icon: BadgeCheck, href: "/dashboard/settings/verification" },
-  { name: "Wallet", icon: Wallet, href: "/dashboard/settings/wallet" },
-  { name: "Linked accounts", icon: Link2, href: "/dashboard/settings/linked-accounts" },
-  { name: "Payout", icon: DollarSign, href: "/dashboard/settings/payout" },
-  { name: "Network", icon: Globe, href: "/dashboard/settings/network" },
-  { name: "Appearance", icon: Palette, href: "/dashboard/settings/appearance" },
+  { key: "settingsProfile", icon: User, href: "/dashboard/profile" },
+  { key: "settingsNotifications", icon: Bell, href: "/dashboard/settings/notifications" },
+  { key: "settingsSecurity", icon: ShieldCheck, href: "/dashboard/settings/security" },
+  { key: "settingsVerification", icon: BadgeCheck, href: "/dashboard/settings/verification" },
+  { key: "settingsWallet", icon: Wallet, href: "/dashboard/settings/wallet" },
+  { key: "settingsLinkedAccounts", icon: Link2, href: "/dashboard/settings/linked-accounts" },
+  { key: "settingsPayout", icon: DollarSign, href: "/dashboard/settings/payout" },
+  { key: "settingsNetwork", icon: Globe, href: "/dashboard/settings/network" },
+  { key: "settingsAppearance", icon: Palette, href: "/dashboard/settings/appearance" },
 ];
+
+// English fallbacks when I18n is not yet mounted
+const fallbackLabels: Record<string, string> = {
+  settingsProfile: "Profile",
+  settingsNotifications: "Notifications",
+  settingsSecurity: "Security",
+  settingsVerification: "Verification",
+  settingsWallet: "Wallet",
+  settingsLinkedAccounts: "Linked accounts",
+  settingsPayout: "Payout",
+  settingsNetwork: "Network",
+  settingsAppearance: "Appearance",
+};
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const i18n = useOptionalI18n();
+
+  // Get translated label or fallback to English
+  const getLabel = (key: string): string => {
+    if (i18n && i18n.t.header[key as keyof typeof i18n.t.header]) {
+      return i18n.t.header[key as keyof typeof i18n.t.header];
+    }
+    return fallbackLabels[key] || key;
+  };
 
   return (
     <div className="space-y-8">
@@ -45,7 +68,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
           return (
             <Link
-              key={item.name}
+              key={item.key}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
@@ -55,7 +78,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               }`}
             >
               <Icon size={16} aria-hidden="true" />
-              {item.name}
+              {getLabel(item.key)}
             </Link>
           );
         })}
