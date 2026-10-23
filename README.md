@@ -343,6 +343,8 @@ Concurrent runs for the same branch are automatically cancelled to conserve CI m
 
 ## 🌐 Web3 / Stellar Wallet Setup
 
+Built with love for our dear artists
+
 The artist dashboard integrates with Stellar via the [Freighter browser wallet](https://freighter.app/).
 
 ### Installing Freighter
