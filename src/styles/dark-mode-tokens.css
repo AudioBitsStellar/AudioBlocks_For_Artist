@@ -1,0 +1,80 @@
+/* Dark Mode Color Tokens for AudioBlocks Dashboard */
+
+:root {
+  /* Light mode (default) */
+  --surface-primary: #ffffff;
+  --surface-secondary: #f9fafb;
+  --surface-tertiary: #f3f4f6;
+  --surface-elevated: #ffffff;
+  --surface-overlay: rgba(0, 0, 0, 0.5);
+  
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #ffffff;
+  
+  --border-default: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --border-strong: #d1d5db;
+  
+  --interactive-primary: #6366f1;
+  --interactive-primary-hover: #4f46e5;
+  --interactive-secondary: #8b5cf6;
+  --interactive-muted: #a78bfa;
+  
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
+  --status-info: #3b82f6;
+  
+  --sidebar-bg: #f9fafb;
+  --sidebar-active: #eef2ff;
+  --sidebar-hover: #f3f4f6;
+  
+  --player-bg: #ffffff;
+  --player-progress: #6366f1;
+  --player-progress-bg: #e5e7eb;
+}
+
+.dark {
+  /* Dark mode overrides */
+  --surface-primary: #0f172a;
+  --surface-secondary: #1e293b;
+  --surface-tertiary: #334155;
+  --surface-elevated: #1e293b;
+  --surface-overlay: rgba(0, 0, 0, 0.7);
+  
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #64748b;
+  --text-inverse: #0f172a;
+  
+  --border-default: #334155;
+  --border-subtle: #1e293b;
+  --border-strong: #475569;
+  
+  --interactive-primary: #818cf8;
+  --interactive-primary-hover: #6366f1;
+  --interactive-secondary: #a78bfa;
+  --interactive-muted: #7c3aed;
+  
+  --status-success: #34d399;
+  --status-warning: #fbbf24;
+  --status-error: #f87171;
+  --status-info: #60a5fa;
+  
+  --sidebar-bg: #1e293b;
+  --sidebar-active: #312e81;
+  --sidebar-hover: #334155;
+  
+  --player-bg: #1e293b;
+  --player-progress: #818cf8;
+  --player-progress-bg: #334155;
+}
+
+/* Transition for theme switching */
+*,
+*::before,
+*::after {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
