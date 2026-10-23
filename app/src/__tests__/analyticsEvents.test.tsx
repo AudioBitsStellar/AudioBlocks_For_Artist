@@ -14,6 +14,7 @@ import NotificationBell from "@/components/NotificationBell";
 import { loadMock } from "@/__mocks__/loadMock";
 import { Sidebar } from "@/components/Sidebar";
 import { analytics } from "@/lib/analytics";
+import { resetAnalyticsConsentMemory, setAnalyticsConsent } from "@/lib/analyticsConsent";
 
 vi.mock("@/lib/featureFlags", () => ({
   featureFlags: { useMockNotifications: true },
@@ -61,6 +62,7 @@ const mockTrack = vi.fn();
 beforeEach(() => {
   localStorage.clear();
   vi.stubEnv("NEXT_PUBLIC_ANALYTICS_WRITE_KEY", "write-key-under-test");
+  setAnalyticsConsent("accepted");
   Object.assign(window, { analytics: { track: mockTrack } });
 });
 
@@ -91,6 +93,15 @@ describe("analytics façade", () => {
 
   it("stays silent when the write key is unset", () => {
     vi.stubEnv("NEXT_PUBLIC_ANALYTICS_WRITE_KEY", "");
+
+    analytics.navItemClicked({ item: "Events", href: "/dashboard/events" });
+
+    expect(mockTrack).not.toHaveBeenCalled();
+  });
+
+  it("stays silent until the artist consents (#668)", () => {
+    localStorage.clear();
+    resetAnalyticsConsentMemory();
 
     analytics.navItemClicked({ item: "Events", href: "/dashboard/events" });
 

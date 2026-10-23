@@ -1,6 +1,7 @@
 import { ARTIST_ONCHAIN_ENDPOINTS, SONG_ONCHAIN_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
+import { TOAST_IDS } from "@/lib/toastIds";
 import type { PreparedTransaction } from "@/types/api";
 
 // Response types live in the central `@/types/api` module (#140); re-exported
@@ -184,7 +185,10 @@ const useOnchainServices = () => {
     usePost<ApiEnvelope<PreparedTransaction>, PrepareSongMintRequest>(
       SONG_ONCHAIN_ENDPOINTS.prepareMint(songId),
       {
-        onError: (error) => handleError(error.message || "Failed to prepare song minting."),
+        onError: (error) =>
+          handleError(error.message || "Failed to prepare song minting.", undefined, {
+            id: TOAST_IDS.mint,
+          }),
       }
     );
 
@@ -199,8 +203,11 @@ const useOnchainServices = () => {
     usePost<ApiEnvelope<SubmitSongMintResponse>, SubmitSongMintRequest>(
       SONG_ONCHAIN_ENDPOINTS.submitMint(songId),
       {
-        onSuccess: () => handleSuccess("Song minted on-chain!"),
-        onError: (error) => handleError(error.message || "Failed to submit song minting."),
+        onSuccess: () => handleSuccess("Song minted on-chain!", { id: TOAST_IDS.mint }),
+        onError: (error) =>
+          handleError(error.message || "Failed to submit song minting.", undefined, {
+            id: TOAST_IDS.mint,
+          }),
       }
     );
 

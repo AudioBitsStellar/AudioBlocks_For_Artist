@@ -8,15 +8,53 @@ every call site is unaffected.
 
 ## Enabling / disabling
 
-Every call is a no-op unless both of the following are true:
+Every call is a no-op unless **all** of the following are true:
 
-- `NEXT_PUBLIC_ANALYTICS_WRITE_KEY` is set.
-- `window.analytics.track` exists (i.e. a Segment-compatible snippet — such
-  as Segment, PostHog, or Mixpanel's Segment-compat mode — has been loaded
-  on the page).
+- `NEXT_PUBLIC_ANALYTICS_WRITE_KEY` is set (the Segment source write key,
+  validated in `src/lib/env.ts`).
+- The artist has accepted analytics (see Consent below).
 
 This keeps local dev and the test environment quiet by default: no env var,
 no network calls, no noise in `vitest` runs.
+
+## Consent (#668)
+
+Nothing is loaded or sent before the artist opts in.
+
+1. **Banner.** `src/components/AnalyticsConsentBanner.tsx` (mounted in the
+   root layout) asks first-time artists to **Accept analytics** or
+   **Decline**. It is a non-modal region and only appears when a write key is
+   set and no choice has been made yet.
+2. **Storage.** The choice is stored in `localStorage` under
+   `audioblocks_analytics_consent` as `{ version, status, updatedAt }`
+   (`src/lib/analyticsConsent.ts`). Bumping `ANALYTICS_CONSENT_VERSION`
+   re-prompts everyone. If storage is blocked, the choice still applies for
+   the current page session. A browser sending Global Privacy Control
+   defaults to declined.
+3. **Changing it later.** Settings → Preferences has a "Usage analytics"
+   switch (`AnalyticsConsentSettings.tsx`, anchor `#analytics`). Changes apply
+   immediately and sync across open tabs.
+4. **Loading the provider.** Only after consent, and only with a write key,
+   `src/components/AnalyticsScript.tsx` installs the Segment stub
+   (`src/lib/segmentSnippet.ts`, the readable equivalent of Segment's
+   snippet), records a page view, and loads
+   `https://cdn.segment.com/analytics.js/v1/<write key>/analytics.min.js`
+   with `next/script` (`strategy="afterInteractive"`). Without consent no
+   script tag is rendered, so nothing appears in the Network tab.
+5. **Declining / withdrawing.** Calls `analytics.reset()` on a loaded
+   provider and the façade stops sending immediately. The already-downloaded
+   library is gone on the next page load.
+
+### Events fired before the provider is ready
+
+- **Before consent: dropped.** They are not saved up and sent after the
+  artist accepts.
+- **After consent, before the stub exists** (the moment between accepting
+  and `AnalyticsScript`'s effect running): **queued** in memory, up to 50
+  events, and handed to the stub by `flushQueuedAnalytics()`. The queue is
+  discarded if consent is withdrawn first.
+- **After the stub exists, before analytics.js downloads:** buffered by the
+  Segment stub itself and replayed by analytics.js when it loads.
 
 ## Tracked events
 
@@ -61,9 +99,11 @@ profile-mint case rather than a real song ID.
 
 ## Testing
 
-Because `send()` no-ops without `NEXT_PUBLIC_ANALYTICS_WRITE_KEY`, tests
-don't need to mock a real analytics provider — asserting on
-`window.analytics.track` calls requires setting the env var and stubbing
-`window.analytics` in the test itself if you need to verify a specific event
-fires; most existing tests don't bother and just verify the triggering
-behavior (upload succeeds, mint succeeds, etc.).
+Because `send()` no-ops without `NEXT_PUBLIC_ANALYTICS_WRITE_KEY` and
+consent, tests don't need to mock a real analytics provider. To assert on
+`window.analytics.track` calls, set the env var (`vi.stubEnv`), call
+`setAnalyticsConsent("accepted")` and stub `window.analytics` in the test
+itself; see `src/__tests__/analyticsEvents.test.tsx`. Most existing tests
+don't bother and just verify the triggering behavior (upload succeeds, mint
+succeeds, etc.). The consent flow is covered by
+`src/__tests__/analyticsConsent.test.tsx`.

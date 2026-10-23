@@ -91,7 +91,12 @@ export function formatDate(
   preset: DatePreset = "short",
   locale: string = DEFAULT_LOCALE
 ): string {
-  const date = value instanceof Date ? value : new Date(value);
+  const date =
+    value instanceof Date
+      ? value
+      : // Date-only strings name a calendar day, so read them as local dates
+        // rather than UTC midnight (which is the previous day west of UTC).
+        ((typeof value === "string" ? parseLocalDate(value) : null) ?? new Date(value));
 
   if (Number.isNaN(date.getTime())) {
     return "";
@@ -116,3 +121,88 @@ export const DateFormats = {
   full: "full",
   datetime: "datetime",
 } as const satisfies Record<DatePreset, DatePreset>;
+
+/* ------------------------------------------------------------------ *
+ * Event dates (issue #673)
+ *
+ * Events store `date` and `time` as free-form strings ("2026-10-19",
+ * "19-10-2026", "8:30 PM"). `new Date("2026-10-19")` parses as UTC midnight,
+ * which west of UTC is still the previous evening, so these helpers always
+ * build *local* dates instead.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Parses a date-only string as local midnight. Accepts `YYYY-MM-DD`,
+ * `DD-MM-YYYY` and `DD/MM/YYYY`. Returns `null` for anything else, including
+ * strings that aren't a real calendar date (e.g. `31-02-2030`).
+ */
+export function parseLocalDate(value: string): Date | null {
+  const text = value.trim();
+  let day: number, month: number, year: number;
+
+  let match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (match) {
+    [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  } else if ((match = /^(\d{2})[-/](\d{2})[-/](\d{4})$/.exec(text))) {
+    [day, month, year] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  } else {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day);
+  const isRealDate =
+    date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  return isRealDate ? date : null;
+}
+
+/**
+ * Parses a time of day: 24h `HH:MM` or 12h `H:MM AM/PM` (space optional).
+ * Returns `null` when the text doesn't match.
+ */
+export function parseTimeOfDay(value: string): { hours: number; minutes: number } | null {
+  const text = value.trim();
+
+  const h24 = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(text);
+  if (h24) return { hours: Number(h24[1]), minutes: Number(h24[2]) };
+
+  const h12 = /^(0?[1-9]|1[0-2]):([0-5]\d)\s?(AM|PM)$/i.exec(text);
+  if (h12) {
+    const hours = (Number(h12[1]) % 12) + (h12[3].toUpperCase() === "PM" ? 12 : 0);
+    return { hours, minutes: Number(h12[2]) };
+  }
+
+  return null;
+}
+
+/**
+ * Returns the moment an event stops counting as upcoming, in local time:
+ * its start time when `time` parses, otherwise the end of its day (the next
+ * local midnight). Returns `null` when `date` can't be parsed.
+ */
+export function getEventCutoff(date: string, time?: string): Date | null {
+  const day = parseLocalDate(date);
+  if (!day) return null;
+
+  const start = time ? parseTimeOfDay(time) : null;
+  if (start) {
+    day.setHours(start.hours, start.minutes, 0, 0);
+  } else {
+    day.setDate(day.getDate() + 1);
+  }
+  return day;
+}
+
+/**
+ * Whether an event is still upcoming at `now`.
+ *
+ * Rule: an event is upcoming until its start time, or until the end of its
+ * day when it has no (parseable) time. Events whose date can't be parsed are
+ * treated as upcoming so they aren't silently hidden.
+ */
+export function isEventUpcoming(
+  event: { date: string; time?: string },
+  now: Date = new Date()
+): boolean {
+  const cutoff = getEventCutoff(event.date, event.time);
+  return cutoff === null || now.getTime() < cutoff.getTime();
+}

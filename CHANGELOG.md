@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Analytics consent and provider loading** (#668): An Accept/Decline banner (`AnalyticsConsentBanner`) stores the choice under `audioblocks_analytics_consent`, changeable later in Settings → Preferences. Only with consent and `NEXT_PUBLIC_ANALYTICS_WRITE_KEY` does `AnalyticsScript` load the Segment snippet via `next/script` (`afterInteractive`), so events are actually delivered. Events before consent are dropped; see `src/lib/ANALYTICS.md`.
+- **Toast notifications for async actions** (#22): Shared `Toast` rendered through the global sonner `Toaster` by `useToastHandler`, with `role="alert"` for errors and `role="status"` otherwise, auto-dismiss and stacking. Upload, mint and profile save now end in exactly one toast (shared ids in `lib/toastIds.ts`) instead of one per chunk or one per layer.
 - **Accessible upload progress** (#672): The song upload bar is now a `role="progressbar"` with `aria-valuemin/max/now`, a file-named label and `aria-valuetext` ("Uploading song.mp3, 45%"). A polite live region announces the 25/50/75/100% milestones plus success, failure, cancel and retry — not every percent — and the bar drops its transition under `prefers-reduced-motion`.
 - **Track edit modal — metadata and unsaved-changes guard** (#396): The My Music "Edit track" modal now edits genre (same list as upload, optional) and description (live N/500 counter) alongside title, album and visibility; genre/description are only sent when changed. Closing with unsaved edits (Cancel, X, Escape, outside click) asks "Discard unsaved changes?" instead of silently dropping them. Title shows a live N/100 counter.
 - **Drag-and-drop audio upload** (#391): `useFileDrop` hook (flicker-free drag highlight, ignores non-file drags, disabled while uploading) powering the song upload drop zone, which now shows a "Drop to upload" state and can't be replaced mid-upload, and a new album drop zone that accepts several tracks at once, fills empty slots first and reports any rejected files.
@@ -27,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **PR preview deployments** (#472): `.github/workflows/preview.yml` installs with `npm ci --legacy-peer-deps` and an explicit Node 20 (the unguarded install failed on the Sentry/Next peer conflict, so no preview was ever produced), skips draft and fork PRs instead of failing on secrets Actions cannot read, cancels superseded deploys per PR, and publishes the preview URL to the job summary as well as the PR comment. Rationale and the maintainer setup steps are in `docs/adr/0005-pr-preview-deployments.md`.
+
+### Fixed
+
+- **Events dated today shown as past** (#673): Date-only event dates are parsed as local dates, so an event today stays under Upcoming in every time zone; an event is upcoming until its start time, or the end of its day without a time (`isEventUpcoming` in `utils/date.ts`).
+- **Avatar cropper** (#32): Apply Crop works without dragging first, the crop is exported at source resolution (max 1024px, exact 1:1) instead of preview size, "Choose another image" reselects without leaving the dialog, and Escape cancels.
+- **Song upload compiled again**: restored state lost in a merge in `Song.tsx` (duplicate `handleRetry`, undeclared `uploadError`/`retryInProgressRef`/`trigger`/`getValues`).
 
 ## [0.1.0] - 2026-08-24
 

@@ -1,7 +1,13 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from "react-image-crop";
+import ReactCrop, {
+  centerCrop,
+  convertToPixelCrop,
+  makeAspectCrop,
+  type Crop,
+  type PixelCrop,
+} from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 
 interface ImageCropperProps {
@@ -9,6 +15,8 @@ interface ImageCropperProps {
   imageFile?: File;
   onCropComplete: (croppedBlob: Blob) => void;
   onCancel: () => void;
+  /** Lets the user pick a different image without leaving the dialog. */
+  onReselect?: () => void;
   aspect?: number;
 }
 
@@ -16,6 +24,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MIN_IMAGE_WIDTH = 300;
 const MIN_IMAGE_HEIGHT = 300;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+/** Longest side of the exported image; larger crops are scaled down. */
+export const MAX_OUTPUT_SIZE = 1024;
 
 function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number): Crop {
   return centerCrop(
@@ -84,13 +94,31 @@ function getSourceValidationError(imageSrc: string, imageFile?: File): string | 
   return fileSize === null ? null : getFileSizeError(fileSize);
 }
 
-async function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop): Promise<Blob> {
+/**
+ * Output size for a crop, in source-image pixels (not the on-screen preview
+ * size, which would shrink the avatar), capped at MAX_OUTPUT_SIZE and kept at
+ * exactly `aspect`.
+ */
+export function getOutputSize(
+  sourceWidth: number,
+  aspect: number
+): { width: number; height: number } {
+  const width = Math.max(1, Math.round(Math.min(sourceWidth, MAX_OUTPUT_SIZE)));
+  return { width, height: Math.max(1, Math.round(width / aspect)) };
+}
+
+async function getCroppedBlob(
+  image: HTMLImageElement,
+  crop: PixelCrop,
+  aspect: number
+): Promise<Blob> {
   const canvas = document.createElement("canvas");
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
 
-  canvas.width = crop.width;
-  canvas.height = crop.height;
+  const { width, height } = getOutputSize(crop.width * scaleX, aspect);
+  canvas.width = width;
+  canvas.height = height;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get canvas context");
@@ -103,8 +131,8 @@ async function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop): Promise
     crop.height * scaleY,
     0,
     0,
-    crop.width,
-    crop.height
+    width,
+    height
   );
 
   return new Promise((resolve, reject) => {
@@ -124,9 +152,11 @@ export default function ImageCropper({
   imageFile,
   onCropComplete,
   onCancel,
+  onReselect,
   aspect = 1,
 }: ImageCropperProps) {
   const imgRef = useRef<HTMLImageElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -162,7 +192,11 @@ export default function ImageCropper({
 
       setDimensionError(null);
       setIsImageValid(true);
-      setCrop(centerAspectCrop(image.width, image.height, aspect));
+      const initialCrop = centerAspectCrop(image.width, image.height, aspect);
+      setCrop(initialCrop);
+      // ReactCrop only reports onComplete after the user drags, so seed the
+      // crop to apply; otherwise "Apply Crop" stays disabled until a drag.
+      setCompletedCrop(convertToPixelCrop(initialCrop, image.width, image.height));
     },
     [aspect, sourceValidationError]
   );
@@ -174,11 +208,21 @@ export default function ImageCropper({
     );
   };
 
+  // Escape cancels, and focus starts inside the dialog.
+  useEffect(() => {
+    cancelButtonRef.current?.focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
   const handleConfirm = async () => {
     if (!imgRef.current || !completedCrop || !isImageValid || validationError) return;
     setIsProcessing(true);
     try {
-      const blob = await getCroppedBlob(imgRef.current, completedCrop);
+      const blob = await getCroppedBlob(imgRef.current, completedCrop, aspect);
       onCropComplete(blob);
     } finally {
       setIsProcessing(false);
@@ -229,8 +273,20 @@ export default function ImageCropper({
           </ReactCrop>
         </div>
 
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap gap-3 justify-end">
+          {onReselect && (
+            <button
+              type="button"
+              onClick={onReselect}
+              disabled={isProcessing}
+              className="mr-auto rounded-lg px-2 py-2 text-sm text-[#A3A3A3] underline-offset-2 transition-colors hover:text-white hover:underline disabled:opacity-50"
+            >
+              Choose another image
+            </button>
+          )}
           <button
+            ref={cancelButtonRef}
+            type="button"
             onClick={onCancel}
             disabled={isProcessing}
             className="rounded-lg border border-[#2A2A2A] bg-[#111111] text-white px-4 py-2 hover:bg-[#1a1a1a] transition-colors text-sm disabled:opacity-50"
@@ -238,6 +294,7 @@ export default function ImageCropper({
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleConfirm}
             disabled={isProcessing || !completedCrop || !isImageValid || !!validationError}
             className="rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white px-4 py-2 font-semibold transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"

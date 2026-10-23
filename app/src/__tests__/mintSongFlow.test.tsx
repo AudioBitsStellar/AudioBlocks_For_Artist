@@ -42,9 +42,21 @@ vi.mock("@/lib/analytics", () => ({
   },
 }));
 
+const { mockToastError } = vi.hoisted(() => ({ mockToastError: vi.fn() }));
+
 vi.mock("@/hooks/useToastHandler", () => ({
   useHandleSuccess: () => vi.fn(),
   useHandleError: () => vi.fn(),
+  useToast: () => ({ success: vi.fn(), error: mockToastError }),
+}));
+
+// Freighter is on the network the backend prepared the transaction for.
+vi.mock("@/hooks/useFreighterNetworkCheck", () => ({
+  useFreighterNetworkCheck: () => ({
+    status: "ok",
+    expected: "Test SDF Network ; September 2015",
+    actual: "Test SDF Network ; September 2015",
+  }),
 }));
 
 vi.mock("@/hooks/useEstimatedFee", () => ({
@@ -70,7 +82,12 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe("MintSongButton", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Each test vi.doMock()s its own wallet/service state, which only applies
+    // to modules imported after a reset.
+    vi.resetModules();
+  });
 
   it("shows ConnectStellarWalletButton when no wallet is connected", async () => {
     // useStellarWallet returns address=null when Freighter is not yet authorized
@@ -102,10 +119,8 @@ describe("MintSongButton", () => {
   });
 
   it("shows preparing state while awaiting wallet signature", async () => {
-    const mockPrepare = vi.fn().mockResolvedValue({
-      success: true,
-      data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
-    });
+    // Never resolves, so the button stays in the preparing state.
+    const mockPrepare = vi.fn(() => new Promise(() => {}));
 
     vi.doMock("@/components/common/wallet/useStellarWallet", () => ({
       useStellarWallet: () => ({
@@ -170,6 +185,10 @@ describe("MintSongButton", () => {
         useSubmitArtistSetup: () => ({ mutateAsync: vi.fn(), isPending: false }),
       }),
     }));
+
+    // Freighter never answers, so the button stays awaiting the signature.
+    const { signTransactionXdr } = await import("@/lib/freighter");
+    vi.mocked(signTransactionXdr).mockImplementationOnce(() => new Promise(() => {}));
 
     const { default: MintSongButton } = await import("@/components/common/wallet/MintSongButton");
 
@@ -276,6 +295,8 @@ describe("MintSongButton", () => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
       expect(screen.getByText(/signature rejected/i)).toBeInTheDocument();
     });
+    // Declining to sign is a normal outcome, not an error toast.
+    expect(mockToastError).not.toHaveBeenCalled();
   });
 
   it("shows error state with reason when mint fails", async () => {
@@ -319,6 +340,11 @@ describe("MintSongButton", () => {
     expect(analytics.mintFailed).toHaveBeenCalledWith({
       songId: "song-2",
       reason: "Song not processed yet",
+    });
+    // One toast for the failed mint, sharing the service toast's id.
+    expect(mockToastError).toHaveBeenCalledTimes(1);
+    expect(mockToastError).toHaveBeenCalledWith("Song not processed yet", undefined, {
+      id: "song-mint",
     });
   });
 });

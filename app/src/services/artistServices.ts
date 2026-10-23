@@ -3,6 +3,7 @@ import { USER_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet, usePut } from "@/api/queryClient";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
+import { TOAST_IDS } from "@/lib/toastIds";
 import { extractApiError, ApiError } from "@/api/axios";
 import { updateProfilePayload, AuthUser } from "@/types";
 import type { ProfileResponse } from "@/types/api";
@@ -179,7 +180,9 @@ const useArtistServices = () => {
   const useUpdateArtistProfile = () => {
     return usePut<updateProfilePayload>(USER_ENDPOINTS.UPDATE_PROFILE, {
       onSuccess(response: { message?: string }) {
-        handleSuccess(response?.message || "Profile updated successfully!");
+        handleSuccess(response?.message || "Profile updated successfully!", {
+          id: TOAST_IDS.profileSave,
+        });
       },
       onError(error: unknown) {
         let apiError: ApiError;
@@ -191,7 +194,7 @@ const useArtistServices = () => {
             message: "An unexpected error occurred while updating your profile.",
           };
         }
-        handleError(apiError);
+        handleError(apiError, undefined, { id: TOAST_IDS.profileSave });
       },
     });
   };

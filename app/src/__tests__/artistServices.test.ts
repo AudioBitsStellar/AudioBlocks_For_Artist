@@ -266,7 +266,7 @@ describe("artistServices — error handling (issue #104)", () => {
         capturedOptions.onSuccess?.({ message: "All set!" });
       });
 
-      expect(mockHandleSuccess).toHaveBeenCalledWith("All set!");
+      expect(mockHandleSuccess).toHaveBeenCalledWith("All set!", { id: "profile-save" });
     });
 
     it("useUpdateArtistProfile success path falls back to a default message", async () => {
@@ -284,7 +284,9 @@ describe("artistServices — error handling (issue #104)", () => {
         capturedOptions.onSuccess?.({});
       });
 
-      expect(mockHandleSuccess).toHaveBeenCalledWith("Profile updated successfully!");
+      expect(mockHandleSuccess).toHaveBeenCalledWith("Profile updated successfully!", {
+        id: "profile-save",
+      });
     });
   });
 

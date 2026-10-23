@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import AnalyticsConsentSettings from "@/components/AnalyticsConsentSettings";
 import { useCurrencyPreference } from "@/context/CurrencyPreferenceContext";
 import type { CurrencyCode, DisplayStyle } from "@/utils/money";
 
@@ -77,6 +78,8 @@ export default function CurrencyPreferencesPage() {
           Preferences are saved on this device. Backend sync coming soon.
         </p>
       </div>
+
+      <AnalyticsConsentSettings />
     </div>
   );
 }

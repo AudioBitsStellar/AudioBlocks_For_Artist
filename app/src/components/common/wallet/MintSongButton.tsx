@@ -4,7 +4,8 @@ import { useStellarWallet } from "./useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/useToastHandler";
+import { TOAST_IDS } from "@/lib/toastIds";
 import { classifyError, isUserRejection } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { explorerTxUrl } from "@/lib/horizon";
@@ -49,6 +50,7 @@ export default function MintSongButton({
   const submitMutation = useSubmitSongMint(songId);
   const { estimate: gasEstimate } = useEstimatedFee();
   const freighterCheck = useFreighterNetworkCheck();
+  const toast = useToast();
 
   const [status, setStatus] = useState<MintStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -97,9 +99,14 @@ export default function MintSongButton({
     try {
       const prepared = await prepareMutation.mutateAsync({ albumId });
 
-      if (freighterCheck.status === "mismatch" || freighterCheck.actual !== prepared.data.networkPassphrase) {
+      if (
+        freighterCheck.status === "mismatch" ||
+        freighterCheck.actual !== prepared.data.networkPassphrase
+      ) {
         setStatus("failed");
-        setErrorMsg(`Freighter network mismatch. Expected ${prepared.data.networkPassphrase === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}.`);
+        setErrorMsg(
+          `Freighter network mismatch. Expected ${prepared.data.networkPassphrase === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}.`
+        );
         return;
       }
 
@@ -139,7 +146,7 @@ export default function MintSongButton({
         txHash: result?.data?.txHash ?? "",
         tokenId: result?.data?.tokenId ?? "",
       });
-      toast.success("Minting succeeded!");
+      // The success toast is raised by useSubmitSongMint.
     } catch (err: unknown) {
       const plan = classifyError(err);
       analytics.mintFailed({ songId, reason: plan.message });
@@ -150,6 +157,9 @@ export default function MintSongButton({
       }
       setStatus(plan.retryable ? "timeout" : "failed");
       setErrorMsg(plan.message);
+      // Replaces the raw service-level error toast (same id) with the
+      // classified, user-facing message.
+      toast.error(plan.message, undefined, { id: TOAST_IDS.mint });
     }
   };
 
@@ -225,7 +235,11 @@ export default function MintSongButton({
     return (
       <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-yellow-600/30 rounded-lg">
         <p className="text-xs text-yellow-500 font-medium">
-          Freighter is on {freighterCheck.actual === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}; switch it to {freighterCheck.expected === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"} to continue.
+          Freighter is on{" "}
+          {freighterCheck.actual === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"};
+          switch it to{" "}
+          {freighterCheck.expected === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}{" "}
+          to continue.
         </p>
       </div>
     );

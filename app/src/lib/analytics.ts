@@ -5,7 +5,12 @@
  * Supported providers: anything reachable via window (Segment, PostHog, Mixpanel, etc.)
  * Set NEXT_PUBLIC_ANALYTICS_WRITE_KEY to enable. When unset all calls are no-ops
  * so the dev/test environment stays noise-free.
+ *
+ * Nothing is sent without the artist's consent (#668, see ANALYTICS.md):
+ * events fired before they accept are dropped, not saved up for later.
  */
+
+import { hasAnalyticsConsent } from "@/lib/analyticsConsent";
 
 type EventName =
   | "upload_started"
@@ -44,16 +49,71 @@ interface WindowWithAnalytics extends Window {
   analytics?: SegmentAnalytics;
 }
 
+/** The provider write key, or "" when analytics are disabled for this build. */
+export function getAnalyticsWriteKey(): string {
+  return process.env.NEXT_PUBLIC_ANALYTICS_WRITE_KEY ?? "";
+}
+
+export function isAnalyticsEnabled(): boolean {
+  return getAnalyticsWriteKey() !== "";
+}
+
+/**
+ * Events fired after consent but before `<AnalyticsScript />` has installed
+ * `window.analytics` (a few ms after accepting, or on the first render after
+ * a reload). Flushed by `flushQueuedAnalytics()`; capped so a provider that
+ * never loads can't grow it forever.
+ */
+const MAX_QUEUED_EVENTS = 50;
+let queuedEvents: Array<[EventName, EventProperties]> = [];
+
+function getTracker(): SegmentAnalytics | null {
+  const win = window as WindowWithAnalytics;
+  return typeof win.analytics?.track === "function" ? win.analytics : null;
+}
+
 function send(event: EventName, props?: EventProperties): void {
   if (typeof window === "undefined") return;
-  if (!process.env.NEXT_PUBLIC_ANALYTICS_WRITE_KEY) return;
+  if (!isAnalyticsEnabled() || !hasAnalyticsConsent()) return;
 
   // Segment-compatible analytics.track call — works with PostHog, Mixpanel, and
-  // any window.analytics shim that follows the Segment spec.
-  const win = window as WindowWithAnalytics;
-  if (typeof win.analytics?.track === "function") {
-    win.analytics.track(event, props ?? {});
+  // any window.analytics shim that follows the Segment spec. The Segment
+  // snippet's stub buffers calls itself until analytics.js has downloaded.
+  const tracker = getTracker();
+  if (tracker) {
+    tracker.track(event, props ?? {});
+  } else if (queuedEvents.length < MAX_QUEUED_EVENTS) {
+    queuedEvents.push([event, props ?? {}]);
   }
+}
+
+/**
+ * Sends queued events once `window.analytics` exists. Called by
+ * `<AnalyticsScript />` when the snippet is ready. Drops the queue instead if
+ * consent was withdrawn in the meantime.
+ */
+export function flushQueuedAnalytics(): void {
+  if (typeof window === "undefined") return;
+  if (!isAnalyticsEnabled() || !hasAnalyticsConsent()) {
+    queuedEvents = [];
+    return;
+  }
+  const tracker = getTracker();
+  if (!tracker) return;
+
+  const pending = queuedEvents;
+  queuedEvents = [];
+  for (const [event, props] of pending) tracker.track(event, props);
+}
+
+/** Test helper. */
+export function getQueuedAnalyticsCount(): number {
+  return queuedEvents.length;
+}
+
+/** Test helper. */
+export function clearQueuedAnalytics(): void {
+  queuedEvents = [];
 }
 
 export const analytics = {

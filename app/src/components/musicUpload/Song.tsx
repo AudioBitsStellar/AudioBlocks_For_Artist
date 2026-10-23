@@ -28,6 +28,7 @@ import {
 } from "@/utils/uploadSessionStore";
 import MusicLoader from "../MusicLoader";
 import { useToast } from "@/hooks/useToastHandler";
+import { TOAST_IDS } from "@/lib/toastIds";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFileDrop } from "@/hooks/useFileDrop";
 import { useLeaveGuard } from "@/hooks/useLeaveGuard";
@@ -59,6 +60,7 @@ const Song = () => {
   const [mintableSongId, setMintableSongId] = useState<string | null>(null);
   const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const lastMilestoneRef = useRef(0);
   const [isMinting, setIsMinting] = useState(false);
@@ -80,6 +82,8 @@ const Song = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRequestedRef = useRef(false);
   const uploadedChunksRef = useRef<number[]>([]);
+  // Guards against double-clicking Retry while a retry is still running.
+  const retryInProgressRef = useRef(false);
 
   const { useFinalizeUpload, useUploadChunk, useUploadCover, useTranscribeLyrics } =
     useUploadServices();
@@ -94,6 +98,8 @@ const Song = () => {
     reset,
     watch,
     setValue,
+    trigger,
+    getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<UploadSong>({
     resolver: zodResolver(songFormSchema),
@@ -268,38 +274,6 @@ const Song = () => {
     disabled: isBusy || uploadedFile?.status === "uploading",
   });
 
-  const handleRetry = async () => {
-    if (!audioFile || !fileId) return;
-
-    if (retryCount >= MAX_RETRY_ATTEMPTS) {
-      setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
-      toast.error(
-        `Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) reached. Please delete and start over.`
-      );
-      return;
-    }
-
-    try {
-      cancelRequestedRef.current = false;
-      setRetryCount((prev) => prev + 1);
-      setUploadedFile((prev) => (prev ? { ...prev, status: "uploading" } : prev));
-
-      await uploadChunkIndices(audioFile, fileId);
-
-      setUploadedFile((prev) => (prev ? { ...prev, status: "success" } : prev));
-    } catch (err) {
-      if (err instanceof Error && err.message === "UPLOAD_CANCELLED") {
-        setUploadedFile((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
-        setAnnouncement(`Upload of ${audioFile.name} cancelled`);
-        toast.success("Upload cancelled");
-        return;
-      }
-      console.error(err);
-      setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
-      toast.error(`Retry failed: ${getErrorMessage(err as Error)}`);
-    }
-  };
-
   // Announce 25/50/75/100% through the polite live region, not every percent.
   useEffect(() => {
     if (!isUploading || !audioFile) return;
@@ -322,7 +296,6 @@ const Song = () => {
     setPreviewUrl(null);
     setAudioMetadata(null);
     setRetryCount(0);
-    setFailedChunkIndex(0);
     setUploadError(null);
   };
 
@@ -412,7 +385,7 @@ const Song = () => {
 
       clearSavedData();
       void deleteUploadSession(fileId).catch(() => undefined);
-      toast.success("Song uploaded successfully!");
+      toast.success("Song uploaded successfully!", { id: TOAST_IDS.upload });
       setAnnouncement(`${audioFile.name} uploaded successfully`);
       lastMilestoneRef.current = 0;
 
@@ -428,7 +401,7 @@ const Song = () => {
       if (error instanceof Error && error.message === "UPLOAD_CANCELLED") {
         setUploadedFile((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
         setAnnouncement(`Upload of ${audioFile.name} cancelled`);
-        toast.success("Upload cancelled");
+        toast.success("Upload cancelled", { id: TOAST_IDS.upload });
         setIsUploading(false);
         return;
       }
@@ -439,9 +412,11 @@ const Song = () => {
       setAnnouncement(`Upload of ${audioFile.name} failed. ${reason}`);
       setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
       if (isRetryableError(err)) {
-        toast.error(`Upload failed — tap retry to try again. (${reason})`);
+        toast.error(`Upload failed — tap retry to try again. (${reason})`, undefined, {
+          id: TOAST_IDS.upload,
+        });
       } else {
-        toast.error(`Upload failed: ${reason}`);
+        toast.error(`Upload failed: ${reason}`, undefined, { id: TOAST_IDS.upload });
       }
     } finally {
       setIsUploading(false);
