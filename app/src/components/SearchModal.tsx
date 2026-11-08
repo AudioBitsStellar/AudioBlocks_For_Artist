@@ -93,13 +93,31 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  const handleSearch = useCallback((searchQuery: string) => {
-    setQuery(searchQuery);
-    if (searchQuery.trim()) {
-      saveRecentSearch(searchQuery);
+  const commitSearch = useCallback((searchQuery: string) => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length >= 2) {
+      saveRecentSearch(trimmed);
       setRecentSearches(getRecentSearches());
     }
   }, []);
+
+  const handleSearch = useCallback((searchQuery: string) => {
+    setQuery(searchQuery);
+  }, []);
+
+  // Debounce saving recent search after 1s when results are showing
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) return;
+    const totalCount = getTotalResults(results);
+    if (totalCount === 0) return;
+
+    const timer = setTimeout(() => {
+      commitSearch(trimmed);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [query, results, commitSearch]);
 
   const handleResultClick = useCallback(
     (type: "track" | "album" | "event" | "merch", id: string | number) => {
@@ -110,22 +128,22 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         merch: `/dashboard/merch/${id}`,
       };
 
-      if (query.trim()) {
-        saveRecentSearch(query);
+      if (query.trim().length >= 2) {
+        commitSearch(query);
       }
 
       router.push(routes[type]);
       onClose();
     },
-    [query, router, onClose]
+    [query, router, onClose, commitSearch]
   );
 
   const handleRecentSearchClick = useCallback(
     (recentQuery: string) => {
       setQuery(recentQuery);
-      handleSearch(recentQuery);
+      commitSearch(recentQuery);
     },
-    [handleSearch]
+    [commitSearch]
   );
 
   const handleClearRecent = useCallback(() => {
@@ -158,6 +176,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             type="text"
             value={query}
             onChange={(e) => handleSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                commitSearch(query);
+              }
+            }}
             placeholder="Search songs, albums, events or merch…"
             aria-label="Search input"
             className="flex-1 bg-transparent border-none outline-none text-[var(--text)] placeholder:text-[var(--text-subtle)] text-base"
