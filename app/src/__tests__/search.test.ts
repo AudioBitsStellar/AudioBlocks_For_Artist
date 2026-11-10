@@ -86,13 +86,22 @@ describe("recent searches", () => {
     expect(recent[1]).toBe("midnight");
   });
 
-  it("deduplicates and moves existing term to front", () => {
+  it("deduplicates case-insensitively and moves existing term to front", () => {
     addRecentSearch("midnight");
+    addRecentSearch("Summer");
     addRecentSearch("summer");
-    addRecentSearch("midnight");
     const recent = getRecentSearches();
-    expect(recent[0]).toBe("midnight");
-    expect(recent.filter((r) => r === "midnight")).toHaveLength(1);
+    expect(recent[0]).toBe("summer");
+    expect(recent.filter((r) => r.toLowerCase() === "summer")).toHaveLength(1);
+  });
+
+  it("ignores queries shorter than 2 characters", () => {
+    addRecentSearch("a");
+    addRecentSearch(" ");
+    addRecentSearch("");
+    expect(getRecentSearches()).toEqual([]);
+    addRecentSearch("ab");
+    expect(getRecentSearches()).toEqual(["ab"]);
   });
 
   it("caps history at 8 entries", () => {

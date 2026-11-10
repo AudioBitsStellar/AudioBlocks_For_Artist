@@ -13,7 +13,6 @@ app/.next/
 /build
 
 # env & debug
-.env*
 *.log*
 *.tsbuildinfo
 .DS_Store
@@ -37,7 +36,7 @@ issue*.md
 .kiro/
 
 # IDE settings
-.vscode/
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+config.bat

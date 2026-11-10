@@ -161,24 +161,68 @@ export function getTotalResults(results: SearchResults): number {
 }
 
 /**
+ * Generic item shape for search filtering and categorization
+ */
+export interface SearchItem {
+  id: string;
+  name: string;
+  category: "track" | "album" | "event" | "merch";
+  href?: string;
+  subtitle?: string;
+}
+
+/**
+ * Filter an array of SearchItem objects by name or subtitle
+ */
+export function filterItems(items: SearchItem[], query: string): SearchItem[] {
+  if (!query || !query.trim()) return [];
+  const q = query.toLowerCase().trim();
+  return items.filter((item) => {
+    const nameMatch = item.name ? item.name.toLowerCase().includes(q) : false;
+    const subtitleMatch = item.subtitle ? item.subtitle.toLowerCase().includes(q) : false;
+    return nameMatch || subtitleMatch;
+  });
+}
+
+/**
+ * Categorize SearchItem objects by category
+ */
+export function categorizeResults(items: SearchItem[]): {
+  tracks: SearchItem[];
+  albums: SearchItem[];
+  events: SearchItem[];
+  merch: SearchItem[];
+} {
+  return {
+    tracks: items.filter((i) => i.category === "track"),
+    albums: items.filter((i) => i.category === "album"),
+    events: items.filter((i) => i.category === "event"),
+    merch: items.filter((i) => i.category === "merch"),
+  };
+}
+
+/**
  * LocalStorage key for recent searches
  */
 const RECENT_SEARCHES_KEY = "audioBlocks:recentSearches";
-const MAX_RECENT_SEARCHES = 5;
+const MAX_RECENT_SEARCHES = 8;
 
 /**
  * Saves a search query to recent searches in localStorage.
+ * Deduplicates case-insensitively and ignores queries shorter than 2 characters (Issue #611).
  * @param query - The search query to save
  */
 export function saveRecentSearch(query: string): void {
-  if (typeof window === "undefined" || !query.trim()) return;
+  if (typeof window === "undefined" || !query || query.trim().length < 2) return;
 
   try {
     const recent = getRecentSearches();
     const normalized = query.trim();
 
-    // Remove if already exists (to move it to the top)
-    const filtered = recent.filter((q) => q !== normalized);
+    // Deduplicate case-insensitively
+    const filtered = recent.filter(
+      (q) => q.toLowerCase() !== normalized.toLowerCase()
+    );
 
     // Add to the beginning and limit to MAX_RECENT_SEARCHES
     const updated = [normalized, ...filtered].slice(0, MAX_RECENT_SEARCHES);
@@ -189,6 +233,11 @@ export function saveRecentSearch(query: string): void {
     console.warn("Failed to save recent search:", error);
   }
 }
+
+/**
+ * Alias for saveRecentSearch
+ */
+export const addRecentSearch = saveRecentSearch;
 
 /**
  * Retrieves recent searches from localStorage.
@@ -221,3 +270,4 @@ export function clearRecentSearches(): void {
     console.warn("Failed to clear recent searches:", error);
   }
 }
+
