@@ -3,6 +3,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/api/queryClientInstance";
 import { ReactNode } from "react";
+import { MotionConfig } from "framer-motion";
 import { StellarNetworkProvider } from "./StellarNetworkContext";
 import { PlaybackProvider } from "./PlaybackContext";
 import { ThemeProvider } from "./ThemeContext";
@@ -16,7 +17,9 @@ const Provider = ({ children }: { children: ReactNode }) => {
         <ThemeProvider>
           <CurrencyPreferenceProvider>
             <StellarNetworkProvider>
-              <PlaybackProvider>{children}</PlaybackProvider>
+              <MotionConfig reducedMotion="user">
+                <PlaybackProvider>{children}</PlaybackProvider>
+              </MotionConfig>
             </StellarNetworkProvider>
           </CurrencyPreferenceProvider>
         </ThemeProvider>

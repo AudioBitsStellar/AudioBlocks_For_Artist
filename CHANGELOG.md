@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Blocking axe accessibility checks in CI** (#792): Added dedicated blocking axe audit step to GitHub Actions CI workflow for key pages and navigation components (`.github/workflows/ci.yml`).
+- **Upload flow and wallet modal keyboard pass** (#793): Manual audit and remediation report in `docs/accessibility/upload-and-wallet-a11y-pass.md` verifying keyboard traps, Escape dismissal, and screen reader live region announcements.
+- **Theme token color contrast audit** (#794): Comprehensive WCAG 2.1 AA audit of dark/light theme tokens in `docs/accessibility/theme-color-contrast-audit.md` with remediated subtle text contrast ratios.
+- **Global reduced motion preference support** (#795): Mounted `MotionConfig reducedMotion="user"` in the global context provider and added `@media (prefers-reduced-motion: reduce)` in `globals.css` with test verification in `ReducedMotion.test.tsx`.
+
 - **Accessible upload progress** (#672): The song upload bar is now a `role="progressbar"` with `aria-valuemin/max/now`, a file-named label and `aria-valuetext` ("Uploading song.mp3, 45%"). A polite live region announces the 25/50/75/100% milestones plus success, failure, cancel and retry — not every percent — and the bar drops its transition under `prefers-reduced-motion`.
 - **Track edit modal — metadata and unsaved-changes guard** (#396): The My Music "Edit track" modal now edits genre (same list as upload, optional) and description (live N/500 counter) alongside title, album and visibility; genre/description are only sent when changed. Closing with unsaved edits (Cancel, X, Escape, outside click) asks "Discard unsaved changes?" instead of silently dropping them. Title shows a live N/100 counter.
 - **Drag-and-drop audio upload** (#391): `useFileDrop` hook (flicker-free drag highlight, ignores non-file drags, disabled while uploading) powering the song upload drop zone, which now shows a "Drop to upload" state and can't be replaced mid-upload, and a new album drop zone that accepts several tracks at once, fills empty slots first and reports any rejected files.
