@@ -67,7 +67,7 @@ export const featureFlags = {
  *  4. a percentage bucket of the subject — stable, so an artist never sees a
  *     feature flicker between visits as the bucket is hash-based, not random.
  */
-export type FeatureFlagName = "artistOnchainAnalytics" | "teamManagement";
+export type FeatureFlagName = "artistOnchainAnalytics" | "teamManagement" | "maintenanceMode";
 
 export interface FeatureFlagDefinition {
   /** What the feature is, for whoever has to debug it later. */
@@ -88,6 +88,12 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, FeatureFlagDefinition> = {
   teamManagement: {
     description:
       "Backend-enforced multi-user artist team workspace and staff access management (#525).",
+    rolloutPercentage: 0,
+    allowlist: [],
+  },
+  maintenanceMode: {
+    description:
+      "Planned maintenance banner and read-only mode notification (#781).",
     rolloutPercentage: 0,
     allowlist: [],
   },
