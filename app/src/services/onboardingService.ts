@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { analytics } from "@/lib/analytics";
 
 const STORAGE_KEY = "audioblocks:onboarding-progress:v1";
 
@@ -140,10 +141,25 @@ export function saveOnboardingProgress(steps: OnboardingStep[]): OnboardingProgr
 
 export function completeStep(stepId: string): OnboardingProgressState {
   const current = getOnboardingProgress();
+  const target = current.steps.find((step) => step.id === stepId);
   const updatedSteps = current.steps.map((step) =>
     step.id === stepId ? { ...step, completed: true } : step
   );
-  return saveOnboardingProgress(updatedSteps);
+  const next = saveOnboardingProgress(updatedSteps);
+
+  // Funnel events (#764) fire only on a real incomplete → complete transition,
+  // so re-marking a finished step cannot inflate the funnel.
+  if (target && !target.completed) {
+    analytics.onboardingStepCompleted({
+      stepId,
+      completedCount: next.completedCount,
+      totalCount: next.totalCount,
+    });
+    if (next.isFullyCompleted) {
+      analytics.onboardingCompleted({ totalCount: next.totalCount });
+    }
+  }
+  return next;
 }
 
 export function resetOnboardingProgress(): OnboardingProgressState {

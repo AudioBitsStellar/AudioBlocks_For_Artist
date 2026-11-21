@@ -40,6 +40,8 @@ untyped/free-form `track()` escape hatch, so every event below is exhaustive.
 | `notification_clicked`          | `notificationId`, `kind`, `hasLink`        | `src/components/NotificationBell.tsx` — on any notification row, link or not                                                                              |
 | `notifications_all_marked_read` | `unreadCount`                              | `src/components/NotificationBell.tsx` — the "Mark all as read" action                                                                                     |
 | `quality_check_published`       | `songId`, `verdict`, `score`, `issueCount` | `src/services/qualityCheckService.ts` — when `saveQualityCheck` records an AI master review (#465)                                                        |
+| `onboarding_step_completed`     | `stepId`, `completedCount`, `totalCount`   | `src/services/onboardingService.ts` — `completeStep`, only on an incomplete → complete transition (#764)                                                  |
+| `onboarding_completed`          | `totalCount`                               | `src/services/onboardingService.ts` — `completeStep`, when the last checklist step completes (#764)                                                       |
 
 Note that `mint_started` / `mint_succeeded` / `mint_failed` are shared
 between song minting and artist-profile minting (same on-chain
@@ -67,3 +69,42 @@ don't need to mock a real analytics provider — asserting on
 `window.analytics` in the test itself if you need to verify a specific event
 fires; most existing tests don't bother and just verify the triggering
 behavior (upload succeeds, mint succeeds, etc.).
+
+## Funnels (#764)
+
+Two funnels are tracked. Build each as an ordered funnel in the analytics
+tool (Segment/PostHog/Mixpanel), counting unique users, with a 30-day
+conversion window.
+
+### Onboarding funnel
+
+| #   | Funnel step       | Event (filter)                                                |
+| --- | ----------------- | ------------------------------------------------------------- |
+| 1   | Email verified    | `onboarding_step_completed` where `stepId = email_verified`   |
+| 2   | Profile completed | `onboarding_step_completed` where `stepId = profile_setup`    |
+| 3   | Wallet connected  | `onboarding_step_completed` where `stepId = wallet_connected` |
+| 4   | First track       | `onboarding_step_completed` where `stepId = first_track`      |
+| 5   | Onboarded         | `onboarding_completed`                                        |
+
+`account_created` is pre-completed at signup and never emits an event, so the
+funnel starts at email verification. Steps are not required to happen in order
+(`profile_setup` and `first_track` are optional), so configure steps 1–4 as
+"any order" if the tool supports it.
+
+### Upload funnel
+
+| #   | Funnel step    | Event                  |
+| --- | -------------- | ---------------------- |
+| 1   | Chose a flow   | `upload_mode_selected` |
+| 2   | Started upload | `upload_started`       |
+| 3   | Finished       | `upload_completed`     |
+
+`upload_failed` (with `reason`) is the drop-off breakdown for step 2 → 3.
+Join on `fileId` to match a start with its outcome.
+
+### Dashboard
+
+Create one dashboard, "Artist funnels", with: the onboarding funnel, the upload
+funnel, step-to-step conversion %, median time between steps, and
+`upload_failed` grouped by `reason`. Event names and properties above are the
+contract; the dashboard itself lives in the analytics tool, not in this repo.
