@@ -9,23 +9,14 @@ const nextConfig: NextConfig = {
   // the need to bundle node_modules or public/ — smaller image, faster deploys.
   output: "standalone",
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "source.unsplash.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
-        pathname: "/**",
-      },
-    ],
+    // PERF-06: no placeholder hosts in production. Unsplash and picsum were
+    // here because the mock data used their URLs; `next/image` happily
+    // optimised and cached those third-party requests from real deployments.
+    // Cover art is uploaded to our own storage and served from the app's
+    // origin, so the optimizer needs no remote allow-list at all. A genuinely
+    // new remote host is a deliberate entry here, reviewed like any other
+    // origin the browser is told to trust.
+    remotePatterns: [],
     unoptimized: false,
   },
   async headers() {
