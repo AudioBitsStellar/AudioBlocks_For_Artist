@@ -22,7 +22,9 @@ type EventName =
   | "notifications_panel_opened"
   | "notification_clicked"
   | "notifications_all_marked_read"
-  | "quality_check_published";
+  | "quality_check_published"
+  | "onboarding_step_completed"
+  | "onboarding_completed";
 
 type EventProperties = Record<string, string | number | boolean | undefined>;
 
@@ -112,5 +114,17 @@ export const analytics = {
     issueCount: number;
   }) {
     send("quality_check_published", props);
+  },
+  /**
+   * Onboarding funnel (#764): fired once when a checklist step flips from
+   * incomplete to complete. `stepId` is one of the `DEFAULT_ONBOARDING_STEPS`
+   * ids; `completedCount`/`totalCount` let the dashboard plot drop-off.
+   */
+  onboardingStepCompleted(props: { stepId: string; completedCount: number; totalCount: number }) {
+    send("onboarding_step_completed", props);
+  },
+  /** Onboarding funnel (#764): every checklist step is now complete. */
+  onboardingCompleted(props: { totalCount: number }) {
+    send("onboarding_completed", props);
   },
 };

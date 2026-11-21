@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Release notes page** (#468): `/dashboard/changelog` renders this file, parsed at build time by `lib/changelog.ts` into a timeline grouped by change type (`ChangelogTimeline`), linked from the sidebar. Single source of truth: a changelog entry is a release note, and the page degrades to "not available for this deployment" rather than 500ing when the file isn't shipped.
 - **Rollout feature flags** (#469): `FEATURE_FLAGS` plus `isFeatureEnabled()` in `lib/featureFlags.ts` gate a feature per artist by allowlist and a stable percentage bucket, overridable per deployment via `NEXT_PUBLIC_FEATURE_FLAGS` and per browser through `setFeatureFlagOverride` (localStorage, `audioblocks:feature-flags:v1`). `useFeatureFlag` applies the stored override after mount so client and server markup agree. The on-chain analytics section is the first flag, `artistOnchainAnalytics`, at 0%.
 
+- **Funnel metrics** (#764): `onboarding_step_completed` and `onboarding_completed` events (only on a real incomplete → complete transition) plus documented onboarding and upload funnels and dashboard spec in `lib/ANALYTICS.md`.
+- **Session replay decision** (#765): ADR-0006 keeps Sentry Replay mask-by-default; the policy now lives in `lib/sentryReplay.ts` with a test that fails if masking is loosened.
+- **Production hosting decision** (#766): ADR-0007 (proposed: Vercel, Docker as fallback) and `docs/DEPLOYMENT.md` with environment checklist.
+- **Deploy workflow** (#767): `.github/workflows/deploy.yml` deploys staging on merge to `main` and production on a `vX.Y.Z` tag behind a required-reviewer environment.
+
 ### Changed
 
 - **PR preview deployments** (#472): `.github/workflows/preview.yml` installs with `npm ci --legacy-peer-deps` and an explicit Node 20 (the unguarded install failed on the Sentry/Next peer conflict, so no preview was ever produced), skips draft and fork PRs instead of failing on secrets Actions cannot read, cancels superseded deploys per PR, and publishes the preview URL to the job summary as well as the PR comment. Rationale and the maintainer setup steps are in `docs/adr/0005-pr-preview-deployments.md`.

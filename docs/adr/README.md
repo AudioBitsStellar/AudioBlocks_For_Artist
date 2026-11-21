@@ -26,10 +26,12 @@ don't change those boundaries don't need one.
 
 ## Index
 
-| ADR | Title |
-| --- | --- |
-| [0001](0001-react-query-for-server-state.md) | Use TanStack React Query for server state |
-| [0002](0002-soroban-prepare-sign-submit-split.md) | Split Soroban transactions into backend-prepare / Freighter-sign / backend-submit |
-| [0003](0003-freighter-as-sole-wallet-provider.md) | Freighter as the sole supported wallet provider |
-| [0004](0004-direct-horizon-reads-from-the-browser.md) | Read-only Stellar queries go directly from the browser to Horizon |
-| [0005](0005-pr-preview-deployments.md) | PR preview deployments run on `pull_request` and skip fork PRs |
+| ADR                                                   | Title                                                                             |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [0001](0001-react-query-for-server-state.md)          | Use TanStack React Query for server state                                         |
+| [0002](0002-soroban-prepare-sign-submit-split.md)     | Split Soroban transactions into backend-prepare / Freighter-sign / backend-submit |
+| [0003](0003-freighter-as-sole-wallet-provider.md)     | Freighter as the sole supported wallet provider                                   |
+| [0004](0004-direct-horizon-reads-from-the-browser.md) | Read-only Stellar queries go directly from the browser to Horizon                 |
+| [0005](0005-pr-preview-deployments.md)                | PR preview deployments run on `pull_request` and skip fork PRs                    |
+| [0006](0006-session-replay-with-pii-masking.md)       | Keep Sentry session replay, with everything masked                                |
+| [0007](0007-production-hosting-target.md)             | Production hosting target (Vercel; Docker as fallback)                            |

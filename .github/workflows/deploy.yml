@@ -1,0 +1,105 @@
+name: Deploy
+
+# Staging on every merge to main; production on a version tag (v1.2.3) behind a
+# manual approval. Rationale and one-time setup: docs/adr/0007-production-hosting-target.md
+# and docs/DEPLOYMENT.md. PR previews are a separate workflow (preview.yml).
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # PRs already pass CI before they can merge to main, so this only guards the
+  # tag path: a tag can be pushed from any branch, but only commits that landed
+  # on main may reach production.
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require tagged commit to be on main
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag ${GITHUB_REF_NAME} is not on main; refusing to deploy."
+            exit 1
+          fi
+
+  staging:
+    name: Deploy staging
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.url }}
+    # A newer merge replaces an in-flight staging deploy.
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Pull Vercel environment (preview)
+        run: vercel pull --yes --environment=preview --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Build
+        run: vercel build --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Deploy
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --token="${{ secrets.VERCEL_TOKEN }}")
+          # Optional stable staging hostname, set as a repository variable.
+          if [ -n "${STAGING_DOMAIN:-}" ]; then
+            vercel alias set "$url" "$STAGING_DOMAIN" --token="${{ secrets.VERCEL_TOKEN }}"
+            url="https://${STAGING_DOMAIN}"
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### Staging: $url (${GITHUB_SHA::7})" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          STAGING_DOMAIN: ${{ vars.STAGING_DOMAIN }}
+
+  production:
+    name: Deploy production
+    needs: verify
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    # The `production` environment must have required reviewers configured
+    # (Settings → Environments); the job pauses there until someone approves.
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    # Never cancel a production deploy half way.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Pull Vercel environment (production)
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Build
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Deploy
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### Production: $url (${GITHUB_REF_NAME})" >> "$GITHUB_STEP_SUMMARY"
