@@ -10,14 +10,24 @@ import OfflineIndicator from "@/components/OfflineIndicator";
 import { Toaster } from "sonner";
 import { defaultMetadata } from "@/utils/metadata";
 
+// PERF-07: next/font self-hosts these at build time, so the browser never
+// waits on a third-party font CDN, and a swap display strategy lets text paint
+// in the fallback while the file loads. `adjustFontFallback` (on by default) sizes
+// that fallback to the real face, which is what keeps the swap from shifting
+// layout — the CLS budget in src/lib/performanceBudgets.ts is what a
+// regression here would break.
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 export const viewport: Viewport = {

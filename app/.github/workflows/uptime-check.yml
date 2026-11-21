@@ -1,0 +1,54 @@
+name: uptime-check
+
+# OBS-05: the frontend has no external monitor, so a deploy that breaks the
+# login route or the dashboard is noticed by a user. This probes both every
+# fifteen minutes from a runner outside the deployment and fails the run — a
+# failed scheduled workflow is visible on the repository's Actions tab and can
+# notify through the standard GitHub notification settings.
+#
+# It is a synthetic check, not a substitute for Sentry: it answers "is the page
+# being served", not "is the page working for a signed-in artist".
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime-check
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: Probe login and dashboard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: GET /login and /dashboard
+        env:
+          # Set the repository variable APP_URL to the environment to watch.
+          # The default is production, which is the one that matters if the
+          # variable is forgotten.
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          set -euo pipefail
+          base="${APP_URL:-https://artists.audioblocks.io}"
+          echo "Probing $base"
+          failed=0
+          for path in /login /dashboard; do
+            # -L follows the redirect a signed-out /dashboard may answer with.
+            code=$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 20 "$base$path" || echo "000")
+            elapsed=$(curl -sS -L -o /dev/null -w '%{time_total}' --max-time 20 "$base$path" || echo "-")
+            echo "$path -> HTTP $code in ${elapsed}s"
+            case "$code" in
+              200|301|302|303|307|308) ;;
+              *)
+                echo "::error title=Uptime probe failed::$base$path returned HTTP $code"
+                failed=1
+                ;;
+            esac
+          done
+          exit "$failed"

@@ -3,6 +3,7 @@ import { getCSRFToken, getCSRFTokenHeader, refreshCSRFToken } from "@/utils/csrf
 import { isRetryableError, calculateBackoff } from "@/utils/retry";
 import { apiMonitor } from "@/utils/apiPerformanceMonitor";
 import { API_PROXY_BASE_URL, endSession } from "@/api/session";
+import { newRequestId, REQUEST_ID_HEADER, requestIdFromHeaders } from "@/api/requestId";
 
 /**
  * Ends the browser session. The access token lives in an httpOnly cookie that
@@ -34,12 +35,19 @@ function isCredentialRequest(url?: string): boolean {
 export class ApiError extends Error {
   status: number;
   code?: string;
+  /**
+   * Correlation id for this call, from `x-request-id` on the response or the
+   * one this client generated for the request (OBS-04). It is what a user
+   * quotes to support, so the error toast shows it.
+   */
+  requestId?: string;
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(message: string, status: number, code?: string, requestId?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.requestId = requestId;
   }
 }
 
@@ -50,7 +58,11 @@ export function extractApiError(error: unknown): ApiError {
     const status = axErr.response?.status ?? 0;
     const message = data?.message ?? data?.error ?? axErr.message;
     const code = data?.code;
-    return new ApiError(message, status, code);
+    // Prefer the id the backend echoed; fall back to the one this client sent.
+    const requestId =
+      requestIdFromHeaders(axErr.response?.headers) ??
+      (axErr.config as TrackedConfig | undefined)?._requestId;
+    return new ApiError(message, status, code, requestId);
   }
   if (error instanceof Error) {
     return new ApiError(error.message, 0);
@@ -74,6 +86,8 @@ type TrackedConfig = InternalAxiosRequestConfig & {
   _sessionRetried?: boolean;
   /** High-resolution timestamp set when the request left the client (#163). */
   _perfStart?: number;
+  /** Correlation id sent as `x-request-id`, reused across retries (OBS-04). */
+  _requestId?: string;
 };
 
 const now = (): number => (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -109,6 +123,16 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
     // round trip (#163). Each retry attempt is timed separately.
     (config as TrackedConfig)._perfStart = now();
 
+    // OBS-04: one correlation id per logical request. A retry replays this
+    // config, so the id it already carries is kept rather than regenerated.
+    const tracked = config as TrackedConfig;
+    tracked._requestId = tracked._requestId ?? newRequestId();
+    if (typeof config.headers?.set === "function") {
+      config.headers.set(REQUEST_ID_HEADER, tracked._requestId);
+    } else {
+      Object.assign(config.headers, { [REQUEST_ID_HEADER]: tracked._requestId });
+    }
+
     return config;
   });
 
@@ -143,7 +167,11 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       if (error.response?.status === 401 && typeof window !== "undefined") {
         // The proxy renewed the session but could not replay a streamed upload.
         // Replay it once; the body is re-sendable on the client.
-        if (error.response.headers["x-session-refreshed"] === "1" && config && !config._sessionRetried) {
+        if (
+          error.response.headers["x-session-refreshed"] === "1" &&
+          config &&
+          !config._sessionRetried
+        ) {
           config._sessionRetried = true;
           return apiClient(config);
         }
