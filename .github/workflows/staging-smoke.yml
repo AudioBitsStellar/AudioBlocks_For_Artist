@@ -1,0 +1,101 @@
+name: Staging smoke
+
+# Runs the Playwright smoke suite against staging after every successful
+# deployment (#746). A failed run marks the GitHub deployment as failed, which
+# is the promotion gate: promotion pipelines must depend on this workflow (or
+# on a successful `staging` deployment status) rather than promoting on the
+# deploy job alone.
+#
+# Setup:
+#   1. Set the repository variable STAGING_URL (Settings -> Variables), or pass
+#      `base_url` when running the workflow manually.
+#   2. The staging deploy must create a GitHub Deployment with
+#      `environment: staging`; its success status triggers this workflow.
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Staging URL to smoke test (defaults to the STAGING_URL variable)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: staging-smoke-${{ github.event.deployment.environment || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Staging smoke
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       github.event.deployment_status.environment == 'staging')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Resolve staging URL
+        id: target
+        env:
+          INPUT_URL: ${{ inputs.base_url }}
+          CONFIGURED_URL: ${{ vars.STAGING_URL }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url }}
+        run: |
+          URL="${INPUT_URL:-${CONFIGURED_URL:-$DEPLOYMENT_URL}}"
+          if [ -z "$URL" ]; then
+            echo "::error::No staging URL. Set the STAGING_URL repository variable or pass base_url."
+            exit 1
+          fi
+          echo "base_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run staging smoke tests
+        run: npm run test:e2e:smoke
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: ${{ steps.target.outputs.base_url }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: staging-smoke-report
+          path: app/playwright-report/
+          retention-days: 7
+
+  block-promotion:
+    name: Block promotion on failure
+    if: failure() && github.event_name == 'deployment_status'
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment_status.deployment.id,
+              state: "failure",
+              description: "Staging smoke tests failed — promotion blocked.",
+              environment_url: context.payload.deployment_status.environment_url,
+            });

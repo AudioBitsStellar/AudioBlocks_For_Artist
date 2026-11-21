@@ -1,5 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+
+/**
+ * Critical-journey specs run on every browser/device profile (#747).
+ * `smoke.spec.ts` is intentionally excluded: it has its own project so the
+ * staging workflow (#746) can target a deployed URL with a small, fast suite.
+ */
+const REGULAR_TEST_IGNORE = /smoke\.spec\.ts/;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -8,21 +17,48 @@ export default defineConfig({
   workers: 1,
   reporter: "html",
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
+    baseURL: BASE_URL,
     trace: "on-first-retry",
   },
   projects: [
     {
       name: "chromium",
+      testIgnore: REGULAR_TEST_IGNORE,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "firefox",
+      testIgnore: REGULAR_TEST_IGNORE,
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      testIgnore: REGULAR_TEST_IGNORE,
+      use: { ...devices["Desktop Safari"] },
+    },
+    {
+      name: "mobile-chrome",
+      testIgnore: REGULAR_TEST_IGNORE,
+      use: { ...devices["Pixel 7"] },
+    },
+    {
+      name: "mobile-safari",
+      testIgnore: REGULAR_TEST_IGNORE,
+      use: { ...devices["iPhone 14"] },
+    },
+    {
+      name: "smoke",
+      testMatch: /smoke\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: process.env.CI
+  // Staging runs set PLAYWRIGHT_BASE_URL and must not start a local server.
+  webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: "npm run dev",
+        command: process.env.CI ? "npm run start" : "npm run dev",
         url: "http://localhost:3000",
-        reuseExistingServer: true,
+        reuseExistingServer: !process.env.CI,
         timeout: 120_000,
       },
 });

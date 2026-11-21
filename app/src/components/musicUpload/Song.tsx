@@ -73,6 +73,7 @@ const Song = () => {
     status: "uploading" | "success" | "failed" | "cancelled";
   } | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [coverError, setCoverError] = useState<string | null>(null);
   const [audioMetadata, setAudioMetadata] = useState<AudioMetadata | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -80,6 +81,7 @@ const Song = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRequestedRef = useRef(false);
   const uploadedChunksRef = useRef<number[]>([]);
+  const retryInProgressRef = useRef(false);
 
   const { useFinalizeUpload, useUploadChunk, useUploadCover, useTranscribeLyrics } =
     useUploadServices();
@@ -94,6 +96,8 @@ const Song = () => {
     reset,
     watch,
     setValue,
+    trigger,
+    getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<UploadSong>({
     resolver: zodResolver(songFormSchema),
@@ -268,38 +272,6 @@ const Song = () => {
     disabled: isBusy || uploadedFile?.status === "uploading",
   });
 
-  const handleRetry = async () => {
-    if (!audioFile || !fileId) return;
-
-    if (retryCount >= MAX_RETRY_ATTEMPTS) {
-      setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
-      toast.error(
-        `Maximum retry attempts (${MAX_RETRY_ATTEMPTS}) reached. Please delete and start over.`
-      );
-      return;
-    }
-
-    try {
-      cancelRequestedRef.current = false;
-      setRetryCount((prev) => prev + 1);
-      setUploadedFile((prev) => (prev ? { ...prev, status: "uploading" } : prev));
-
-      await uploadChunkIndices(audioFile, fileId);
-
-      setUploadedFile((prev) => (prev ? { ...prev, status: "success" } : prev));
-    } catch (err) {
-      if (err instanceof Error && err.message === "UPLOAD_CANCELLED") {
-        setUploadedFile((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
-        setAnnouncement(`Upload of ${audioFile.name} cancelled`);
-        toast.success("Upload cancelled");
-        return;
-      }
-      console.error(err);
-      setUploadedFile((prev) => (prev ? { ...prev, status: "failed" } : prev));
-      toast.error(`Retry failed: ${getErrorMessage(err as Error)}`);
-    }
-  };
-
   // Announce 25/50/75/100% through the polite live region, not every percent.
   useEffect(() => {
     if (!isUploading || !audioFile) return;
@@ -322,7 +294,6 @@ const Song = () => {
     setPreviewUrl(null);
     setAudioMetadata(null);
     setRetryCount(0);
-    setFailedChunkIndex(0);
     setUploadError(null);
   };
 
