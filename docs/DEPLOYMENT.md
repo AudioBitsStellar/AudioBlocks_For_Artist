@@ -9,7 +9,7 @@ How the artist portal reaches staging and production. Decision record:
 | Event                    | Result                                             |
 | ------------------------ | -------------------------------------------------- |
 | Pull request (same repo) | Preview URL (`preview.yml`)                        |
-| Merge to `main`          | Verify (tag on `main`) → deploy **staging**   |
+| Merge to `main`          | Verify (tag on `main`) → deploy **staging**        |
 | Push tag `vX.Y.Z`        | Verify → wait for approval → deploy **production** |
 
 Production only deploys tags whose commit is on `main`.
