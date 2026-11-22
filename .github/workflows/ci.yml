@@ -91,7 +91,7 @@ jobs:
         run: npm install --save-dev vitest-axe axe-core --legacy-peer-deps
 
       - name: Run unit tests
-        run: npm run test -- --run --reporter=verbose
+        run: npm run test:coverage -- --reporter=verbose
 
   # ── 4. Build ─────────────────────────────────────────────────────────────────
   build:
