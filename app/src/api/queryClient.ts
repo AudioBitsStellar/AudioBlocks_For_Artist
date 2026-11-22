@@ -22,6 +22,7 @@ export function useGet<T>(
     enabled?: boolean;
     staleTime?: number;
     gcTime?: number;
+    initialData?: T;
   }
 ) {
   return useQuery<T>({
@@ -34,6 +35,7 @@ export function useGet<T>(
     enabled: options?.enabled ?? true,
     staleTime: options?.staleTime,
     gcTime: options?.gcTime,
+    initialData: options?.initialData,
   });
 }
 
