@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 import Provider from "@/context/provider";
 import ThemeScript from "@/components/ThemeScript";
 import RuntimeConfigScript from "@/components/RuntimeConfigScript";

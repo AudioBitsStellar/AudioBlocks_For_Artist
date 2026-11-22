@@ -56,9 +56,13 @@ everything — auth, profile, uploads — and to the
 | Forms                    | `react-hook-form`                                         |
 | Data fetching            | TanStack React Query, `axios`                             |
 | Charts                   | Recharts                                                  |
-| Carousels                | `react-slick`                                             |
 | Toasts                   | `sonner`                                                  |
 | Stellar / Soroban wallet | `@stellar/freighter-api`                                  |
+
+The unused `Discover` carousel prototype and its global Slick styles were
+removed; the component was not imported by any route and displayed dummy data.
+No replacement was justified. If a live carousel is needed later, prefer native
+CSS scroll snapping before adding a JavaScript carousel dependency.
 
 ## Routes
 
