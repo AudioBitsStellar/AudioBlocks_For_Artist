@@ -144,7 +144,7 @@ Handles artist profile queries and profile updates.
   ```
 
 ##### `useUpdateArtistProfile()`
-- **Endpoint**: `PUT /api/v1/user/profile`
+- **Endpoint**: `PATCH /artist/update-profile` (relative to `NEXT_PUBLIC_API_BASE_URL`)
 - **Payload Shape**: `updateProfilePayload`
   ```typescript
   interface updateProfilePayload {
@@ -533,15 +533,42 @@ client-side only to decide whether to render the UI (`isAdminSession()` in
   ```
 - **Notes**: the admin search box debounces its input (`useDebouncedValue`, 300 ms) so typing issues one request per pause, not per keystroke. `toArtistDirectoryEntries()` normalizes the response into a safe array.
 
-### Server-only: Public Artist Profile (`app/src/lib/publicArtistProfile.ts`)
+### Public Artist Profile (`app/src/lib/publicArtistProfile.ts`)
 
 The public `/artist/[handle]` route is server-rendered so its metadata is real
 (issue #421). Because the shared axios client is browser-oriented, this module
 reads the profile with plain `fetch`.
 
-- **Endpoint**: `GET /artist/public/:handle` (`PUBLIC_ARTIST_ENDPOINTS.PROFILE`)
-- **Caching**: `next: { revalidate: 300 }`
-- **Returns**: `{ status: "ok", profile }` · `{ status: "not-found" }` · `{ status: "unavailable" }`, so the route can 404 only on a definitive miss and render a `noindex` shell when the API is down.
+- **Endpoints**: `GET /users/:id/public` checks visibility before `GET /artist/:id/metadata`. The route segment retains its name but accepts UUIDs, not usernames.
+- **Caching**: privacy checks use `cache: "no-store"`; metadata uses `next: { revalidate: 300 }`.
+- **Returns**: `{ status: "ok", profile }`, `private`, `not-found`, or `unavailable`. Invalid IDs are rejected locally; this is not a username availability check.
+
+---
+
+## Artist handle claims
+
+The claim modal uses `useDebouncedValue` (500 ms) and the separate uncached reader
+in `app/src/lib/claimArtistHandle.ts`. It is disabled unless
+`NEXT_PUBLIC_ARTIST_HANDLE_LOOKUP_ENABLED=true`, which must only be set after
+the backend contract below has been deployed and verified. While disabled,
+availability stays unavailable and no lookup request is sent.
+With that contract enabled, only a genuine missing-handle 404 means available; existing profiles mean taken, and
+network/server/malformed responses show a retryable error. Input changes and
+closed sessions abort and ignore stale requests. Handles are trimmed and have
+one optional leading `@` removed; case and accepted name characters are preserved,
+without inventing a different slug format.
+
+Completion calls the existing profile mutation with only `{ username: handle }`.
+It uses `PATCH /artist/update-profile`, matching the backend route, and invalidates
+the signed-in profile query. A 409 returns to handle selection; other failures keep
+the confirmation step for retry. Completion and the public-profile link appear only
+after the mutation succeeds. The link uses the signed-in artist UUID; when that
+ID is unavailable, completion offers a Done button instead of a broken handle URL.
+Saving a handle does not imply artist verification.
+
+Deployment requires `GET /artist/public/:handle` to distinguish a missing artist
+from an unavailable route and to resolve the saved username, plus backend uniqueness
+conflicts reported as 409. The frontend cannot enforce cross-user uniqueness.
 
 ---
 

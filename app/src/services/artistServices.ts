@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { USER_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, usePut } from "@/api/queryClient";
+import { useGet, usePatch } from "@/api/queryClient";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { extractApiError, ApiError } from "@/api/axios";
@@ -177,23 +177,27 @@ const useArtistServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useUpdateArtistProfile = () => {
-    return usePut<updateProfilePayload>(USER_ENDPOINTS.UPDATE_PROFILE, {
-      onSuccess(response: { message?: string }) {
-        handleSuccess(response?.message || "Profile updated successfully!");
-      },
-      onError(error: unknown) {
-        let apiError: ApiError;
-        try {
-          apiError = normalizeError(error);
-        } catch {
-          apiError = {
-            status: 0,
-            message: "An unexpected error occurred while updating your profile.",
-          };
-        }
-        handleError(apiError);
-      },
-    });
+    return usePatch<{ message?: string }, Partial<updateProfilePayload> | FormData>(
+      USER_ENDPOINTS.UPDATE_PROFILE,
+      {
+        invalidateQueries: [DASHBOARD_QUERY_KEYS.profile],
+        onSuccess(response: { message?: string }) {
+          handleSuccess(response?.message || "Profile updated successfully!");
+        },
+        onError(error: unknown) {
+          let apiError: ApiError;
+          try {
+            apiError = normalizeError(error);
+          } catch {
+            apiError = {
+              status: 0,
+              message: "An unexpected error occurred while updating your profile.",
+            };
+          }
+          handleError(apiError);
+        },
+      }
+    );
   };
 
   return {

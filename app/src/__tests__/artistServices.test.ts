@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import useArtistServices from "@/services/artistServices";
 import { USER_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, usePut } from "@/api/queryClient";
+import { useGet, usePatch } from "@/api/queryClient";
 import type { ApiError } from "@/api/axios";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ const mockMutationState = {
 
 vi.mock("@/api/queryClient", () => ({
   useGet: vi.fn(() => mockQueryState),
-  usePut: vi.fn(() => mockMutationState),
+  usePatch: vi.fn(() => mockMutationState),
 }));
 
 vi.mock("@/hooks/useToastHandler", () => ({
@@ -61,11 +61,11 @@ describe("artistServices — error handling (issue #104)", () => {
     // Reset mock implementations (not just call history) so persistent
     // `mockImplementation(...)` calls from prior tests don't leak into this one.
     vi.mocked(useGet).mockReset();
-    vi.mocked(usePut).mockReset();
+    vi.mocked(usePatch).mockReset();
 
     // Restore the default happy-path behavior for hooks that don't override.
     vi.mocked(useGet).mockImplementation(() => mockQueryState);
-    vi.mocked(usePut).mockImplementation(() => mockMutationState);
+    vi.mocked(usePatch).mockImplementation(() => mockMutationState);
 
     // Reset the simulated query/mutation state fields between tests.
     mockQueryState.data = undefined;
@@ -99,10 +99,10 @@ describe("artistServices — error handling (issue #104)", () => {
       );
     });
 
-    it("calls usePut with the update-profile endpoint", async () => {
+    it("calls usePatch with the update-profile endpoint", async () => {
       const wrapper = makeWrapper();
       renderHook(() => useArtistServices().useUpdateArtistProfile(), { wrapper });
-      expect(usePut).toHaveBeenCalledWith(
+      expect(usePatch).toHaveBeenCalledWith(
         USER_ENDPOINTS.UPDATE_PROFILE,
         expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) })
       );
@@ -210,7 +210,7 @@ describe("artistServices — error handling (issue #104)", () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onError?: (error: unknown) => void } = {};
 
-      vi.mocked(usePut).mockImplementationOnce((_endpoint, options) => {
+      vi.mocked(usePatch).mockImplementationOnce((_endpoint, options) => {
         capturedOptions = (options ?? {}) as { onError?: (error: unknown) => void };
         return mockMutationState;
       });
@@ -234,7 +234,7 @@ describe("artistServices — error handling (issue #104)", () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onError?: (error: unknown) => void } = {};
 
-      vi.mocked(usePut).mockImplementationOnce((_endpoint, options) => {
+      vi.mocked(usePatch).mockImplementationOnce((_endpoint, options) => {
         capturedOptions = (options ?? {}) as { onError?: (error: unknown) => void };
         return mockMutationState;
       });
@@ -255,7 +255,7 @@ describe("artistServices — error handling (issue #104)", () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onSuccess?: (data: unknown) => void } = {};
 
-      vi.mocked(usePut).mockImplementationOnce((_endpoint, options) => {
+      vi.mocked(usePatch).mockImplementationOnce((_endpoint, options) => {
         capturedOptions = (options ?? {}) as { onSuccess?: (data: unknown) => void };
         return mockMutationState;
       });
@@ -273,7 +273,7 @@ describe("artistServices — error handling (issue #104)", () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onSuccess?: (data: unknown) => void } = {};
 
-      vi.mocked(usePut).mockImplementationOnce((_endpoint, options) => {
+      vi.mocked(usePatch).mockImplementationOnce((_endpoint, options) => {
         capturedOptions = (options ?? {}) as { onSuccess?: (data: unknown) => void };
         return mockMutationState;
       });
@@ -321,7 +321,7 @@ describe("artistServices — error handling (issue #104)", () => {
       const wrapper = makeWrapper();
       let capturedOptions: { onError?: (error: unknown) => void } = {};
 
-      vi.mocked(usePut).mockImplementationOnce((_endpoint, options) => {
+      vi.mocked(usePatch).mockImplementationOnce((_endpoint, options) => {
         capturedOptions = (options ?? {}) as { onError?: (error: unknown) => void };
         return mockMutationState;
       });
