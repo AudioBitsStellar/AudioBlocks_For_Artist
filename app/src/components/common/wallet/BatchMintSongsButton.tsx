@@ -17,11 +17,13 @@
  * `runBatch` function, not its UI contract.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, Check, AlertCircle } from "lucide-react";
 import useOnchainServices from "@/services/onchainService";
 import { useStellarWallet } from "./useStellarWallet";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
+import { useEstimatedFee } from "@/hooks/useEstimatedFee";
+import EstimatedFeeNotice from "./EstimatedFeeNotice";
 
 interface BatchMintSongsButtonProps {
   songIds: string[];
@@ -32,34 +34,43 @@ type SongMintState = "pending" | "minting" | "success" | "failed";
 export default function BatchMintSongsButton({ songIds }: BatchMintSongsButtonProps) {
   const { address } = useStellarWallet();
   const services = useOnchainServices();
+  const fee = useEstimatedFee();
+  const canSubmit = !fee.isLoading && !fee.error && fee.estimate !== null;
   const [isRunning, setIsRunning] = useState(false);
   const [states, setStates] = useState<Record<string, SongMintState>>({});
+  const runLock = useRef(false);
 
   const runBatch = async () => {
-    if (!address || !(await isFreighterAvailable())) return;
-    setIsRunning(true);
-    const nextStates: Record<string, SongMintState> = {};
-    songIds.forEach((id) => (nextStates[id] = "pending"));
-    setStates({ ...nextStates });
+    if (!address || !canSubmit || runLock.current) return;
+    runLock.current = true;
+    try {
+      if (!(await isFreighterAvailable())) return;
+      setIsRunning(true);
+      const nextStates: Record<string, SongMintState> = {};
+      songIds.forEach((id) => (nextStates[id] = "pending"));
+      setStates({ ...nextStates });
 
-    for (const songId of songIds) {
-      setStates((prev) => ({ ...prev, [songId]: "minting" }));
-      try {
-        // Sequential by design: each mint requires its own Freighter
-        // signature prompt until a real batch endpoint exists (see header).
-        const prepared = await services.usePrepareSongMint(songId).mutateAsync({});
-        const signedXdr = await signTransactionXdr(
-          prepared.data.xdr,
-          prepared.data.networkPassphrase,
-          address
-        );
-        await services.useSubmitSongMint(songId).mutateAsync({ signedXdr });
-        setStates((prev) => ({ ...prev, [songId]: "success" }));
-      } catch {
-        setStates((prev) => ({ ...prev, [songId]: "failed" }));
+      for (const songId of songIds) {
+        setStates((prev) => ({ ...prev, [songId]: "minting" }));
+        try {
+          // Each mint requires its own Freighter signature prompt until a true
+          // batch-transaction endpoint is available.
+          const prepared = await services.usePrepareSongMint(songId).mutateAsync({});
+          const signedXdr = await signTransactionXdr(
+            prepared.data.xdr,
+            prepared.data.networkPassphrase,
+            address
+          );
+          await services.useSubmitSongMint(songId).mutateAsync({ signedXdr });
+          setStates((prev) => ({ ...prev, [songId]: "success" }));
+        } catch {
+          setStates((prev) => ({ ...prev, [songId]: "failed" }));
+        }
       }
+    } finally {
+      setIsRunning(false);
+      runLock.current = false;
     }
-    setIsRunning(false);
   };
 
   const doneCount = Object.values(states).filter((s) => s === "success").length;
@@ -68,7 +79,7 @@ export default function BatchMintSongsButton({ songIds }: BatchMintSongsButtonPr
     <div className="flex flex-col gap-2">
       <button
         onClick={runBatch}
-        disabled={isRunning || songIds.length === 0}
+        disabled={isRunning || !canSubmit || !address || songIds.length === 0}
         className={`${
           isRunning ? "opacity-70 cursor-not-allowed" : ""
         } rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-6 py-2 transition-colors text-sm`}
@@ -77,6 +88,7 @@ export default function BatchMintSongsButton({ songIds }: BatchMintSongsButtonPr
           ? `Minting ${doneCount}/${songIds.length}...`
           : `Batch mint ${songIds.length} song${songIds.length === 1 ? "" : "s"}`}
       </button>
+      <EstimatedFeeNotice {...fee} />
 
       {Object.keys(states).length > 0 && (
         <ul className="text-xs text-[#9A9A9A] space-y-1">

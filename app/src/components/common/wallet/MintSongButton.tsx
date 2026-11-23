@@ -8,11 +8,15 @@ import { toast } from "sonner";
 import { classifyError, isUserRejection } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
 import { explorerTxUrl } from "@/lib/horizon";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, Check, AlertCircle } from "lucide-react";
 import { ApiEnvelope, SubmitSongMintResponse } from "@/types/api";
 import { useEstimatedFee } from "@/hooks/useEstimatedFee";
+import EstimatedFeeNotice from "./EstimatedFeeNotice";
 import { useFreighterNetworkCheck } from "@/hooks/useFreighterNetworkCheck";
+import { useTransactionStatus } from "@/hooks/useTransactionStatus";
+import { transactionStorageKey } from "@/lib/transactionStatus";
+import { getActiveNetworkId } from "@/lib/stellarNetwork";
 
 interface MintSongButtonProps {
   songId: string;
@@ -26,6 +30,7 @@ type MintStatus =
   | "preparing"
   | "awaiting_signature"
   | "submitting"
+  | "pending"
   | "success"
   | "rejected"
   | "timeout"
@@ -34,6 +39,11 @@ type MintStatus =
 interface MintTransactionDetails {
   txHash?: string;
   tokenId?: string;
+}
+
+interface MintSubmission {
+  signedXdr: string;
+  idempotencyKey: string;
 }
 
 const COOLDOWN_DURATION = 5;
@@ -47,19 +57,50 @@ export default function MintSongButton({
   const { usePrepareSongMint, useSubmitSongMint } = useOnchainServices();
   const prepareMutation = usePrepareSongMint(songId);
   const submitMutation = useSubmitSongMint(songId);
-  const { estimate: gasEstimate } = useEstimatedFee();
+  const fee = useEstimatedFee();
+  const canSubmit = !fee.isLoading && !fee.error && fee.estimate !== null;
   const freighterCheck = useFreighterNetworkCheck();
+  const transaction = useTransactionStatus(
+    transactionStorageKey("mint", `${getActiveNetworkId()}:${songId}`)
+  );
 
   const [status, setStatus] = useState<MintStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [txDetails, setTxDetails] = useState<MintTransactionDetails>({});
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
+  const submitLock = useRef(false);
+  const pendingSubmission = useRef<MintSubmission | null>(null);
 
   const isMinting = ["preparing", "awaiting_signature", "submitting"].includes(status);
   const isBusy =
-    prepareMutation.isPending || submitMutation.isPending || isMinting || cooldownActive;
+    prepareMutation.isPending ||
+    submitMutation.isPending ||
+    isMinting ||
+    status === "pending" ||
+    !transaction.isReady ||
+    cooldownActive;
   const isNetworkMismatch = freighterCheck.status === "mismatch";
+
+  useEffect(() => {
+    const tracked = transaction.record;
+    if (!transaction.isReady || !tracked) return;
+    setTxDetails({ txHash: tracked.txHash, tokenId: tracked.tokenId });
+    if (tracked.status === "pending") setStatus("pending");
+    if (tracked.status === "confirmed") {
+      if (status === "pending") {
+        analytics.mintSucceeded({ songId, txHash: tracked.txHash, tokenId: tracked.tokenId ?? "" });
+        toast.success("Minting succeeded!");
+        setCooldownActive(true);
+        setCooldownRemaining(COOLDOWN_DURATION);
+      }
+      setStatus("success");
+    }
+    if (tracked.status === "failed") {
+      setErrorMsg("The transaction failed on Stellar.");
+      setStatus("failed");
+    }
+  }, [songId, status, transaction.isReady, transaction.record]);
 
   useEffect(() => {
     onMintingChange?.(isMinting);
@@ -80,26 +121,57 @@ export default function MintSongButton({
     return () => clearTimeout(timer);
   }, [cooldownActive, cooldownRemaining]);
 
+  const submitSignedXdr = async (submission: MintSubmission) => {
+    setStatus("submitting");
+    const result: ApiEnvelope<SubmitSongMintResponse> =
+      await submitMutation.mutateAsync(submission);
+    const txHash = result?.data?.txHash;
+    if (!txHash) throw new Error("The submit response did not include a transaction hash.");
+    pendingSubmission.current = null;
+    setTxDetails({ txHash, tokenId: result.data.tokenId });
+    transaction.track(txHash, { tokenId: result.data.tokenId });
+    setStatus("pending");
+  };
+
   const handleMint = async () => {
-    if (!address) return;
-
-    const available = await isFreighterAvailable();
-    if (!available) {
-      setStatus("not_installed");
+    if (
+      !address ||
+      !canSubmit ||
+      !transaction.isReady ||
+      transaction.record?.status === "pending" ||
+      submitLock.current
+    )
       return;
-    }
 
-    setStatus("preparing");
-    setErrorMsg("");
-    setTxDetails({});
-    analytics.mintStarted({ songId, walletAddress: address });
-
+    submitLock.current = true;
+    transaction.clear();
     try {
+      const available = await isFreighterAvailable();
+      if (!available) {
+        setStatus("not_installed");
+        return;
+      }
+
+      setStatus("preparing");
+      setErrorMsg("");
+      setTxDetails({});
+      analytics.mintStarted({ songId, walletAddress: address });
+
+      if (pendingSubmission.current) {
+        await submitSignedXdr(pendingSubmission.current);
+        return;
+      }
+
       const prepared = await prepareMutation.mutateAsync({ albumId });
 
-      if (freighterCheck.status === "mismatch" || freighterCheck.actual !== prepared.data.networkPassphrase) {
+      if (
+        freighterCheck.status === "mismatch" ||
+        freighterCheck.actual !== prepared.data.networkPassphrase
+      ) {
         setStatus("failed");
-        setErrorMsg(`Freighter network mismatch. Expected ${prepared.data.networkPassphrase === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}.`);
+        setErrorMsg(
+          `Freighter network mismatch. Expected ${prepared.data.networkPassphrase === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}.`
+        );
         return;
       }
 
@@ -122,24 +194,12 @@ export default function MintSongButton({
         throw signErr;
       }
 
-      setStatus("submitting");
-      const result: ApiEnvelope<SubmitSongMintResponse> = await submitMutation.mutateAsync({
+      const submission: MintSubmission = {
         signedXdr,
-      });
-
-      setStatus("success");
-      setTxDetails({
-        txHash: result?.data?.txHash ?? "",
-        tokenId: result?.data?.tokenId ?? "",
-      });
-      setCooldownActive(true);
-      setCooldownRemaining(COOLDOWN_DURATION);
-      analytics.mintSucceeded({
-        songId,
-        txHash: result?.data?.txHash ?? "",
-        tokenId: result?.data?.tokenId ?? "",
-      });
-      toast.success("Minting succeeded!");
+        idempotencyKey: crypto.randomUUID(),
+      };
+      pendingSubmission.current = submission;
+      await submitSignedXdr(submission);
     } catch (err: unknown) {
       const plan = classifyError(err);
       analytics.mintFailed({ songId, reason: plan.message });
@@ -150,6 +210,9 @@ export default function MintSongButton({
       }
       setStatus(plan.retryable ? "timeout" : "failed");
       setErrorMsg(plan.message);
+      if (!plan.retryable) pendingSubmission.current = null;
+    } finally {
+      submitLock.current = false;
     }
   };
 
@@ -168,7 +231,7 @@ export default function MintSongButton({
           <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
           <span className="text-xs text-blue-400 font-medium">Preparing transaction...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -184,7 +247,7 @@ export default function MintSongButton({
           <Loader2 className="h-4 w-4 animate-spin text-yellow-500" />
           <span className="text-xs text-yellow-400 font-medium">Awaiting wallet signature...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -200,7 +263,33 @@ export default function MintSongButton({
           <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
           <span className="text-xs text-purple-400 font-medium">Broadcasting to network...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+        <EstimatedFeeNotice {...fee} />
+      </div>
+    );
+  }
+
+  if (status === "pending") {
+    return (
+      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-blue-600/30 rounded-lg">
+        <p role="status" aria-live="polite" className="text-xs text-blue-400 font-medium">
+          Confirming on Stellar...
+        </p>
+        {txDetails.txHash && (
+          <a
+            href={explorerTxUrl(txDetails.txHash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-gray-400 font-mono truncate underline w-fit"
+          >
+            View transaction
+          </a>
+        )}
+        {transaction.error && (
+          <p role="alert" className="text-[10px] text-yellow-400">
+            Status check will retry automatically: {transaction.error}
+          </p>
+        )}
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -225,7 +314,11 @@ export default function MintSongButton({
     return (
       <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-yellow-600/30 rounded-lg">
         <p className="text-xs text-yellow-500 font-medium">
-          Freighter is on {freighterCheck.actual === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}; switch it to {freighterCheck.expected === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"} to continue.
+          Freighter is on{" "}
+          {freighterCheck.actual === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"};
+          switch it to{" "}
+          {freighterCheck.expected === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}{" "}
+          to continue.
         </p>
       </div>
     );
@@ -244,10 +337,12 @@ export default function MintSongButton({
         </div>
         <button
           onClick={handleMint}
+          disabled={!canSubmit}
           className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
           Retry Signing
         </button>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -265,10 +360,12 @@ export default function MintSongButton({
         </div>
         <button
           onClick={handleMint}
+          disabled={!canSubmit}
           className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
           Retry Submission
         </button>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -286,10 +383,12 @@ export default function MintSongButton({
         </div>
         <button
           onClick={handleMint}
+          disabled={!canSubmit}
           className="rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
           Retry Minting
         </button>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -331,12 +430,12 @@ export default function MintSongButton({
     <div className="flex flex-col gap-1">
       <button
         onClick={handleMint}
-        disabled={isBusy}
-        className={`${isBusy ? "opacity-70 cursor-not-allowed" : ""} rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
+        disabled={isBusy || !canSubmit}
+        className={`${isBusy || !canSubmit ? "opacity-70 cursor-not-allowed" : ""} rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
       >
         Mint on-chain
       </button>
-      <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+      <EstimatedFeeNotice {...fee} />
     </div>
   );
 }

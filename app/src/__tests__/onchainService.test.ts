@@ -203,4 +203,21 @@ describe("useOnchainServices", () => {
 
     expect(mockHandleSuccess).toHaveBeenCalledTimes(optionsWithSuccessHandlers.length);
   });
+
+  it("sends an idempotency header without adding the key to the submit body", () => {
+    const { result } = renderHook(() => useOnchainServices());
+    result.current.useSubmitSongMint("song-123");
+
+    const [, options] = mockUsePost.mock.calls.at(-1) as [
+      string,
+      {
+        requestBody: (variables: { signedXdr: string; idempotencyKey: string }) => unknown;
+        requestHeaders: (variables: { idempotencyKey: string }) => Record<string, string>;
+      },
+    ];
+    const variables = { signedXdr: "signed-xdr", idempotencyKey: "request-key" };
+
+    expect(options.requestBody(variables)).toEqual({ signedXdr: "signed-xdr" });
+    expect(options.requestHeaders(variables)).toEqual({ "Idempotency-Key": "request-key" });
+  });
 });

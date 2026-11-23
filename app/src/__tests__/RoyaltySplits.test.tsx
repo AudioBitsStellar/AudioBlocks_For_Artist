@@ -36,11 +36,10 @@ describe("RoyaltySplitsPage (#417)", () => {
     expect(screen.getAllByText("50%")).toHaveLength(2);
   });
 
-  it("blocks saving and explains the problem while the split is unbalanced", () => {
+  it("disables saving and explains the problem while the split is unbalanced", () => {
     render(<RoyaltySplitsPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Save split for/ }));
-
+    expect(screen.getByRole("button", { name: /Save split for/ })).toBeDisabled();
     expect(screen.getByRole("alert")).toHaveTextContent(/greater than 0/i);
     expect(localStorage.getItem("audioblocks:royalty-splits:v1")).toBeNull();
   });
