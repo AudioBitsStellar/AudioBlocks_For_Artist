@@ -7,6 +7,7 @@ import {
   useTransactionSignReview,
   type TransactionSignSummary,
 } from "./TransactionSignReview";
+import { validateStellarPublicKey } from "@/utils/stellarAddress";
 
 /**
  * Connects Freighter, persists the address on the backend, and exposes a
@@ -29,8 +30,11 @@ export function useStellarWallet() {
 
   const restore = useCallback(async () => {
     const existing = await getFreighterAddress();
-    if (existing) setAddress(existing);
-    return existing;
+    if (!existing) return null;
+    const check = validateStellarPublicKey(existing);
+    if (!check.valid) return null;
+    setAddress(check.normalized);
+    return check.normalized;
   }, []);
 
   const connect = useCallback(async () => {
@@ -38,7 +42,12 @@ export function useStellarWallet() {
     setConnectionFailure(null);
     setConnectionFailureMessage("");
     try {
-      const stellarPublicKey = await connectFreighter();
+      const rawKey = await connectFreighter();
+      const check = validateStellarPublicKey(rawKey);
+      if (!check.valid) {
+        throw new Error(check.error);
+      }
+      const stellarPublicKey = check.normalized;
       await connectWalletMutation.mutateAsync({ stellarPublicKey });
       setAddress(stellarPublicKey);
       handleSuccess("Stellar wallet connected!");

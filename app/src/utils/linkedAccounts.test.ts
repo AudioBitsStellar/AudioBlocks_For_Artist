@@ -8,7 +8,7 @@ import {
   validateHandle,
 } from "./linkedAccounts";
 
-const ADDRESS = "GAB2CDEFGHIJKLMNOPQRSTUVWXYZ34567AB2CDEFGHIJKLMNOPQRSTUV";
+const ADDRESS = "GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR";
 
 describe("isStellarAddress", () => {
   it("accepts a 56-character G address", () => {

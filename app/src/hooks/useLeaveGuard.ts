@@ -3,6 +3,34 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+let activeLeaveGuardCount = 0;
+const leaveGuardListeners = new Set<() => void>();
+
+function notifyLeaveGuardListeners() {
+  for (const listener of leaveGuardListeners) {
+    listener();
+  }
+}
+
+/**
+ * Returns true whenever any mounted component currently holds an active
+ * leave guard (for example, an in-progress track upload or mint).
+ *
+ * Used by {@link SessionProvider} so session-expiry prompts or auto-redirects
+ * do not interrupt an active upload (#589).
+ */
+export function isLeaveGuardActive(): boolean {
+  return activeLeaveGuardCount > 0;
+}
+
+/** Subscribe to changes in whether any leave guard is active. */
+export function subscribeLeaveGuard(listener: () => void): () => void {
+  leaveGuardListeners.add(listener);
+  return () => {
+    leaveGuardListeners.delete(listener);
+  };
+}
+
 /**
  * Guards an in-progress operation (upload, mint) against accidental leaving.
  *
@@ -16,6 +44,9 @@ export function useLeaveGuard(active: boolean) {
 
   useEffect(() => {
     if (!active) return;
+
+    activeLeaveGuardCount += 1;
+    notifyLeaveGuardListeners();
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
@@ -40,6 +71,8 @@ export function useLeaveGuard(active: boolean) {
     document.addEventListener("click", handleClick, true);
 
     return () => {
+      activeLeaveGuardCount = Math.max(0, activeLeaveGuardCount - 1);
+      notifyLeaveGuardListeners();
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("click", handleClick, true);
       setPendingHref(null);
