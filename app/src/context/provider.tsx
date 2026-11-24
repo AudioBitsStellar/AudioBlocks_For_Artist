@@ -9,19 +9,22 @@ import { PlaybackProvider } from "./PlaybackContext";
 import { ThemeProvider } from "./ThemeContext";
 import PrivyProvider from "./PrivyProvider";
 import { CurrencyPreferenceProvider } from "./CurrencyPreferenceContext";
+import { I18nProvider } from "./I18nContext";
 
 const Provider = ({ children }: { children: ReactNode }) => {
   return (
     <PrivyProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <CurrencyPreferenceProvider>
-            <StellarNetworkProvider>
-              <MotionConfig reducedMotion="user">
-                <PlaybackProvider>{children}</PlaybackProvider>
-              </MotionConfig>
-            </StellarNetworkProvider>
-          </CurrencyPreferenceProvider>
+          <I18nProvider>
+            <CurrencyPreferenceProvider>
+              <StellarNetworkProvider>
+                <MotionConfig reducedMotion="user">
+                  <PlaybackProvider>{children}</PlaybackProvider>
+                </MotionConfig>
+              </StellarNetworkProvider>
+            </CurrencyPreferenceProvider>
+          </I18nProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </PrivyProvider>
