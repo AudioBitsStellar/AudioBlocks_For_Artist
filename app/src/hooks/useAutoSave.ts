@@ -6,11 +6,7 @@ const DEBOUNCE_MS = 500;
 const INTERVAL_MS = 30000;
 const STORAGE_PREFIX = "draft:";
 
-export function useAutoSave<T extends Record<string, unknown>>(
-  key: string,
-  data: T,
-  isSubmitting: boolean
-) {
+export function useAutoSave<T extends object>(key: string, data: T, isSubmitting: boolean) {
   const storageKey = `${STORAGE_PREFIX}${key}`;
   const dataRef = useRef(data);
   const hasRestored = useRef(false);

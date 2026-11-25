@@ -20,11 +20,13 @@ describe("Runtime Configuration (OPS-04)", () => {
     process.env.NEXT_PUBLIC_API_BASE_URL = "https://runtime-api.audioblocks.io";
     process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Custom Network Passphrase";
     process.env.NEXT_PUBLIC_USE_MOCK_DATA = "false";
+    process.env.NEXT_PUBLIC_FEATURE_FLAGS = "artistOnchainAnalytics=false";
 
     const config = getRuntimeConfig();
     expect(config.apiBaseUrl).toBe("https://runtime-api.audioblocks.io");
     expect(config.stellarNetworkPassphrase).toBe("Custom Network Passphrase");
     expect(config.useMockData).toBe(false);
+    expect(config.featureFlags).toBe("artistOnchainAnalytics=false");
   });
 
   it("prioritizes window.__RUNTIME_CONFIG__ in browser context when present", () => {
@@ -50,11 +52,13 @@ describe("Runtime Configuration (OPS-04)", () => {
 
   it("serves live configuration via GET /api/config", async () => {
     process.env.NEXT_PUBLIC_API_BASE_URL = "https://endpoint-test.audioblocks.io";
+    process.env.NEXT_PUBLIC_FEATURE_FLAGS = "artistOnchainAnalytics=false";
     const res = await GET();
     expect(res.status).toBe(200);
 
     const json = await res.json();
     expect(json.apiBaseUrl).toBe("https://endpoint-test.audioblocks.io");
+    expect(json.featureFlags).toBe("artistOnchainAnalytics=false");
     expect(res.headers.get("Cache-Control")).toContain("no-store");
   });
 });

@@ -31,6 +31,7 @@ describe("feature flags", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    delete window.__RUNTIME_CONFIG__;
     delete process.env.NEXT_PUBLIC_FEATURE_FLAGS;
     setRollout(0, []);
   });
@@ -130,10 +131,33 @@ describe("feature flags", () => {
       expect(isFeatureEnabled(FLAG, ARTIST)).toBe(true);
     });
 
-    it("lets the browser override win over the deployment default", () => {
+    it("does not let a browser override bypass a runtime kill switch", () => {
       process.env.NEXT_PUBLIC_FEATURE_FLAGS = `${FLAG}=false`;
       localStorage.setItem(OVERRIDE_KEY, JSON.stringify({ [FLAG]: true }));
-      expect(isFeatureEnabled(FLAG, ARTIST, readFeatureFlagOverrides())).toBe(true);
+      expect(isFeatureEnabled(FLAG, ARTIST, readFeatureFlagOverrides())).toBe(false);
+    });
+
+    it("allows a browser override when the runtime flag is not explicitly off", () => {
+      process.env.NEXT_PUBLIC_FEATURE_FLAGS = `${FLAG}=true`;
+      localStorage.setItem(OVERRIDE_KEY, JSON.stringify({ [FLAG]: false }));
+      expect(isFeatureEnabled(FLAG, ARTIST, readFeatureFlagOverrides())).toBe(false);
+    });
+
+    it("uses the injected runtime flag value instead of the build-time fallback", () => {
+      process.env.NEXT_PUBLIC_FEATURE_FLAGS = `${FLAG}=false`;
+      window.__RUNTIME_CONFIG__ = {
+        apiBaseUrl: "https://api.example.test",
+        privyAppId: "",
+        stellarNetworkPassphrase: "Test Network",
+        horizonUrl: "https://horizon.example.test",
+        stellarRpcUrl: "https://rpc.example.test",
+        useMockData: false,
+        featureFlags: `${FLAG}=true`,
+        baseUrl: "https://audioblocks.io",
+        listenerAppUrl: "https://audioblocks.io",
+      };
+
+      expect(isFeatureEnabled(FLAG)).toBe(true);
     });
   });
 
