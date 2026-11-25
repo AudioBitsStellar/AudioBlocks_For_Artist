@@ -9,6 +9,7 @@ import MusicLoader from "@/components/MusicLoader";
 import useArtistServices from "@/services/artistServices";
 import { useQueryClient } from "@tanstack/react-query";
 import { DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
+import { validateStellarPublicKey } from "@/utils/stellarAddress";
 
 interface PayoutWalletStepProps {
   onComplete: () => void;
@@ -45,6 +46,8 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
     register,
     handleSubmit,
     setValue,
+    setError,
+    clearErrors,
     formState: { errors, isValid },
   } = useForm<PayoutWalletSetup>({
     mode: "onChange",
@@ -64,10 +67,17 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
   }, [restore]);
 
   useEffect(() => {
-    if (address) {
-      setValue("stellarPublicKey", address, { shouldValidate: true });
+    if (!address) return;
+    const check = validateStellarPublicKey(address);
+    if (!check.valid) {
+      // Reject tampered/malformed or secret keys — never store them in form state.
+      setValue("stellarPublicKey", "", { shouldValidate: false });
+      setError("stellarPublicKey", { type: "manual", message: check.error });
+      return;
     }
-  }, [address, setValue]);
+    clearErrors("stellarPublicKey");
+    setValue("stellarPublicKey", check.normalized, { shouldValidate: true });
+  }, [address, setValue, setError, clearErrors]);
 
   const handleConnectWallet = async () => {
     try {
@@ -78,6 +88,13 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
   };
 
   const onSubmit = async (data: PayoutWalletSetup) => {
+    const check = validateStellarPublicKey(data.stellarPublicKey);
+    if (!check.valid) {
+      setError("stellarPublicKey", { type: "manual", message: check.error });
+      toast.error(check.error);
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Save the Stellar public key to the artist's profile
@@ -192,6 +209,10 @@ export default function PayoutWalletStep({ onComplete, onBack }: PayoutWalletSte
         type="hidden"
         {...register("stellarPublicKey", {
           required: "Please connect your wallet",
+          validate: (value) => {
+            const check = validateStellarPublicKey(value);
+            return check.valid || check.error;
+          },
         })}
       />
       {errors.stellarPublicKey && (

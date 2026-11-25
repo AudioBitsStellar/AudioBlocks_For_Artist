@@ -56,9 +56,13 @@ everything — auth, profile, uploads — and to the
 | Forms                    | `react-hook-form`                                         |
 | Data fetching            | TanStack React Query, `axios`                             |
 | Charts                   | Recharts                                                  |
-| Carousels                | `react-slick`                                             |
 | Toasts                   | `sonner`                                                  |
 | Stellar / Soroban wallet | `@stellar/freighter-api`                                  |
+
+The unused `Discover` carousel prototype and its global Slick styles were
+removed; the component was not imported by any route and displayed dummy data.
+No replacement was justified. If a live carousel is needed later, prefer native
+CSS scroll snapping before adding a JavaScript carousel dependency.
 
 ## Routes
 
@@ -187,10 +191,19 @@ rollout flags in `src/lib/featureFlags.ts` rather than a bare conditional:
   the feature is rolled out to (an on-chain address, a user id) and leave it
   `null` while that identity is still resolving — an unknown subject reads as
   off, so the feature never appears and then disappears.
-- Precedence, highest first: a per-browser override, then
-  `NEXT_PUBLIC_FEATURE_FLAGS`, then the allowlist, then the percentage.
-- To see a flag on your own browser without changing the rollout — useful on
-  a preview deployment — write the override directly:
+- A runtime flag explicitly set to `false` is a kill switch and cannot be
+  overridden in a browser. Otherwise, precedence is: per-browser override,
+  runtime `NEXT_PUBLIC_FEATURE_FLAGS`, allowlist, then percentage.
+- Set `NEXT_PUBLIC_FEATURE_FLAGS` in the container/deployment runtime
+  environment, not as a build argument. The runtime config script injects it
+  into each page response, so changing a flag requires a config update and a
+  page reload, not a new client build. To immediately disable a feature, set
+  its value to `false` (for example
+  `NEXT_PUBLIC_FEATURE_FLAGS=artistOnchainAnalytics=false`); this disables the
+  feature even if a browser-local override tries to enable it. Unknown or
+  malformed entries never enable a flag.
+- To override a flag on your own browser without changing the rollout — useful
+  on a preview deployment — write the override directly:
   `localStorage.setItem("audioblocks:feature-flags:v1", JSON.stringify({ artistOnchainAnalytics: true }))`.
   `setFeatureFlagOverride()` is the same thing for code that wants the mounted
   components to update immediately.

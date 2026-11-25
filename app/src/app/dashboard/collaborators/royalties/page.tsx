@@ -21,10 +21,12 @@ import {
 import {
   formatPercent,
   MAX_COLLABORATORS,
+  totalBasisPoints,
   totalPercent,
   validateSplitDraft,
   type SplitParticipant,
 } from "@/utils/royaltySplits";
+import { isStellarSecretKey, STELLAR_SECRET_KEY_WARNING } from "@/utils/stellarAddress";
 
 const PERCENT_CHANGE = 5;
 
@@ -35,13 +37,30 @@ export default function RoyaltySplitsPage() {
     draftForRelease(releases[0]?.id ?? "")
   );
   const [resetTarget, setResetTarget] = useState<string | null>(null);
+  const [secretKeyAlerts, setSecretKeyAlerts] = useState<Record<string, string>>({});
 
   const errors = useMemo(() => validateSplitDraft(rows), [rows]);
   const total = totalPercent(rows);
-  const isBalanced = Math.abs(total - 100) < 0.0001;
+  const isBalanced = totalBasisPoints(rows) === 10_000;
   const saved = isSplitSaved(releaseId, rows);
 
   const updateRows = (next: SplitParticipant[]) => setRows(next);
+
+  const handleAddressChange = (rowId: string, value: string) => {
+    if (isStellarSecretKey(value)) {
+      setSecretKeyAlerts((prev) => ({ ...prev, [rowId]: STELLAR_SECRET_KEY_WARNING }));
+      // Never retain a pasted secret key in component state or storage.
+      updateRows(setRowField(rows, rowId, "address", ""));
+      return;
+    }
+    setSecretKeyAlerts((prev) => {
+      if (!prev[rowId]) return prev;
+      const next = { ...prev };
+      delete next[rowId];
+      return next;
+    });
+    updateRows(setRowField(rows, rowId, "address", value));
+  };
 
   const handleReleaseChange = (nextId: string) => {
     setReleaseId(nextId);
@@ -151,7 +170,7 @@ export default function RoyaltySplitsPage() {
             </thead>
             <tbody>
               {rows.map((row) => {
-                const rowError = errors.rows[row.id];
+                const rowError = secretKeyAlerts[row.id] ?? errors.rows[row.id];
                 return (
                   <tr key={row.id} className="border-b border-border-subtle last:border-b-0">
                     <td className="px-4 py-3 align-top">
@@ -175,12 +194,15 @@ export default function RoyaltySplitsPage() {
                       <input
                         id={`split-address-${row.id}`}
                         value={row.address}
-                        onChange={(event) =>
-                          updateRows(setRowField(rows, row.id, "address", event.target.value))
-                        }
+                        onChange={(event) => handleAddressChange(row.id, event.target.value)}
                         aria-invalid={rowError ? true : undefined}
                         className="w-full rounded-lg border border-border bg-surface-sunken px-3 py-2 font-mono text-xs text-text focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       />
+                      {secretKeyAlerts[row.id] && (
+                        <p role="alert" className="mt-1 text-xs text-error">
+                          {secretKeyAlerts[row.id]}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3 align-top">
                       <div className="flex items-center justify-end gap-1">
@@ -266,7 +288,8 @@ export default function RoyaltySplitsPage() {
         <button
           type="button"
           onClick={handleSave}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          disabled={!isBalanced || Object.keys(errors.rows).length > 0}
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save size={16} aria-hidden="true" />
           Save split for {release?.title ?? "this release"}

@@ -81,6 +81,18 @@ export async function getFreighterAddress(): Promise<string | null> {
   return address;
 }
 
+export function watchFreighterWalletChanges(onAddressChange: (address: string | null) => void) {
+  const watcher = new freighterApi.WatchWalletChanges();
+  const { error } = watcher.watch(({ address }) => onAddressChange(address || null));
+
+  if (error) {
+    watcher.stop();
+    throw new Error(error.message || "Failed to watch Freighter wallet changes.");
+  }
+
+  return () => watcher.stop();
+}
+
 export interface FreighterNetworkDetails {
   network: string;
   networkPassphrase: string;

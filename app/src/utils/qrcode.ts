@@ -6,8 +6,6 @@
  * that work in both light and dark modes.
  */
 
-import QRCode from "qrcode";
-
 /**
  * Generates the ticket payload format for QR encoding.
  * Format: audioblocks:ticket:<eventId>:<ticketId>
@@ -58,7 +56,8 @@ export async function generateQRSVG(
   size = 200
 ): Promise<string> {
   const payload = generateTicketPayload(eventId, ticketId);
-  
+  const QRCode = (await import("qrcode")).default;
+
   return QRCode.toString(payload, {
     type: "svg",
     width: size,
@@ -87,7 +86,8 @@ export async function generateQRDataURI(
   size = 200
 ): Promise<string> {
   const payload = generateTicketPayload(eventId, ticketId);
-  
+  const QRCode = (await import("qrcode")).default;
+
   return QRCode.toDataURL(payload, {
     width: size,
     margin: 2,

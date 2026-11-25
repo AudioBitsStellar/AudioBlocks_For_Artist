@@ -9,7 +9,7 @@ stack, and environment variable details.
 
 ```bash
 cd app                # the Next.js project root, not the repo root
-npm install
+npm ci                # use plain `npm ci` (no --legacy-peer-deps)
 echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api" > .env.local
 npm run dev
 ```

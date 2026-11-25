@@ -1,9 +1,14 @@
 import { ARTIST_UPLOAD_ENDPOINTS } from "@/api/api-endpoint";
 import { usePost } from "@/api/queryClient";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
-import { UploadChunkResponse, UploadSong } from "@/types";
-import { UploadCoverResponse as UploadCoverResponseType } from "@/types/api";
+import { UploadChunkResponse } from "@/types";
+import { FinalizeSongResponse, UploadCoverResponse as UploadCoverResponseType } from "@/types/api";
 import { SONG_PUBLISHED_INVALIDATIONS } from "@/api/cachePolicy";
+
+export interface SuggestTagsResponse {
+  success?: boolean;
+  data?: { tags?: string[]; genres?: string[] };
+}
 
 const useUploadServices = () => {
   const handleSuccess = useHandleSuccess();
@@ -17,9 +22,8 @@ const useUploadServices = () => {
    */
   const useUploadChunk = () => {
     return usePost<UploadChunkResponse>(ARTIST_UPLOAD_ENDPOINTS.UPLOAD_CHUNK, {
-      onSuccess(response: { message?: string }) {
-        handleSuccess(response.message || "Chunk uploaded successfully!");
-        return response;
+      onSuccess() {
+        handleSuccess("Chunk uploaded successfully!");
       },
       onError(error: Error) {
         handleError(error.message || "Failed to upload chunk.");
@@ -37,7 +41,6 @@ const useUploadServices = () => {
     return usePost<UploadCoverResponseType>(ARTIST_UPLOAD_ENDPOINTS.UPLOAD_COVER, {
       onSuccess(response: { message?: string }) {
         handleSuccess(response.message || "Cover uploaded successfully!");
-        return response;
       },
       onError(error: Error) {
         handleError(error.message || "Failed to upload cover.");
@@ -51,11 +54,11 @@ const useUploadServices = () => {
    * description, genre, composers). Invalidates the overview, statistics and
    * recent-activity caches (issue #121) since a new song changes them.
    *
-   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with `{ fileId, totalChunks, title, description, genre, composers, coverArtPath }`; resolves to an `UploadSong`.
+   * @returns A React Query mutation: call `.mutate(payload)` or `.mutateAsync(payload)` with `{ fileId, totalChunks, title, description, genre, composers, coverArtPath }`; resolves to a `FinalizeSongResponse`.
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useFinalizeUpload = () => {
-    return usePost<UploadSong>(ARTIST_UPLOAD_ENDPOINTS.UPLOAD_SONG, {
+    return usePost<FinalizeSongResponse>(ARTIST_UPLOAD_ENDPOINTS.UPLOAD_SONG, {
       onSuccess(response: { message?: string }) {
         handleSuccess(response.message || "Song uploaded successfully!");
       },
@@ -81,12 +84,23 @@ const useUploadServices = () => {
     );
   };
 
+  /**
+   * AI-suggested tags and genres for a draft song (#542), from
+   * `POST /song/upload/suggest-tags` with `{ title, description }`.
+   * Deliberately silent: the suggestions are optional, so a disabled or
+   * over-budget AI feature must never toast an error at the artist.
+   *
+   * @returns A React Query mutation resolving to `{ success, data: { tags, genres } }`.
+   */
+  const useSuggestTags = () => usePost<SuggestTagsResponse>(ARTIST_UPLOAD_ENDPOINTS.SUGGEST_TAGS);
+
   return {
     useUploadChunk,
     useUploadCover,
     useFinalizeUpload,
     useUploadSong: useFinalizeUpload,
     useTranscribeLyrics,
+    useSuggestTags,
   };
 };
 

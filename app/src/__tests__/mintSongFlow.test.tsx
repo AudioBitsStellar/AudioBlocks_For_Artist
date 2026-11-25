@@ -28,6 +28,9 @@ vi.mock("@/lib/freighter", () => ({
   connectFreighter: vi.fn().mockResolvedValue("GTEST_ADDRESS_MOCK_1234"),
   getFreighterAddress: vi.fn().mockResolvedValue(null),
   signTransactionXdr: vi.fn().mockResolvedValue("SIGNED_XDR_MOCK"),
+  getFreighterNetworkDetails: vi
+    .fn()
+    .mockResolvedValue({ networkPassphrase: "Test SDF Network ; September 2015" }),
 }));
 
 vi.mock("@/lib/analytics", () => ({
@@ -51,6 +54,24 @@ vi.mock("@/hooks/useEstimatedFee", () => ({
   useEstimatedFee: () => ({ estimate: "~0.0000500 XLM", isLoading: false }),
 }));
 
+vi.mock("@/hooks/useTransactionStatus", () => ({
+  useTransactionStatus: () => ({
+    record: null,
+    isReady: true,
+    error: null,
+    track: vi.fn(),
+    clear: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/useFreighterNetworkCheck", () => ({
+  useFreighterNetworkCheck: () => ({
+    status: "ok",
+    expected: "Test SDF Network ; September 2015",
+    actual: "Test SDF Network ; September 2015",
+  }),
+}));
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const MOCK_ADDRESS = "GTEST_ADDRESS_MOCK_1234";
@@ -70,7 +91,10 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe("MintSongButton", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
 
   it("shows ConnectStellarWalletButton when no wallet is connected", async () => {
     // useStellarWallet returns address=null when Freighter is not yet authorized
@@ -102,10 +126,7 @@ describe("MintSongButton", () => {
   });
 
   it("shows preparing state while awaiting wallet signature", async () => {
-    const mockPrepare = vi.fn().mockResolvedValue({
-      success: true,
-      data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
-    });
+    const mockPrepare = vi.fn(() => new Promise<never>(() => {}));
 
     vi.doMock("@/components/common/wallet/useStellarWallet", () => ({
       useStellarWallet: () => ({
@@ -147,6 +168,8 @@ describe("MintSongButton", () => {
       success: true,
       data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
     });
+    const { signTransactionXdr } = await import("@/lib/freighter");
+    vi.mocked(signTransactionXdr).mockImplementationOnce(() => new Promise<never>(() => {}));
 
     vi.doMock("@/components/common/wallet/useStellarWallet", () => ({
       useStellarWallet: () => ({
@@ -183,7 +206,7 @@ describe("MintSongButton", () => {
     });
   });
 
-  it("shows success state with tx hash after successful mint", async () => {
+  it("shows the pending state and explorer link after mint submission", async () => {
     const mockPrepare = vi.fn().mockResolvedValue({
       success: true,
       data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
@@ -224,11 +247,19 @@ describe("MintSongButton", () => {
     render(<MintSongButton songId="song-1" />, { wrapper: Wrapper });
     fireEvent.click(screen.getByRole("button", { name: /mint on-chain/i }));
 
-    // Should show success state with tx hash
+    // A submit response is not treated as ledger confirmation.
     await waitFor(() => {
       expect(screen.getByRole("status")).toBeInTheDocument();
-      expect(screen.getByText(/minted successfully/i)).toBeInTheDocument();
-      expect(screen.getByText(new RegExp(MOCK_TX_HASH))).toBeInTheDocument();
+      expect(screen.getByText(/confirming on stellar/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /view transaction/i })).toHaveAttribute(
+        "href",
+        expect.stringContaining(MOCK_TX_HASH)
+      );
+    });
+
+    expect(mockSubmit).toHaveBeenCalledWith({
+      signedXdr: "SIGNED_XDR_MOCK",
+      idempotencyKey: expect.any(String),
     });
   });
 

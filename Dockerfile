@@ -7,9 +7,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY app/package.json app/package-lock.json ./
-# Use --legacy-peer-deps to match CI until peer-dependency issues are resolved (#521).
-# TODO: remove this flag once npm audit is clean and peer conflicts are fixed.
-RUN npm ci --ignore-scripts --legacy-peer-deps
+RUN npm ci --ignore-scripts
 
 # ── Stage 2: build ──────────────────────────────────────────────────────────
 FROM node:20.18.3-alpine@sha256:d8c42b08fa111978eb3a696ee2433ff46a2a5f1e582e3076595567b579549cf0 AS builder

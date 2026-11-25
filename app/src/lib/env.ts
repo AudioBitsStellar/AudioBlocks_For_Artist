@@ -14,21 +14,24 @@ const booleanString = z
 /**
  * Vars exposed to the browser. Next.js only inlines NEXT_PUBLIC_* vars into
  * client bundles, so every key here must use that prefix.
+ *
+ * Only the API base URL is required (#578): it is the one value the app cannot
+ * run without. The rest have working defaults, so a fresh checkout boots with
+ * `NEXT_PUBLIC_API_BASE_URL` alone.
  */
 const clientSchema = z.object({
-  NEXT_PUBLIC_API_BASE_URL: z.string({ required_error: "is required" }).url("must be a valid URL"),
-  NEXT_PUBLIC_ANALYTICS_WRITE_KEY: z
+  NEXT_PUBLIC_API_BASE_URL: z
     .string({ required_error: "is required" })
-    .min(1, "must not be empty"),
-  NEXT_PUBLIC_USE_MOCK_DATA: booleanString,
+    .url("must be a valid URL")
+    .refine((value) => /^https?:\/\//.test(value), "must start with http:// or https://"),
+  /** Analytics are a no-op when this is empty or unset. */
+  NEXT_PUBLIC_ANALYTICS_WRITE_KEY: z.string().optional(),
+  /** Defaults to false: real API data. */
+  NEXT_PUBLIC_USE_MOCK_DATA: booleanString.optional().default("false"),
   /** Comma-separated rollout overrides, e.g. "artistOnchainAnalytics=true" (#469). */
   NEXT_PUBLIC_FEATURE_FLAGS: z.string().optional(),
 });
 
-/**
- * Vars only ever read on the server (currently just NODE_ENV, which Next.js
- * sets itself — validated here for safety, not required from the user).
- */
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
@@ -36,6 +39,9 @@ const serverSchema = z.object({
 const envSchema = clientSchema.merge(serverSchema);
 
 export type Env = z.infer<typeof envSchema>;
+
+/** Where variables are read from: `process.env` by default, any record in tests. */
+export type EnvSource = Record<string, string | undefined>;
 
 /**
  * Formats every zod issue into a single multi-line, human-readable message
@@ -56,31 +62,30 @@ function formatIssues(error: z.ZodError): string {
 }
 
 /**
- * Validates process.env against the schema. Throws a single Error listing
- * every invalid/missing variable if validation fails.
- *
- * Call this once, as early as possible in the app lifecycle (see
- * src/instrumentation.ts), so misconfiguration fails fast at startup
- * instead of surfacing as a cryptic error deep in the app later.
+ * Every problem with `source`, one readable line per variable, or `[]` when
+ * the environment is valid. The root layout renders these on its
+ * configuration-error page instead of throwing.
  */
-export function validateEnv(): Env {
-  const result = envSchema.safeParse(process.env);
+export function getEnvProblems(source: EnvSource = process.env): string[] {
+  const result = envSchema.safeParse(source);
+  if (result.success) return [];
+  return result.error.issues.map(
+    (issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`
+  );
+}
+
+/**
+ * Validates `source` (default `process.env`) against the schema. Throws a
+ * single Error listing every invalid or missing variable.
+ */
+export function validateEnv(source: EnvSource = process.env): Env {
+  const result = envSchema.safeParse(source);
 
   if (!result.success) {
     // Throwing (rather than logging + continuing) is what makes this
-    // "fail fast": the process exits instead of limping along with bad config.
+    // "fail fast": the caller gets every problem at once.
     throw new Error(formatIssues(result.error));
   }
 
   return result.data;
 }
-
-/**
- * Validated, typed env object. Import this instead of reading
- * `process.env` directly anywhere in the app.
- *
- * NOTE: only import this module from server-side code paths (or code that
- * runs during the instrumentation hook). Importing it directly into client
- * components will attempt to validate server-only vars in the browser.
- */
-export const env: Env = validateEnv();

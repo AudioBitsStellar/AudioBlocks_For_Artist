@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import jsQR from "jsqr";
 import { generateTicketPayload, parseTicketPayload, generateQRDataURI } from "@/utils/qrcode";
 
 describe("QR Code Generation", () => {

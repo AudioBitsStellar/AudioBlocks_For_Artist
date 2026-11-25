@@ -43,9 +43,7 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
-        # `--legacy-peer-deps` matches ci.yml: without it `npm ci` fails on the
-        # @sentry/nextjs ↔ next peer conflict.
-        run: npm ci --legacy-peer-deps
+        run: npm ci
         working-directory: app
 
       - name: Deploy preview to Vercel

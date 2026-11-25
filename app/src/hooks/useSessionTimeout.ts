@@ -1,100 +1,139 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { endSession, getSessionExpiresAt, hasSession, isSessionExpired } from "@/api/session";
+import { endSession } from "@/api/session";
+import { getSessionExpiryMs } from "@/utils/jwt";
+import { isLeaveGuardActive, subscribeLeaveGuard } from "@/hooks/useLeaveGuard";
 
-/** Minutes before expiry to show the warning modal */
-const WARNING_BEFORE_EXPIRY_MS = 5 * 60 * 1000;
+/** Show the warning modal 2 minutes before expiry (#589). */
+export const WARNING_BEFORE_EXPIRY_MS = 2 * 60 * 1000;
 
-/** Polling interval to check token state */
-const CHECK_INTERVAL_MS = 30_000;
+/** Tick interval so the countdown updates smoothly each second. */
+export const CHECK_INTERVAL_MS = 1_000;
 
-interface UseSessionTimeoutOptions {
-  /** Called when the user chooses to extend the session */
+export interface UseSessionTimeoutOptions {
+  /** Called when the user chooses "Stay signed in" or a silent refresh runs during an upload. */
   onRefresh?: () => Promise<boolean>;
-  /** Called when the session has expired or the user chose to log out */
+  /** Called when the session has expired or the user chose "Sign out". */
   onLogout?: () => void;
+  /** Override warning threshold in ms (defaults to 2 minutes). */
+  warningBeforeExpiryMs?: number;
 }
 
-interface UseSessionTimeoutReturn {
-  /** Whether the session expiry warning modal should be visible */
+export interface UseSessionTimeoutReturn {
+  /** Whether the session expiry warning modal should be visible. */
   showWarning: boolean;
-  /** Seconds remaining until expiry (0 when expired) */
-  secondsRemaining: number;
-  /** Attempt to refresh the session */
+  /** Seconds remaining until expiry (0 when expired, null when unknown). */
+  secondsRemaining: number | null;
+  /** Whether a token refresh is currently in flight. */
+  isRefreshing: boolean;
+  /** Attempt to refresh the session; signs out if refresh fails. */
   extendSession: () => Promise<void>;
-  /** Log out immediately */
+  /** Sign out immediately. */
   logout: () => void;
 }
 
 /**
- * Monitors the session and fires a warning before the access token expires.
- *
- * Usage:
- * ```tsx
- * const { showWarning, secondsRemaining, extendSession, logout } =
- *   useSessionTimeout({ onRefresh: refreshSession, onLogout: () => router.push('/login') });
- * ```
+ * Monitors the active session expiry (JWT `exp` claim with `token_expiry`
+ * fallback), surfaces a live countdown warning ~2 minutes before expiry, and
+ * defers interruption while a `useLeaveGuard` upload/mint is in progress.
  */
 export function useSessionTimeout({
   onRefresh,
   onLogout,
+  warningBeforeExpiryMs = WARNING_BEFORE_EXPIRY_MS,
 }: UseSessionTimeoutOptions = {}): UseSessionTimeoutReturn {
   const [showWarning, setShowWarning] = useState(false);
-  const [secondsRemaining, setSecondsRemaining] = useState(0);
+  const [secondsRemaining, setSecondsRemaining] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const onRefreshRef = useRef(onRefresh);
   const onLogoutRef = useRef(onLogout);
-  onLogoutRef.current = onLogout;
+  const silentRefreshAttemptedForExpRef = useRef<number | null>(null);
+  const expiredHandledRef = useRef(false);
 
-  // Calculate seconds remaining until token expiry
-  const getSecondsRemaining = useCallback((): number => {
-    if (typeof window === "undefined") return 0;
-    const expiresAt = getSessionExpiresAt();
-    if (expiresAt === null) return Infinity;
-    return Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-  }, []);
-
-  // Periodic check
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!hasSession()) {
-        setShowWarning(false);
-        return;
+    onRefreshRef.current = onRefresh;
+    onLogoutRef.current = onLogout;
+  }, [onRefresh, onLogout]);
+
+  const evaluate = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const expiresAt = getSessionExpiryMs();
+    if (expiresAt === null) {
+      setShowWarning(false);
+      setSecondsRemaining(null);
+      expiredHandledRef.current = false;
+      return;
+    }
+
+    const remainingMs = Math.max(0, expiresAt - Date.now());
+    const remainingSeconds = Math.ceil(remainingMs / 1000);
+    setSecondsRemaining(remainingSeconds);
+
+    // Coordinate with useLeaveGuard so active uploads/mints are never interrupted.
+    if (isLeaveGuardActive()) {
+      setShowWarning(false);
+      if (
+        remainingMs <= warningBeforeExpiryMs &&
+        onRefreshRef.current &&
+        silentRefreshAttemptedForExpRef.current !== expiresAt
+      ) {
+        silentRefreshAttemptedForExpRef.current = expiresAt;
+        void onRefreshRef.current();
       }
+      return;
+    }
 
-      const secs = getSecondsRemaining();
-      setSecondsRemaining(secs);
-
-      if (secs === 0 && isSessionExpired()) {
-        // Token already expired — clean up and notify
+    if (remainingMs <= 0) {
+      setShowWarning(false);
+      if (!expiredHandledRef.current) {
+        expiredHandledRef.current = true;
         void endSession();
-        setShowWarning(false);
         onLogoutRef.current?.();
-      } else if (secs > 0 && secs * 1000 <= WARNING_BEFORE_EXPIRY_MS) {
-        setShowWarning(true);
-      } else {
-        setShowWarning(false);
       }
-    }, CHECK_INTERVAL_MS);
+      return;
+    }
 
-    return () => clearInterval(interval);
-  }, [getSecondsRemaining]);
+    expiredHandledRef.current = false;
+    setShowWarning(remainingMs <= warningBeforeExpiryMs);
+  }, [warningBeforeExpiryMs]);
+
+  useEffect(() => {
+    evaluate();
+    const interval = setInterval(evaluate, CHECK_INTERVAL_MS);
+    const unsubscribeGuard = subscribeLeaveGuard(evaluate);
+    return () => {
+      clearInterval(interval);
+      unsubscribeGuard();
+    };
+  }, [evaluate]);
 
   const extendSession = useCallback(async () => {
-    if (!onRefresh) return;
-    const success = await onRefresh();
-    if (success) {
-      setShowWarning(false);
-    } else {
-      void endSession();
-      onLogoutRef.current?.();
+    setIsRefreshing(true);
+    try {
+      const success = onRefreshRef.current ? await onRefreshRef.current() : false;
+      if (success) {
+        silentRefreshAttemptedForExpRef.current = null;
+        expiredHandledRef.current = false;
+        setShowWarning(false);
+        evaluate();
+      } else {
+        setShowWarning(false);
+        void endSession();
+        onLogoutRef.current?.();
+      }
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [onRefresh]);
+  }, [evaluate]);
 
   const logout = useCallback(() => {
-    void endSession();
     setShowWarning(false);
+    void endSession();
     onLogoutRef.current?.();
   }, []);
 
-  return { showWarning, secondsRemaining, extendSession, logout };
+  return { showWarning, secondsRemaining, isRefreshing, extendSession, logout };
 }

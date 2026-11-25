@@ -3,8 +3,7 @@ import { getCSRFToken, getCSRFTokenHeader, refreshCSRFToken } from "@/utils/csrf
 import { isRetryableError, calculateBackoff } from "@/utils/retry";
 import { apiMonitor } from "@/utils/apiPerformanceMonitor";
 import { API_PROXY_BASE_URL, endSession } from "@/api/session";
-import { newRequestId, REQUEST_ID_HEADER, requestIdFromHeaders } from "@/api/requestId";
-import { clearQueryCache } from "@/api/queryClientInstance";
+import { reportApiAvailable, reportApiUnavailable } from "@/lib/apiAvailability";
 
 /**
  * Ends the browser session. The access token lives in an httpOnly cookie that
@@ -123,6 +122,7 @@ export function resetRedirectState(): void {
 
 /** Per-request config fields this module stamps onto the axios config. */
 type TrackedConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
   _retryCount?: number;
   /** Opt-in for automatic retry on a non-idempotent method (#574). */
   retry?: boolean;
@@ -183,6 +183,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
   apiClient.interceptors.response.use(
     (response: AxiosResponse) => {
       recordTiming(response.config as TrackedConfig);
+      reportApiAvailable();
 
       // Handle CSRF token refresh from server
       const newCsrfToken = response.headers["x-csrf-token"] as string | undefined;
@@ -195,6 +196,9 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       const config = error.config as TrackedConfig | undefined;
 
       recordTiming(config);
+      if (!axios.isCancel(error) && (!error.response || error.response.status >= 500)) {
+        reportApiUnavailable();
+      }
 
       // Handle CSRF token validation errors
       if (error.response?.status === 403 && typeof window !== "undefined") {

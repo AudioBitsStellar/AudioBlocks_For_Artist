@@ -100,8 +100,9 @@ const useArtistServices = () => {
   const handleError = useHandleError();
 
   /**
-   * Fetches the signed-in artist's profile. Not cached (`staleTime: 0`) — the
-   * profile is refetched on every mount since it may change from other tabs/devices.
+   * Fetches the signed-in artist's profile. A server-prefetched profile is kept
+   * fresh briefly to avoid an immediate duplicate request; without one, the
+   * profile is refetched on every mount.
    *
    * Errors from the GET are normalized to the `ApiError` shape produced by
    * `normalizeError` (issue #104) and surfaced through `useHandleError`,
@@ -110,16 +111,18 @@ const useArtistServices = () => {
    * toast fires at most once per failed response value.
    *
    * @param enabled - Whether the query should run.
+   * @param initialData - Optional profile response fetched by the Server Component.
    * @returns A React Query result: `{ data: { user: AuthUser } | undefined, isLoading, isError, error, refetch, ... }`.
    * @throws Never throws directly — failures surface via the returned `error`/`isError` fields and a single toast per failure.
    */
-  const useGetArtistProfile = (enabled: boolean) => {
+  const useGetArtistProfile = (enabled: boolean, initialData?: ProfileResponse) => {
     const query = useGet<ProfileResponse>(
       DASHBOARD_QUERY_KEYS.profile,
       `${USER_ENDPOINTS.PROFILE}`,
       {
         enabled,
-        staleTime: DASHBOARD_CACHE.profile,
+        staleTime: initialData ? 30_000 : DASHBOARD_CACHE.profile,
+        initialData,
       }
     );
 

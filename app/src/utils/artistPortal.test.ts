@@ -8,7 +8,7 @@ import {
   type PayoutRecord,
 } from "./artistPortal";
 
-const ADDRESS = "G" + "A".repeat(55);
+const ADDRESS = "GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR";
 
 describe("rankTopTracks", () => {
   it("ranks by plays with shared ranks for ties and applies the limit", () => {

@@ -6,6 +6,8 @@
  * Stellar rules as the royalty splits (#417).
  */
 
+import { isValidStellarPublicKey } from "@/utils/stellarAddress";
+
 export const SOCIAL_PLATFORMS = [
   { id: "x", label: "X", placeholder: "@yourhandle" },
   { id: "instagram", label: "Instagram", placeholder: "@yourhandle" },
@@ -33,12 +35,10 @@ const HANDLE_RULES: Record<SocialPlatformId, { pattern: RegExp; hint: string }> 
   },
 };
 
-const STELLAR_ADDRESS = /^G[A-Z2-7]{55}$/;
-
 export const MAX_LINKED_ACCOUNTS = 12;
 
 export function isStellarAddress(value: string): boolean {
-  return STELLAR_ADDRESS.test(value.trim());
+  return isValidStellarPublicKey(value);
 }
 
 /**
