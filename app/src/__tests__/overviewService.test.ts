@@ -1,14 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import useOverviewServices, {
   fetchOverview,
   fetchRecentActivity,
   overviewFromStats,
+  OVERVIEW_CACHE_TTL_MS,
 } from "@/services/overviewService";
-const mocks = vi.hoisted(() => ({ get: vi.fn(), query: vi.fn(), profile: vi.fn() }));
-vi.mock("@/api/axios", () => ({ createApiClient: async () => ({ get: mocks.get }) }));
-vi.mock("@/api/queryClient", () => ({ useGet: mocks.profile }));
-vi.mock("@tanstack/react-query", () => ({ useQuery: mocks.query }));
+const mocks = vi.hoisted(() => ({
+  get: vi.fn(),
+  query: vi.fn(),
+  profile: vi.fn(),
+  cancelQueries: vi.fn(),
+  fetchQuery: vi.fn(),
+}));
+vi.mock("@/api/axios", () => {
+  const client = { get: mocks.get };
+  return { apiClient: client, createApiClient: () => client };
+});
+vi.mock("@/api/hooks", () => ({ useGet: mocks.profile }));
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: mocks.query,
+  useQueryClient: () => ({ cancelQueries: mocks.cancelQueries, fetchQuery: mocks.fetchQuery }),
+}));
 const stats = {
   artistId: "artist",
   songCount: 3,
@@ -74,5 +87,38 @@ describe("overview backend mapping", () => {
     mocks.profile.mockReturnValue({ data: undefined, isLoading: true, isError: false });
     renderHook(() => useOverviewServices().useGetOverviewKpi());
     expect(mocks.query.mock.calls[0][0].enabled).toBe(false);
+  });
+
+  it("uses the 60 second overview TTL by default", () => {
+    renderHook(() => useOverviewServices().useGetOverviewKpi("7d"));
+    expect(OVERVIEW_CACHE_TTL_MS).toBe(60_000);
+    expect(mocks.query.mock.calls[0][0].staleTime).toBe(OVERVIEW_CACHE_TTL_MS);
+  });
+
+  it("forwards the React Query abort signal to Axios", async () => {
+    mocks.get.mockResolvedValue({ data: { success: true, data: stats } });
+    renderHook(() => useOverviewServices().useGetOverviewKpi("30d"));
+    const controller = new AbortController();
+
+    await mocks.query.mock.calls[0][0].queryFn({ signal: controller.signal });
+
+    expect(mocks.get).toHaveBeenCalledWith("/artists/artist/stats", {
+      params: { window: "30d" },
+      signal: controller.signal,
+    });
+  });
+
+  it("bypasses the cache on an explicit refresh", async () => {
+    const { result } = renderHook(() => useOverviewServices().useGetOverviewKpi("30d"));
+    const queryKey = mocks.query.mock.calls[0][0].queryKey;
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(mocks.cancelQueries).toHaveBeenCalledWith({ queryKey });
+    expect(mocks.fetchQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey, staleTime: 0 })
+    );
   });
 });

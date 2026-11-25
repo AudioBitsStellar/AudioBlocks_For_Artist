@@ -13,8 +13,16 @@ export const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: (failureCount, error: Error) => {
-        const httpError = error as { status?: number };
-        if (httpError?.status >= 400 && httpError?.status < 500) {
+        // Aborted requests are intentional cancellations, not failed queries.
+        const requestError = error as { status?: number; name?: string; code?: string };
+        if (
+          requestError?.name === "CanceledError" ||
+          requestError?.name === "AbortError" ||
+          requestError?.code === "ERR_CANCELED"
+        ) {
+          return false;
+        }
+        if (requestError?.status >= 400 && requestError?.status < 500) {
           return false;
         }
         return failureCount < 3;

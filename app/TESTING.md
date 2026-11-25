@@ -51,7 +51,7 @@ don't move existing tests to "fix" the inconsistency as a drive-by.
 
 Mock the module's actual dependencies (API hooks, external libraries), not
 the module under test. See `src/__tests__/authService.test.ts`: it mocks
-`@/api/queryClient`'s `usePost` and `@/hooks/useToastHandler`, then asserts
+`@/api/hooks`'s `usePost` and `@/hooks/useToastHandler`, then asserts
 on the real `authService` functions (`storeToken`, `isTokenExpired`, etc.)
 and `renderHook`/`act` for the hook parts.
 

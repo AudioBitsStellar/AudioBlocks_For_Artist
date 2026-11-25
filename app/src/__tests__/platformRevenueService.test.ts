@@ -7,11 +7,12 @@ const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn(),
 }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn().mockResolvedValue({
+vi.mock("@/api/axios", () => {
+  const client = {
     get: mockGet,
-  }),
-}));
+  };
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
 import useEarningsServices from "@/services/earningsService";
 import { EARNINGS_ENDPOINTS } from "@/api/api-endpoint";
@@ -60,7 +61,7 @@ describe("useEarningsServices – useGetPlatformRevenue", () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data).toEqual(successResponse);
-      expect(mockGet).toHaveBeenCalledWith(EARNINGS_ENDPOINTS.GET_PLATFORM_REVENUE);
+      expect(mockGet.mock.calls[0][0]).toBe(EARNINGS_ENDPOINTS.GET_PLATFORM_REVENUE);
       expect(mockGet).toHaveBeenCalledTimes(1);
     });
 

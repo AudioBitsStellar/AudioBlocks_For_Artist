@@ -10,14 +10,15 @@ const { mockGet, mockPost, mockPut, mockDelete } = vi.hoisted(() => ({
   mockDelete: vi.fn(),
 }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn().mockResolvedValue({
+vi.mock("@/api/axios", () => {
+  const client = {
     get: mockGet,
     post: mockPost,
     put: mockPut,
     delete: mockDelete,
-  }),
-}));
+  };
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
 vi.mock("@/hooks/useToastHandler", () => ({
   useHandleSuccess: () => vi.fn(),
@@ -79,7 +80,7 @@ describe("useEventsService — CRUD operations", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(responseData);
-      expect(mockGet).toHaveBeenCalledWith("/artist/events");
+      expect(mockGet.mock.calls[0][0]).toBe("/artist/events");
     });
 
     it("surfaces error when the API call fails", async () => {

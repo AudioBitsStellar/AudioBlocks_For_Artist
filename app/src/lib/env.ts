@@ -1,36 +1,92 @@
 import { z } from "zod";
 
 /**
- * Coerces the common "true"/"false" string env var pattern into a boolean.
- * Rejects anything else so typos (e.g. "flase") are caught instead of
- * silently evaluating as truthy/falsy.
+ * Centralized environment configuration.
+ *
+ * Import this module only from server-side startup code (see
+ * `app/instrumentation.ts` and the root layout). Next.js inlines `NEXT_PUBLIC_*`
+ * values into client bundles; server-only keys below are never part of that
+ * inlining and must not be imported into client components.
  */
+
+/** Accepts only the exact strings "true"/"false" — never a truthy typo. */
 const booleanString = z
-  .enum(["true", "false"], {
-    errorMap: () => ({ message: 'must be exactly "true" or "false"' }),
+  .string({ required_error: "is required" })
+  .refine((value) => value === "true" || value === "false", {
+    message: 'must be exactly "true" or "false"',
   })
-  .transform((val) => val === "true");
+  .transform((value) => value === "true");
+
+const urlString = (required = false) =>
+  required
+    ? z.string({ required_error: "is required" }).url("must be a valid URL")
+    : z.string().url("must be a valid URL").optional();
+
+const nonemptyString = (required = false) =>
+  required
+    ? z.string({ required_error: "is required" }).min(1, "must not be empty")
+    : z.string().min(1, "must not be empty").optional();
 
 /**
- * Vars exposed to the browser. Next.js only inlines NEXT_PUBLIC_* vars into
- * client bundles, so every key here must use that prefix.
+ * Variables exposed to the browser. Every required key here must keep the
+ * NEXT_PUBLIC_* prefix so Next.js can inline it at build time.
  */
 const clientSchema = z.object({
-  NEXT_PUBLIC_API_BASE_URL: z.string({ required_error: "is required" }).url("must be a valid URL"),
-  NEXT_PUBLIC_ANALYTICS_WRITE_KEY: z
+  // Backend API (must be an absolute URL — the proxy and services fetch it).
+  NEXT_PUBLIC_API_BASE_URL: urlString(true),
+  // Legacy alias still referenced by older tooling; validate when present.
+  NEXT_PUBLIC_API_URL: urlString(),
+
+  // Auth. The app id is public; the matching secret is server-only below.
+  NEXT_PUBLIC_PRIVY_APP_ID: z
     .string({ required_error: "is required" })
-    .min(1, "must not be empty"),
+    .min(1, "must not be empty")
+    .regex(/^[A-Za-z0-9_-]+$/, 'must contain only letters, numbers, "-" or "_"'),
+
+  // Analytics. An empty write key disables analytics downstream, so it is required here.
+  NEXT_PUBLIC_ANALYTICS_WRITE_KEY: nonemptyString(true),
+
+  // Feature flags and mock-data switches.
   NEXT_PUBLIC_USE_MOCK_DATA: booleanString,
-  /** Comma-separated rollout overrides, e.g. "artistOnchainAnalytics=true" (#469). */
+  NEXT_PUBLIC_MAINTENANCE_MODE: booleanString.optional(),
+  NEXT_PUBLIC_ENABLE_SONG_TRANSFER: booleanString.optional(),
   NEXT_PUBLIC_FEATURE_FLAGS: z.string().optional(),
+
+  // URL configuration.
+  NEXT_PUBLIC_BASE_URL: urlString(),
+  NEXT_PUBLIC_LISTENER_APP_URL: urlString(),
+  NEXT_PUBLIC_WEB_VITALS_ENDPOINT: urlString(),
+  NEXT_PUBLIC_SENTRY_DSN: urlString(),
+
+  // Wallet / Stellar configuration. Custom networks are allowed, so validate
+  // the URL formats and require a non-blank passphrase when one is supplied.
+  NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE: nonemptyString(),
+  NEXT_PUBLIC_HORIZON_URL: urlString(),
+  NEXT_PUBLIC_STELLAR_RPC_URL: urlString(),
+  REACT_APP_SOROBAN_RPC_URL: urlString(),
+
+  // Release/version labels; a version must be numeric (e.g. 1.2.3).
+  NEXT_PUBLIC_APP_VERSION: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/, "must be a numeric version like 1.2.3")
+    .optional(),
 });
 
 /**
- * Vars only ever read on the server (currently just NODE_ENV, which Next.js
- * sets itself — validated here for safety, not required from the user).
+ * Variables read only on the server. Secrets are checked for presence/format
+ * but their values are never included in validation messages.
  */
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  PRIVY_APP_SECRET: nonemptyString(),
+  SENTRY_PROJECT: z
+    .string()
+    .regex(/^\d+$/, "must be a numeric Sentry project id")
+    .optional(),
+  CANONICAL_HOST: z
+    .string()
+    .regex(/^[A-Za-z0-9.-]+$/, "must be a hostname without a protocol")
+    .optional(),
 });
 
 const envSchema = clientSchema.merge(serverSchema);
@@ -38,49 +94,53 @@ const envSchema = clientSchema.merge(serverSchema);
 export type Env = z.infer<typeof envSchema>;
 
 /**
- * Formats every zod issue into a single multi-line, human-readable message
- * so all problems are visible at once instead of failing on the first one.
+ * Formats every issue as "NAME: problem" without echoing the value, so all
+ * problems are visible at once and credentials never leak into logs or UI.
  */
-function formatIssues(error: z.ZodError): string {
-  const lines = error.issues.map((issue) => {
+function formatIssues(error: z.ZodError): string[] {
+  return error.issues.map((issue) => {
     const key = issue.path.join(".") || "(root)";
     return `  - ${key}: ${issue.message}`;
   });
+}
 
-  return [
-    "Invalid or missing environment variables:",
-    ...lines,
-    "",
-    "Fix these in your .env.local (or .env.development / .env.production) file and restart the app.",
-  ].join("\n");
+export interface EnvCheck {
+  env?: Env;
+  issues: string[];
+}
+
+/** Parses the current environment, collecting every problem before returning. */
+export function inspectEnv(source: NodeJS.ProcessEnv = process.env): EnvCheck {
+  const result = envSchema.safeParse(source);
+  if (result.success) return { env: result.data, issues: [] };
+  return { issues: formatIssues(result.error) };
 }
 
 /**
- * Validates process.env against the schema. Throws a single Error listing
- * every invalid/missing variable if validation fails.
- *
- * Call this once, as early as possible in the app lifecycle (see
- * src/instrumentation.ts), so misconfiguration fails fast at startup
- * instead of surfacing as a cryptic error deep in the app later.
+ * Friendly variant for the root layout: names and reasons only, no values.
+ * Useful in development where a configuration page is more helpful than a
+ * stack trace.
  */
-export function validateEnv(): Env {
-  const result = envSchema.safeParse(process.env);
+export function getEnvIssues(): string[] {
+  return inspectEnv().issues;
+}
 
-  if (!result.success) {
-    // Throwing (rather than logging + continuing) is what makes this
-    // "fail fast": the process exits instead of limping along with bad config.
-    throw new Error(formatIssues(result.error));
+/**
+ * Validates process.env. Throws one error listing every invalid/missing
+ * variable so misconfiguration fails early instead of surfacing as a cryptic
+ * error deep in the app.
+ */
+export function validateEnv(source: NodeJS.ProcessEnv = process.env): Env {
+  const { env, issues } = inspectEnv(source);
+  if (!env) {
+    throw new Error(
+      [
+        "Invalid or missing environment variables:",
+        ...issues,
+        "",
+        "Fix these in your .env.local (or .env.development / .env.production) file and restart the app.",
+      ].join("\n")
+    );
   }
-
-  return result.data;
+  return env;
 }
-
-/**
- * Validated, typed env object. Import this instead of reading
- * `process.env` directly anywhere in the app.
- *
- * NOTE: only import this module from server-side code paths (or code that
- * runs during the instrumentation hook). Importing it directly into client
- * components will attempt to validate server-only vars in the browser.
- */
-export const env: Env = validateEnv();

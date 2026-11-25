@@ -22,7 +22,7 @@ inconsistently implemented everywhere they're needed.
 
 Use [TanStack React Query](https://tanstack.com/query) as the single data
 layer for everything that comes from the backend, wrapped by two generic
-hook factories in `src/api/queryClient.ts` — `useGet` and `usePost` — built
+hook factories in `src/api/hooks.ts` — `useGet` and `usePost` — built
 on top of the shared axios instance in `src/api/axios.ts`. Every
 per-feature service (`src/services/*.ts`, e.g. `onchainService.ts`,
 `uploadService.ts`) is a thin hook that calls `useGet`/`usePost` with an

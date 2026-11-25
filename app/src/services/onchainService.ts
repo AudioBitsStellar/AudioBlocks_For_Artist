@@ -1,5 +1,5 @@
 import { ARTIST_ONCHAIN_ENDPOINTS, SONG_ONCHAIN_ENDPOINTS } from "@/api/api-endpoint";
-import { usePost } from "@/api/queryClient";
+import { usePost } from "@/api/hooks";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import type { PreparedTransaction } from "@/types/api";
 

@@ -9,7 +9,7 @@
  */
 
 import { AUDIT_LOG_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet } from "@/api/queryClient";
+import { useGet } from "@/api/hooks";
 import type { AuditAction, AuditLogEntry, AuditOutcome } from "@/services/auditLogService";
 
 export const AUDIT_LOG_QUERY_KEY = ["artist-audit-logs"] as const;

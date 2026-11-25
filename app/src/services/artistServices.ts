@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { USER_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, usePut } from "@/api/queryClient";
+import { useGet, usePut } from "@/api/hooks";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { extractApiError, ApiError } from "@/api/axios";

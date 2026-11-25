@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { clientGet } = vi.hoisted(() => ({ clientGet: vi.fn() }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn(async () => ({ get: clientGet })),
-}));
+vi.mock("@/api/axios", () => {
+  const client = ({ get: clientGet });
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
 import { isEmailUnverified, verifyEmailToken } from "@/services/emailVerificationService";
 

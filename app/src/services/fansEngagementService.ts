@@ -1,5 +1,5 @@
 import { FANS_ENGAGEMENT_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet } from "@/api/queryClient";
+import { useGet } from "@/api/hooks";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { FansEngagementResponse } from "@/types";
 

@@ -1,5 +1,5 @@
 import { ARTIST_UPLOAD_ENDPOINTS } from "@/api/api-endpoint";
-import { usePost } from "@/api/queryClient";
+import { usePost } from "@/api/hooks";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { UploadChunkResponse } from "@/types";
 import { FinalizeSongResponse, UploadCoverResponse as UploadCoverResponseType } from "@/types/api";

@@ -6,7 +6,7 @@
  * frontend never handles partial payouts manually.
  */
 
-import { usePost } from "@/api/queryClient";
+import { usePost } from "@/api/hooks";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import type { RoyaltySplitEntry } from "@/types/royalty";
 import type {

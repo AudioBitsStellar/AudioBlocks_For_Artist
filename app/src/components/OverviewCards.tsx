@@ -143,7 +143,7 @@ function OverviewCardsSkeleton() {
 
 function LiveOverviewCards({ window }: { window: StatsWindow }) {
   const { useGetOverviewKpi } = useOverviewServices();
-  const { data, isLoading, isError } = useGetOverviewKpi(window);
+  const { data, isLoading, isError, refresh } = useGetOverviewKpi(window);
 
   if (isLoading) return <OverviewCardsSkeleton />;
 
@@ -154,11 +154,31 @@ function LiveOverviewCards({ window }: { window: StatsWindow }) {
         <p className="text-red-400 text-sm">
           Artist statistics are unavailable. Please try again later.
         </p>
+        <button
+          type="button"
+          onClick={() => void refresh?.()}
+          className="mt-2 text-pink-400 text-sm"
+        >
+          Retry overview
+        </button>
       </div>
     );
   }
 
-  return <CardGrid cards={kpiToCards(data.data)} isMock={false} />;
+  return (
+    <div>
+      <div className="flex justify-end mb-2">
+        <button
+          type="button"
+          onClick={() => void refresh?.()}
+          className="text-sm text-gray-400 hover:text-pink-400"
+        >
+          Refresh overview
+        </button>
+      </div>
+      <CardGrid cards={kpiToCards(data.data)} isMock={false} />
+    </div>
+  );
 }
 
 function MockOverviewCards() {

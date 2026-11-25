@@ -6,7 +6,13 @@ import {
   type InternalAxiosRequestConfig,
 } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createApiClient, extractApiError, parseRetryAfterMs } from "./axios";
+import {
+  apiClient,
+  createApiClient,
+  extractApiError,
+  isRequestCancelled,
+  parseRetryAfterMs,
+} from "./axios";
 import { toast } from "sonner";
 
 vi.mock("sonner", () => ({
@@ -133,5 +139,20 @@ describe("Retry-After handling", () => {
     );
 
     expect(extractApiError(error)).toMatchObject({ status: 503, retryAfterMs: undefined });
+  });
+});
+
+describe("shared API client", () => {
+  it("creates one module-level Axios instance and reuses it", () => {
+    expect(createApiClient()).toBe(apiClient);
+    expect(createApiClient()).toBe(createApiClient());
+    expect(apiClient.interceptors.request.handlers).toHaveLength(1);
+    expect(apiClient.interceptors.response.handlers).toHaveLength(1);
+  });
+
+  it("recognises cancellations without treating them as application errors", () => {
+    expect(isRequestCancelled(new AxiosError("canceled", AxiosError.ERR_CANCELED))).toBe(true);
+    expect(isRequestCancelled({ name: "AbortError" })).toBe(true);
+    expect(isRequestCancelled(new AxiosError("failed", AxiosError.ERR_BAD_REQUEST))).toBe(false);
   });
 });

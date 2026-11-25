@@ -565,7 +565,7 @@ Dashboard reads are cached by React Query. `app/src/api/cachePolicy.ts` is the s
 
 ## Optimistic Updates
 
-`useOptimisticMutation` (`@/api/queryClient`) is a PUT/PATCH mutation that updates the UI before the server responds:
+`useOptimisticMutation` (`@/api/hooks`) is a PUT/PATCH mutation that updates the UI before the server responds:
 
 1. **On mutate** — cancels in-flight refetches of `queryKey`, snapshots the cache, writes the optimistic value (`applyOptimistic`) and runs `onOptimistic` for state that lives outside the cache.
 2. **On error** — restores the snapshot and runs the undo function `onOptimistic` returned, then calls `onError`.

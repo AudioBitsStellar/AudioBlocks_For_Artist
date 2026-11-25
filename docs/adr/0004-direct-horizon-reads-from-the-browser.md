@@ -26,7 +26,7 @@ runs entirely client-side and talks straight to whichever Horizon instance
 the app is currently pointed at (`fetchAccountBalances`,
 `fetchAccountTransactions`, `fetchAccountOperations`, `fetchFeeStats`,
 `explorerTxUrl`, `explorerAccountUrl`). It
-deliberately does not go through `src/api/queryClient.ts` — there is no
+deliberately does not go through `src/api/hooks.ts` — there is no
 backend round-trip to layer React Query's mutation/cache machinery over,
 just a plain read from a public API, so components call these functions
 directly in a `useEffect`/`useCallback` pair (see `WalletBalanceDisplay.tsx`

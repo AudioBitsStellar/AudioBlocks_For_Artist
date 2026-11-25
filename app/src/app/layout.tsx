@@ -15,6 +15,7 @@ import { defaultMetadata } from "@/utils/metadata";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import BrandedErrorPage from "@/components/shared/BrandedErrorPage";
 import ApiUnavailableBanner from "@/components/ApiUnavailableBanner";
+import { getEnvIssues } from "@/lib/env";
 
 // PERF-07: next/font self-hosts these at build time, so the browser never
 // waits on a third-party font CDN, and a swap display strategy lets text paint
@@ -45,34 +46,13 @@ export const viewport: Viewport = {
 export const metadata: Metadata = defaultMetadata;
 export const dynamic = "force-dynamic";
 
-const REQUIRED_ENV_VARS = ["NEXT_PUBLIC_API_BASE_URL", "NEXT_PUBLIC_API_URL"];
-
-function validateEnv() {
-  const missing: string[] = [];
-  if (typeof window === "undefined") {
-    // Only validate server-side during rendering or build to avoid client-side mismatch
-    for (const name of REQUIRED_ENV_VARS) {
-      const val = process.env[name];
-      if (!val) {
-        missing.push(name);
-      } else if (
-        name.includes("API") &&
-        !val.startsWith("http://") &&
-        !val.startsWith("https://")
-      ) {
-        missing.push(`${name} (must start with http:// or https://)`);
-      }
-    }
-  }
-  return missing;
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const missingEnv = validateEnv();
+  // Names/reasons only — never the values (which may include secrets).
+  const missingEnv = getEnvIssues();
 
   if (missingEnv.length > 0) {
     return (

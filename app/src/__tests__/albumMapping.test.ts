@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("@/api/axios", () => ({ createApiClient: vi.fn() }));
+vi.mock("@/api/axios", () => ({ apiClient: {}, createApiClient: vi.fn() }));
 vi.mock("@/hooks/useToastHandler", () => ({
   useHandleSuccess: () => vi.fn(),
   useHandleError: () => vi.fn(),

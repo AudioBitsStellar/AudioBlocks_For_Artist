@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
-import { useGet } from "@/api/queryClient";
+import { useGet } from "@/api/hooks";
 import {
   ANALYTICS_ENDPOINTS,
   DASHBOARD_COMMENT_ENDPOINTS,
@@ -21,13 +21,11 @@ import useCommentServices, {
 import { createApiClient } from "@/api/axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-vi.mock("@/api/queryClient", () => ({
+vi.mock("@/api/hooks", () => ({
   useGet: vi.fn(),
 }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn(),
-}));
+vi.mock("@/api/axios", () => ({ apiClient: {}, createApiClient: vi.fn() }));
 
 vi.mock("@tanstack/react-query", () => ({
   useMutation: vi.fn(),

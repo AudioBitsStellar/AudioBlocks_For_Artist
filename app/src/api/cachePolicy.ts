@@ -17,6 +17,13 @@
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 
+/**
+ * Default freshness window for Overview responses (#121). Keeping it here lets
+ * callers configure a different TTL while every Overview query shares one
+ * source of truth.
+ */
+export const OVERVIEW_CACHE_TTL_MS = 60 * 1000;
+
 /** Named freshness windows, in milliseconds. */
 export const CACHE_TIME = {
   /** Always refetch on mount. For data that other devices/tabs may change under us. */

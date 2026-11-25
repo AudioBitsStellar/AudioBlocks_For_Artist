@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import useArtistServices from "@/services/artistServices";
 import { USER_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, usePut } from "@/api/queryClient";
+import { useGet, usePut } from "@/api/hooks";
 import type { ApiError } from "@/api/axios";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ const mockMutationState = {
   reset: vi.fn(),
 };
 
-vi.mock("@/api/queryClient", () => ({
+vi.mock("@/api/hooks", () => ({
   useGet: vi.fn(() => mockQueryState),
   usePut: vi.fn(() => mockMutationState),
 }));

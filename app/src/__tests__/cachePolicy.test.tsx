@@ -8,9 +8,10 @@ const { mockGet, mockPost } = vi.hoisted(() => ({
   mockPost: vi.fn(),
 }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn().mockResolvedValue({ get: mockGet, post: mockPost }),
-}));
+vi.mock("@/api/axios", () => {
+  const client = { get: mockGet, post: mockPost };
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
 vi.mock("@/hooks/useToastHandler", () => ({
   useHandleSuccess: () => vi.fn(),

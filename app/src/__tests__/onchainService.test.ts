@@ -8,7 +8,7 @@ const { mockUsePost, mockHandleSuccess, mockHandleError, mockMutateAsync } = vi.
   mockMutateAsync: vi.fn(),
 }));
 
-vi.mock("@/api/queryClient", () => ({
+vi.mock("@/api/hooks", () => ({
   usePost: mockUsePost,
 }));
 

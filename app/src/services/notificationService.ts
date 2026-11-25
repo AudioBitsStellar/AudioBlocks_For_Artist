@@ -1,6 +1,6 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { NOTIFICATION_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, useOptimisticMutation } from "@/api/queryClient";
+import { useGet, useOptimisticMutation } from "@/api/hooks";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import { featureFlags } from "@/lib/featureFlags";
 import { useHandleError } from "@/hooks/useToastHandler";

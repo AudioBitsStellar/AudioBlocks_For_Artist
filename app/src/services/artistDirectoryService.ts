@@ -11,7 +11,7 @@
  * `src/context/RBAC.md`).
  */
 
-import { useGet } from "@/api/queryClient";
+import { useGet } from "@/api/hooks";
 import { ADMIN_ARTIST_ENDPOINTS, type ArtistDirectoryStatus } from "@/api/api-endpoint";
 import { CACHE_TIME } from "@/api/cachePolicy";
 import type { ArtistDirectoryEntry, ArtistDirectoryResponse } from "@/types/api";
