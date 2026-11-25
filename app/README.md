@@ -169,9 +169,9 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api   # AudioBlock_Backend base U
 
 Two more optional variables are relevant to the Artist Portal surfaces:
 
-| Variable                    | Effect when unset                                                                                       |
-| --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_FEATURE_FLAGS` | Rollout flags fall back to their configured percentage, e.g. `artistOnchainAnalytics=true` to force on. |
+| Variable                    | Effect when unset                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_FEATURE_FLAGS` | Runtime rollout overrides; flags fall back to their configured percentage when unset, e.g. `artistOnchainAnalytics=true`. |
 
 ### Feature flags and gradual rollout
 
@@ -185,10 +185,19 @@ rollout flags in `src/lib/featureFlags.ts` rather than a bare conditional:
   the feature is rolled out to (an on-chain address, a user id) and leave it
   `null` while that identity is still resolving — an unknown subject reads as
   off, so the feature never appears and then disappears.
-- Precedence, highest first: a per-browser override, then
-  `NEXT_PUBLIC_FEATURE_FLAGS`, then the allowlist, then the percentage.
-- To see a flag on your own browser without changing the rollout — useful on
-  a preview deployment — write the override directly:
+- A runtime flag explicitly set to `false` is a kill switch and cannot be
+  overridden in a browser. Otherwise, precedence is: per-browser override,
+  runtime `NEXT_PUBLIC_FEATURE_FLAGS`, allowlist, then percentage.
+- Set `NEXT_PUBLIC_FEATURE_FLAGS` in the container/deployment runtime
+  environment, not as a build argument. The runtime config script injects it
+  into each page response, so changing a flag requires a config update and a
+  page reload, not a new client build. To immediately disable a feature, set
+  its value to `false` (for example
+  `NEXT_PUBLIC_FEATURE_FLAGS=artistOnchainAnalytics=false`); this disables the
+  feature even if a browser-local override tries to enable it. Unknown or
+  malformed entries never enable a flag.
+- To override a flag on your own browser without changing the rollout — useful
+  on a preview deployment — write the override directly:
   `localStorage.setItem("audioblocks:feature-flags:v1", JSON.stringify({ artistOnchainAnalytics: true }))`.
   `setFeatureFlagOverride()` is the same thing for code that wants the mounted
   components to update immediately.

@@ -5,9 +5,14 @@ import { useStellarWallet } from "./useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
-import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
+import {
+  classifyFreighterError,
+  isFreighterAvailable,
+  signTransactionXdr,
+  type FreighterRecoveryState,
+} from "@/lib/freighter";
 import { explorerTxUrl } from "@/lib/horizon";
-import { classifyError, isUserRejection } from "@/utils/errorRecovery";
+import { classifyError } from "@/utils/errorRecovery";
 import { toast } from "sonner";
 import { ApiEnvelope, SubmitArtistSetupResponse } from "@/types/api";
 import { useEstimatedFee } from "@/hooks/useEstimatedFee";
@@ -15,6 +20,7 @@ import EstimatedFeeNotice from "./EstimatedFeeNotice";
 import { useTransactionStatus } from "@/hooks/useTransactionStatus";
 import { transactionStorageKey } from "@/lib/transactionStatus";
 import { getActiveNetworkId } from "@/lib/stellarNetwork";
+import FreighterRecoveryNotice from "./FreighterRecoveryNotice";
 
 type SetupStatus =
   | "idle"
@@ -39,6 +45,7 @@ export default function SetupArtistOnChainProfile() {
   const [cid, setCid] = useState("");
   const { address } = useStellarWallet();
   const { usePrepareArtistSetup, useSubmitArtistSetup } = useOnchainServices();
+  const { requestReview, reviewDialog } = useTransactionSignReview();
   const prepareMutation = usePrepareArtistSetup();
   const submitMutation = useSubmitArtistSetup();
   const fee = useEstimatedFee();
@@ -49,6 +56,8 @@ export default function SetupArtistOnChainProfile() {
 
   const [status, setStatus] = useState<SetupStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [freighterFailure, setFreighterFailure] = useState<FreighterRecoveryState | null>(null);
+  const [freighterFailureMessage, setFreighterFailureMessage] = useState("");
   const [txHash, setTxHash] = useState("");
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
@@ -123,6 +132,17 @@ export default function SetupArtistOnChainProfile() {
       submitLock.current
     )
       return;
+    const available = await isFreighterAvailable();
+    if (!available) {
+      setFreighterFailure("missing");
+      return;
+    }
+
+    setStatus("preparing");
+    setErrorMsg("");
+    setFreighterFailure(null);
+    setFreighterFailureMessage("");
+    analytics.mintStarted({ songId: "artist-profile", walletAddress: address });
 
     submitLock.current = true;
     transaction.clear();
@@ -143,6 +163,15 @@ export default function SetupArtistOnChainProfile() {
       }
 
       const prepared = await prepareMutation.mutateAsync({ cid: cid.trim() });
+      setStatus("idle");
+      const approved = await requestReview({
+        action: "Set up artist profile",
+        amount: "1 artist profile NFT (no XLM transfer)",
+        recipient: address,
+        contract: "AudioBlocks Artist Profile contract",
+        fee: `${gasEstimate} (estimated)`,
+      });
+      if (!approved) return;
 
       setStatus("awaiting_signature");
       let signedXdr: string;
@@ -155,9 +184,12 @@ export default function SetupArtistOnChainProfile() {
       } catch (signErr: unknown) {
         // A declined signature is a normal outcome, not a failure — see
         // app/src/utils/ERROR_RECOVERY.md.
-        if (isUserRejection(signErr)) {
-          setStatus("rejected");
-          analytics.mintFailed({ songId: "artist-profile", reason: "user rejected signature" });
+        const recoveryState = classifyFreighterError(signErr);
+        if (recoveryState !== "other") {
+          setStatus(recoveryState === "rejected" ? "rejected" : "failed");
+          setFreighterFailure(recoveryState);
+          setFreighterFailureMessage((signErr as Error).message);
+          analytics.mintFailed({ songId: "artist-profile", reason: (signErr as Error).message });
           return;
         }
         throw signErr;
@@ -170,6 +202,14 @@ export default function SetupArtistOnChainProfile() {
       pendingSubmission.current = submission;
       await submitSignedXdr(submission);
     } catch (err: unknown) {
+      const recoveryState = classifyFreighterError(err);
+      if (recoveryState !== "other") {
+        setFreighterFailure(recoveryState);
+        setFreighterFailureMessage((err as Error).message);
+        setStatus(recoveryState === "rejected" ? "rejected" : "failed");
+        analytics.mintFailed({ songId: "artist-profile", reason: (err as Error).message });
+        return;
+      }
       const plan = classifyError(err);
       analytics.mintFailed({ songId: "artist-profile", reason: plan.message });
 
@@ -189,6 +229,13 @@ export default function SetupArtistOnChainProfile() {
 
   return (
     <div className="space-y-4 rounded-lg border border-[#2A2A2A] bg-[#161616] p-6">
+      {freighterFailure && freighterFailure !== "other" && (
+        <FreighterRecoveryNotice
+          state={freighterFailure}
+          message={freighterFailureMessage || undefined}
+          onRetry={handleSetup}
+        />
+      )}
       <div>
         <h3 className="text-white font-semibold mb-1">On-chain artist profile</h3>
         <p className="text-sm text-[#A3A3A3]">
@@ -346,6 +393,7 @@ export default function SetupArtistOnChainProfile() {
           <EstimatedFeeNotice {...fee} />
         </div>
       )}
+      {reviewDialog}
     </div>
   );
 }

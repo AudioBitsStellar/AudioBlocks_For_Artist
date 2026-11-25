@@ -9,6 +9,7 @@ import {
   isSessionExpired,
   refreshSession,
 } from "@/api/session";
+import { clearQueryCache } from "@/api/queryClientInstance";
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -70,6 +71,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
   /** Ends the session and sends the artist to log in again. */
   const expire = useCallback(() => {
     setState({ isValid: false, expiresIn: 0, showWarning: false });
+    clearQueryCache(); // #576: don't leave this artist's dashboard data cached
     void endSession();
     router.push("/login");
   }, [router]);
@@ -104,6 +106,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
   /** Log out */
   const logout = useCallback(() => {
+    clearQueryCache(); // #576: don't leave this artist's dashboard data cached
     void endSession();
     setState({ isValid: false, expiresIn: 0, showWarning: false });
     router.push("/login");

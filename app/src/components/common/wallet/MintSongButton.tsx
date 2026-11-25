@@ -5,8 +5,9 @@ import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
-import { classifyError, isUserRejection } from "@/utils/errorRecovery";
+import { classifyError } from "@/utils/errorRecovery";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
+import { classifyFreighterError, type FreighterRecoveryState } from "@/lib/freighter";
 import { explorerTxUrl } from "@/lib/horizon";
 import { useState, useEffect, useRef } from "react";
 import { Loader2, Check, AlertCircle } from "lucide-react";
@@ -17,6 +18,7 @@ import { useFreighterNetworkCheck } from "@/hooks/useFreighterNetworkCheck";
 import { useTransactionStatus } from "@/hooks/useTransactionStatus";
 import { transactionStorageKey } from "@/lib/transactionStatus";
 import { getActiveNetworkId } from "@/lib/stellarNetwork";
+import FreighterRecoveryNotice from "./FreighterRecoveryNotice";
 
 interface MintSongButtonProps {
   songId: string;
@@ -63,9 +65,12 @@ export default function MintSongButton({
   const transaction = useTransactionStatus(
     transactionStorageKey("mint", `${getActiveNetworkId()}:${songId}`)
   );
+  const { requestReview, reviewDialog } = useTransactionSignReview();
 
   const [status, setStatus] = useState<MintStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [freighterFailure, setFreighterFailure] = useState<FreighterRecoveryState | null>(null);
+  const [freighterFailureMessage, setFreighterFailureMessage] = useState("");
   const [txDetails, setTxDetails] = useState<MintTransactionDetails>({});
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
@@ -142,6 +147,18 @@ export default function MintSongButton({
       submitLock.current
     )
       return;
+    const available = await isFreighterAvailable();
+    if (!available) {
+      setFreighterFailure("missing");
+      return;
+    }
+
+    setStatus("preparing");
+    setErrorMsg("");
+    setFreighterFailure(null);
+    setFreighterFailureMessage("");
+    setTxDetails({});
+    analytics.mintStarted({ songId, walletAddress: address });
 
     submitLock.current = true;
     transaction.clear();
@@ -172,8 +189,30 @@ export default function MintSongButton({
         setErrorMsg(
           `Freighter network mismatch. Expected ${prepared.data.networkPassphrase === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}.`
         );
+      if (freighterCheck.status === "mismatch" ||
+        (freighterCheck.actual !== null && freighterCheck.actual !== prepared.data.networkPassphrase)) {
+        setStatus("failed");
+        setFreighterFailure("wrong-network");
+        setFreighterFailureMessage(
+          `Freighter is on ${freighterCheck.actual || "a different network"}; switch it to ${prepared.data.networkPassphrase === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"} to continue.`
+        );
         return;
       }
+      if (freighterCheck.status === "locked" || freighterCheck.status === "missing") {
+        setStatus("failed");
+        setFreighterFailure(freighterCheck.status);
+        return;
+      }
+
+      setStatus("idle");
+      const approved = await requestReview({
+        action: "Mint song NFT",
+        amount: "1 song NFT (no XLM transfer)",
+        recipient: address,
+        contract: "AudioBlocks Catalog contract",
+        fee: `${gasEstimate} (estimated)`,
+      });
+      if (!approved) return;
 
       setStatus("awaiting_signature");
       let signedXdr: string;
@@ -186,9 +225,12 @@ export default function MintSongButton({
       } catch (signErr: unknown) {
         // A declined signature is a normal outcome, not a failure — see
         // app/src/utils/ERROR_RECOVERY.md.
-        if (isUserRejection(signErr)) {
-          setStatus("rejected");
-          analytics.mintFailed({ songId, reason: "user rejected signature" });
+        const recoveryState = classifyFreighterError(signErr);
+        if (recoveryState !== "other") {
+          setStatus(recoveryState === "rejected" ? "rejected" : "failed");
+          setFreighterFailure(recoveryState);
+          setFreighterFailureMessage((signErr as Error).message);
+          analytics.mintFailed({ songId, reason: (signErr as Error).message });
           return;
         }
         throw signErr;
@@ -201,6 +243,14 @@ export default function MintSongButton({
       pendingSubmission.current = submission;
       await submitSignedXdr(submission);
     } catch (err: unknown) {
+      const recoveryState = classifyFreighterError(err);
+      if (recoveryState !== "other") {
+        setFreighterFailure(recoveryState);
+        setFreighterFailureMessage((err as Error).message);
+        setStatus(recoveryState === "rejected" ? "rejected" : "failed");
+        analytics.mintFailed({ songId, reason: (err as Error).message });
+        return;
+      }
       const plan = classifyError(err);
       analytics.mintFailed({ songId, reason: plan.message });
 
@@ -218,6 +268,16 @@ export default function MintSongButton({
 
   if (!address) {
     return <ConnectStellarWalletButton />;
+  }
+
+  if (freighterFailure && freighterFailure !== "other") {
+    return (
+      <FreighterRecoveryNotice
+        state={freighterFailure}
+        message={freighterFailureMessage || undefined}
+        onRetry={handleMint}
+      />
+    );
   }
 
   if (status === "preparing") {
@@ -321,6 +381,11 @@ export default function MintSongButton({
           to continue.
         </p>
       </div>
+      <FreighterRecoveryNotice
+        state="wrong-network"
+        message={`Freighter is on ${freighterCheck.actual === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}; switch it to ${freighterCheck.expected === "Test SDF Network ; September 2015" ? "Testnet" : "Mainnet"}, then retry.`}
+        onRetry={handleMint}
+      />
     );
   }
 
@@ -436,6 +501,8 @@ export default function MintSongButton({
         Mint on-chain
       </button>
       <EstimatedFeeNotice {...fee} />
+      <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+      {reviewDialog}
     </div>
   );
 }

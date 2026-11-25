@@ -13,6 +13,7 @@ doc goes deeper on _when to use which layer_ and _how to write one_.
 | Integration      | Vitest + React Testing Library | `*.integration.test.tsx`       | A component wired to real providers (React Query, etc.) against a mocked API layer, exercising the actual data-fetching path. |
 | End-to-end (E2E) | Playwright                     | `e2e/*.spec.ts`                | A full user flow in a real browser against the running Next.js app, with network calls intercepted via `page.route()`.        |
 | Accessibility    | Vitest + `vitest-axe`          | e.g. `*Accessibility.test.tsx` | Automated a11y violation checks (`toHaveNoViolations()`) layered on top of component tests.                                   |
+| Visual Regression| Chromatic + Storybook          | `*.stories.tsx`                | Captures visual snapshots of UI components across viewports and themes, detecting unintended pixel regressions.                |
 
 Rule of thumb: reach for the _lowest_ layer that can actually catch the bug.
 A pure function bug belongs in a unit test, not an E2E flow — it's faster to
@@ -27,12 +28,13 @@ All commands run from `app/`:
 ```bash
 npm test               # Vitest, watch mode (unit + component + integration)
 npm run test:coverage  # Vitest, one-shot run with coverage
-npm run test:e2e       # Playwright E2E suite
+npm run test:e2e       # Playwright E2E suite (all browser/device projects)
+npm run test:e2e:smoke # Playwright smoke project only (staging #746)
 npm run test:ui        # Vitest's interactive UI
 ```
 
-E2E tests need Playwright's browser binary installed once:
-`npx playwright install chromium` (see the header comment in
+E2E tests need Playwright's browser binaries installed once:
+`npx playwright install chromium firefox webkit` (see the header comment in
 `e2e/auth.spec.ts`).
 
 ## File location
@@ -88,6 +90,17 @@ endpoint paths, and response body). Assert on user-visible outcomes
 specs go in `e2e/` and are picked up automatically by
 `playwright.config.ts` (`testDir: "./e2e"`).
 
+Each critical journey has one spec: `onboarding.spec.ts`, `upload.spec.ts`,
+`publish.spec.ts`, `royalty-splits.spec.ts` and `payouts.spec.ts` (#745).
+They run in the `chromium`, `firefox`, `webkit`, `mobile-chrome` and
+`mobile-safari` projects (#747); `e2e/support/session.ts` seeds the session
+cookies by URL so the same helper works on localhost, previews and staging.
+
+`smoke.spec.ts` is excluded from those projects and runs only in the `smoke`
+project. `npm run test:e2e:smoke` targets it; the staging workflow
+(`.github/workflows/staging-smoke.yml`, #746) runs it after a successful
+`staging` deployment and marks the deployment failed when it does not pass.
+
 ### Accessibility tests
 
 Use the `toHaveNoViolations()` matcher from `vitest-axe`, registered
@@ -98,6 +111,18 @@ component, run axe against the container, assert no violations. New
 interactive components should get a matching a11y test — see
 `CONTRIBUTING.md`'s Accessibility section and `app/ACCESSIBILITY_ISSUES.md`
 for the broader a11y bar this project holds itself to.
+
+### Visual regression tests (Chromatic + Storybook)
+
+Visual snapshots verify component appearance across viewports, themes, and interactions. Storybook stories live alongside components in `src/components/*.stories.tsx` (e.g. `DashboardLayout.stories.tsx`, `MyAlbums.stories.tsx`, `MyMusicContent.stories.tsx`, `TopHeader.stories.tsx`, `MerchesContent.stories.tsx`).
+
+```bash
+npm run storybook        # Start local Storybook development server
+npm run storybook:build  # Build static Storybook site into storybook-static
+npm run chromatic        # Run Chromatic visual regression test
+```
+
+Visual regression checks are automated in CI via `.github/workflows/chromatic.yml` using `chromaui/action@v11`, testing for unexpected pixel changes on PRs.
 
 ## Conventions
 
@@ -115,7 +140,11 @@ for the broader a11y bar this project holds itself to.
 
 ## CI
 
-`.github/workflows/ci.yml` and `.github/workflows/e2e.yml` run the Vitest
-and Playwright suites respectively on PRs — a red CI check on either
-workflow means one of the layers above caught something; check which job
-failed to know which layer to look at first.
+`.github/workflows/ci.yml` runs lint, type-check, generated API type drift
+(`npm run api:types:check` plus the backend spec snapshot check), Vitest,
+builds and Storybook on PRs. `.github/workflows/e2e.yml` runs the Playwright
+suites across the configured browser/device projects, and
+`.github/workflows/staging-smoke.yml` runs the smoke project against staging
+after each deployment. A red check on any workflow means one of the layers
+above caught something; check which job failed to know which layer to look at
+first.

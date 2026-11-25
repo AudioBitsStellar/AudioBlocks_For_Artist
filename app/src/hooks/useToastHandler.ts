@@ -5,6 +5,8 @@ interface ApiError {
   message: string;
   status?: number;
   code?: string;
+  /** Correlated with the backend log line; shown so support can find the call (OBS-04). */
+  requestId?: string;
 }
 
 export const useHandleSuccess = () => {
@@ -50,7 +52,14 @@ export const useHandleError = () => {
       }
     }
 
-    toast.error(message, {
+    // A support engineer can only act on "the save failed" if the message
+    // carries something to search for. The id is the one the request was sent
+    // with, so it matches the backend's log entry even when the response was
+    // lost.
+    const reference = typeof error === "string" ? undefined : error.requestId;
+    const withReference = reference ? `${message} (reference: ${reference})` : message;
+
+    toast.error(withReference, {
       duration: 5000,
     });
   }, []);

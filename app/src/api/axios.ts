@@ -3,12 +3,18 @@ import { getCSRFToken, getCSRFTokenHeader, refreshCSRFToken } from "@/utils/csrf
 import { isRetryableError, calculateBackoff } from "@/utils/retry";
 import { apiMonitor } from "@/utils/apiPerformanceMonitor";
 import { API_PROXY_BASE_URL, endSession } from "@/api/session";
+import { reportApiAvailable, reportApiUnavailable } from "@/lib/apiAvailability";
 
 /**
  * Ends the browser session. The access token lives in an httpOnly cookie that
  * only the server can clear, so this asks the server to do it.
+ *
+ * Also drops cached dashboard data (#576) so a forced sign-out (401) can
+ * never leave the previous artist's earnings/messages in memory for whoever
+ * signs in next.
  */
 export function clearSession(): void {
+  clearQueryCache();
   void endSession();
 }
 
@@ -34,13 +40,51 @@ function isCredentialRequest(url?: string): boolean {
 export class ApiError extends Error {
   status: number;
   code?: string;
+  retryAfterMs?: number;
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(message: string, status: number, code?: string, retryAfterMs?: number) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.retryAfterMs = retryAfterMs;
   }
+}
+
+const MAX_TIMEOUT = 2_147_483_647;
+
+/** Parse Retry-After as either delay-seconds or an HTTP date. */
+export function parseRetryAfterMs(value: unknown, now: number = Date.now()): number | undefined {
+  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  const header = String(value).trim();
+  if (!header) return undefined;
+
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds * 1000);
+
+  const retryAt = Date.parse(header);
+  if (!Number.isFinite(retryAt)) return undefined;
+  return Math.max(0, retryAt - now);
+}
+
+function formatRetryDelay(delayMs: number): string {
+  if (delayMs < 1000) return "less than a second";
+  const seconds = Math.ceil(delayMs / 1000);
+  return seconds === 1 ? "1 second" : `${seconds} seconds`;
+}
+
+function waitForRetry(delayMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    const wait = (remaining: number) => {
+      const currentDelay = Math.min(remaining, MAX_TIMEOUT);
+      setTimeout(() => {
+        const nextRemaining = remaining - currentDelay;
+        if (nextRemaining > 0) wait(nextRemaining);
+        else resolve();
+      }, currentDelay);
+    };
+    wait(delayMs);
+  });
 }
 
 export function extractApiError(error: unknown): ApiError {
@@ -50,7 +94,10 @@ export function extractApiError(error: unknown): ApiError {
     const status = axErr.response?.status ?? 0;
     const message = data?.message ?? data?.error ?? axErr.message;
     const code = data?.code;
-    return new ApiError(message, status, code);
+    const retryAfterHeader =
+      axErr.response?.headers?.["retry-after"] ?? axErr.response?.headers?.["Retry-After"];
+    const retryAfterMs = status === 429 ? parseRetryAfterMs(retryAfterHeader) : undefined;
+    return new ApiError(message, status, code, retryAfterMs);
   }
   if (error instanceof Error) {
     return new ApiError(error.message, 0);
@@ -68,12 +115,16 @@ export function resetRedirectState(): void {
 
 /** Per-request config fields this module stamps onto the axios config. */
 type TrackedConfig = InternalAxiosRequestConfig & {
-  _retry?: number;
+  _retry?: boolean;
   _retryCount?: number;
+  /** Opt-in for automatic retry on a non-idempotent method (#574). */
+  retry?: boolean;
   /** Set once a request is replayed after the proxy refreshed the session. */
   _sessionRetried?: boolean;
   /** High-resolution timestamp set when the request left the client (#163). */
   _perfStart?: number;
+  /** Correlation id sent as `x-request-id`, reused across retries (OBS-04). */
+  _requestId?: string;
 };
 
 const now = (): number => (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -109,12 +160,23 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
     // round trip (#163). Each retry attempt is timed separately.
     (config as TrackedConfig)._perfStart = now();
 
+    // OBS-04: one correlation id per logical request. A retry replays this
+    // config, so the id it already carries is kept rather than regenerated.
+    const tracked = config as TrackedConfig;
+    tracked._requestId = tracked._requestId ?? newRequestId();
+    if (typeof config.headers?.set === "function") {
+      config.headers.set(REQUEST_ID_HEADER, tracked._requestId);
+    } else {
+      Object.assign(config.headers, { [REQUEST_ID_HEADER]: tracked._requestId });
+    }
+
     return config;
   });
 
   apiClient.interceptors.response.use(
     (response: AxiosResponse) => {
       recordTiming(response.config as TrackedConfig);
+      reportApiAvailable();
 
       // Handle CSRF token refresh from server
       const newCsrfToken = response.headers["x-csrf-token"] as string | undefined;
@@ -127,6 +189,9 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       const config = error.config as TrackedConfig | undefined;
 
       recordTiming(config);
+      if (!axios.isCancel(error) && (!error.response || error.response.status >= 500)) {
+        reportApiUnavailable();
+      }
 
       // Handle CSRF token validation errors
       if (error.response?.status === 403 && typeof window !== "undefined") {
@@ -143,7 +208,11 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       if (error.response?.status === 401 && typeof window !== "undefined") {
         // The proxy renewed the session but could not replay a streamed upload.
         // Replay it once; the body is re-sendable on the client.
-        if (error.response.headers["x-session-refreshed"] === "1" && config && !config._sessionRetried) {
+        if (
+          error.response.headers["x-session-refreshed"] === "1" &&
+          config &&
+          !config._sessionRetried
+        ) {
           config._sessionRetried = true;
           return apiClient(config);
         }
@@ -151,7 +220,10 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
         if (!redirecting && !isCredentialRequest(config?.url)) {
           redirecting = true;
           clearSession();
-          window.location.href = "/login";
+          // Preserve the page the artist was on (#575) so a sign-in returns
+          // them there instead of always landing on /dashboard.
+          const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/login?returnTo=${returnTo}`;
           // Reset flag after redirect attempt
           setTimeout(() => {
             redirecting = false;
@@ -160,28 +232,49 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       }
 
       // Retry logic for transient failures
-      if (isRetryableError(error) && config && !config._retry) {
-        config._retry = true;
-        const maxRetries = 3;
+      if (isRetryableError(error) && config) {
+        const maxRetries = error.response?.status === 429 ? 3 : 1;
         const retryCount = config._retryCount || 0;
 
         if (retryCount < maxRetries) {
           config._retryCount = retryCount + 1;
-          const delay = calculateBackoff(retryCount + 1, 1000);
+          const retryAfterHeader =
+            error.response?.headers?.["retry-after"] ?? error.response?.headers?.["Retry-After"];
+          const retryAfterMs =
+            error.response?.status === 429 ? parseRetryAfterMs(retryAfterHeader) : undefined;
+          const delay = retryAfterMs ?? calculateBackoff(retryCount + 1, 1000);
 
           // Show toast notification for retry
           if (typeof window !== "undefined") {
             const { toast } = await import("sonner");
-            toast.info(`Retrying request... (Attempt ${retryCount + 1}/${maxRetries})`, {
-              duration: delay,
-            });
+            if (error.response?.status === 429) {
+              toast.info(`Rate limit reached. Retrying in ${formatRetryDelay(delay)}.`, {
+                duration: Math.min(delay, 10_000),
+              });
+            } else {
+              toast.info(`Retrying request... (Attempt ${retryCount + 1}/${maxRetries})`, {
+                duration: delay,
+              });
+            }
           }
 
           // Wait for backoff delay
-          await new Promise((resolve) => setTimeout(resolve, delay));
+          await waitForRetry(delay);
 
           // Retry the request
           return apiClient(config);
+        }
+
+        if (error.response?.status === 429 && typeof window !== "undefined") {
+          const retryAfterHeader =
+            error.response.headers?.["retry-after"] ?? error.response.headers?.["Retry-After"];
+          const retryAfterMs = parseRetryAfterMs(retryAfterHeader);
+          const message =
+            retryAfterMs === undefined
+              ? "Too many requests. Please try again later."
+              : `Too many requests. Please try again in ${formatRetryDelay(retryAfterMs)}.`;
+          const { toast } = await import("sonner");
+          toast.error(message);
         }
       }
 

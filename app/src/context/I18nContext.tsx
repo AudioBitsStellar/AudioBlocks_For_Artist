@@ -43,8 +43,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
   useEffect(() => {
+    // Read storage only after mount so the server and first client render agree.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocaleState(readPersistedLocale());
   }, []);
+
+  // The root layout renders lang="en" on the server; keep it in step on the client.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
     if (!isSupportedLocale(next)) return;

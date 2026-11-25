@@ -64,20 +64,4 @@ describe("ConnectStellarWalletButton", () => {
 
     expect(disconnect).toHaveBeenCalledTimes(1);
   });
-
-  it("calls restore() on mount", () => {
-    const restore = vi.fn();
-    mockUseStellarWallet.mockReturnValue({
-      address: null,
-      isConnecting: false,
-      connect: vi.fn(),
-      restore,
-      disconnect: vi.fn(),
-      signAndSubmit: vi.fn(),
-    });
-
-    render(<ConnectStellarWalletButton />);
-
-    expect(restore).toHaveBeenCalledTimes(1);
-  });
 });

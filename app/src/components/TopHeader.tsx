@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Menu, Sun, Moon } from "lucide-react";
+import { Search, Menu, Sun, Moon, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/utils/date";
@@ -11,6 +11,7 @@ import { ROLE_BADGE_STYLES, type Role } from "@/types/role";
 import SearchModal from "./SearchModal";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
+import WhatsNewModal from "./WhatsNewModal";
 
 interface TopHeaderProps {
   onMenuClick: () => void;
@@ -41,6 +42,7 @@ export default function TopHeader({
   const [currentDate, setCurrentDate] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false);
 
   const activeRole: Role = userRole ?? contextRole ?? roleInfo.role;
 
@@ -145,6 +147,16 @@ export default function TopHeader({
 
           <NotificationBell notificationCount={notificationCount} />
 
+          <button
+            type="button"
+            onClick={() => setIsWhatsNewOpen(true)}
+            aria-label="What's new"
+            title="What's new"
+            className="text-[var(--text)] hover:text-emerald-400 transition-colors rounded p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          >
+            <Sparkles size={22} aria-hidden="true" />
+          </button>
+
           {/* The full-width search field is md+, so phones get an icon button
               (issue #422) to reach the same modal. Deliberately named "Search"
               rather than "Open search" so the two triggers stay individually
@@ -180,6 +192,8 @@ export default function TopHeader({
 
       {/* Search Modal */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      {/* What's New Modal */}
+      <WhatsNewModal isOpen={isWhatsNewOpen} onClose={() => setIsWhatsNewOpen(false)} />
     </header>
   );
 }

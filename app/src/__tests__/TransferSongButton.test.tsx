@@ -31,6 +31,9 @@ vi.mock("@/services/onchainService", () => ({
 }));
 
 vi.mock("@/lib/freighter", () => ({
+  classifyFreighterError: vi.fn((error: Error) =>
+    error.message.toLowerCase().includes("reject") ? "rejected" : "other"
+  ),
   isFreighterAvailable: vi.fn(),
   signTransactionXdr: vi.fn(),
 }));
@@ -226,6 +229,13 @@ describe("TransferSongButton", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /transfer song/i }));
 
+    const reviewDialog = await screen.findByRole("dialog", { name: /review transaction/i });
+    expect(reviewDialog).toHaveTextContent("1 song NFT (no XLM transfer)");
+    expect(reviewDialog).toHaveTextContent(RECIPIENT);
+    expect(reviewDialog).toHaveTextContent("AudioBlocks Catalog contract");
+    expect(mockSignTransactionXdr).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /continue to freighter/i }));
+
     await waitFor(() => {
       expect(screen.getByRole("status")).toBeInTheDocument();
       expect(screen.getByText(/confirming on stellar/i)).toBeInTheDocument();
@@ -331,7 +341,11 @@ describe("TransferSongButton", () => {
       success: true,
       data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
     });
-    setupServices({ prepareMutateAsync });
+    const submitMutateAsync = vi.fn().mockResolvedValue({
+      success: true,
+      data: { txHash: MOCK_TX_HASH, songId: "song-1", toAddress: RECIPIENT },
+    });
+    setupServices({ prepareMutateAsync, submitMutateAsync });
 
     render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
 
@@ -339,11 +353,19 @@ describe("TransferSongButton", () => {
       target: { value: RECIPIENT },
     });
     fireEvent.click(screen.getByRole("button", { name: /transfer song/i }));
+    await screen.findByRole("dialog", { name: /review transaction/i });
+    fireEvent.click(screen.getByRole("button", { name: /continue to freighter/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
-      expect(screen.getByText(/signature rejected/i)).toBeInTheDocument();
+      expect(screen.getByText(/signature wasn't approved/i)).toBeInTheDocument();
     });
+
+    fireEvent.click(screen.getByRole("button", { name: /retry/i }));
+
+    await waitFor(() => expect(screen.getByText(/transferred successfully/i)).toBeInTheDocument());
+    expect(prepareMutateAsync).toHaveBeenCalledTimes(2);
+    expect(mockSignTransactionXdr).toHaveBeenCalledTimes(2);
   });
 
   it("shows an error state with the reason when the prepare step fails", async () => {

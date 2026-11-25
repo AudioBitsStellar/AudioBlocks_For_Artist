@@ -13,6 +13,14 @@ jobs:
     defaults:
       run:
         working-directory: app
+    env:
+      # Public config the app validates at boot; specs mock every backend call,
+      # so the API URL only needs to be valid and fail fast.
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:9/api
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:9/api
+      NEXT_PUBLIC_PRIVY_APP_ID: cl00000000000000000000000
+      NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015"
+      NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +34,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Build
         run: npm run build

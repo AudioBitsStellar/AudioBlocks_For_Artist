@@ -199,7 +199,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             <button
               type="button"
               onClick={loadSidebarData}
-              className="cursor-pointer rounded px-2 py-1 font-medium underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="cursor-pointer rounded px-2 py-1 font-medium underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Retry
             </button>
@@ -257,7 +257,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               key={link.name}
               href={link.href}
               onClick={onClose}
-              className="block rounded-lg px-4 py-1 text-xs text-text-muted transition-colors hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="block rounded-lg px-4 py-1 text-xs text-text-muted transition-colors hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               {link.name}
             </Link>

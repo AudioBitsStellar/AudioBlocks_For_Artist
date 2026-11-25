@@ -1,0 +1,35 @@
+
+# SEC-02: Ownership of security-sensitive and configuration files
+
+# GitHub workflows and repository configuration
+/.github/ @AudioBitsStellar
+
+# Configuration files
+*.config.* @AudioBitsStellar
+
+# Package and dependency management
+/package.json @AudioBitsStellar
+
+# Container configuration
+/Dockerfile @AudioBitsStellar
+
+# Security middleware
+/middleware.ts @AudioBitsStellar
+
+
+# SEC-02: Security-sensitive files require maintainer review
+
+# GitHub repository configuration, including CODEOWNERS itself
+/.github/ @OWNER_TEAM
+
+# Application configuration files
+*.config.* @OWNER_TEAM
+
+# Root dependency manifest
+/package.json @OWNER_TEAM
+
+# Root container build file
+/Dockerfile @OWNER_TEAM
+
+# Security middleware
+/middleware.ts @OWNER_TEAM

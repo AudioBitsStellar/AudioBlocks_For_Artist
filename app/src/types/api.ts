@@ -609,3 +609,15 @@ export interface PaginationMeta {
 export interface PaginatedResponse<T> extends ApiEnvelope<T[]> {
   meta: PaginationMeta;
 }
+
+// ── Fan perks (#573) ──────────────────────────────────────────────────────────
+
+/** A perk record as returned by `/artists/me/perks`. */
+export interface FanPerk {
+  id: string;
+  title: string;
+  description: string;
+  minimumTier: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+  createdAt: string;
+  updatedAt: string;
+}

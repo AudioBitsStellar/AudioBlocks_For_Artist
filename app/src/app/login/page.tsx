@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import MusicLoader from "@/components/MusicLoader";
@@ -15,6 +15,7 @@ import { isEmailUnverified } from "@/services/emailVerificationService";
 import { completeTwoFactorLogin } from "@/services/securitySettingsService";
 import { AuthUser, LoginEmailPayload } from "@/types";
 import { loginFormSchema } from "@/types/formValidation";
+import { sanitizeReturnTo } from "@/lib/sanitizeReturnTo";
 
 /** A login that reached the second factor. The credentials are kept to retry with a recovery code. */
 interface TwoFactorChallenge {
@@ -26,6 +27,7 @@ const TOTP_LENGTH = 6;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { useLoginEmail } = useAuthServices();
   const loginMutation = useLoginEmail();
 
@@ -62,7 +64,14 @@ export default function LoginPage() {
       return;
     }
     toast.success("Logged in successfully!");
-    router.push(isEmailUnverified(user?.emailVerified) ? "/verify-email" : "/dashboard");
+    if (isEmailUnverified(user?.emailVerified)) {
+      router.push("/verify-email");
+    } else {
+      // Honour the pre-login destination captured by the middleware; fall
+      // back to /dashboard when returnTo is absent or fails validation.
+      const rawReturnTo = searchParams.get("returnTo") ?? "";
+      router.push(sanitizeReturnTo(rawReturnTo));
+    }
   };
 
   const onSubmit = async (data: LoginEmailPayload) => {

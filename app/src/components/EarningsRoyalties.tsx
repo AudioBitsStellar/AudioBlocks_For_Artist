@@ -20,8 +20,6 @@ import { colorTokens } from "@/theme/colors";
 import { getDisplayNameFromToken } from "@/utils/jwt";
 import { formatMoney } from "@/utils/money";
 import { useCurrencyPreference } from "@/context/CurrencyPreferenceContext";
-import { formatMoney } from "@/utils/money";
-import { useCurrencyPreference } from "@/context/CurrencyPreferenceContext";
 
 const PRINT_TARGET_ID = "earnings-report-print";
 const PRINT_BODY_CLASS = "printing-earnings-report";
@@ -397,6 +395,11 @@ export default function EarningsRoyalties() {
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* Compliance & legal disclaimer per #783 / COMP-01 */}
+      <p className="mt-4 text-xs text-text-muted leading-relaxed" data-testid="earnings-legal-disclaimer">
+        * Earnings and royalties represent distributions calculated from verified streaming volume, licensed sync usage, and digital collectible transactions according to agreed smart contract terms. Royalties are not guaranteed returns, dividends, or interest-bearing financial investments.
+      </p>
     </div>
   );
 }

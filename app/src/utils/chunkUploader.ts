@@ -1,5 +1,3 @@
-import crypto from "crypto";
-
 export const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
 
 export function splitFile(file: File, chunkSize = CHUNK_SIZE) {
@@ -15,7 +13,7 @@ export function splitFile(file: File, chunkSize = CHUNK_SIZE) {
 }
 
 export function generateFileId() {
-  return crypto.randomUUID();
+  return globalThis.crypto.randomUUID();
 }
 
 export const DEFAULT_CHUNK_CONCURRENCY = 3;

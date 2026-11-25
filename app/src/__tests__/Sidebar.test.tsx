@@ -143,4 +143,33 @@ describe("Sidebar", () => {
 
     expect(screen.getByText("3")).toBeInTheDocument();
   });
+
+  it("applies visible focus states to all navigation and legal links", () => {
+    render(<Sidebar open={true} onClose={mockOnClose} />);
+
+    const allLinks = screen.getAllByRole("link");
+    expect(allLinks.length).toBeGreaterThan(0);
+
+    for (const link of allLinks) {
+      expect(link).toHaveClass("focus-visible:ring-2");
+      expect(link).toHaveClass("focus-visible:ring-primary");
+      expect(link).toHaveClass("focus:outline-none");
+    }
+  });
+
+  it("allows sequential tab focus through navigation links", async () => {
+    render(<Sidebar open={true} onClose={mockOnClose} />);
+
+    const navLinks = screen
+      .getAllByTestId("nav-link")
+      .filter((el) => el.getAttribute("href")?.startsWith("/dashboard/"));
+
+    expect(navLinks.length).toBeGreaterThan(1);
+
+    navLinks[0].focus();
+    expect(navLinks[0]).toHaveFocus();
+
+    await userEvent.tab();
+    expect(navLinks[1]).toHaveFocus();
+  });
 });
