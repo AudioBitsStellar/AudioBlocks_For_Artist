@@ -26,7 +26,7 @@
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "chromatic": "chromatic --project-id audio-blocks",
-    "prepare": "cd .. && husky install app/.husky",
+    "prepare": "cd .. && (husky app/.husky || true)",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --project=smoke",
     "api:types": "node scripts/generate-api-types.mjs",
@@ -83,7 +83,7 @@
     "baseline-browser-mapping": "^2.9.18",
     "chromatic": "^10.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.0.1",
+    "eslint-config-next": "16.1.5",
     "husky": "^9.1.7",
     "jsdom": "^25.0.1",
     "lint-staged": "^15.2.11",
@@ -92,7 +92,7 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.0.0",
-    "vitest-axe": "^0.1.0",
+    "vitest-axe": "0.1.0",
     "yaml": "^2.9.0"
   }
 }

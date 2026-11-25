@@ -118,9 +118,6 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Install accessibility testing dependencies
-        run: npm install --save-dev vitest-axe axe-core --legacy-peer-deps
-
       - name: Run blocking axe accessibility audits
         run: npm run test -- --run --testPathPattern="Accessibility|a11y" --reporter=verbose
 

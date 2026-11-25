@@ -19,12 +19,11 @@ const PRECACHE_URLS = [
   "/",
   "/login",
   "/signup",
-  "/dashboard",
   "/favicon.ico",
   "/logo.png",
   "/logo2.png",
-  "/next.svg",
-  "/vercel.svg",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
 ];
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
