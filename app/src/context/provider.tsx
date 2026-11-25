@@ -10,6 +10,7 @@ import { ThemeProvider } from "./ThemeContext";
 import PrivyProvider from "./PrivyProvider";
 import { CurrencyPreferenceProvider } from "./CurrencyPreferenceContext";
 import { I18nProvider } from "./I18nContext";
+import { SongProcessingProvider } from "./SongProcessingContext";
 
 const Provider = ({ children }: { children: ReactNode }) => {
   return (
@@ -20,7 +21,9 @@ const Provider = ({ children }: { children: ReactNode }) => {
             <CurrencyPreferenceProvider>
               <StellarNetworkProvider>
                 <MotionConfig reducedMotion="user">
-                  <PlaybackProvider>{children}</PlaybackProvider>
+                  <PlaybackProvider>
+                    <SongProcessingProvider>{children}</SongProcessingProvider>
+                  </PlaybackProvider>
                 </MotionConfig>
               </StellarNetworkProvider>
             </CurrencyPreferenceProvider>
