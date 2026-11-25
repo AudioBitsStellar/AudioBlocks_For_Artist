@@ -54,9 +54,7 @@
     "react-hook-form": "^7.71.0",
     "react-icons": "^5.5.0",
     "react-image-crop": "^11.1.2",
-    "react-slick": "^0.31.0",
     "recharts": "^3.3.0",
-    "slick-carousel": "^1.8.1",
     "sonner": "^2.0.7",
     "web-vitals": "^3.5.2",
     "zod": "^3.25.0"
@@ -75,7 +73,6 @@
     "@types/node": "^20.19.43",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/react-slick": "^0.23.13",
     "@vitejs/plugin-react": "^4.4.1",
     "axe-core": "^4.13.0",
     "babel-plugin-react-compiler": "1.0.0",
