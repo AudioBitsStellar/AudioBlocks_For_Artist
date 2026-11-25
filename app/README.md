@@ -169,9 +169,11 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api   # AudioBlock_Backend base U
 
 Two more optional variables are relevant to the Artist Portal surfaces:
 
-| Variable                    | Effect when unset                                                                                       |
-| --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_FEATURE_FLAGS` | Rollout flags fall back to their configured percentage, e.g. `artistOnchainAnalytics=true` to force on. |
+| Variable                        | Effect when unset                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_FEATURE_FLAGS`     | Rollout flags fall back to their configured percentage, e.g. `artistOnchainAnalytics=true` to force on. |
+| `NEXT_PUBLIC_ASSET_CDN_HOST`    | S3/CloudFront hostname for artist cover art and avatars allowed by `next/image` (omitted when unset).   |
+| `NEXT_PUBLIC_IPFS_GATEWAY_HOST` | IPFS gateway hostname allowed by `next/image` for `/ipfs/**` paths (defaults to `gateway.pinata.cloud`). |
 
 ### Feature flags and gradual rollout
 

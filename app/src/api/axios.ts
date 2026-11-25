@@ -10,12 +10,19 @@ import { clearQueryCache } from "@/api/queryClientInstance";
  * Ends the browser session. The access token lives in an httpOnly cookie that
  * only the server can clear, so this asks the server to do it.
  *
- * Also drops cached dashboard data (#576) so a forced sign-out (401) can
- * never leave the previous artist's earnings/messages in memory for whoever
- * signs in next.
+ * Also drops cached dashboard data (#576) and instructs the active service
+ * worker to purge its runtime cache (#582) so a sign-out or forced 401 can
+ * never leave the previous artist's data behind for whoever signs in next.
  */
 export function clearSession(): void {
   clearQueryCache();
+  if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+    try {
+      navigator.serviceWorker.controller?.postMessage({ type: "CLEAR_RUNTIME_CACHE" });
+    } catch {
+      // Non-fatal: SW may not be registered or active in this environment.
+    }
+  }
   void endSession();
 }
 
