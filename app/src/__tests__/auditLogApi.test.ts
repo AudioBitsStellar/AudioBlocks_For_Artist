@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("@/api/axios", () => ({ createApiClient: vi.fn() }));
+vi.mock("@/api/axios", () => ({ apiClient: {}, createApiClient: vi.fn() }));
 
 import { buildAuditLogUrl, mapServerAuditRecord } from "@/services/auditLogApi";
 

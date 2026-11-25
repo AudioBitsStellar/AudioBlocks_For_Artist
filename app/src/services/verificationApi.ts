@@ -8,7 +8,7 @@
  */
 
 import { VERIFICATION_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, usePost } from "@/api/queryClient";
+import { useGet, usePost } from "@/api/hooks";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 
 export const VERIFICATION_QUERY_KEY = ["artist-verification"] as const;

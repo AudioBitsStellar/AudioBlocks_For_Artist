@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchArtistOnchainStats, fetchIndexedActivity } from "@/lib/onchainIndexer";
 const { get } = vi.hoisted(() => ({ get: vi.fn() }));
-vi.mock("@/api/axios", () => ({ createApiClient: async () => ({ get }) }));
+vi.mock("@/api/axios", () => {
+  const client = { get };
+  return { apiClient: client, createApiClient: () => client };
+});
 vi.mock("@/lib/stellarNetwork", () => ({ getActiveNetworkId: () => "testnet" }));
 const event = {
   id: "1",

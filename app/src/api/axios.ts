@@ -4,6 +4,7 @@ import { isRetryableError, calculateBackoff } from "@/utils/retry";
 import { apiMonitor } from "@/utils/apiPerformanceMonitor";
 import { API_PROXY_BASE_URL, endSession } from "@/api/session";
 import { reportApiAvailable, reportApiUnavailable } from "@/lib/apiAvailability";
+import { clearQueryCache } from "./queryClientInstance";
 
 /**
  * Ends the browser session. The access token lives in an httpOnly cookie that
@@ -105,6 +106,23 @@ export function extractApiError(error: unknown): ApiError {
   return new ApiError("Unknown error", 0);
 }
 
+/**
+ * True for cancellations caused by React Query aborting an obsolete request
+ * (navigation, unmount, superseded query). These are not application failures:
+ * callers must receive the original cancellation error so React Query can
+ * discard the result instead of treating it as an error state.
+ */
+export function isRequestCancelled(error: unknown): boolean {
+  if (axios.isCancel(error)) return true;
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { name?: string; code?: string };
+  return (
+    candidate.name === "CanceledError" ||
+    candidate.name === "AbortError" ||
+    candidate.code === AxiosError.ERR_CANCELED
+  );
+}
+
 // Guard against firing concurrent redirects / clears for 401
 let redirecting = false;
 
@@ -137,10 +155,11 @@ function recordTiming(config: TrackedConfig | undefined): void {
   apiMonitor.record(endpoint, method, now() - config._perfStart);
 }
 
-export const createApiClient = async (): Promise<AxiosInstance> => {
+/** Builds the configured client. Called exactly once, at module load. */
+function buildApiClient(): AxiosInstance {
   // Requests go to the same-origin proxy, which attaches the httpOnly access
   // token server-side (#521). Nothing auth-related is read in the browser.
-  const apiClient = axios.create({
+  const client = axios.create({
     baseURL: API_PROXY_BASE_URL,
     timeout: 15000,
     headers: {
@@ -148,7 +167,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
     },
   });
 
-  apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     // Add CSRF token for state-changing requests
     const method = config.method?.toUpperCase();
     if (method && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
@@ -173,7 +192,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
     return config;
   });
 
-  apiClient.interceptors.response.use(
+  client.interceptors.response.use(
     (response: AxiosResponse) => {
       recordTiming(response.config as TrackedConfig);
       reportApiAvailable();
@@ -189,7 +208,13 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
       const config = error.config as TrackedConfig | undefined;
 
       recordTiming(config);
-      if (!axios.isCancel(error) && (!error.response || error.response.status >= 500)) {
+
+      // A cancelled request is an expected lifecycle event (e.g. navigating
+      // away while a query is in flight). Re-throw it untouched so React Query
+      // can ignore it instead of recording an application error or retrying.
+      if (isRequestCancelled(error)) return Promise.reject(error);
+
+      if (!error.response || error.response.status >= 500) {
         reportApiUnavailable();
       }
 
@@ -214,7 +239,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
           !config._sessionRetried
         ) {
           config._sessionRetried = true;
-          return apiClient(config);
+          return client(config);
         }
 
         if (!redirecting && !isCredentialRequest(config?.url)) {
@@ -262,7 +287,7 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
           await waitForRetry(delay);
 
           // Retry the request
-          return apiClient(config);
+          return client(config);
         }
 
         if (error.response?.status === 429 && typeof window !== "undefined") {
@@ -282,5 +307,20 @@ export const createApiClient = async (): Promise<AxiosInstance> => {
     }
   );
 
+  return client;
+}
+
+/**
+ * The single Axios instance used by every API hook and helper. Constructing it
+ * once (synchronously) means concurrent first requests share the same client
+ * and the same interceptors instead of racing to initialise one.
+ */
+export const apiClient: AxiosInstance = buildApiClient();
+
+/**
+ * Synchronous compatibility accessor for callers that still ask for a client.
+ * It never constructs a new instance — it always returns the shared one.
+ */
+export function createApiClient(): AxiosInstance {
   return apiClient;
-};
+}

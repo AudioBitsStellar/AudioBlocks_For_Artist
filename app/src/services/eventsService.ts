@@ -1,5 +1,5 @@
 import { EVENTS_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, usePost, usePut, useDelete } from "@/api/queryClient";
+import { useGet, usePost, usePut, useDelete } from "@/api/hooks";
 import { DASHBOARD_CACHE } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import type { CreateEventPayload, EngagementTrendPoint, EventEngagement, EventItem, EventListResponse, EventMetric, UpdateEventPayload } from "@/types/api";

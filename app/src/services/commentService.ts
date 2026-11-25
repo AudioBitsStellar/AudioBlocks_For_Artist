@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { DASHBOARD_COMMENT_ENDPOINTS } from "@/api/api-endpoint";
 import { createApiClient } from "@/api/axios";
-import { useGet } from "@/api/queryClient";
+import { useGet } from "@/api/hooks";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import type { CommentsResponse, CreateCommentPayload, CreateCommentResponse, DashboardComment } from "@/types/api";
 

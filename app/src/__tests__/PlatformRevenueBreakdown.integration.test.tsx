@@ -5,9 +5,10 @@ import React from "react";
 
 const { mockGet } = vi.hoisted(() => ({ mockGet: vi.fn() }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn().mockResolvedValue({ get: mockGet }),
-}));
+vi.mock("@/api/axios", () => {
+  const client = { get: mockGet };
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
 import PlatformRevenueBreakdown from "@/components/PlatformRevenueBreakdown";
 

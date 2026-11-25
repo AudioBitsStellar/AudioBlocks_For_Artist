@@ -9,7 +9,7 @@ const { mockUsePost } = vi.hoisted(() => ({
   mockUsePost: vi.fn(),
 }));
 
-vi.mock("@/api/queryClient", () => ({
+vi.mock("@/api/hooks", () => ({
   usePost: mockUsePost,
 }));
 

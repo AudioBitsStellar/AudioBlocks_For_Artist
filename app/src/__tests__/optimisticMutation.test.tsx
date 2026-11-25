@@ -8,11 +8,12 @@ const { mockPatch, mockPut } = vi.hoisted(() => ({
   mockPut: vi.fn(),
 }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn().mockResolvedValue({ patch: mockPatch, put: mockPut }),
-}));
+vi.mock("@/api/axios", () => {
+  const client = { patch: mockPatch, put: mockPut };
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
-import { useOptimisticMutation } from "@/api/queryClient";
+import { useOptimisticMutation } from "@/api/hooks";
 
 interface Track {
   id: number;

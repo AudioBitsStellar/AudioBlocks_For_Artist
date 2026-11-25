@@ -19,6 +19,8 @@ jobs:
       NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:9/api
       NEXT_PUBLIC_API_URL: http://127.0.0.1:9/api
       NEXT_PUBLIC_PRIVY_APP_ID: cl00000000000000000000000
+      NEXT_PUBLIC_ANALYTICS_WRITE_KEY: test-write-key
+      NEXT_PUBLIC_USE_MOCK_DATA: "false"
       NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015"
       NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
     steps:

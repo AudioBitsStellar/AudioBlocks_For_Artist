@@ -1,15 +1,5 @@
 import { useQuery, useMutation, useQueryClient, QueryKey } from "@tanstack/react-query";
-import { createApiClient } from "./axios";
-// import { ApiResponse } from "@/types";
-
-let apiClient: Awaited<ReturnType<typeof createApiClient>> | null = null;
-
-const getApiClient = async () => {
-  if (!apiClient) {
-    apiClient = await createApiClient();
-  }
-  return apiClient;
-};
+import { apiClient } from "./axios";
 
 /* =========================
    GENERIC GET
@@ -26,9 +16,10 @@ export function useGet<T>(
 ) {
   return useQuery<T>({
     queryKey,
-    queryFn: async () => {
-      const client = await getApiClient();
-      const res = await client.get<T>(endpoint);
+    // Forward React Query's abort signal so navigating away (or a superseded
+    // query) cancels the in-flight Axios request instead of letting it finish.
+    queryFn: async ({ signal }) => {
+      const res = await apiClient.get<T>(endpoint, { signal });
       return res.data; // 🔑 FIX: return data, not AxiosResponse
     },
     enabled: options?.enabled ?? true,
@@ -55,10 +46,9 @@ export function usePost<TData, TVariables = unknown>(
 
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      const client = await getApiClient();
       const body = options?.requestBody ? options.requestBody(variables) : variables;
       const headers = options?.requestHeaders?.(variables);
-      const res = await client.post<TData>(endpoint, body, { headers });
+      const res = await apiClient.post<TData>(endpoint, body, { headers });
       return res.data;
     },
     onSuccess: (data, variables) => {
@@ -90,8 +80,7 @@ export function usePut<TData, TVariables = unknown>(
 
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      const client = await getApiClient();
-      const res = await client.put<TData>(endpoint, variables);
+      const res = await apiClient.put<TData>(endpoint, variables);
       return res.data;
     },
     onSuccess: (data) => {
@@ -123,8 +112,7 @@ export function usePatch<TData, TVariables = unknown>(
 
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
-      const client = await getApiClient();
-      const res = await client.patch<TData>(endpoint, variables);
+      const res = await apiClient.patch<TData>(endpoint, variables);
       return res.data;
     },
     onSuccess: (data) => {
@@ -156,8 +144,7 @@ export function useDelete<TData = unknown>(
 
   return useMutation<TData, Error, void>({
     mutationFn: async () => {
-      const client = await getApiClient();
-      const res = await client.delete<TData>(endpoint);
+      const res = await apiClient.delete<TData>(endpoint);
       return res.data;
     },
     onSuccess: (data) => {
@@ -186,6 +173,8 @@ export interface OptimisticMutationOptions<TData, TVariables, TCache> {
   request?: (variables: TVariables) => Promise<TData>;
   /** Cached query to update optimistically; it is also invalidated once the mutation settles. */
   queryKey?: QueryKey;
+  /** Additional caches affected by the edit (e.g. the Overview summaries). */
+  invalidateQueries?: QueryKey[];
   /** Produces the optimistic cache value. Only called when `queryKey` has cached data. */
   applyOptimistic?: (cache: TCache, variables: TVariables) => TCache;
   /**
@@ -230,12 +219,11 @@ export function useOptimisticMutation<TData, TVariables, TCache = unknown>(
   return useMutation<TData, Error, TVariables, OptimisticContext<TCache>>({
     mutationFn: async (variables) => {
       if (options.request) return options.request(variables);
-      const client = await getApiClient();
       const url = options.endpoint(variables);
       const res =
         method === "put"
-          ? await client.put<TData>(url, variables)
-          : await client.patch<TData>(url, variables);
+          ? await apiClient.put<TData>(url, variables)
+          : await apiClient.patch<TData>(url, variables);
       return res.data;
     },
     onMutate: async (variables) => {
@@ -262,6 +250,7 @@ export function useOptimisticMutation<TData, TVariables, TCache = unknown>(
     },
     onSettled: () => {
       if (queryKey) queryClient.invalidateQueries({ queryKey });
+      options.invalidateQueries?.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
     },
   });
 }

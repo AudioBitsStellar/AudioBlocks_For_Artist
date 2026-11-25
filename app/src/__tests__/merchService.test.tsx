@@ -15,14 +15,15 @@ vi.mock("@/hooks/useToastHandler", () => ({
   useHandleError: () => vi.fn(),
 }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn().mockResolvedValue({
+vi.mock("@/api/axios", () => {
+  const client = {
     get: mockGet,
     post: mockPost,
     put: mockPut,
     delete: mockDelete,
-  }),
-}));
+  };
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
 import useMerchService, {
   formatPrice,
@@ -84,7 +85,7 @@ describe("useMerchService — CRUD operations", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(responseData);
-      expect(mockGet).toHaveBeenCalledWith("/artist/merches");
+      expect(mockGet.mock.calls[0][0]).toBe("/artist/merches");
     });
 
     it("surfaces error when the API call fails", async () => {

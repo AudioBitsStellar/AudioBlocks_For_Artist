@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { clientPost } = vi.hoisted(() => ({ clientPost: vi.fn() }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn(async () => ({ post: clientPost })),
-}));
+vi.mock("@/api/axios", () => {
+  const client = ({ post: clientPost });
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
 import {
   beginTwoFactorEnrollment,

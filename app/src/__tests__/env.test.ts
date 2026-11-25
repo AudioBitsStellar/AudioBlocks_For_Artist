@@ -2,18 +2,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const REQUIRED_KEYS = [
   "NEXT_PUBLIC_API_BASE_URL",
+  "NEXT_PUBLIC_PRIVY_APP_ID",
   "NEXT_PUBLIC_ANALYTICS_WRITE_KEY",
   "NEXT_PUBLIC_USE_MOCK_DATA",
 ] as const;
 
 const validEnv = {
   NEXT_PUBLIC_API_BASE_URL: "https://api.example.com",
+  NEXT_PUBLIC_PRIVY_APP_ID: "cl00000000000000000000000",
   NEXT_PUBLIC_ANALYTICS_WRITE_KEY: "test-write-key",
   NEXT_PUBLIC_USE_MOCK_DATA: "false",
   NODE_ENV: "test",
 };
 
-/** Re-imports the module fresh so top-level `validateEnv()` reruns against the current process.env. */
+/** Re-imports the module fresh so schemas are re-evaluated against the current process.env. */
 async function loadEnvModule() {
   vi.resetModules();
   return import("../lib/env");
@@ -83,6 +85,45 @@ describe("validateEnv", () => {
       expect(message).toMatch(/NEXT_PUBLIC_API_BASE_URL/);
       expect(message).toMatch(/NEXT_PUBLIC_ANALYTICS_WRITE_KEY/);
       expect(message).toMatch(/NEXT_PUBLIC_USE_MOCK_DATA/);
+    }
+  });
+
+  it("validates optional wallet URLs and passphrase when they are set", async () => {
+    Object.assign(process.env, validEnv, {
+      NEXT_PUBLIC_HORIZON_URL: "horizon.example.com",
+      NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE: "   ",
+    });
+    const { validateEnv } = await loadEnvModule();
+
+    expect(() => validateEnv()).toThrow(/NEXT_PUBLIC_HORIZON_URL: must be a valid URL/);
+    expect(() => validateEnv()).toThrow(/NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE/);
+  });
+
+  it("validates numeric and boolean formats when optional variables are set", async () => {
+    Object.assign(process.env, validEnv, {
+      NEXT_PUBLIC_APP_VERSION: "v2",
+      NEXT_PUBLIC_MAINTENANCE_MODE: "1",
+    });
+    const { validateEnv } = await loadEnvModule();
+
+    expect(() => validateEnv()).toThrow(/NEXT_PUBLIC_APP_VERSION/);
+    expect(() => validateEnv()).toThrow(/NEXT_PUBLIC_MAINTENANCE_MODE/);
+  });
+
+  it("never includes secret values in validation errors", async () => {
+    Object.assign(process.env, validEnv, {
+      PRIVY_APP_SECRET: "super-secret-value",
+      SENTRY_PROJECT: "super-secret-value",
+    });
+    const { validateEnv } = await loadEnvModule();
+
+    try {
+      validateEnv();
+      expect.unreachable("validateEnv should have thrown");
+    } catch (error) {
+      const message = (error as Error).message;
+      expect(message).toMatch(/SENTRY_PROJECT/);
+      expect(message).not.toContain("super-secret-value");
     }
   });
 });

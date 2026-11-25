@@ -1,5 +1,5 @@
 import { MERCH_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, usePost, usePut, useDelete } from "@/api/queryClient";
+import { useGet, usePost, usePut, useDelete } from "@/api/hooks";
 import { DASHBOARD_CACHE } from "@/api/cachePolicy";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import type { MerchOrderPayload, CreateMerchPayload, MerchInventoryItem, MerchItem, MerchListResponse, MerchMetric, MerchOrder, PriceValidation, UpdateMerchPayload } from "@/types/api";

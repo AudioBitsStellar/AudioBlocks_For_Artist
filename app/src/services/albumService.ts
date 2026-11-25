@@ -1,5 +1,5 @@
 import { ALBUM_ENDPOINTS } from "@/api/api-endpoint";
-import { useDelete, useGet, usePatch, usePost } from "@/api/queryClient";
+import { useDelete, useGet, usePatch, usePost } from "@/api/hooks";
 import {
   ALBUM_PUBLISHED_INVALIDATIONS,
   DASHBOARD_CACHE,

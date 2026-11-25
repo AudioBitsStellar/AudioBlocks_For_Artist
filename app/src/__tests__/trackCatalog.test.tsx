@@ -15,9 +15,10 @@ const { mockPatch, mockHandleSuccess, mockHandleError } = vi.hoisted(() => ({
   mockHandleError: vi.fn(),
 }));
 
-vi.mock("@/api/axios", () => ({
-  createApiClient: vi.fn().mockResolvedValue({ patch: mockPatch }),
-}));
+vi.mock("@/api/axios", () => {
+  const client = { patch: mockPatch };
+  return { apiClient: client, createApiClient: vi.fn(() => client) };
+});
 
 vi.mock("@/hooks/useToastHandler", () => ({
   useHandleSuccess: () => mockHandleSuccess,

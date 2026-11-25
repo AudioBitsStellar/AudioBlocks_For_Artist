@@ -1,5 +1,6 @@
 import { SONG_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet, useOptimisticMutation, usePost } from "@/api/queryClient";
+import { DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
+import { useGet, useOptimisticMutation, usePost } from "@/api/hooks";
 import { useHandleError, useHandleSuccess } from "@/hooks/useToastHandler";
 import { featureFlags } from "@/lib/featureFlags";
 import type { TrackVisibility } from "@/services/trackVisibilityService";
@@ -118,6 +119,9 @@ const useTrackServices = () => {
             )
         : undefined,
       onOptimistic,
+      // An edit can change what the Overview activity/summaries show once the
+      // backend re-indexes it; only that cache is invalidated (#121).
+      invalidateQueries: [DASHBOARD_QUERY_KEYS.overview],
       onSuccess: (response) => handleSuccess(response?.message || "Track updated!"),
       onError: (error) =>
         handleError(
@@ -166,7 +170,7 @@ const useTrackServices = () => {
       {
         onSuccess: (res) => handleSuccess(res?.message || "New track version uploaded!"),
         onError: (err) => handleError(err.message || "Failed to upload new track version."),
-        invalidateQueries: [["song-versions", String(trackId)]],
+        invalidateQueries: [["song-versions", String(trackId)], DASHBOARD_QUERY_KEYS.overview],
       }
     );
 

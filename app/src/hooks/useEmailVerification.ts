@@ -1,7 +1,7 @@
 "use client";
 
 import { USER_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet } from "@/api/queryClient";
+import { useGet } from "@/api/hooks";
 import { isEmailUnverified } from "@/services/emailVerificationService";
 
 /**

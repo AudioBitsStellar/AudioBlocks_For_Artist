@@ -1,5 +1,5 @@
 import { DASHBOARD_TRANSACTION_ENDPOINTS } from "@/api/api-endpoint";
-import { useGet } from "@/api/queryClient";
+import { useGet } from "@/api/hooks";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 import type { DashboardTransaction, TransactionsResponse } from "@/types/api";
 
