@@ -7,6 +7,7 @@ import {
   parsePercent,
   percentToBasisPoints,
   rebalanceToTotal,
+  totalBasisPoints,
   toBasisPointEntries,
   totalPercent,
   validateRoyaltySplit,
@@ -54,6 +55,7 @@ describe("percent <-> basis points", () => {
   it("round-trips through integer basis points", () => {
     expect(percentToBasisPoints(50)).toBe(5000);
     expect(percentToBasisPoints(33.33)).toBe(3333);
+    expect(percentToBasisPoints(33.333)).toBe(3333);
     expect(basisPointsToPercent(2500)).toBe(25);
   });
 
@@ -90,9 +92,31 @@ describe("rebalanceToTotal", () => {
     expect(rebalanceToTotal(rows(50, 50), "row_0", -20)[0].percent).toBe(0);
   });
 
+  it("keeps a single-recipient split at 100%", () => {
+    const result = rebalanceToTotal(rows(100), "row_0", 40);
+    expect(result[0].percent).toBe(100);
+    expect(totalBasisPoints(result)).toBe(10_000);
+  });
+
   it("distributes across empty rows rather than losing the remainder", () => {
     const result = rebalanceToTotal(rows(0, 0, 0), "row_0", 40);
     expect(totalPercent(result)).toBe(100);
+  });
+
+  it("normalizes edits to on-chain basis-point precision", () => {
+    const result = rebalanceToTotal(rows(50, 50), "row_0", 33.333);
+    expect(result.map((row) => row.percent)).toEqual([33.33, 66.67]);
+    expect(totalBasisPoints(result)).toBe(10_000);
+  });
+
+  it("keeps every rebalanced share set at exactly 10,000 basis points", () => {
+    for (let count = 1; count <= MAX_COLLABORATORS; count += 1) {
+      for (let requested = 0; requested <= 100; requested += 7) {
+        const participants = rows(...Array(count).fill(100 / count));
+        const result = rebalanceToTotal(participants, "row_0", requested);
+        expect(totalBasisPoints(result)).toBe(10_000);
+      }
+    }
   });
 
   it("is a no-op for an unknown row id", () => {

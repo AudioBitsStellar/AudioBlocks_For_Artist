@@ -25,6 +25,7 @@ AudioBlocks implements a dual runtime configuration system that delivers client 
 │  NEXT_PUBLIC_API_BASE_URL=https://api.testnet.audioblocks.io│
 │  NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE=...                 │
 │  NEXT_PUBLIC_HORIZON_URL=...                                │
+│  NEXT_PUBLIC_FEATURE_FLAGS=artistOnchainAnalytics=true      │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                 Node.js server.js process.env
@@ -54,6 +55,8 @@ AudioBlocks implements a dual runtime configuration system that delivers client 
 3. **Public Dynamic API (`app/src/app/api/config/route.ts`)**:
    - Route `GET /api/config` exposing public configuration with `Cache-Control: no-store`.
    - Allows healthcheck harnesses, external scripts, and mobile webviews to inspect live runtime values.
+   - Includes runtime `NEXT_PUBLIC_FEATURE_FLAGS`; rollout decisions use the
+     value injected into each page response, not the client build.
 
 4. **Environment-Agnostic Dockerfile**:
    - `ARG NEXT_PUBLIC_*` in the builder stage are configured with sensible build-time placeholders.
@@ -77,3 +80,18 @@ AudioBlocks implements a dual runtime configuration system that delivers client 
 | **Production** | `audioblocks:sha-abc1234` promoted to `:v1.2.0` | `NEXT_PUBLIC_API_BASE_URL=https://api.audioblocks.io` |
 
 No code recompilation occurs during promotion.
+
+### Runtime feature-flag kill switch
+
+Set `NEXT_PUBLIC_FEATURE_FLAGS` in the service/container runtime environment,
+not in Docker build arguments. To disable the on-chain analytics rollout without
+rebuilding the image:
+
+```text
+NEXT_PUBLIC_FEATURE_FLAGS=artistOnchainAnalytics=false
+```
+
+Update the service environment and restart/redeploy the same immutable image so
+new page responses contain the changed runtime config. An explicit runtime
+`false` overrides browser-local test settings; remove local overrides when
+verifying other runtime flag values.

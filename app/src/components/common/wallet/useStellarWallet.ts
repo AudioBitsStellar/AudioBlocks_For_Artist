@@ -9,13 +9,6 @@ import {
 } from "./TransactionSignReview";
 import { validateStellarPublicKey } from "@/utils/stellarAddress";
 
-/**
- * Connects Freighter, persists the address on the backend, and exposes a
- * `signAndSubmit` helper that any mint/setup flow can reuse: it takes the
- * `{ xdr, networkPassphrase }` the backend's prepare-* endpoint returns,
- * gets it signed in the Freighter popup, and POSTs the signed XDR to the
- * given submit-* mutation.
- */
 export function useStellarWallet() {
   const [address, setAddress] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);

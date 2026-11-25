@@ -21,11 +21,16 @@ import {
   type FreighterRecoveryState,
 } from "@/lib/freighter";
 import { useEstimatedFee } from "@/hooks/useEstimatedFee";
-import { useState, useEffect } from "react";
+import EstimatedFeeNotice from "./EstimatedFeeNotice";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, Check, AlertCircle, Copy } from "lucide-react";
 import { ApiEnvelope, SubmitSongTransferResponse } from "@/types/api";
 import { featureFlags } from "@/lib/featureFlags";
 import { translateContractError } from "@/lib/contractErrors";
+import { useTransactionStatus } from "@/hooks/useTransactionStatus";
+import { transactionStorageKey } from "@/lib/transactionStatus";
+import { getActiveNetworkId } from "@/lib/stellarNetwork";
+import { explorerTxUrl } from "@/lib/horizon";
 import FreighterRecoveryNotice from "./FreighterRecoveryNotice";
 import { validateStellarPublicKey } from "@/utils/stellarAddress";
 
@@ -39,6 +44,7 @@ type TransferStatus =
   | "preparing"
   | "awaiting_signature"
   | "submitting"
+  | "pending"
   | "success"
   | "rejected"
   | "timeout"
@@ -46,13 +52,22 @@ type TransferStatus =
 
 const COOLDOWN_DURATION = 5;
 
+interface TransferSubmission {
+  signedXdr: string;
+  idempotencyKey: string;
+}
+
 export default function TransferSongButton({ songId }: TransferSongButtonProps) {
   const { address } = useStellarWallet();
   const { usePrepareSongTransfer, useSubmitSongTransfer } = useOnchainServices();
   const { requestReview, reviewDialog } = useTransactionSignReview();
   const prepareMutation = usePrepareSongTransfer(songId);
   const submitMutation = useSubmitSongTransfer(songId);
-  const { estimate: gasEstimate } = useEstimatedFee();
+  const fee = useEstimatedFee();
+  const canSubmit = !fee.isLoading && !fee.error && fee.estimate !== null;
+  const transaction = useTransactionStatus(
+    transactionStorageKey("transfer", `${getActiveNetworkId()}:${songId}`)
+  );
 
   const [toAddress, setToAddress] = useState("");
   const [status, setStatus] = useState<TransferStatus>("idle");
@@ -63,6 +78,8 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
   const [copied, setCopied] = useState(false);
+  const submitLock = useRef(false);
+  const pendingSubmission = useRef<TransferSubmission | null>(null);
 
   const addressValidation = validateStellarPublicKey(toAddress);
   const trimmedAddress = addressValidation.valid ? addressValidation.normalized : toAddress.trim();
@@ -73,7 +90,33 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
     prepareMutation.isPending ||
     submitMutation.isPending ||
     ["preparing", "awaiting_signature", "submitting"].includes(status) ||
+    status === "pending" ||
+    !transaction.isReady ||
     cooldownActive;
+
+  useEffect(() => {
+    const tracked = transaction.record;
+    if (!transaction.isReady || !tracked) return;
+    setTxHash(tracked.txHash);
+    if (tracked.status === "pending") setStatus("pending");
+    if (tracked.status === "confirmed") {
+      if (status === "pending") {
+        analytics.mintSucceeded({
+          songId,
+          txHash: tracked.txHash,
+          tokenId: tracked.toAddress ?? "",
+        });
+        toast.success("Song transferred!");
+        setCooldownActive(true);
+        setCooldownRemaining(COOLDOWN_DURATION);
+      }
+      setStatus("success");
+    }
+    if (tracked.status === "failed") {
+      setErrorMsg("The transaction failed on Stellar.");
+      setStatus("failed");
+    }
+  }, [songId, status, transaction.isReady, transaction.record]);
 
   useEffect(() => {
     if (!cooldownActive) return;
@@ -98,9 +141,29 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
     return () => clearTimeout(timer);
   }, [cooldownActive, cooldownRemaining]);
 
-  const handleTransfer = async () => {
-    if (!address || !isValidAddress || isSelfTransfer) return;
+  const submitSignedXdr = async (submission: TransferSubmission) => {
+    setStatus("submitting");
+    const result: ApiEnvelope<SubmitSongTransferResponse> =
+      await submitMutation.mutateAsync(submission);
+    const hash = result?.data?.txHash;
+    if (!hash) throw new Error("The submit response did not include a transaction hash.");
+    pendingSubmission.current = null;
+    setTxHash(hash);
+    transaction.track(hash, { toAddress: result.data.toAddress });
+    setStatus("pending");
+  };
 
+  const handleTransfer = async () => {
+    if (
+      !address ||
+      !isValidAddress ||
+      isSelfTransfer ||
+      !canSubmit ||
+      !transaction.isReady ||
+      transaction.record?.status === "pending" ||
+      submitLock.current
+    )
+      return;
     const available = await isFreighterAvailable();
     if (!available) {
       setFreighterFailure("missing");
@@ -113,7 +176,24 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
     setFreighterFailureMessage("");
     analytics.mintStarted({ songId, walletAddress: address });
 
+    submitLock.current = true;
+    transaction.clear();
     try {
+      const available = await isFreighterAvailable();
+      if (!available) {
+        setStatus("not_installed");
+        return;
+      }
+
+      setStatus("preparing");
+      setErrorMsg("");
+      analytics.mintStarted({ songId, walletAddress: address });
+
+      if (pendingSubmission.current) {
+        await submitSignedXdr(pendingSubmission.current);
+        return;
+      }
+
       const prepared = await prepareMutation.mutateAsync({ toAddress: trimmedAddress });
       setStatus("idle");
       const approved = await requestReview({
@@ -151,22 +231,12 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
         throw error;
       }
 
-      setStatus("submitting");
-      const result: ApiEnvelope<SubmitSongTransferResponse> = await submitMutation.mutateAsync({
+      const submission: TransferSubmission = {
         signedXdr,
-      });
-
-      const hash = result?.data?.txHash ?? "";
-      setTxHash(hash);
-      setStatus("success");
-      setCooldownActive(true);
-      setCooldownRemaining(COOLDOWN_DURATION);
-      analytics.mintSucceeded({
-        songId,
-        txHash: hash,
-        tokenId: result?.data?.toAddress ?? "",
-      });
-      toast.success("Song transferred!");
+        idempotencyKey: crypto.randomUUID(),
+      };
+      pendingSubmission.current = submission;
+      await submitSignedXdr(submission);
     } catch (err: unknown) {
       const recoveryState = classifyFreighterError(err);
       if (recoveryState !== "other") {
@@ -187,6 +257,11 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
         setStatus("failed");
       }
       setErrorMsg(reason);
+      if (contractError.category !== "network" && !reason.toLowerCase().includes("timeout")) {
+        pendingSubmission.current = null;
+      }
+    } finally {
+      submitLock.current = false;
     }
   };
 
@@ -226,7 +301,7 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
           <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
           <span className="text-xs text-blue-400 font-medium">Preparing transfer...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -242,7 +317,7 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
           <Loader2 className="h-4 w-4 animate-spin text-yellow-500" />
           <span className="text-xs text-yellow-400 font-medium">Awaiting wallet signature...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -258,7 +333,33 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
           <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
           <span className="text-xs text-purple-400 font-medium">Broadcasting to network...</span>
         </div>
-        <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+        <EstimatedFeeNotice {...fee} />
+      </div>
+    );
+  }
+
+  if (status === "pending") {
+    return (
+      <div className="flex flex-col gap-2 p-3 bg-zinc-900 border border-blue-600/30 rounded-lg">
+        <p role="status" aria-live="polite" className="text-xs text-blue-400 font-medium">
+          Confirming on Stellar...
+        </p>
+        {txHash && (
+          <a
+            href={explorerTxUrl(txHash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-gray-400 font-mono truncate underline w-fit"
+          >
+            View transaction
+          </a>
+        )}
+        {transaction.error && (
+          <p role="alert" className="text-[10px] text-yellow-400">
+            Status check will retry automatically: {transaction.error}
+          </p>
+        )}
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -292,10 +393,12 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
         </div>
         <button
           onClick={handleTransfer}
+          disabled={!canSubmit}
           className="w-fit rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
           Retry Signing
         </button>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -313,10 +416,12 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
         </div>
         <button
           onClick={handleTransfer}
+          disabled={!canSubmit}
           className="w-fit rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
           Retry Submission
         </button>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -334,10 +439,12 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
         </div>
         <button
           onClick={handleTransfer}
+          disabled={!canSubmit}
           className="w-fit rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-1.5 transition-colors text-xs"
         >
           Retry Transfer
         </button>
+        <EstimatedFeeNotice {...fee} />
       </div>
     );
   }
@@ -353,7 +460,16 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
           <Check className="h-4 w-4 text-green-500" />
           <p className="text-xs text-green-400 font-medium">Transferred successfully!</p>
         </div>
-        {txHash && <p className="text-[10px] text-gray-400 font-mono truncate">Tx: {txHash}</p>}
+        {txHash && (
+          <a
+            href={explorerTxUrl(txHash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-gray-400 font-mono truncate underline w-fit"
+          >
+            View transaction
+          </a>
+        )}
         {cooldownActive && (
           <p className="text-[10px] text-gray-400">
             Cooldown: {cooldownRemaining}s — new transfer available shortly
@@ -435,11 +551,12 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
       )}
       <button
         onClick={handleTransfer}
-        disabled={isBusy || !isValidAddress || isSelfTransfer}
-        className={`${isBusy || !isValidAddress || isSelfTransfer ? "opacity-70 cursor-not-allowed" : ""} w-fit rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
+        disabled={isBusy || !canSubmit || !isValidAddress || isSelfTransfer}
+        className={`${isBusy || !canSubmit || !isValidAddress || isSelfTransfer ? "opacity-70 cursor-not-allowed" : ""} w-fit rounded-lg bg-[#D2045B] hover:bg-[#B8043F] text-white font-semibold px-4 py-2 transition-colors text-sm`}
       >
         Transfer song
       </button>
+      <EstimatedFeeNotice {...fee} />
       <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
       {reviewDialog}
     </div>
