@@ -293,3 +293,18 @@ export function isFeatureEnabled(
 
   return bucketOf(name, trimmed) < flag.rolloutPercentage;
 }
+
+
+export const FEATURE_FLAGS = {
+  merch: "FEATURE_MERCH",
+  events: "FEATURE_EVENTS",
+  fanMessaging: "FEATURE_FAN_MESSAGING",
+  referrals: "FEATURE_REFERRALS",
+  loyalty: "FEATURE_LOYALTY",
+  support: "FEATURE_SUPPORT",
+} as const;
+
+
+if (!isFeatureEnabled("events")) {
+  return <ComingSoonPage featureName="Events" />;
+}
