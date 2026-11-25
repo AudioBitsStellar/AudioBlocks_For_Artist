@@ -7,12 +7,12 @@ import {
   parsePercent,
   percentToBasisPoints,
   rebalanceToTotal,
+  totalBasisPoints,
   toBasisPointEntries,
   totalPercent,
   validateSplitDraft,
   type SplitParticipant,
 } from "./royaltySplits";
-
 
 export interface Recipient {
   address: string;
@@ -20,31 +20,40 @@ export interface Recipient {
   percentage: number;
 }
 
-export function validateRoyaltySplits(recipients: Recipient[]): { isValid: boolean; error?: string } {
+export function validateRoyaltySplits(recipients: Recipient[]): {
+  isValid: boolean;
+  error?: string;
+} {
   if (!recipients || recipients.length === 0) {
-    return { isValid: false, error: 'At least one recipient is required.' };
+    return { isValid: false, error: "At least one recipient is required." };
   }
 
   let totalPercentage = 0;
   const addressSet = new Set<string>();
 
   for (const r of recipients) {
-    if (!r.address || r.address.trim() === '') {
-      return { isValid: false, error: 'All recipients must have a valid Stellar address.' };
+    if (!r.address || r.address.trim() === "") {
+      return { isValid: false, error: "All recipients must have a valid Stellar address." };
     }
     if (addressSet.has(r.address)) {
-      return { isValid: false, error: 'Duplicate Stellar addresses are not allowed in royalty splits.' };
+      return {
+        isValid: false,
+        error: "Duplicate Stellar addresses are not allowed in royalty splits.",
+      };
     }
     addressSet.add(r.address);
 
     if (isNaN(r.percentage) || r.percentage <= 0) {
-      return { isValid: false, error: 'Each recipient percentage must be greater than zero.' };
+      return { isValid: false, error: "Each recipient percentage must be greater than zero." };
     }
     totalPercentage += Number(r.percentage);
   }
 
   if (Math.abs(totalPercentage - 100) > 0.01) {
-    return { isValid: false, error: `Royalty percentages must sum to exactly 100% (currently ${totalPercentage}%).` };
+    return {
+      isValid: false,
+      error: `Royalty percentages must sum to exactly 100% (currently ${totalPercentage}%).`,
+    };
   }
 
   return { isValid: true };
@@ -72,6 +81,7 @@ describe("percent <-> basis points", () => {
   it("round-trips through integer basis points", () => {
     expect(percentToBasisPoints(50)).toBe(5000);
     expect(percentToBasisPoints(33.33)).toBe(3333);
+    expect(percentToBasisPoints(33.333)).toBe(3333);
     expect(basisPointsToPercent(2500)).toBe(25);
   });
 
@@ -108,9 +118,31 @@ describe("rebalanceToTotal", () => {
     expect(rebalanceToTotal(rows(50, 50), "row_0", -20)[0].percent).toBe(0);
   });
 
+  it("keeps a single-recipient split at 100%", () => {
+    const result = rebalanceToTotal(rows(100), "row_0", 40);
+    expect(result[0].percent).toBe(100);
+    expect(totalBasisPoints(result)).toBe(10_000);
+  });
+
   it("distributes across empty rows rather than losing the remainder", () => {
     const result = rebalanceToTotal(rows(0, 0, 0), "row_0", 40);
     expect(totalPercent(result)).toBe(100);
+  });
+
+  it("normalizes edits to on-chain basis-point precision", () => {
+    const result = rebalanceToTotal(rows(50, 50), "row_0", 33.333);
+    expect(result.map((row) => row.percent)).toEqual([33.33, 66.67]);
+    expect(totalBasisPoints(result)).toBe(10_000);
+  });
+
+  it("keeps every rebalanced share set at exactly 10,000 basis points", () => {
+    for (let count = 1; count <= MAX_COLLABORATORS; count += 1) {
+      for (let requested = 0; requested <= 100; requested += 7) {
+        const participants = rows(...Array(count).fill(100 / count));
+        const result = rebalanceToTotal(participants, "row_0", requested);
+        expect(totalBasisPoints(result)).toBe(10_000);
+      }
+    }
   });
 
   it("is a no-op for an unknown row id", () => {
@@ -159,6 +191,16 @@ describe("validateSplitDraft", () => {
   it("requires the shares to add up to 100%", () => {
     expect(validateSplitDraft(rows(50, 40)).total).toMatch(/100%/);
     expect(isSplitDraftValid(rows(50, 40))).toBe(false);
+  });
+
+  it("rejects totals that only balance before rounding to contract precision", () => {
+    const draft = rows(33.333, 33.333, 33.333).map((row, index) => ({
+      ...row,
+      address: `${ADDRESS_A.slice(0, -1)}${index + 2}`,
+    }));
+    expect(totalBasisPoints(draft)).toBe(9_999);
+    expect(validateSplitDraft(draft).total).toMatch(/100%/);
+    expect(isSplitDraftValid(draft)).toBe(false);
   });
 
   it("rejects a zero or oversized share", () => {
