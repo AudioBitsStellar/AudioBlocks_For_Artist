@@ -5,13 +5,14 @@ import ListenerAnalyticsUnavailable from "./ListenerAnalyticsUnavailable";
 import MockDataBadge from "./MockDataBadge";
 import { Users, Smartphone, PieChart } from "lucide-react";
 import type { DemographicsData } from "@/services/analyticsService";
+import { featureFlags } from "@/lib/featureFlags";
 
 interface AnalyticsDemographicsProps {
   data?: DemographicsData;
 }
 
 export default function AnalyticsDemographics({ data }: AnalyticsDemographicsProps) {
-  if (process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "true") {
+  if (!featureFlags.useMockListenerAnalytics) {
     return <ListenerAnalyticsUnavailable title="Listener Demographics Breakdown" />;
   }
   if (!data) return null;
@@ -29,7 +30,10 @@ export default function AnalyticsDemographics({ data }: AnalyticsDemographicsPro
           <h2 className="text-white text-xl font-bold flex items-center gap-2">
             <Users size={20} className="text-emerald-400" aria-hidden="true" />
             Listener Demographics Breakdown
-            <MockDataBadge label="Listener demographics" />
+            <MockDataBadge
+              label="Listener demographics"
+              active={featureFlags.useMockListenerAnalytics}
+            />
           </h2>
           <p className="text-sm text-gray-400 mt-1">
             Audience age ranges, gender identity, and playback devices.

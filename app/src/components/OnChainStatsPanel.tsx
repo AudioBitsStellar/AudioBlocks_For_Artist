@@ -191,7 +191,7 @@ export default function OnChainStatsPanel() {
           <h2 className="flex items-center text-base font-semibold text-text">
             <Wallet size={16} className="mr-2" aria-hidden="true" />
             {isMock ? "Sample account" : "Connected account"}
-            <MockDataBadge label="onchain-stats" />
+            <MockDataBadge label="On-chain stats" active={isMock} />
           </h2>
           <div className="flex items-center gap-2">
             <a

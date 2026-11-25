@@ -9,27 +9,58 @@ import { getRuntimeConfig } from "@/lib/runtimeConfig";
  * still show mock data during the transition period.
  */
 
-const globalMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+/**
+ * Read on every access rather than once at import, so a surface always agrees
+ * with the environment it renders in (and tests can flip it with `vi.stubEnv`).
+ * Next.js still inlines the value at build time.
+ */
+const globalMock = (): boolean => process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 export const featureFlags = {
   /** Overview KPI cards — wired to real API when false */
-  useMockOverviewCards: globalMock,
+  get useMockOverviewCards(): boolean {
+    return globalMock();
+  },
   /** Events list and metrics */
-  useMockEvents: globalMock,
+  get useMockEvents(): boolean {
+    return globalMock();
+  },
   /** Merch list and metrics */
-  useMockMerches: globalMock,
+  get useMockMerches(): boolean {
+    return globalMock();
+  },
   /** Albums carousel on dashboard/overview — wired to real API when false */
-  useMockAlbums: globalMock,
+  get useMockAlbums(): boolean {
+    return globalMock();
+  },
   /** My Music track list — track edits are simulated locally instead of hitting the API when true */
-  useMockTracks: globalMock,
+  get useMockTracks(): boolean {
+    return globalMock();
+  },
   /** Fans Engagement widget (top songs, streaming regions, top streamers) — wired to real API when false */
-  useMockFansEngagement: globalMock,
+  get useMockFansEngagement(): boolean {
+    return globalMock();
+  },
   /** Artists-tab conversations in Messages — there is no artist-to-artist API yet, so the tab is empty when false */
-  useMockMessages: globalMock,
+  get useMockMessages(): boolean {
+    return globalMock();
+  },
   /** Notification bell dropdown in the top header — read state is kept locally when true */
-  useMockNotifications: globalMock,
+  get useMockNotifications(): boolean {
+    return globalMock();
+  },
   /** On-chain activity stats (#466) — read from the backend Soroban indexer when false */
-  useMockOnChainStats: globalMock,
+  get useMockOnChainStats(): boolean {
+    return globalMock();
+  },
+  /**
+   * Listener geography, map and demographics on the analytics page. The
+   * backend has no listener-analytics endpoint yet, so these surfaces show an
+   * "unavailable" panel when false.
+   */
+  get useMockListenerAnalytics(): boolean {
+    return globalMock();
+  },
   /**
    * EarningsRoyalties is already wired to a real endpoint (#47),
    * so its flag is always false regardless of the global toggle.
@@ -49,6 +80,51 @@ export const featureFlags = {
    */
   enableSongTransfer: process.env.NEXT_PUBLIC_ENABLE_SONG_TRANSFER === "true",
 } as const;
+
+/* -------------------------------------------------------------------------- */
+/* Which surfaces are showing sample data (#52)                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Flags that swap a surface's *data* for fixtures. Email verification is left
+ * out: it simulates a flow (codes shown locally) rather than showing data, and
+ * it is on in every environment until the backend can send codes.
+ */
+type MockDataFlag = Exclude<
+  {
+    [K in keyof typeof featureFlags]: K extends `useMock${string}` ? K : never;
+  }[keyof typeof featureFlags],
+  "useMockEmailVerification"
+>;
+
+/**
+ * Every data-source flag, with the name an artist would recognise. This is
+ * the one list `MockDataNotice` and the dev console read, so a surface that
+ * still shows sample data is always named somewhere visible. Remove an entry
+ * together with its flag once the surface is fully on real data.
+ */
+export const MOCK_DATA_SURFACES: Record<MockDataFlag, string> = {
+  useMockOverviewCards: "Overview statistics",
+  useMockEvents: "Events",
+  useMockMerches: "Merch",
+  useMockAlbums: "Albums",
+  useMockTracks: "My Music",
+  useMockFansEngagement: "Fans engagement",
+  useMockMessages: "Artist messages",
+  useMockNotifications: "Notifications",
+  useMockOnChainStats: "On-chain stats",
+  useMockListenerAnalytics: "Listener analytics",
+  useMockEarnings: "Earnings & royalties",
+};
+
+/** Names of the surfaces currently on sample data, in display order. */
+export function activeMockSurfaces(
+  flags: Partial<Record<MockDataFlag, boolean>> = featureFlags
+): string[] {
+  return (Object.keys(MOCK_DATA_SURFACES) as MockDataFlag[])
+    .filter((flag) => flags[flag] === true)
+    .map((flag) => MOCK_DATA_SURFACES[flag]);
+}
 
 /* -------------------------------------------------------------------------- */
 /* Rollout flags (#469)                                                        */
@@ -93,8 +169,7 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, FeatureFlagDefinition> = {
     allowlist: [],
   },
   maintenanceMode: {
-    description:
-      "Planned maintenance banner and read-only mode notification (#781).",
+    description: "Planned maintenance banner and read-only mode notification (#781).",
     rolloutPercentage: 0,
     allowlist: [],
   },

@@ -17,6 +17,7 @@ import type { NotificationEventKey } from "@/services/notificationPreferences";
 import { useNotifications, type ArtistNotification } from "@/services/notificationService";
 import MockDataBadge from "./MockDataBadge";
 import { Skeleton } from "./shared/Skeleton";
+import { featureFlags } from "@/lib/featureFlags";
 
 interface NotificationBellProps {
   /**
@@ -137,13 +138,13 @@ export default function NotificationBell({ notificationCount }: NotificationBell
           className="absolute right-0 top-full mt-3 z-40 w-[22rem] max-w-[calc(100vw-2rem)] rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl focus:outline-none"
         >
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border-subtle)]">
-            <h3
-              id={headingId}
-              className="flex items-center text-sm font-semibold text-[var(--text)]"
-            >
-              Notifications
-              <MockDataBadge label="notifications" />
-            </h3>
+            {/* The badge sits beside the heading, not in it: the heading names the region. */}
+            <div className="flex items-center">
+              <h3 id={headingId} className="text-sm font-semibold text-[var(--text)]">
+                Notifications
+              </h3>
+              <MockDataBadge label="Notifications" active={featureFlags.useMockNotifications} />
+            </div>
             <button
               type="button"
               onClick={handleMarkAllRead}

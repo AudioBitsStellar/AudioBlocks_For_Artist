@@ -1,5 +1,7 @@
 # WCAG 2.1 Level AA Accessibility Audit Report
 
+> **Superseded.** This July 2026 review is kept for history. The current audit, measured against the running app, is [`WCAG_2.1_AA_AUDIT_2026-11.md`](WCAG_2.1_AA_AUDIT_2026-11.md) (#152).
+
 **Audit Date:** July 27, 2026  
 **Application:** AudioBlocks Artist Dashboard  
 **Scope:** Entire application (landing pages, authentication, dashboard, and all user-facing components)  

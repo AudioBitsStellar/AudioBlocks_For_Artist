@@ -4,13 +4,14 @@ import { GeographicData } from "@/services/analyticsService";
 import { Globe } from "lucide-react";
 import ListenerAnalyticsUnavailable from "./ListenerAnalyticsUnavailable";
 import MockDataBadge from "./MockDataBadge";
+import { featureFlags } from "@/lib/featureFlags";
 
 interface AnalyticsGeographicProps {
   data: GeographicData[];
 }
 
 export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) {
-  if (process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "true") {
+  if (!featureFlags.useMockListenerAnalytics) {
     return <ListenerAnalyticsUnavailable title="Geographic Distribution" />;
   }
   const maxPlays = Math.max(...data.map((d) => d.plays));
@@ -35,7 +36,10 @@ export default function AnalyticsGeographic({ data }: AnalyticsGeographicProps) 
       <div className="flex items-center gap-2 mb-6">
         <Globe size={20} className="text-primary" aria-hidden="true" />
         <h2 className="text-text text-lg font-semibold">Geographic Distribution (Top 10)</h2>
-        <MockDataBadge label="Geographic distribution" />
+        <MockDataBadge
+          label="Geographic distribution"
+          active={featureFlags.useMockListenerAnalytics}
+        />
       </div>
 
       <div className="space-y-4" role="region" aria-label="Geographic play distribution">
