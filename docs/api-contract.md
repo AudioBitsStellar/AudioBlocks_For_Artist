@@ -97,7 +97,7 @@ either the generated types or the snapshot fails the build.
 
 | Constant | Client path | Backend route | Status | Linked issue |
 |---|---|---|---|---|
-| `EARNINGS_ENDPOINTS.GET_EARNINGS` | `/artist/earnings` | — (`GET /api/royalty-payouts/export` only) | missing on backend | none yet |
+| `EARNINGS_ENDPOINTS.ROYALTY_PAYOUTS_EXPORT` | `/royalty-payouts/export` | `GET /api/royalty-payouts/export` (CSV) | live — overview earnings chart (#47) | — |
 | `EARNINGS_ENDPOINTS.GET_PLATFORM_REVENUE` | `/artist/earnings/platforms` | — | missing on backend | none yet |
 | `EARNINGS_ENDPOINTS.GET_PAYOUTS` | `/artist/earnings/payouts` | — (`GET /api/royalty-payouts/export` is export-only) | missing on backend | none yet |
 | `OVERVIEW_ENDPOINTS.GET_OVERVIEW` | `/artist/overview` | — | missing on backend | [#846](https://github.com/AudioBitsStellar/AudioBlock_Backend/issues/846) |

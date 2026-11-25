@@ -182,25 +182,32 @@ Handles authentication authentication operations: signup, login, session termina
 
 ### 5. Earnings Service (`earningsService.ts`)
 
-Retrieves revenue, royalty metrics, and monthly payout history.
+Royalty earnings for the overview chart, and platform revenue.
 
 #### Hooks & Endpoints
 
-##### `useGetEarnings(enabled?: boolean)`
-- **Endpoint**: `GET /api/v1/artist/earnings`
-- **Response Shape**: `EarningsData`
+##### `useGetRoyaltyPayouts(enabled?: boolean)`
+- **Endpoint**: `GET /api/royalty-payouts/export` (artist-authenticated CSV, #47)
+- **Returns**: the React Query state plus `records: RoyaltyPayoutRecord[]`, parsed from the CSV
   ```typescript
-  interface EarningsData {
-    totalEarnings: number;
-    monthOverMonthChange: number;
-    payoutHistory: {
-      id: string;
-      month: string;
-      amount: number;
-      status: "completed" | "pending";
-    }[];
+  interface RoyaltyPayoutRecord {
+    id: string;
+    saleEventId: string;
+    status: "pending" | "reconciled" | "discrepancy" | string;
+    asset: string;     // "XLM" for the backend's default `stroops`
+    amount: number;    // gross sale amount in whole units of `asset`
+    createdAt: string; // ISO timestamp
   }
   ```
+- Aggregate with `summarizeEarnings(records, asset, months)` from
+  `src/utils/royaltyEarnings.ts`: monthly reconciled and pending totals for one
+  asset. Discrepancy records are excluded, and assets are never summed together.
+- Amounts are gross sale amounts before collaborator splits, matching the
+  backend's `revenueStroops`.
+
+##### `useGetPlatformRevenue(enabled?: boolean)`
+- **Endpoint**: `GET /api/artist/earnings/platforms` (not yet on the backend)
+- **Response Shape**: `PlatformRevenueResponse`
 
 ---
 

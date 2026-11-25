@@ -1,131 +1,58 @@
+import { useMemo } from "react";
+import { EARNINGS_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
-
-/**
- * Backend royalty payout record.
- *
- * Fields are intentionally kept aligned with the payout API contract.
- * Adjust these fields if the backend DTO uses different names.
- */
-export interface RoyaltyPayout {
-  id: string;
-  amount: number;
-  asset: string;
-  transactionHash?: string | null;
-  status?: string;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-/**
- * API response returned by GET /api/royalty-payouts.
- *
- * Supports a paginated/enveloped response.
- */
-export interface RoyaltyPayoutsResponse {
-  data: RoyaltyPayout[];
-  total?: number;
-  page?: number;
-  limit?: number;
-}
-
-/**
- * Optional date-range filters for earnings and payout history.
- */
-export interface EarningsFilters {
-  startDate?: string;
-  endDate?: string;
-}
-
-/**
- * Builds query parameters for date-range filtering.
- */
-const buildEarningsQuery = (filters?: EarningsFilters): string => {
-  if (!filters?.startDate && !filters?.endDate) {
-    return "";
-  }
-
-  const params = new URLSearchParams();
-
-  if (filters.startDate) {
-    params.set("startDate", filters.startDate);
-  }
-
-  if (filters.endDate) {
-    params.set("endDate", filters.endDate);
-  }
-
-  return `?${params.toString()}`;
-};
-
-/**
- * Backend endpoint for royalty payouts.
- *
- * The backend's RoyaltyPayout records are the source of truth for earnings.
- */
-const ROYALTY_PAYOUTS_ENDPOINT = "/api/royalty-payouts";
+import { PlatformRevenueResponse } from "@/types";
+import { parseRoyaltyPayoutCsv, type RoyaltyPayoutRecord } from "@/utils/royaltyEarnings";
 
 const useEarningsServices = () => {
   /**
-   * Fetches royalty payouts from the backend.
+   * The signed-in artist's royalty payout records (#47).
    *
-   * This replaces the previously nonexistent artist earnings endpoint.
+   * Reads `GET /api/royalty-payouts/export`, the backend's only artist-scoped
+   * royalty source: a CSV of every RoyaltyPayout the Soroban royalty contract
+   * recorded for the artist, with its reconciliation status. The CSV is parsed
+   * here, so consumers get typed records. Aggregate them with
+   * `summarizeEarnings` from `@/utils/royaltyEarnings`, one asset at a time.
    *
-   * Earnings should be aggregated by asset (e.g. XLM, USDC)
-   * in the consuming component. Different assets must never be
-   * summed together without explicit conversion.
-   *
-   * @param enabled - Whether the query should execute. Defaults to true.
-   * @param filters - Optional date range.
-   *
-   * @returns React Query result containing royalty payout records.
+   * @param enabled - Set false to skip fetching. Defaults to true.
+   * @returns The React Query state, plus `records` (empty until loaded).
    */
-  const useGetEarnings = (
-    enabled: boolean = true,
-    filters?: EarningsFilters,
-  ) => {
-    const endpoint = `${ROYALTY_PAYOUTS_ENDPOINT}${buildEarningsQuery(filters)}`;
-
-    return useGet<RoyaltyPayoutsResponse>(
+  const useGetRoyaltyPayouts = (enabled: boolean = true) => {
+    const query = useGet<string>(
       DASHBOARD_QUERY_KEYS.earnings,
-      endpoint,
+      EARNINGS_ENDPOINTS.ROYALTY_PAYOUTS_EXPORT,
       {
         enabled,
-        staleTime: DASHBOARD_CACHE.earnings,
-      },
+        staleTime: DASHBOARD_CACHE.earnings, // 5 min cache
+      }
     );
+    const records = useMemo<RoyaltyPayoutRecord[]>(
+      () => (typeof query.data === "string" ? parseRoyaltyPayoutCsv(query.data) : []),
+      [query.data]
+    );
+    return { ...query, records };
   };
 
   /**
-   * Fetches payout history from the backend.
+   * Fetches the artist's revenue broken down by streaming platform —
+   * per-platform revenue, percentage share, and stream counts — cached for 5 minutes.
    *
-   * Earnings and payout history currently share the same backend source.
-   * This hook is provided for consumers that need to distinguish
-   * payout history from earnings summary usage.
-   *
-   * @param enabled - Whether the query should execute. Defaults to true.
-   * @param filters - Optional date range.
+   * @param enabled - Set false to skip fetching. Defaults to true.
+   * @returns A React Query result with PlatformRevenueResponse data.
    */
-  const useGetPayoutHistory = (
-    enabled: boolean = true,
-    filters?: EarningsFilters,
-  ) => {
-    const endpoint = `${ROYALTY_PAYOUTS_ENDPOINT}${buildEarningsQuery(filters)}`;
-
-    return useGet<RoyaltyPayoutsResponse>(
-      [...DASHBOARD_QUERY_KEYS.earnings, "payout-history"],
-      endpoint,
+  const useGetPlatformRevenue = (enabled: boolean = true) => {
+    return useGet<PlatformRevenueResponse>(
+      DASHBOARD_QUERY_KEYS.platformRevenue,
+      EARNINGS_ENDPOINTS.GET_PLATFORM_REVENUE,
       {
         enabled,
-        staleTime: DASHBOARD_CACHE.earnings,
-      },
+        staleTime: DASHBOARD_CACHE.platformRevenue,
+      }
     );
   };
 
-  return {
-    useGetEarnings,
-    useGetPayoutHistory,
-  };
+  return { useGetRoyaltyPayouts, useGetPlatformRevenue };
 };
 
 export default useEarningsServices;

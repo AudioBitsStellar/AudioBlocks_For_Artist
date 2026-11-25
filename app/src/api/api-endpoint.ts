@@ -42,7 +42,8 @@ export const MERCH_ENDPOINTS = {
 };
 
 export const EARNINGS_ENDPOINTS = {
-  GET_EARNINGS: "/artist/earnings",
+  /** CSV of the artist's royalty payout records — the earnings source (#47). */
+  ROYALTY_PAYOUTS_EXPORT: "/royalty-payouts/export",
   GET_PLATFORM_REVENUE: "/artist/earnings/platforms",
   GET_PAYOUTS: "/artist/earnings/payouts",
 };
