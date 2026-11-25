@@ -56,9 +56,13 @@ everything — auth, profile, uploads — and to the
 | Forms                    | `react-hook-form`                                         |
 | Data fetching            | TanStack React Query, `axios`                             |
 | Charts                   | Recharts                                                  |
-| Carousels                | `react-slick`                                             |
 | Toasts                   | `sonner`                                                  |
 | Stellar / Soroban wallet | `@stellar/freighter-api`                                  |
+
+The unused `Discover` carousel prototype and its global Slick styles were
+removed; the component was not imported by any route and displayed dummy data.
+No replacement was justified. If a live carousel is needed later, prefer native
+CSS scroll snapping before adding a JavaScript carousel dependency.
 
 ## Routes
 
@@ -169,9 +173,11 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api   # AudioBlock_Backend base U
 
 Two more optional variables are relevant to the Artist Portal surfaces:
 
-| Variable                    | Effect when unset                                                                                                         |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_FEATURE_FLAGS` | Runtime rollout overrides; flags fall back to their configured percentage when unset, e.g. `artistOnchainAnalytics=true`. |
+| Variable                        | Effect when unset                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_FEATURE_FLAGS`     | Rollout flags fall back to their configured percentage, e.g. `artistOnchainAnalytics=true` to force on. |
+| `NEXT_PUBLIC_ASSET_CDN_HOST`    | S3/CloudFront hostname for artist cover art and avatars allowed by `next/image` (omitted when unset).   |
+| `NEXT_PUBLIC_IPFS_GATEWAY_HOST` | IPFS gateway hostname allowed by `next/image` for `/ipfs/**` paths (defaults to `gateway.pinata.cloud`). |
 
 ### Feature flags and gradual rollout
 

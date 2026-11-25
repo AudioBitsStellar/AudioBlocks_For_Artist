@@ -12,6 +12,7 @@
 import { ROLES, type Role } from "@/types/role";
 import { COLLABORATOR_ENDPOINTS } from "@/api/api-endpoint";
 import { createApiClient } from "@/api/axios";
+import { validateStellarPublicKey } from "@/utils/stellarAddress";
 
 export type InviteStatus = "pending" | "accepted" | "revoked";
 
@@ -137,11 +138,20 @@ export async function addSongCollaborator(
   songId: string,
   payload: { userId?: string; username?: string; stellarAddress?: string; role: string; royaltyShare: number }
 ): Promise<SongCollaborator | null> {
+  const normalizedPayload = { ...payload };
+  if (payload.stellarAddress !== undefined) {
+    const check = validateStellarPublicKey(payload.stellarAddress);
+    if (!check.valid) {
+      return null;
+    }
+    normalizedPayload.stellarAddress = check.normalized;
+  }
+
   try {
     const client = await createApiClient();
     const res = await client.post<{ success: boolean; data: SongCollaborator }>(
       COLLABORATOR_ENDPOINTS.SONG_COLLABORATORS(songId),
-      payload
+      normalizedPayload
     );
     return res.data?.data;
   } catch {

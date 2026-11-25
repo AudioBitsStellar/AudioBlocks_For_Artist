@@ -49,10 +49,64 @@ describe("splitFile", () => {
 });
 
 describe("generateFileId", () => {
-  it("returns a non-empty string", () => {
-    const id = generateFileId();
-    expect(typeof id).toBe("string");
-    expect(id.length).toBeGreaterThan(0);
+  it("returns unique non-empty ids in secure contexts (crypto.randomUUID)", () => {
+    const id1 = generateFileId();
+    const id2 = generateFileId();
+    expect(typeof id1).toBe("string");
+    expect(id1.length).toBeGreaterThan(0);
+    expect(id1).not.toBe(id2);
+  });
+
+  it("falls back to crypto.getRandomValues UUID v4 when randomUUID is undefined (insecure context)", () => {
+    const originalCrypto = globalThis.crypto;
+    let seed = 1;
+    const mockGetRandomValues = vi.fn((arr: Uint8Array) => {
+      for (let i = 0; i < arr.length; i++) {
+        arr[i] = (seed++ * 37) & 0xff;
+      }
+      return arr;
+    });
+
+    Object.defineProperty(globalThis, "crypto", {
+      value: { getRandomValues: mockGetRandomValues },
+      configurable: true,
+    });
+
+    try {
+      const id1 = generateFileId();
+      const id2 = generateFileId();
+      const uuidV4Re = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+      expect(id1).toMatch(uuidV4Re);
+      expect(id2).toMatch(uuidV4Re);
+      expect(id1).not.toBe(id2);
+      expect(mockGetRandomValues).toHaveBeenCalledTimes(2);
+    } finally {
+      Object.defineProperty(globalThis, "crypto", {
+        value: originalCrypto,
+        configurable: true,
+      });
+    }
+  });
+
+  it("falls back to a non-cryptographic timestamp-random id when crypto is unavailable", () => {
+    const originalCrypto = globalThis.crypto;
+    Object.defineProperty(globalThis, "crypto", {
+      value: undefined,
+      configurable: true,
+    });
+
+    try {
+      const id1 = generateFileId();
+      const id2 = generateFileId();
+      expect(id1).toMatch(/^upload-/);
+      expect(id2).toMatch(/^upload-/);
+      expect(id1).not.toBe(id2);
+    } finally {
+      Object.defineProperty(globalThis, "crypto", {
+        value: originalCrypto,
+        configurable: true,
+      });
+    }
   });
 });
 

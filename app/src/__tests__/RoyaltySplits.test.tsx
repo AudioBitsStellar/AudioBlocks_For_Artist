@@ -3,6 +3,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import RoyaltySplitsPage from "@/app/dashboard/collaborators/royalties/page";
 import { resetRoyaltySplits } from "@/services/royaltySplitService";
 
+const VALID_SECRET_KEY = "SAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQC5MY";
+
 beforeEach(() => {
   resetRoyaltySplits();
   localStorage.clear();
@@ -62,5 +64,29 @@ describe("RoyaltySplitsPage (#417)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Remove Mara Voss from the split/ }));
     expect(screen.getAllByLabelText("Collaborator name")).toHaveLength(2);
+  });
+
+  it("rejects duplicate recipients and invalid/secret addresses inline (#590, #591)", () => {
+    render(<RoyaltySplitsPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Split evenly" }));
+
+    const jadenAddressInput = screen.getByLabelText(
+      "Stellar address for Jaden Cole"
+    ) as HTMLInputElement;
+    const maraAddressInput = screen.getByLabelText(
+      "Stellar address for Mara Voss"
+    ) as HTMLInputElement;
+
+    // Duplicate recipient
+    fireEvent.change(maraAddressInput, { target: { value: jadenAddressInput.value } });
+    expect(screen.getByRole("alert")).toHaveTextContent(/Duplicate recipient/i);
+
+    // Pasting a secret key warns inline and clears the value so it is not stored
+    fireEvent.change(maraAddressInput, { target: { value: VALID_SECRET_KEY } });
+    expect(maraAddressInput.value).toBe("");
+    expect(
+      screen.getAllByRole("alert").some((el) => /secret key/i.test(el.textContent ?? ""))
+    ).toBe(true);
   });
 });

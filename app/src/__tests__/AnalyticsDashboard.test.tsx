@@ -66,7 +66,7 @@ describe("AnalyticsDashboard (#401)", () => {
   it("fetches the last 30 days by default", () => {
     mockQuery(analytics());
     render(<AnalyticsDashboard />);
-    expect(useGetAnalyticsData).toHaveBeenCalledWith("last30days");
+    expect(useGetAnalyticsData).toHaveBeenCalledWith("last30days", true, undefined);
     expect(screen.getByTestId("play-trends-stub")).toHaveAttribute("data-period", "last30days");
   });
 
@@ -76,8 +76,21 @@ describe("AnalyticsDashboard (#401)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "stub 90 Days" }));
 
-    expect(useGetAnalyticsData).toHaveBeenLastCalledWith("last90days");
+    expect(useGetAnalyticsData).toHaveBeenLastCalledWith("last90days", true, undefined);
     expect(screen.getByTestId("play-trends-stub")).toHaveAttribute("data-period", "last90days");
+  });
+
+  it("uses the matching server-prefetched period as query initial data", () => {
+    const data = analytics();
+    const initialData = { success: true, data };
+    mockQuery(data);
+
+    render(<AnalyticsDashboard initialData={initialData} />);
+
+    expect(useGetAnalyticsData).toHaveBeenCalledWith("last30days", true, initialData);
+
+    fireEvent.click(screen.getByRole("button", { name: "stub 90 Days" }));
+    expect(useGetAnalyticsData).toHaveBeenLastCalledWith("last90days", true, undefined);
   });
 
   it("shows API-provided insights", () => {

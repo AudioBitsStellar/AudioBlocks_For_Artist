@@ -12,8 +12,33 @@ export function splitFile(file: File, chunkSize = CHUNK_SIZE) {
   return chunks;
 }
 
-export function generateFileId() {
-  return globalThis.crypto.randomUUID();
+function randomUuidFromBytes(bytes: Uint8Array): string {
+  // RFC 4122 v4: set version (4) and variant (10xx) bits.
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/**
+ * Generates a unique upload file identifier using Web Crypto in the browser.
+ *
+ * 1. Secure contexts: `globalThis.crypto.randomUUID()`.
+ * 2. Insecure contexts (e.g. plain-HTTP LAN testing where `randomUUID` is
+ *    unavailable): RFC 4122 v4 UUID built from `crypto.getRandomValues()`.
+ * 3. Non-cryptographic fallback when Web Crypto is completely unavailable
+ *    (timestamp + Math.random; not suitable for security-sensitive tokens).
+ */
+export function generateFileId(): string {
+  const webCrypto = globalThis.crypto;
+  if (webCrypto && typeof webCrypto.randomUUID === "function") {
+    return webCrypto.randomUUID();
+  }
+  if (webCrypto && typeof webCrypto.getRandomValues === "function") {
+    return randomUuidFromBytes(webCrypto.getRandomValues(new Uint8Array(16)));
+  }
+  return `upload-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
 export const DEFAULT_CHUNK_CONCURRENCY = 3;

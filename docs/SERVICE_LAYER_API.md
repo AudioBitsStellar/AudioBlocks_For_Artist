@@ -412,6 +412,24 @@ Handles chunked audio file uploads, cover image processing, and IPFS metadata as
 - **Response**: `FinalizeSongResponse` `{ data: { id: string; ipfsHash?: string } }`
 - **Cache invalidation**: overview, statistics and recent-activity queries (`SONG_PUBLISHED_INVALIDATIONS`).
 
+##### `useSuggestTags()` (#542)
+- **Endpoint**: `POST /api/song/upload/suggest-tags` with `{ title, description }`.
+- **Response**: `{ success, data: { tags: string[]; genres: string[] } }`. The lists are empty when the backend's AI feature is off.
+- **Silent**: there is no success or error toast. Use it through `useTagSuggestions(title, description)` (`src/hooks/useTagSuggestions.ts`):
+  - requests are debounced by 800 ms;
+  - it asks once per distinct input;
+  - a 429 or 503 (budget or kill switch) hides suggestions for the rest of the session.
+- **`AiTagSuggestions`** renders the results as chips that are accept-only, and each can be dismissed. The live upload form offers genres only: it has no tag field, and the backend stores no song tags yet (`SONG_ENDPOINTS.TAGS` is missing on the backend).
+
+##### Processing after finalize (#543)
+`finalize` only queues the song. `SongProcessingProvider` (`src/context/SongProcessingContext.tsx`, mounted in the app provider) then polls `GET /api/song/:id` until `status` becomes `ready` or `failed`:
+
+- The first poll is at 5 s, then each wait is ×1.5, capped at 30 s. Polling stops after 10 minutes, and the song is shown as "taking longer than usual" with a "Check again" action.
+- Watched songs are kept in `localStorage` (`audioblocks:song-processing:v1`), so a reload keeps polling.
+- `UploadedSongActions` keeps Mint and Transfer locked until the song is `ready`.
+- `ProcessingTracksPanel` on My Music shows each song's state. For a failure, it gives `errorReason` in plain language, plus a "Re-upload" link.
+- "Retry processing" is not offered: the backend has no endpoint for it yet.
+
 ##### Client-side file validation
 
 Files are checked before any bytes are uploaded, using `validateFile()` from `@/utils/fileValidation`. The limits mirror the backend's multer configuration:

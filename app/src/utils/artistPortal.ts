@@ -1,4 +1,5 @@
 import type { GeographicData } from "@/services/analyticsService";
+import { validateStellarPublicKey } from "@/utils/stellarAddress";
 
 // ── Top tracks leaderboard (#405) ─────────────────────────────────────────────
 
@@ -123,7 +124,6 @@ export function totalCompletedPayouts(records: PayoutRecord[]): string {
 
 // ── Withdraw funds (#408) ─────────────────────────────────────────────────────
 
-const STELLAR_ADDRESS = /^G[A-Z2-7]{55}$/;
 const AMOUNT = /^\d+(\.\d{1,7})?$/;
 
 export interface WithdrawInput {
@@ -144,12 +144,12 @@ export function validateWithdrawal(input: WithdrawInput, availableBalance: strin
     errors.amount = "Amount exceeds your available balance.";
 
   const destination = input.destination.trim();
-  if (!destination) errors.destination = "Enter a Stellar address.";
-  else if (destination.startsWith("S"))
-    errors.destination =
-      "That looks like a secret key. Never share it — enter your public G… address.";
-  else if (!STELLAR_ADDRESS.test(destination))
-    errors.destination = "Enter a valid Stellar public address (starts with G, 56 characters).";
+  if (!destination) {
+    errors.destination = "Enter a Stellar address.";
+  } else {
+    const check = validateStellarPublicKey(destination);
+    if (!check.valid) errors.destination = check.error;
+  }
 
   return errors;
 }

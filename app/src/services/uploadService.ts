@@ -5,6 +5,11 @@ import { UploadChunkResponse } from "@/types";
 import { FinalizeSongResponse, UploadCoverResponse as UploadCoverResponseType } from "@/types/api";
 import { SONG_PUBLISHED_INVALIDATIONS } from "@/api/cachePolicy";
 
+export interface SuggestTagsResponse {
+  success?: boolean;
+  data?: { tags?: string[]; genres?: string[] };
+}
+
 const useUploadServices = () => {
   const handleSuccess = useHandleSuccess();
   const handleError = useHandleError();
@@ -79,12 +84,23 @@ const useUploadServices = () => {
     );
   };
 
+  /**
+   * AI-suggested tags and genres for a draft song (#542), from
+   * `POST /song/upload/suggest-tags` with `{ title, description }`.
+   * Deliberately silent: the suggestions are optional, so a disabled or
+   * over-budget AI feature must never toast an error at the artist.
+   *
+   * @returns A React Query mutation resolving to `{ success, data: { tags, genres } }`.
+   */
+  const useSuggestTags = () => usePost<SuggestTagsResponse>(ARTIST_UPLOAD_ENDPOINTS.SUGGEST_TAGS);
+
   return {
     useUploadChunk,
     useUploadCover,
     useFinalizeUpload,
     useUploadSong: useFinalizeUpload,
     useTranscribeLyrics,
+    useSuggestTags,
   };
 };
 

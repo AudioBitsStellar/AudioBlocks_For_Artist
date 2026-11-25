@@ -31,6 +31,9 @@ vi.mock("@tanstack/react-query", () => ({
 
 const mockUseStellarWallet = vi.mocked(useStellarWallet);
 
+const VALID_TEST_ADDRESS = "GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR";
+const VALID_SECRET_KEY = "SAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQC5MY";
+
 describe("PayoutWalletStep", () => {
   const mockOnComplete = vi.fn();
   const mockOnBack = vi.fn();
@@ -58,7 +61,7 @@ describe("PayoutWalletStep", () => {
   });
 
   it("shows connected wallet address when wallet is connected", () => {
-    const testAddress = "GABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR";
+    const testAddress = VALID_TEST_ADDRESS;
     mockUseStellarWallet.mockReturnValue({
       address: testAddress,
       isConnecting: false,
@@ -96,7 +99,7 @@ describe("PayoutWalletStep", () => {
   });
 
   it("requires terms agreement checkbox to be checked", async () => {
-    const testAddress = "GABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR";
+    const testAddress = VALID_TEST_ADDRESS;
     mockUseStellarWallet.mockReturnValue({
       address: testAddress,
       isConnecting: false,
@@ -159,7 +162,7 @@ describe("PayoutWalletStep", () => {
   });
 
   it("does not write any data to localStorage when submitted", async () => {
-    const testAddress = "GABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR";
+    const testAddress = VALID_TEST_ADDRESS;
     mockUseStellarWallet.mockReturnValue({
       address: testAddress,
       isConnecting: false,
@@ -188,5 +191,24 @@ describe("PayoutWalletStep", () => {
 
     // Assert nothing was written to localStorage
     expect(localStorage.getItem("onboarding_payout_wallet")).toBeNull();
+  });
+
+  it("rejects a malformed or secret key returned by wallet and blocks submission (#590)", async () => {
+    const secretKey = VALID_SECRET_KEY;
+    mockUseStellarWallet.mockReturnValue({
+      address: secretKey,
+      isConnecting: false,
+      connect: vi.fn(),
+      restore: vi.fn(),
+      disconnect: vi.fn(),
+      signAndSubmit: vi.fn(),
+    });
+
+    render(<PayoutWalletStep onComplete={mockOnComplete} onBack={mockOnBack} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/secret key/i);
+    });
+    expect(screen.getByRole("button", { name: /complete setup/i })).toBeDisabled();
   });
 });

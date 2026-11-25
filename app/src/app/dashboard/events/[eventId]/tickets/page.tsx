@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import PathBreadcrumb from "@/components/PathBreadcrumb";
 import { EventTicketQR } from "@/components/events/EventTicketQR";
 import MockDataBadge from "@/components/MockDataBadge";
@@ -10,12 +10,13 @@ import { featureFlags } from "@/lib/featureFlags";
 import type { EventTicket } from "@/types";
 
 interface TicketsPageProps {
-  params: {
+  params: Promise<{
     eventId: string;
-  };
+  }>;
 }
 
 export default function TicketsPage({ params }: TicketsPageProps) {
+  const { eventId } = use(params);
   const isMockMode = featureFlags.useMockEvents;
   const eventMocks = useMock("events", isMockMode);
   const tickets: EventTicket[] = isMockMode && eventMocks ? eventMocks.MOCK_TICKETS : [];
@@ -91,9 +92,9 @@ export default function TicketsPage({ params }: TicketsPageProps) {
         <div className="lg:col-span-2">
           {selectedTicket ? (
             <EventTicketQR
-              eventId={params.eventId}
+              eventId={eventId}
               ticketId={selectedTicket.id}
-              eventTitle={`Event #${params.eventId}`}
+              eventTitle={`Event #${eventId}`}
               attendeeName={selectedTicket.attendeeName}
             />
           ) : (

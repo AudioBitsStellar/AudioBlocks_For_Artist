@@ -118,7 +118,8 @@ export const ANALYTICS_SUMMARY_QUERY_KEY = DASHBOARD_QUERY_KEYS.analyticsSummary
 const useAnalyticsServices = () => {
   const useGetAnalyticsData = (
     period: "last30days" | "last90days" = "last30days",
-    enabled: boolean = true
+    enabled: boolean = true,
+    initialData?: AnalyticsResponse
   ) => {
     return useGet<AnalyticsResponse>(
       [...ANALYTICS_QUERY_KEY, period],
@@ -126,6 +127,7 @@ const useAnalyticsServices = () => {
       {
         enabled,
         staleTime: DASHBOARD_CACHE.analytics,
+        initialData: period === "last30days" ? initialData : undefined,
       }
     );
   };
