@@ -1,5 +1,6 @@
 import { createApiClient } from "@/api/axios";
 import { getActiveNetworkId } from "@/lib/stellarNetwork";
+import { featureFlags } from "@/lib/featureFlags";
 
 export interface IndexedActivity {
   id: string;
@@ -78,7 +79,7 @@ export async function fetchArtistOnchainStats(
   address: string,
   days: number
 ): Promise<ArtistOnchainStats> {
-  if (process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true") {
+  if (featureFlags.useMockOnChainStats) {
     return {
       daily: [{ day: new Date().toISOString().slice(0, 10), plays: 12, sales: 2, amount: 40.5 }],
       totalPlays: 12,

@@ -18,6 +18,6 @@ describe.each([ListenerMap, AnalyticsGeographic])("listener location availabilit
   it("labels sample location figures in mock mode", () => {
     vi.stubEnv("NEXT_PUBLIC_USE_MOCK_DATA", "true");
     render(<Panel data={data} />);
-    expect(screen.getByText("Mock")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-data-badge")).toHaveTextContent("Sample data");
   });
 });

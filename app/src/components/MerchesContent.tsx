@@ -230,7 +230,7 @@ export default function MerchesContent() {
           <p className="text-xs uppercase tracking-[0.3em] text-[#A3A3A3]">My Merch</p>
           <h1 className="text-3xl font-bold text-white flex items-center">
             My Merch
-            {featureFlags.useMockMerches && <MockDataBadge label="merches" />}
+            <MockDataBadge label="Merch" active={featureFlags.useMockMerches} />
           </h1>
         </div>
         {!featureFlags.useMockMerches && canCreate && (

@@ -1,3 +1,4 @@
+import { featureFlags } from "@/lib/featureFlags";
 import { ANALYTICS_ENDPOINTS } from "@/api/api-endpoint";
 import { useGet } from "@/api/queryClient";
 import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
@@ -93,12 +94,10 @@ export function getAnalyticsData(period: "last30days" | "last90days"): Analytics
       listenerGrowthPercentage: 14.7,
     },
     playTrends,
-    geographicDistribution:
-      process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true" ? mockGeographicData : [],
-    demographics:
-      process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
-        ? mockDemographicsData
-        : { age: [], gender: [], device: [] },
+    geographicDistribution: featureFlags.useMockListenerAnalytics ? mockGeographicData : [],
+    demographics: featureFlags.useMockListenerAnalytics
+      ? mockDemographicsData
+      : { age: [], gender: [], device: [] },
     period,
     insights: {
       peakListeningHours: "7 PM and 11 PM local time, with a secondary peak around 12 PM",

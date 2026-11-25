@@ -4,9 +4,7 @@ import { useState } from "react";
 import { featureFlags } from "@/lib/featureFlags";
 import { useMock } from "@/__mocks__/loadMock";
 import MockDataBadge from "@/components/MockDataBadge";
-import useOverviewServices, {
-  type StatsWindow,
-} from "@/services/overviewService";
+import useOverviewServices, { type StatsWindow } from "@/services/overviewService";
 import OverviewRecentActivity from "./OverviewRecentActivity";
 import type { OverviewKpi } from "@/types";
 import { formatAsset } from "@/utils/money";
@@ -41,7 +39,7 @@ function CardGrid({ cards, isMock }: { cards: KpiCard[]; isMock: boolean }) {
     <div>
       <h2 className="text-white text-lg font-semibold mb-4 flex items-center">
         Overview
-        {isMock && <MockDataBadge label="overview" />}
+        <MockDataBadge label="Overview statistics" active={isMock} />
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card, index) => (

@@ -5,6 +5,7 @@ import ListenerAnalyticsUnavailable from "./ListenerAnalyticsUnavailable";
 import MockDataBadge from "./MockDataBadge";
 import type { GeographicData } from "@/services/analyticsService";
 import { aggregateListenersByRegion, type MapRegion, type RegionTotal } from "@/utils/artistPortal";
+import { featureFlags } from "@/lib/featureFlags";
 
 interface ListenerMapProps {
   data: GeographicData[];
@@ -29,7 +30,7 @@ const INTENSITY_CLASS: Record<RegionTotal["intensity"], string> = {
 };
 
 export default function ListenerMap({ data }: ListenerMapProps) {
-  if (process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "true") {
+  if (!featureFlags.useMockListenerAnalytics) {
     return <ListenerAnalyticsUnavailable title="Listener Map" />;
   }
   const regions = aggregateListenersByRegion(data);
@@ -39,7 +40,7 @@ export default function ListenerMap({ data }: ListenerMapProps) {
       <div className="flex items-center gap-2 mb-6">
         <MapIcon size={20} className="text-pink-500" aria-hidden="true" />
         <h2 className="text-white text-lg font-semibold">Listener Map</h2>
-        <MockDataBadge label="Listener map" />
+        <MockDataBadge label="Listener map" active={featureFlags.useMockListenerAnalytics} />
       </div>
 
       <div

@@ -5,6 +5,7 @@ import { Monitor, Smartphone, ShoppingBag, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 import { useMock } from "@/__mocks__/loadMock";
+import MockDataBadge from "@/components/MockDataBadge";
 import { featureFlags } from "@/lib/featureFlags";
 import useMerchService, { type MerchItem } from "@/services/merchService";
 
@@ -97,7 +98,10 @@ export default function MerchPreviewPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p className="text-xs uppercase tracking-[0.3em] text-[#A3A3A3]">Merch Preview</p>
-          <h1 className="text-3xl font-bold text-white">Fan Store Preview</h1>
+          <h1 className="text-3xl font-bold text-white">
+            Fan Store Preview
+            <MockDataBadge label="Merch preview" active={featureFlags.useMockMerches} />
+          </h1>
           <p className="text-sm text-[#A3A3A3]">
             See how your merch appears to fans before publishing.
           </p>
