@@ -7,6 +7,7 @@ import CharacterCount from "@/components/common/CharacterCount";
 import useUploadServices from "@/services/uploadService";
 import { useRouter } from "next/navigation";
 import { TRACK_DESCRIPTION_MAX_LENGTH, TRACK_TITLE_MAX_LENGTH } from "@/types/formValidation";
+import { AUDIO_FILE_RULES, formatBytes, validateFile } from "@/utils/fileValidation";
 
 export const TrackUploadPage: React.FC = () => {
   const router = useRouter();
@@ -25,18 +26,22 @@ export const TrackUploadPage: React.FC = () => {
   const { useUploadSong } = useUploadServices();
   const uploadSongMutation = useUploadSong();
 
+  const selectAudioFile = (selected: File) => {
+    const { valid, error } = validateFile(selected, AUDIO_FILE_RULES);
+    if (!valid) {
+      setFile(null);
+      setStatusMessage({ type: "error", text: error ?? "Please choose a valid audio file." });
+      return;
+    }
+
+    setStatusMessage(null);
+    setFile(selected);
+  };
+
   const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const selected = e.dataTransfer.files[0];
-      if (selected.type.startsWith("audio/")) {
-        setFile(selected);
-      } else {
-        setStatusMessage({
-          type: "error",
-          text: "Please upload a valid audio file (.mp3, .wav, .flac).",
-        });
-      }
+      selectAudioFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -69,10 +74,10 @@ export const TrackUploadPage: React.FC = () => {
         text: "Track uploaded successfully and published to Stellar Network!",
       });
       setTimeout(() => router.push("/dashboard/my-music"), 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setStatusMessage({
         type: "error",
-        text: err?.message || "Failed to upload track. Please try again.",
+        text: err instanceof Error ? err.message : "Failed to upload track. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -90,6 +95,7 @@ export const TrackUploadPage: React.FC = () => {
 
       {statusMessage && (
         <div
+          role={statusMessage.type === "error" ? "alert" : "status"}
           className={`p-4 rounded-lg flex items-center gap-3 text-sm font-medium ${
             statusMessage.type === "success"
               ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800"
@@ -117,7 +123,7 @@ export const TrackUploadPage: React.FC = () => {
             accept="audio/*"
             id="audio-upload"
             className="hidden"
-            onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])}
+            onChange={(e) => e.target.files?.[0] && selectAudioFile(e.target.files[0])}
           />
           <label htmlFor="audio-upload" className="cursor-pointer space-y-3 block">
             <UploadCloud className="h-10 w-10 text-pink-500 mx-auto" />
@@ -131,7 +137,10 @@ export const TrackUploadPage: React.FC = () => {
                 <p className="text-white font-medium text-base">
                   Drag & drop your audio file here, or click to browse
                 </p>
-                <p className="text-gray-400 text-xs mt-1">Supports MP3, WAV, FLAC up to 50MB</p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Supports MP3, WAV, M4A, AAC, OGG, FLAC, and WebM up to{" "}
+                  {formatBytes(AUDIO_FILE_RULES.maxSizeBytes)}
+                </p>
               </div>
             )}
           </label>

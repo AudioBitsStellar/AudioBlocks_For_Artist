@@ -45,12 +45,16 @@ export function basisPointsToPercent(basisPoints: number): number {
   return basisPoints / (TOTAL_BASIS_POINTS / 100);
 }
 
-/** Sum of every row, ignoring anything unparseable. */
-export function totalPercent(rows: SplitParticipant[]): number {
+export function totalBasisPoints(rows: SplitParticipant[]): number {
   return rows.reduce((sum, row) => {
     const value = parsePercent(row.percent);
-    return sum + (Number.isFinite(value) ? value : 0);
+    return sum + (Number.isFinite(value) ? percentToBasisPoints(value) : 0);
   }, 0);
+}
+
+/** Sum of shares at contract precision, ignoring anything unparseable. */
+export function totalPercent(rows: SplitParticipant[]): number {
+  return basisPointsToPercent(totalBasisPoints(rows));
 }
 
 /** 0.1 + 0.2 problems are exactly why shares are stored as integers. */
@@ -75,14 +79,17 @@ export function rebalanceToTotal(
   const changed = rows.find((row) => row.id === changedId);
   if (!changed || rows.length === 0) return rows;
 
-  const target = Math.min(100, Math.max(0, requestedPercent));
+  const targetBasisPoints = percentToBasisPoints(Math.min(100, Math.max(0, requestedPercent)));
+  const target = basisPointsToPercent(targetBasisPoints);
   const others = rows.filter((row) => row.id !== changedId);
 
   if (others.length === 0) {
-    return rows.map((row) => (row.id === changedId ? { ...row, percent: target } : row));
+    return rows.map((row) =>
+      row.id === changedId ? { ...row, percent: basisPointsToPercent(TOTAL_BASIS_POINTS) } : row
+    );
   }
 
-  const remaining = TOTAL_BASIS_POINTS - percentToBasisPoints(target);
+  const remaining = TOTAL_BASIS_POINTS - targetBasisPoints;
   const othersBasis = others.map((row) => {
     const value = parsePercent(row.percent);
     return Number.isFinite(value) ? percentToBasisPoints(value) : 0;
@@ -151,7 +158,7 @@ export function validateSplitDraft(rows: SplitParticipant[]): SplitDraftErrors {
       errors.rows[row.id] = "Enter a number.";
       continue;
     }
-    if (percent <= 0) {
+    if (percentToBasisPoints(percent) <= 0) {
       errors.rows[row.id] = "Share must be greater than 0%.";
       continue;
     }
@@ -160,9 +167,10 @@ export function validateSplitDraft(rows: SplitParticipant[]): SplitDraftErrors {
     }
   }
 
-  const total = totalPercent(rows);
-  if (!errors.total && Object.keys(errors.rows).length === 0 && Math.abs(total - 100) > 0.0001) {
-    errors.total = `Splits must add up to 100% — currently ${formatPercent(total)}%.`;
+  const total = totalBasisPoints(rows);
+  if (!errors.total && Object.keys(errors.rows).length === 0 && total !== TOTAL_BASIS_POINTS) {
+    const totalPercentValue = basisPointsToPercent(total);
+    errors.total = `Splits must add up to 100% — currently ${formatPercent(totalPercentValue)}%.`;
   }
 
   return errors;

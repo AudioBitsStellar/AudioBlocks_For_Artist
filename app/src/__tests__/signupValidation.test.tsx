@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SignupPage from "@/app/signup/page";
 
@@ -104,6 +104,7 @@ describe("Signup Form Validation (Issue #98)", () => {
     await user.type(screen.getByLabelText(/username/i), "artist_user");
     await user.type(screen.getByLabelText(/email/i), "artist@example.com");
     await user.type(screen.getByLabelText(/password/i), "ValidPass123!");
+    await user.click(screen.getByRole("checkbox", { name: /terms of service/i }));
 
     await waitFor(() => {
       expect(submitBtn).not.toBeDisabled();

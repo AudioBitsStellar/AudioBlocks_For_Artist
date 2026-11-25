@@ -185,3 +185,49 @@ describe("useEventsService — CRUD operations", () => {
     });
   });
 });
+describe("eventsService", () => {
+  describe("Event CRUD", () => {
+    describe("createEvent", () => {
+      it("creates an event successfully");
+      it("handles API failures");
+    });
+
+    describe("fetchEvents", () => {
+      it("fetches all events");
+      it("supports event filters");
+      it("supports pagination");
+      it("returns empty results when no events exist");
+      it("handles API failures");
+    });
+
+    describe("fetchEventById", () => {
+      it("fetches an event by ID");
+      it("handles missing events");
+    });
+
+    describe("updateEvent", () => {
+      it("updates an event successfully");
+      it("handles API failures");
+    });
+
+    describe("deleteEvent", () => {
+      it("deletes an event successfully");
+      it("handles API failures");
+    });
+  });
+
+  describe("RSVP management", () => {
+    it("adds an RSVP successfully");
+    it("removes an RSVP successfully");
+    it("fetches event attendees");
+    it("handles duplicate RSVPs");
+    it("handles event capacity restrictions");
+    it("handles RSVP removal failures");
+  });
+
+  describe("Event analytics", () => {
+    it("fetches analytics successfully");
+    it("handles empty analytics");
+    it("handles analytics API failures");
+  });
+});

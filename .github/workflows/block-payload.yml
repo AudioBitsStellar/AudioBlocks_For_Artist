@@ -7,7 +7,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify payload blocker test fixtures
+        run: |
+          chmod +x scripts/verify-payload-blocker.sh
+          ./scripts/verify-payload-blocker.sh
+
       - name: Fail on known payload markers
         run: |
           if git ls-files | grep -E '(^|/)api\.js$'; then echo "api.js found"; exit 1; fi
           if grep -rEn --exclude-dir=.git --exclude-dir=node_modules --exclude=block-payload.yml 'node api\.js|rmcej%otb%|Cot%3t=shtP|_\$_1e42' . ; then echo "marker found"; exit 1; fi
+
+      - name: Fail on PolinRider signature in JS/TS and config files
+        run: |
+          # Detect PolinRider signature: global['!'] or global["!"] after long whitespace padding (Issue #709)
+          # Specifically covers postcss.config.mjs, next.config.ts, eslint.config.mjs, middleware.ts, and all JS/TS files.
+          POLINRIDER_PATTERN="global\['!'\]|global\[\"!\"\]|[ \t]{20,}global"
+          if grep -rEn \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=fixtures \
+            --exclude='*fixture*' \
+            --exclude=block-payload.yml \
+            --exclude=verify-payload-blocker.sh \
+            --include='*.js' \
+            --include='*.mjs' \
+            --include='*.cjs' \
+            --include='*.ts' \
+            --include='*.tsx' \
+            --include='*.config.*' \
+            "$POLINRIDER_PATTERN" . ; then
+            echo "ERROR: PolinRider malicious signature detected!"
+            exit 1
+          fi
+          echo "PolinRider check passed."

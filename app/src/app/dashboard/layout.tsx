@@ -6,6 +6,7 @@ import MobileNav from "@/components/MobileNav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import DashboardShortcuts from "@/components/DashboardShortcuts";
 import EmailVerificationGate from "@/components/EmailVerificationGate";
+import MaintenanceBanner from "@/components/MaintenanceBanner";
 import RoleProvider from "@/context/RoleContext";
 import { DashboardCustomizationProvider } from "@/context/DashboardCustomizationContext";
 import { useState } from "react";
@@ -25,6 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Main content */}
           <div className="md:ml-64 min-w-0 w-full flex flex-col">
             <TopHeader onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} />
+            <MaintenanceBanner />
 
             {/* Full-bleed on phones (no 11/12 gutter), constrained from sm up,
                 with extra bottom padding so MobileNav never covers content. */}

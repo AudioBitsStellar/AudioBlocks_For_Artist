@@ -12,7 +12,6 @@ import type { RoyaltySplitEntry } from "@/types/royalty";
 import type {
   ApiEnvelope,
   PreparedTransaction,
-  RoyaltyDistribution,
   SubmitRoyaltySplitResponse,
 } from "@/types/api";
 
@@ -32,6 +31,7 @@ export interface PrepareRoyaltySplitRequest {
 export interface SubmitRoyaltySplitRequest {
   songId: string;
   signedXdr: string;
+  idempotencyKey?: string;
 }
 
 /** Request to fetch royalty distribution for a song. */
@@ -102,6 +102,10 @@ export const useRoyaltyDistributionService = () => {
     usePost<ApiEnvelope<SubmitRoyaltySplitResponse>, SubmitRoyaltySplitRequest>(
       ROYALTY_ENDPOINTS.submitSplit(""),
       {
+        requestBody: ({ songId, signedXdr }) => ({ songId, signedXdr }),
+        requestHeaders: ({ idempotencyKey }) => ({
+          "Idempotency-Key": idempotencyKey ?? crypto.randomUUID(),
+        }),
         onSuccess: () => handleSuccess("Royalty split configured on-chain!"),
         onError: (error) =>
           handleError(error.message || "Failed to submit royalty split transaction."),

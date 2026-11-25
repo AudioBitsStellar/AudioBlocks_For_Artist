@@ -1,3 +1,5 @@
+import { getRuntimeConfig } from "@/lib/runtimeConfig";
+
 /**
  * Feature flags — driven by env vars so they're removable without touching
  * component logic. Flip NEXT_PUBLIC_USE_MOCK_DATA=false (or unset it) once a
@@ -59,15 +61,14 @@ export const featureFlags = {
  * deploy — the mechanism the Artist Portal initiative needs now that several
  * surfaces ship incrementally.
  *
- * `isFeatureEnabled` resolves a flag in this order, first match wins:
- *  1. a per-browser override (see `useFeatureFlag`/`setFeatureFlagOverride`),
- *     for reviewing one feature on a preview deployment without touching it;
- *  2. `NEXT_PUBLIC_FEATURE_FLAGS`, per deployment, e.g. `"artistOnchainAnalytics=true"`;
+ * A runtime `false` is an operational kill switch and cannot be overridden in
+ * the browser. Otherwise, `isFeatureEnabled` resolves in this order:
+ *  1. a per-browser override (for reviewing a feature in a preview);
+ *  2. runtime `NEXT_PUBLIC_FEATURE_FLAGS`, e.g. `"artistOnchainAnalytics=true"`;
  *  3. the flag's allowlist (beta artists, matched case-insensitively);
- *  4. a percentage bucket of the subject — stable, so an artist never sees a
- *     feature flicker between visits as the bucket is hash-based, not random.
+ *  4. a stable percentage bucket of the subject.
  */
-export type FeatureFlagName = "artistOnchainAnalytics" | "teamManagement";
+export type FeatureFlagName = "artistOnchainAnalytics" | "teamManagement" | "maintenanceMode";
 
 export interface FeatureFlagDefinition {
   /** What the feature is, for whoever has to debug it later. */
@@ -88,6 +89,12 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, FeatureFlagDefinition> = {
   teamManagement: {
     description:
       "Backend-enforced multi-user artist team workspace and staff access management (#525).",
+    rolloutPercentage: 0,
+    allowlist: [],
+  },
+  maintenanceMode: {
+    description:
+      "Planned maintenance banner and read-only mode notification (#781).",
     rolloutPercentage: 0,
     allowlist: [],
   },
@@ -112,7 +119,7 @@ export function subscribeToFeatureFlagChanges(listener: () => void): () => void 
 }
 
 function parseEnvOverrides(): FeatureFlagOverrides {
-  const raw = process.env.NEXT_PUBLIC_FEATURE_FLAGS;
+  const raw = getRuntimeConfig().featureFlags;
   if (!raw) return {};
 
   const parsed: FeatureFlagOverrides = {};
@@ -193,10 +200,12 @@ export function isFeatureEnabled(
   subject?: string | null,
   overrides: FeatureFlagOverrides = {}
 ): boolean {
+  const envOverride = parseEnvOverrides()[name];
+  if (envOverride === false) return false;
+
   const storedOverride = overrides[name];
   if (storedOverride !== undefined) return storedOverride;
 
-  const envOverride = parseEnvOverrides()[name];
   if (envOverride !== undefined) return envOverride;
 
   const trimmed = subject?.trim();

@@ -97,7 +97,20 @@ reviewable commits over one large one when a PR touches more than one thing.
   review of components — add a `.stories.tsx` file alongside a new component
   if it has meaningful visual states, matching the existing
   `*.stories.tsx` files next to `MyMusicContent`, `MyAlbums`, `TopHeader`,
-  etc.
+  etc. See [`docs/storybook-guide.md`](docs/storybook-guide.md) for the
+  component classification matrix and authoring rules.
+
+## Release process and CHANGELOG hygiene
+
+- **Changelog entries are release notes**: `CHANGELOG.md` directly powers the
+  in-app `/dashboard/changelog` release notes page. Every PR introducing new
+  functionality, bug fixes, or behavioral changes must include an entry in
+  the `## [Unreleased]` section under the appropriate header (`Added`, `Changed`,
+  `Deprecated`, `Removed`, `Fixed`, `Security`).
+- **Entry format**: Use `- **Short title** (#123): Context on what changed and why it matters`.
+- **Versioning**: AudioBlocks follows Semantic Versioning (`MAJOR.MINOR.PATCH`).
+  See [`docs/release-process.md`](docs/release-process.md) for the full release
+  coordination lifecycle, version bump instructions, and tag management.
 
 ## Reporting bugs / requesting features
 

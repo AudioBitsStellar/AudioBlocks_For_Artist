@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useDashboardCustomization } from "@/context/DashboardCustomizationContext";
 import DashboardCustomizationPanel from "@/components/DashboardCustomizationPanel";
+import OnboardingProgressCard from "@/components/OnboardingProgressCard";
 import { Skeleton } from "@/components/shared/Skeleton";
 
 /**
@@ -59,6 +60,8 @@ export default function OverviewPage() {
         <div />
         <DashboardCustomizationPanel />
       </div>
+
+      <OnboardingProgressCard className="mb-6" />
 
       {visibleWidgets.map((widget) => {
         const Component = WIDGET_COMPONENTS[widget.id];

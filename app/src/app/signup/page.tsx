@@ -9,7 +9,12 @@ import { establishSession } from "@/api/session";
 import useAuthServices from "@/services/authService";
 import { RegisterEmailPayload } from "@/types";
 
-type SignupFormValues = Omit<RegisterEmailPayload, "role">;
+type SignupFormValues = Omit<RegisterEmailPayload, "role"> & {
+  termsAccepted: boolean;
+};
+
+export const CURRENT_TERMS_VERSION = "1.0";
+export const CURRENT_PRIVACY_VERSION = "1.0";
 
 const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
@@ -39,10 +44,25 @@ export default function SignupPage() {
         return;
       }
       toast.success("Account created successfully!");
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "audioblocks:terms_acceptance",
+            JSON.stringify({
+              termsVersion: CURRENT_TERMS_VERSION,
+              privacyVersion: CURRENT_PRIVACY_VERSION,
+              acceptedAt: new Date().toISOString(),
+              email: data.email,
+            })
+          );
+        } catch {
+          // ignore localStorage write error
+        }
+      }
       // The verification link is in the artist's inbox. The dashboard gate sends
       // them to the check-inbox step until the link is used (#519).
       router.push("/onboarding");
-    } catch (err) {
+    } catch {
       // onError on the mutation already toasts the message
     }
   };
@@ -184,6 +204,48 @@ export default function SignupPage() {
             {errors.password && (
               <span id="signup-password-error" role="alert" className="text-xs text-red-500 mt-1">
                 {errors.password.message}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col pt-1">
+            <div className="flex items-start gap-2.5">
+              <input
+                id="signup-terms"
+                type="checkbox"
+                {...register("termsAccepted", {
+                  required: "You must accept the Terms of Service and Privacy Policy to continue",
+                })}
+                aria-invalid={errors.termsAccepted ? "true" : "false"}
+                aria-describedby={errors.termsAccepted ? "signup-terms-error" : undefined}
+                className="mt-1 h-4 w-4 rounded border-[#2C2C2C] bg-white/5 text-[#D2045B] focus:ring-[#D2045B] cursor-pointer"
+              />
+              <label
+                htmlFor="signup-terms"
+                className="text-xs text-[#A3A3A3] leading-relaxed cursor-pointer"
+              >
+                I agree to the{" "}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="text-white underline hover:text-[#D2045B]"
+                >
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-white underline hover:text-[#D2045B]"
+                >
+                  Privacy Policy
+                </Link>{" "}
+                (Version {CURRENT_TERMS_VERSION}). <span className="text-red-500">*</span>
+              </label>
+            </div>
+            {errors.termsAccepted && (
+              <span id="signup-terms-error" role="alert" className="text-xs text-red-500 mt-1 pl-6">
+                {errors.termsAccepted.message}
               </span>
             )}
           </div>

@@ -22,6 +22,7 @@ export function useGet<T>(
     enabled?: boolean;
     staleTime?: number;
     gcTime?: number;
+    initialData?: T;
   }
 ) {
   return useQuery<T>({
@@ -34,6 +35,7 @@ export function useGet<T>(
     enabled: options?.enabled ?? true,
     staleTime: options?.staleTime,
     gcTime: options?.gcTime,
+    initialData: options?.initialData,
   });
 }
 
@@ -47,6 +49,8 @@ export function usePost<TData, TVariables = unknown>(
     onSuccess?: (data: TData, variables: TVariables) => void;
     onError?: (error: Error) => void;
     invalidateQueries?: QueryKey[];
+    requestBody?: (variables: TVariables) => unknown;
+    requestHeaders?: (variables: TVariables) => Record<string, string>;
   }
 ) {
   const queryClient = useQueryClient();
@@ -54,7 +58,9 @@ export function usePost<TData, TVariables = unknown>(
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (variables) => {
       const client = await getApiClient();
-      const res = await client.post<TData>(endpoint, variables);
+      const body = options?.requestBody ? options.requestBody(variables) : variables;
+      const headers = options?.requestHeaders?.(variables);
+      const res = await client.post<TData>(endpoint, body, { headers });
       return res.data;
     },
     onSuccess: (data, variables) => {

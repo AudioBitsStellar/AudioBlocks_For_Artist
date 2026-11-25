@@ -1,11 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getActiveNetworkId, getNetworkConfig, setActiveNetworkId } from "@/lib/stellarNetwork";
+import {
+  assertBackendStellarNetworkMatchesConfigured,
+  getActiveNetworkId,
+  getNetworkConfig,
+  setActiveNetworkId,
+} from "@/lib/stellarNetwork";
 
 describe("lib/stellarNetwork (#282)", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
     window.localStorage.clear();
+    delete window.__RUNTIME_CONFIG__;
   });
 
   afterEach(() => {
@@ -51,5 +57,25 @@ describe("lib/stellarNetwork (#282)", () => {
     window.localStorage.setItem("audioblocks:stellar-network:v1", "not-a-real-network");
 
     expect(getActiveNetworkId()).toBe("testnet");
+  });
+
+  it("allows a prepared transaction when its passphrase matches the configured network", () => {
+    process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+
+    expect(() =>
+      assertBackendStellarNetworkMatchesConfigured("Test SDF Network ; September 2015")
+    ).not.toThrow();
+  });
+
+  it("blocks signing when the backend prepared a transaction for a different network", () => {
+    process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+
+    expect(() =>
+      assertBackendStellarNetworkMatchesConfigured(
+        "Public Global Stellar Network ; September 2015"
+      )
+    ).toThrow(
+      /configured for Stellar Testnet.*prepared the transaction for Stellar Mainnet.*Signing was blocked/
+    );
   });
 });

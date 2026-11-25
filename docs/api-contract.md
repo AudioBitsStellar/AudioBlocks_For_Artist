@@ -25,6 +25,23 @@ re-check when either side changes.
 | `exists but unmounted` | The router file exists in `src/routes/` but `app.ts` never imports or mounts it, so the endpoint returns 404. |
 | `missing on backend` | No backend route implements this endpoint. |
 
+## Generated types (#748)
+
+[`docs/openapi.yaml`](./openapi.yaml) is a pinned copy of the backend's
+OpenAPI spec, and [`app/src/types/generated/api.ts`](../app/src/types/generated/api.ts)
+is generated from it. The app never edits the generated file by hand:
+
+```bash
+cd app
+npm run api:types        # regenerate after updating docs/openapi.yaml
+npm run api:types:check  # fail if the committed output is stale
+npm run api:spec:check   # fail if upstream's spec differs from our snapshot
+```
+
+When the backend's spec changes, re-copy it into `docs/openapi.yaml`, run
+`npm run api:types`, and commit both files. CI runs both checks, so drift in
+either the generated types or the snapshot fails the build.
+
 ## Endpoint constants
 
 ### Auth and users

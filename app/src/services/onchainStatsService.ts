@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchIndexedActivity, type IndexedActivity } from "@/lib/onchainIndexer";
 import { featureFlags } from "@/lib/featureFlags";
-import { type HorizonOperation, type HorizonTransaction } from "@/lib/horizon";
 import { useMock } from "@/__mocks__/loadMock";
 import {
   fetchAccountBalances,
@@ -15,7 +14,7 @@ import { getActiveNetworkId } from "@/lib/stellarNetwork";
 import { useStellarWallet } from "@/components/common/wallet/useStellarWallet";
 
 export interface MintStatusResponse {
-  status: 'PENDING' | 'MINTED' | 'FAILED';
+  status: "PENDING" | "MINTED" | "FAILED";
   tokenId?: string;
   txHash?: string;
   error?: string;
@@ -27,39 +26,44 @@ export class OnchainService {
    */
   public static async pollMintStatus(txHash: string): Promise<MintStatusResponse> {
     try {
-      const response = await fetch(process.env.REACT_APP_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'getTransaction',
-          params: { hash: txHash },
-        }),
-      });
+      const response = await fetch(
+        process.env.REACT_APP_SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "getTransaction",
+            params: { hash: txHash },
+          }),
+        }
+      );
 
       const data = await response.json();
       const status = data?.result?.status;
 
-      if (status === 'SUCCESS') {
+      if (status === "SUCCESS") {
         return {
-          status: 'MINTED',
-          tokenId: data.result.returnValue ? Buffer.from(data.result.returnValue, 'base64').toString() : 'token_id_placeholder',
+          status: "MINTED",
+          tokenId: data.result.returnValue
+            ? Buffer.from(data.result.returnValue, "base64").toString()
+            : "token_id_placeholder",
           txHash,
         };
-      } else if (status === 'FAILED' || status === 'NOT_FOUND') {
+      } else if (status === "FAILED" || status === "NOT_FOUND") {
         // If not found after timeout or explicitly failed
         return {
-          status: status === 'FAILED' ? 'FAILED' : 'PENDING',
+          status: status === "FAILED" ? "FAILED" : "PENDING",
           txHash,
-          error: data?.result?.resultXdr ? 'Transaction execution failed' : undefined,
+          error: data?.result?.resultXdr ? "Transaction execution failed" : undefined,
         };
       }
 
-      return { status: 'PENDING', txHash };
+      return { status: "PENDING", txHash };
     } catch (err) {
       // Network hiccup during poll; keep pending until definitive resolution
-      return { status: 'PENDING', txHash };
+      return { status: "PENDING", txHash };
     }
   }
 
@@ -67,7 +71,10 @@ export class OnchainService {
    * Save pending mint state to localStorage for resume support across reloads
    */
   public static persistPendingMint(songId: string, txHash: string, networkId: string): void {
-    localStorage.setItem(`pending_mint_${networkId}_${songId}`, JSON.stringify({ txHash, timestamp: Date.now() }));
+    localStorage.setItem(
+      `pending_mint_${networkId}_${songId}`,
+      JSON.stringify({ txHash, timestamp: Date.now() })
+    );
   }
 
   public static getStoredPendingMint(songId: string, networkId: string): string | null {
@@ -299,7 +306,6 @@ export function summarizeIndexedActivity(
 
 export function useOnChainStats(): UseOnChainStatsResult {
   const { address } = useStellarWallet();
-  const isMock = featureFlags.useMockOnChainStats;
   const isMock = featureFlags.useMockOnChainStats || !address;
   const onChainMocks = useMock("onchainStats", isMock);
   const [fetched, setFetched] = useState<OnChainActivitySummary | null>(null);

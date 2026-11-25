@@ -49,6 +49,7 @@ test.describe("Signup flow", () => {
     await page.fill("#signup-username", "newartist");
     await page.fill("#signup-email", "newartist@example.com");
     await page.fill("#signup-password", "supersecret123");
+    await page.check("#signup-terms");
     await page.getByRole("button", { name: "Sign up" }).click();
 
     // Signup continues into onboarding. The verification link is in the artist's
@@ -69,6 +70,7 @@ test.describe("Signup flow", () => {
     await page.goto("/signup");
     await page.fill("#signup-email", "existing@example.com");
     await page.fill("#signup-password", "supersecret123");
+    await page.check("#signup-terms");
     await page.getByRole("button", { name: "Sign up" }).click();
 
     await expect(page.getByText(/already exists/i)).toBeVisible();
@@ -177,6 +179,7 @@ test.describe("Email verification gate (#519)", () => {
     await page.fill("#signup-username", "gatedartist");
     await page.fill("#signup-email", "gated@example.com");
     await page.fill("#signup-password", "supersecret123");
+    await page.check("#signup-terms");
     await page.getByRole("button", { name: "Sign up" }).click();
     await page.waitForURL("**/onboarding");
 
@@ -191,6 +194,26 @@ test.describe("Email verification gate (#519)", () => {
 
     await page.goto("/dashboard/overview");
     await expect(page).toHaveURL(/\/dashboard\/overview/);
+  });
+
+  test("shows clear error and login redirect when verification link is expired or invalid (#777)", async ({
+    page,
+  }) => {
+    await page.route("**/api/backend/auth/verify-email/expired-link-token", async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({ success: false, message: "Verification link expired" }),
+      });
+    });
+
+    await page.goto("/verify-email/expired-link-token");
+    await expect(page.getByRole("heading", { name: /this link can't be used/i })).toBeVisible();
+    await expect(page.getByText(/invalid, has already been used, or has expired/i)).toBeVisible();
+
+    await page.getByRole("link", { name: "Log in" }).click();
+    await page.waitForURL("**/login");
+    await expect(page).toHaveURL(/\/login/);
   });
 });
 

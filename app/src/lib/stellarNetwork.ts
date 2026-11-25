@@ -1,3 +1,5 @@
+import { getRuntimeConfig } from "@/lib/runtimeConfig";
+
 /**
  * Testnet/mainnet selection for the client-only Horizon reads in
  * `src/lib/horizon.ts` (#282). See docs/adr/0004-direct-horizon-reads-from-the-browser.md.
@@ -32,6 +34,25 @@ const PUBLIC_DEFAULTS: Record<StellarNetworkId, Omit<StellarNetworkConfig, "id">
     networkPassphrase: "Public Global Stellar Network ; September 2015",
   },
 };
+
+/** Blocks signing if a prepared transaction targets a different Stellar network than this app. */
+export function assertBackendStellarNetworkMatchesConfigured(backendPassphrase: string): void {
+  const configuredPassphrase = getRuntimeConfig().stellarNetworkPassphrase;
+  if (backendPassphrase === configuredPassphrase) return;
+
+  const describeNetwork = (passphrase: string) => {
+    if (passphrase === PUBLIC_DEFAULTS.testnet.networkPassphrase) return "Stellar Testnet";
+    if (passphrase === PUBLIC_DEFAULTS.mainnet.networkPassphrase) return "Stellar Mainnet";
+    return passphrase ? `custom Stellar network (${passphrase})` : "an unknown Stellar network";
+  };
+
+  const configuredNetwork = describeNetwork(configuredPassphrase);
+  const backendNetwork = describeNetwork(backendPassphrase);
+  throw new Error(
+    `Stellar network mismatch: this app is configured for ${configuredNetwork}, ` +
+      `but the backend prepared the transaction for ${backendNetwork}. Signing was blocked.`
+  );
+}
 
 const STORAGE_KEY = "audioblocks:stellar-network:v1";
 

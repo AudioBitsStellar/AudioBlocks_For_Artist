@@ -13,7 +13,14 @@ import TransferSongButton from "@/components/common/wallet/TransferSongButton";
 import { useStellarWallet } from "@/components/common/wallet/useStellarWallet";
 import useOnchainServices from "@/services/onchainService";
 import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
-import { featureFlags } from "@/lib/featureFlags";
+
+const testFeatureFlags = vi.hoisted(() => ({ enableSongTransfer: true }));
+const testFee = vi.hoisted(() => ({
+  estimate: "~0.0000500 XLM" as string | null,
+  isLoading: false,
+  error: null as Error | null,
+  refetch: vi.fn(),
+}));
 
 vi.mock("@/components/common/wallet/useStellarWallet", () => ({
   useStellarWallet: vi.fn(),
@@ -24,9 +31,14 @@ vi.mock("@/services/onchainService", () => ({
 }));
 
 vi.mock("@/lib/freighter", () => ({
+  classifyFreighterError: vi.fn((error: Error) =>
+    error.message.toLowerCase().includes("reject") ? "rejected" : "other"
+  ),
   isFreighterAvailable: vi.fn(),
   signTransactionXdr: vi.fn(),
 }));
+
+vi.mock("@/lib/featureFlags", () => ({ featureFlags: testFeatureFlags }));
 
 vi.mock("@/lib/analytics", () => ({
   analytics: {
@@ -37,7 +49,17 @@ vi.mock("@/lib/analytics", () => ({
 }));
 
 vi.mock("@/hooks/useEstimatedFee", () => ({
-  useEstimatedFee: () => ({ estimate: "~0.0000500 XLM", isLoading: false }),
+  useEstimatedFee: () => testFee,
+}));
+
+vi.mock("@/hooks/useTransactionStatus", () => ({
+  useTransactionStatus: () => ({
+    record: null,
+    isReady: true,
+    error: null,
+    track: vi.fn(),
+    clear: vi.fn(),
+  }),
 }));
 
 const mockUseStellarWallet = vi.mocked(useStellarWallet);
@@ -62,7 +84,10 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 describe("TransferSongButton", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (featureFlags as any).enableSongTransfer = true;
+    testFeatureFlags.enableSongTransfer = true;
+    testFee.estimate = "~0.0000500 XLM";
+    testFee.isLoading = false;
+    testFee.error = null;
     mockIsFreighterAvailable.mockResolvedValue(true);
     mockSignTransactionXdr.mockResolvedValue("SIGNED_XDR_MOCK");
   });
@@ -133,6 +158,30 @@ describe("TransferSongButton", () => {
     expect(button).not.toBeDisabled();
   });
 
+  it("blocks transfer and offers fee-estimate retry when Horizon fails", () => {
+    mockUseStellarWallet.mockReturnValue({
+      address: MOCK_ADDRESS,
+      isConnecting: false,
+      connect: vi.fn(),
+      restore: vi.fn(),
+      disconnect: vi.fn(),
+      signAndSubmit: vi.fn(),
+    });
+    setupServices();
+    testFee.estimate = null;
+    testFee.error = new Error("Horizon unavailable");
+
+    render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
+    fireEvent.change(screen.getByPlaceholderText(/recipient/i), {
+      target: { value: RECIPIENT },
+    });
+
+    expect(screen.getByRole("button", { name: /transfer song/i })).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(/unable to estimate fees/i);
+    fireEvent.click(screen.getByRole("button", { name: /retry fee estimate/i }));
+    expect(testFee.refetch).toHaveBeenCalledOnce();
+  });
+
   it("blocks transferring a song to your own connected wallet", () => {
     mockUseStellarWallet.mockReturnValue({
       address: MOCK_ADDRESS,
@@ -154,7 +203,7 @@ describe("TransferSongButton", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/own wallet/i);
   });
 
-  it("runs the prepare → sign → submit sequence and shows the tx hash on success", async () => {
+  it("runs prepare → sign → submit and waits for on-chain confirmation", async () => {
     mockUseStellarWallet.mockReturnValue({
       address: MOCK_ADDRESS,
       isConnecting: false,
@@ -180,15 +229,102 @@ describe("TransferSongButton", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /transfer song/i }));
 
+    const reviewDialog = await screen.findByRole("dialog", { name: /review transaction/i });
+    expect(reviewDialog).toHaveTextContent("1 song NFT (no XLM transfer)");
+    expect(reviewDialog).toHaveTextContent(RECIPIENT);
+    expect(reviewDialog).toHaveTextContent("AudioBlocks Catalog contract");
+    expect(mockSignTransactionXdr).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /continue to freighter/i }));
+
     await waitFor(() => {
       expect(screen.getByRole("status")).toBeInTheDocument();
-      expect(screen.getByText(/transferred successfully/i)).toBeInTheDocument();
-      expect(screen.getByText(new RegExp(MOCK_TX_HASH))).toBeInTheDocument();
+      expect(screen.getByText(/confirming on stellar/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /view transaction/i })).toHaveAttribute(
+        "href",
+        expect.stringContaining(MOCK_TX_HASH)
+      );
     });
 
     expect(prepareMutateAsync).toHaveBeenCalledWith({ toAddress: RECIPIENT });
     expect(mockSignTransactionXdr).toHaveBeenCalledWith(MOCK_XDR, MOCK_NETWORK, MOCK_ADDRESS);
-    expect(submitMutateAsync).toHaveBeenCalledWith({ signedXdr: "SIGNED_XDR_MOCK" });
+    expect(submitMutateAsync).toHaveBeenCalledWith({
+      signedXdr: "SIGNED_XDR_MOCK",
+      idempotencyKey: expect.any(String),
+    });
+  });
+
+  it("retries a timed-out submission with the same signed XDR and idempotency key", async () => {
+    mockUseStellarWallet.mockReturnValue({
+      address: MOCK_ADDRESS,
+      isConnecting: false,
+      connect: vi.fn(),
+      restore: vi.fn(),
+      disconnect: vi.fn(),
+      signAndSubmit: vi.fn(),
+    });
+    const prepareMutateAsync = vi.fn().mockResolvedValue({
+      success: true,
+      data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
+    });
+    const submitMutateAsync = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("network timeout"))
+      .mockResolvedValueOnce({
+        success: true,
+        data: { txHash: MOCK_TX_HASH, songId: "song-1", toAddress: RECIPIENT },
+      });
+    setupServices({ prepareMutateAsync, submitMutateAsync });
+
+    render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
+    fireEvent.change(screen.getByPlaceholderText(/recipient/i), {
+      target: { value: RECIPIENT },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /transfer song/i }));
+
+    fireEvent.click(await screen.findByRole("button", { name: /retry submission/i }));
+    await screen.findByText(/confirming on stellar/i);
+
+    expect(prepareMutateAsync).toHaveBeenCalledOnce();
+    expect(submitMutateAsync).toHaveBeenCalledTimes(2);
+    expect(submitMutateAsync.mock.calls[0][0]).toEqual(submitMutateAsync.mock.calls[1][0]);
+  });
+
+  it("ignores a second click before the first transfer begins", async () => {
+    mockUseStellarWallet.mockReturnValue({
+      address: MOCK_ADDRESS,
+      isConnecting: false,
+      connect: vi.fn(),
+      restore: vi.fn(),
+      disconnect: vi.fn(),
+      signAndSubmit: vi.fn(),
+    });
+    const prepareMutateAsync = vi.fn(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({ success: true, data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK } }),
+            10
+          )
+        )
+    );
+    const submitMutateAsync = vi.fn().mockResolvedValue({
+      success: true,
+      data: { txHash: MOCK_TX_HASH, songId: "song-1", toAddress: RECIPIENT },
+    });
+    setupServices({ prepareMutateAsync, submitMutateAsync });
+
+    render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
+    fireEvent.change(screen.getByPlaceholderText(/recipient/i), {
+      target: { value: RECIPIENT },
+    });
+    const button = screen.getByRole("button", { name: /transfer song/i });
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    await waitFor(() => expect(prepareMutateAsync).toHaveBeenCalledOnce());
+    await screen.findByText(/confirming on stellar/i);
+    expect(submitMutateAsync).toHaveBeenCalledOnce();
   });
 
   it("shows a rejected state when Freighter rejects signing", async () => {
@@ -205,7 +341,11 @@ describe("TransferSongButton", () => {
       success: true,
       data: { xdr: MOCK_XDR, networkPassphrase: MOCK_NETWORK },
     });
-    setupServices({ prepareMutateAsync });
+    const submitMutateAsync = vi.fn().mockResolvedValue({
+      success: true,
+      data: { txHash: MOCK_TX_HASH, songId: "song-1", toAddress: RECIPIENT },
+    });
+    setupServices({ prepareMutateAsync, submitMutateAsync });
 
     render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
 
@@ -213,11 +353,19 @@ describe("TransferSongButton", () => {
       target: { value: RECIPIENT },
     });
     fireEvent.click(screen.getByRole("button", { name: /transfer song/i }));
+    await screen.findByRole("dialog", { name: /review transaction/i });
+    fireEvent.click(screen.getByRole("button", { name: /continue to freighter/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
-      expect(screen.getByText(/signature rejected/i)).toBeInTheDocument();
+      expect(screen.getByText(/signature wasn't approved/i)).toBeInTheDocument();
     });
+
+    fireEvent.click(screen.getByRole("button", { name: /retry/i }));
+
+    await waitFor(() => expect(screen.getByText(/transferred successfully/i)).toBeInTheDocument());
+    expect(prepareMutateAsync).toHaveBeenCalledTimes(2);
+    expect(mockSignTransactionXdr).toHaveBeenCalledTimes(2);
   });
 
   it("shows an error state with the reason when the prepare step fails", async () => {
@@ -277,14 +425,14 @@ describe("TransferSongButton", () => {
     });
     setupServices();
 
-    const originalFlag = featureFlags.enableSongTransfer;
-    (featureFlags as any).enableSongTransfer = false;
+    const originalFlag = testFeatureFlags.enableSongTransfer;
+    testFeatureFlags.enableSongTransfer = false;
 
     render(<TransferSongButton songId="song-1" />, { wrapper: Wrapper });
 
     expect(screen.getByRole("button", { name: /disabled/i })).toBeDisabled();
     expect(screen.getByText(/transfers are temporarily disabled/i)).toBeInTheDocument();
 
-    (featureFlags as any).enableSongTransfer = originalFlag;
+    testFeatureFlags.enableSongTransfer = originalFlag;
   });
 });

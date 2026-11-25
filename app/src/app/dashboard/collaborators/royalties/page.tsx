@@ -21,6 +21,7 @@ import {
 import {
   formatPercent,
   MAX_COLLABORATORS,
+  totalBasisPoints,
   totalPercent,
   validateSplitDraft,
   type SplitParticipant,
@@ -38,7 +39,7 @@ export default function RoyaltySplitsPage() {
 
   const errors = useMemo(() => validateSplitDraft(rows), [rows]);
   const total = totalPercent(rows);
-  const isBalanced = Math.abs(total - 100) < 0.0001;
+  const isBalanced = totalBasisPoints(rows) === 10_000;
   const saved = isSplitSaved(releaseId, rows);
 
   const updateRows = (next: SplitParticipant[]) => setRows(next);
@@ -266,7 +267,8 @@ export default function RoyaltySplitsPage() {
         <button
           type="button"
           onClick={handleSave}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          disabled={!isBalanced || Object.keys(errors.rows).length > 0}
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save size={16} aria-hidden="true" />
           Save split for {release?.title ?? "this release"}

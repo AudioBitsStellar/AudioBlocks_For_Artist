@@ -78,6 +78,12 @@ describe("validateFile", () => {
       expect(result.error).toContain("200 MB");
     });
 
+    it("accepts an audio file exactly at the 200 MB upload limit", () => {
+      expect(validateFile(makeFile("t.mp3", "audio/mpeg", 200 * MB), AUDIO_FILE_RULES).valid).toBe(
+        true
+      );
+    });
+
     it("rejects non-audio types", () => {
       const result = validateFile(makeFile("t.pdf", "application/pdf"), AUDIO_FILE_RULES);
       expect(result.valid).toBe(false);

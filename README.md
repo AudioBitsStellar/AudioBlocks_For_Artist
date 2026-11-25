@@ -17,7 +17,7 @@ AudioBlocks is a comprehensive artist dashboard for managing music, earnings, an
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **Dark/Light Mode**: User-preference based theming
 - **Keyboard Shortcuts**: Jump between dashboard sections without leaving the keyboard
-- **Accessibility**: WCAG 2.1 AA compliance with screen reader support
+- **Accessibility**: WCAG 2.1 AA compliance with screen reader support.
 
 ## 📋 Prerequisites
 

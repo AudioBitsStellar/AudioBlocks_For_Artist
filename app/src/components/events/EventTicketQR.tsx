@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { downloadQRCode } from "@/utils/qrcode";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,6 +37,7 @@ export function EventTicketQR({ eventId, ticketId, eventTitle, attendeeName }: E
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
+      const { downloadQRCode } = await import("@/utils/qrcode");
       await downloadQRCode(eventId, ticketId, `ticket-${ticketId}`);
       toast.success("QR code downloaded");
     } catch (error) {
