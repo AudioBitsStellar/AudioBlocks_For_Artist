@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { songFormSchema, LYRICS_MAX_LENGTH, SONG_LANGUAGES } from "@/types/formValidation";
 import { z } from "zod";
 import { MUSIC_GENRES } from "../shared/music_genre";
+
 import useUploadServices from "@/services/uploadService";
 import {
   describeVisibility,
@@ -32,8 +33,9 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFileDrop } from "@/hooks/useFileDrop";
 import { useLeaveGuard } from "@/hooks/useLeaveGuard";
 import ConfirmationDialog from "@/components/shared/ConfirmationDialog";
-import MintSongButton from "@/components/common/wallet/MintSongButton";
-import TransferSongButton from "@/components/common/wallet/TransferSongButton";
+import UploadedSongActions from "@/components/musicUpload/UploadedSongActions";
+import AiTagSuggestions from "@/components/musicUpload/AiTagSuggestions";
+import { useSongProcessing } from "@/context/SongProcessingContext";
 import { analytics } from "@/lib/analytics";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { sanitize } from "@/utils/sanitize";
@@ -47,6 +49,8 @@ import {
   validateFile,
 } from "@/utils/fileValidation";
 
+const SONG_GENRE_CHOICES = MUSIC_GENRES.map((genre) => ({ value: genre, label: genre }));
+
 const MAX_RETRY_ATTEMPTS = 3;
 const MAX_CHUNK_RETRIES = 2;
 const UPLOAD_PAUSED = "UPLOAD_PAUSED";
@@ -57,6 +61,7 @@ type SongFormOutput = z.output<typeof songFormSchema>;
 
 const Song = () => {
   const toast = useToast();
+  const { track: trackProcessing } = useSongProcessing();
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileId, setFileId] = useState<string | null>(null);
@@ -82,7 +87,6 @@ const Song = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [coverError, setCoverError] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [audioMetadata, setAudioMetadata] = useState<AudioMetadata | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -91,7 +95,6 @@ const Song = () => {
   const pauseRequestedRef = useRef(false);
   const retryInProgressRef = useRef(false);
   const uploadedChunksRef = useRef<number[]>([]);
-  const retryInProgressRef = useRef(false);
 
   const { useFinalizeUpload, useUploadChunk, useUploadCover, useTranscribeLyrics } =
     useUploadServices();
@@ -408,8 +411,9 @@ const Song = () => {
       });
 
       // The song still needs to finish transcoding + IPFS pinning in the
-      // background before it's mintable; the Mint button below will show
-      // a clear backend error if clicked too early.
+      // background before it's mintable (#543): watch it until it is ready
+      // or failed; minting stays locked until then.
+      if (songId) trackProcessing(songId, sanitize(data.title));
       setMintableSongId(songId || null);
 
       setUploadError(null);
@@ -582,6 +586,18 @@ const Song = () => {
               {errors.genre.message}
             </p>
           )}
+          {/* #542: genre only — this form has no tag field, and the backend
+              stores no song tags yet. */}
+          <AiTagSuggestions
+            title={watchedValues.title ?? ""}
+            description={watchedValues.description ?? ""}
+            genreOptions={SONG_GENRE_CHOICES}
+            currentGenre={watchedValues.genre ?? ""}
+            onAcceptGenre={(value) =>
+              setValue("genre", value, { shouldDirty: true, shouldValidate: true })
+            }
+            disabled={isUploading}
+          />
         </div>
 
         <div className="space-y-2">
@@ -1064,20 +1080,7 @@ const Song = () => {
           )}
 
           {mintableSongId && (
-            <div className="mt-3 space-y-3">
-              <div className="bg-[#1a1a1a] rounded-lg p-3 flex items-center justify-between gap-2">
-                <p className="text-xs text-[#A3A3A3]">
-                  Song uploaded. Once it&apos;s finished processing, mint it on-chain:
-                </p>
-                <MintSongButton songId={mintableSongId} onMintingChange={setIsMinting} />
-              </div>
-              <div className="bg-[#1a1a1a] rounded-lg p-3 space-y-2">
-                <p className="text-xs text-[#A3A3A3]">
-                  Already minted? Transfer this song&apos;s token to another wallet:
-                </p>
-                <TransferSongButton songId={mintableSongId} />
-              </div>
-            </div>
+            <UploadedSongActions songId={mintableSongId} onMintingChange={setIsMinting} />
           )}
         </div>
       </div>
