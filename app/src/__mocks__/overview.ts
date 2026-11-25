@@ -1,9 +1,5 @@
-import type { OverviewKpi } from "@/types";
+import artistStatsResponse from "./openapi/artist-stats.json";
+import { overviewFromStats, type ArtistStats } from "@/services/overviewService";
 
-/** Overview KPI cards — shaped like `GET /overview`, so it goes through the same formatting. */
-export const MOCK_OVERVIEW_KPI: OverviewKpi = {
-  songsPublished: 12,
-  totalEarnings: 3250,
-  listenersCount: 5000,
-  mostStreamedRegion: "Nigeria",
-};
+export const MOCK_ARTIST_STATS = artistStatsResponse.data as ArtistStats;
+export const MOCK_OVERVIEW_DATA = overviewFromStats(MOCK_ARTIST_STATS);

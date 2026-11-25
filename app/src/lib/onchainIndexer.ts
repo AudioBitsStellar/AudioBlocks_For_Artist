@@ -1,18 +1,12 @@
 import { createApiClient } from "@/api/axios";
-import { getActiveNetworkId } from "@/lib/stellarNetwork";
-import { featureFlags } from "@/lib/featureFlags";
+import type { IndexedEvent, Pagination } from "@/types/generated/api";
 
-export interface IndexedActivity {
-  id: string;
-  address?: string;
-  contractId?: string;
-  contractType?: string;
-  eventType: string;
-  txHash?: string;
-  ledger?: number;
-  network: string;
-  createdAt: string;
-  payload?: Record<string, unknown>;
+export type IndexedActivity = IndexedEvent;
+
+export interface IndexedActivityResponse {
+  success: boolean;
+  data: IndexedActivity[];
+  pagination: Pagination;
 }
 
 export interface ArtistOnchainStats {
@@ -44,31 +38,25 @@ export async function fetchIndexedActivity(address: string): Promise<IndexedActi
   if (!address.trim()) throw new Error("An account address is required");
   const client = await createApiClient();
   const events = new Map<string, IndexedActivity>();
-  const network = getActiveNetworkId() === "testnet" ? "stellar-testnet" : "stellar-mainnet";
   for (let page = 1; ; page += 1) {
-    const response = await client.get<{
-      success: boolean;
-      data: IndexedActivity[];
-      pagination: { totalPages: number };
-    }>("/activity/onchain", { params: { address, page, limit: 100 } });
+    const response = await client.get<IndexedActivityResponse>("/activity/onchain", {
+      params: { address, page, limit: 100 },
+    });
     const body = response.data;
+    const totalPages = body.pagination?.totalPages;
     if (
       !body.success ||
       !Array.isArray(body.data) ||
-      !Number.isInteger(body.pagination?.totalPages) ||
-      body.pagination.totalPages < 0
+      typeof totalPages !== "number" ||
+      !Number.isInteger(totalPages) ||
+      totalPages < 0
     ) {
       throw new Error("Invalid indexer response");
     }
     for (const event of body.data) {
-      // Defend against a server ignoring filters; never mix accounts/networks.
-      if (
-        event.address === address &&
-        [network, network.replace("stellar-", "")].includes(event.network)
-      )
-        events.set(event.id, event);
+      if (event.id && event.eventType && event.address === address) events.set(event.id, event);
     }
-    if (page >= body.pagination.totalPages) return [...events.values()];
+    if (page >= totalPages) return [...events.values()];
     if (body.data.length === 0 || page >= 1000) {
       throw new Error("Indexer history is incomplete; aggregate endpoint required");
     }
@@ -92,7 +80,7 @@ export async function fetchArtistOnchainStats(
   }
   const cutoff = Date.now() - days * 86_400_000;
   const events = (await fetchIndexedActivity(address)).filter(
-    (event) => Date.parse(event.createdAt) >= cutoff
+    (event) => Date.parse(event.createdAt ?? "") >= cutoff
   );
   return {
     daily: [],

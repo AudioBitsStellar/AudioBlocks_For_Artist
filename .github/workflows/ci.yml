@@ -96,6 +96,9 @@ jobs:
       - name: Check backend OpenAPI snapshot
         run: npm run api:spec:check
 
+      - name: Validate mock fixtures against OpenAPI
+        run: npm run api:fixtures:check
+
   # ── 4. Unit tests ────────────────────────────────────────────────────────────
   test:
     name: Unit tests
@@ -149,6 +152,9 @@ jobs:
 
       - name: Build Next.js application
         run: npm run build
+
+      - name: Check production JavaScript budgets
+        run: npm run perf:budgets
 
   # ── 6. Storybook build ───────────────────────────────────────────────────────
   storybook:
@@ -216,4 +222,3 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-

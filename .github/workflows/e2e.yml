@@ -38,8 +38,18 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Prepare standalone assets
+        run: |
+          cp -r public .next/standalone/
+          cp -r .next/static .next/standalone/.next/
+
       - name: Run Playwright tests
         run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Run dashboard INP performance test
+        run: npm run test:e2e -- --project=performance
         env:
           CI: true
 

@@ -1,0 +1,16 @@
+[
+  {
+    "fixture": "src/__mocks__/openapi/artist-stats.json",
+    "method": "get",
+    "path": "/api/artists/{id}/stats",
+    "status": "200",
+    "schema": "#/components/schemas/ArtistStats",
+    "select": "data"
+  },
+  {
+    "fixture": "src/__mocks__/openapi/indexed-activity.json",
+    "method": "get",
+    "path": "/api/activity/onchain",
+    "status": "200"
+  }
+]

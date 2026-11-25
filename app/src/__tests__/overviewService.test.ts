@@ -37,6 +37,11 @@ describe("overview backend mapping", () => {
       overviewFromStats({ ...stats, totals: { ...stats.totals, revenueStroops: "0" } }).earningsXlm
     ).toBe("0");
   });
+  it("uses the backend follower count when it is present", () => {
+    expect(
+      overviewFromStats({ ...stats, totals: { ...stats.totals, followers: 1250 } }).followersCount
+    ).toBe(1250);
+  });
   it("requests artist stats with the selected time window", async () => {
     mocks.get.mockResolvedValue({ data: { success: true, data: stats } });
     await fetchOverview("artist", "90d");

@@ -10,29 +10,29 @@ import MaintenanceBanner from "@/components/MaintenanceBanner";
 import MockDataNotice from "@/components/MockDataNotice";
 import RoleProvider from "@/context/RoleContext";
 import { DashboardCustomizationProvider } from "@/context/DashboardCustomizationContext";
+import PrivyProvider from "@/context/PrivyProvider";
 import { useState } from "react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <SessionProvider>
+    <PrivyProvider>
       <RoleProvider>
         <DashboardCustomizationProvider>
           {/* `bg-background` follows the active theme, so the portal repaints on a
-              light/dark switch without any per-page work (#423). */}
+            light/dark switch without any per-page work (#423). */}
           <div className="flex min-h-screen bg-background text-text">
             {/* Sidebar — permanent from md, slide-over drawer below it */}
             <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-          {/* Main content */}
-          <div className="md:ml-64 min-w-0 w-full flex flex-col">
-            <TopHeader onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} />
-            <MaintenanceBanner />
-            <MockDataNotice />
+            {/* Main content */}
+            <div className="md:ml-64 min-w-0 w-full flex flex-col">
+              <TopHeader onMenuClick={() => setSidebarOpen(true)} sidebarOpen={sidebarOpen} />
+              <MaintenanceBanner />
 
               {/* Full-bleed on phones (no 11/12 gutter), constrained from sm up,
-                  with extra bottom padding so MobileNav never covers content. */}
+                with extra bottom padding so MobileNav never covers content. */}
               <main
                 id="main-content"
                 tabIndex={-1}
@@ -47,6 +47,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <DashboardShortcuts />
         </DashboardCustomizationProvider>
       </RoleProvider>
-    </SessionProvider>
+    </PrivyProvider>
   );
 }

@@ -7,8 +7,18 @@ import { DASHBOARD_CACHE, DASHBOARD_QUERY_KEYS } from "@/api/cachePolicy";
 export type StatsWindow = "7d" | "30d" | "90d" | "all-time";
 export interface ArtistStats {
   artistId: string;
+  window?: StatsWindow;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   songCount: number;
-  totals: { plays: number; uniqueListeners: number; saves: number; revenueStroops: string };
+  totals: {
+    plays: number;
+    uniqueListeners: number;
+    saves: number;
+    revenueStroops: string;
+    followers?: number;
+  };
+  topSongs?: Array<{ songId: string; title: string; plays: number }>;
 }
 export interface OverviewData {
   songsPublished: number;
@@ -45,7 +55,7 @@ export function overviewFromStats(stats: ArtistStats): OverviewData {
     totalPlays: stats.totals.plays,
     listenersCount: stats.totals.uniqueListeners,
     saves: stats.totals.saves,
-    followersCount: null,
+    followersCount: stats.totals.followers ?? null,
     earningsXlm: `${whole}${fraction ? `.${fraction}` : ""}`,
   };
 }

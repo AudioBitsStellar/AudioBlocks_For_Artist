@@ -7,7 +7,7 @@ const event = {
   id: "1",
   address: "GARTIST",
   eventType: "song_played",
-  network: "stellar-testnet",
+  data: { songId: "song-1" },
   createdAt: new Date().toISOString(),
 };
 beforeEach(() => {
@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 describe("Soroban indexer", () => {
-  it("paginates and excludes other participants and networks", async () => {
+  it("paginates and excludes events for other participants", async () => {
     get.mockResolvedValueOnce({
       data: {
         success: true,
@@ -29,7 +29,7 @@ describe("Soroban indexer", () => {
         success: true,
         data: [
           { ...event, id: "2" },
-          { ...event, id: "public", network: "stellar-mainnet" },
+          { ...event, id: "other-2", address: "GOTHER" },
         ],
         pagination: { totalPages: 2 },
       },
