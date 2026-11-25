@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
-import { getFreighterNetworkDetails } from "@/lib/freighter";
+import {
+  classifyFreighterError,
+  getFreighterNetworkDetails,
+  type FreighterRecoveryState,
+} from "@/lib/freighter";
 import { getActiveNetwork } from "@/lib/stellarNetwork";
 
-export type FreighterNetworkStatus = "ok" | "mismatch" | "not-installed";
+export type FreighterNetworkStatus = "checking" | "ok" | "mismatch" | FreighterRecoveryState;
 
 export interface FreighterNetworkCheck {
   status: FreighterNetworkStatus;
@@ -12,7 +16,7 @@ export interface FreighterNetworkCheck {
 
 export function useFreighterNetworkCheck(): FreighterNetworkCheck {
   const [check, setCheck] = useState<FreighterNetworkCheck>({
-    status: "ok",
+    status: "checking",
     expected: "",
     actual: null,
   });
@@ -20,16 +24,20 @@ export function useFreighterNetworkCheck(): FreighterNetworkCheck {
   useEffect(() => {
     const checkNetwork = async () => {
       const expected = getActiveNetwork().networkPassphrase;
-      const details = await getFreighterNetworkDetails();
-      
-      if (!details) {
-        setCheck({ status: "not-installed", expected, actual: null });
-        return;
-      }
+      try {
+        const details = await getFreighterNetworkDetails();
 
-      const actual = details.networkPassphrase;
-      const status = actual === expected ? "ok" : "mismatch";
-      setCheck({ status, expected, actual });
+        if (!details) {
+          setCheck({ status: "missing", expected, actual: null });
+          return;
+        }
+
+        const actual = details.networkPassphrase;
+        const status = actual === expected ? "ok" : "mismatch";
+        setCheck({ status, expected, actual });
+      } catch (error: unknown) {
+        setCheck({ status: classifyFreighterError(error), expected, actual: null });
+      }
     };
 
     checkNetwork();

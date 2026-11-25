@@ -14,13 +14,19 @@ import useOnchainServices from "@/services/onchainService";
 import ConnectStellarWalletButton from "./ConnectStellarWalletButton";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
-import { isFreighterAvailable, signTransactionXdr } from "@/lib/freighter";
+import {
+  classifyFreighterError,
+  isFreighterAvailable,
+  signTransactionXdr,
+  type FreighterRecoveryState,
+} from "@/lib/freighter";
 import { useEstimatedFee } from "@/hooks/useEstimatedFee";
 import { useState, useEffect } from "react";
 import { Loader2, Check, AlertCircle, Copy } from "lucide-react";
 import { ApiEnvelope, SubmitSongTransferResponse } from "@/types/api";
 import { featureFlags } from "@/lib/featureFlags";
 import { translateContractError } from "@/lib/contractErrors";
+import FreighterRecoveryNotice from "./FreighterRecoveryNotice";
 
 interface TransferSongButtonProps {
   songId: string;
@@ -43,6 +49,7 @@ const STELLAR_ADDRESS_RE = /^G[A-Z2-7]{55}$/;
 export default function TransferSongButton({ songId }: TransferSongButtonProps) {
   const { address } = useStellarWallet();
   const { usePrepareSongTransfer, useSubmitSongTransfer } = useOnchainServices();
+  const { requestReview, reviewDialog } = useTransactionSignReview();
   const prepareMutation = usePrepareSongTransfer(songId);
   const submitMutation = useSubmitSongTransfer(songId);
   const { estimate: gasEstimate } = useEstimatedFee();
@@ -50,6 +57,8 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
   const [toAddress, setToAddress] = useState("");
   const [status, setStatus] = useState<TransferStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [freighterFailure, setFreighterFailure] = useState<FreighterRecoveryState | null>(null);
+  const [freighterFailureMessage, setFreighterFailureMessage] = useState("");
   const [txHash, setTxHash] = useState("");
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(COOLDOWN_DURATION);
@@ -93,16 +102,30 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
 
     const available = await isFreighterAvailable();
     if (!available) {
-      setStatus("not_installed");
+      setFreighterFailure("missing");
       return;
     }
 
     setStatus("preparing");
     setErrorMsg("");
+    setFreighterFailure(null);
+    setFreighterFailureMessage("");
     analytics.mintStarted({ songId, walletAddress: address });
 
     try {
       const prepared = await prepareMutation.mutateAsync({ toAddress: trimmedAddress });
+      setStatus("idle");
+      const approved = await requestReview({
+        action: "Transfer song NFT",
+        amount: "1 song NFT (no XLM transfer)",
+        recipient: trimmedAddress,
+        contract: "AudioBlocks Catalog contract",
+        fee: `${gasEstimate} (estimated)`,
+      });
+      if (!approved) {
+        setStatus("idle");
+        return;
+      }
 
       setStatus("awaiting_signature");
       let signedXdr: string;
@@ -119,6 +142,8 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
           error?.message?.toLowerCase().includes("user rejected")
         ) {
           setStatus("rejected");
+          setFreighterFailure(classifyFreighterError(signErr));
+          setFreighterFailureMessage(error.message);
           analytics.mintFailed({ songId, reason: "user rejected signature" });
           return;
         }
@@ -142,6 +167,14 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
       });
       toast.success("Song transferred!");
     } catch (err: unknown) {
+      const recoveryState = classifyFreighterError(err);
+      if (recoveryState !== "other") {
+        setFreighterFailure(recoveryState);
+        setFreighterFailureMessage((err as Error).message);
+        setStatus(recoveryState === "rejected" ? "rejected" : "failed");
+        analytics.mintFailed({ songId, reason: (err as Error).message });
+        return;
+      }
       const contractError = translateContractError(err);
       const error = err as Error;
       const reason = contractError.message || error?.message || "unknown";
@@ -169,6 +202,16 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
 
   if (!address) {
     return <ConnectStellarWalletButton />;
+  }
+
+  if (freighterFailure && freighterFailure !== "other") {
+    return (
+      <FreighterRecoveryNotice
+        state={freighterFailure}
+        message={freighterFailureMessage || undefined}
+        onRetry={handleTransfer}
+      />
+    );
   }
 
   if (status === "preparing") {
@@ -397,6 +440,7 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
         Transfer song
       </button>
       <p className="text-[10px] text-gray-500">Est. gas: {gasEstimate}</p>
+      {reviewDialog}
     </div>
   );
 }

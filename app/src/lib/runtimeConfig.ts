@@ -44,7 +44,7 @@ export function getRuntimeConfig(): PublicRuntimeConfig {
       process.env.NEXT_PUBLIC_STELLAR_RPC_URL ||
       "https://soroban-testnet.stellar.org",
     useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true",
-    featureFlags: process.env.NEXT_PUBLIC_FEATURE_FLAGS || "",
+    featureFlags: process.env["NEXT_PUBLIC_FEATURE_FLAGS"] || "",
     baseUrl: process.env.NEXT_PUBLIC_BASE_URL || "https://audioblocks.io",
     listenerAppUrl:
       process.env.NEXT_PUBLIC_LISTENER_APP_URL || "https://audioblocks.io",

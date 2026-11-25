@@ -15,6 +15,7 @@ vi.mock("@/services/uploadService", () => ({
     useUploadChunk: () => ({ mutateAsync: mockMutateChunk, isPending: false }),
     useUploadCover: () => ({ mutateAsync: mockMutateCover, isPending: false }),
     useFinalizeUpload: () => ({ mutateAsync: mockMutateFinalize, isPending: false }),
+    useTranscribeLyrics: () => ({ mutateAsync: vi.fn(), isPending: false }),
   }),
 }));
 
@@ -161,7 +162,7 @@ describe("Music Upload Flow Integration", () => {
     expect(submitBtn).toHaveAttribute("aria-disabled", "true");
   });
 
-  it("resumes from the failed chunk and completes the upload on retry", async () => {
+  it("retries a chunk after a network drop and completes the upload", async () => {
     mockMutateChunk
       .mockResolvedValueOnce({})
       .mockRejectedValueOnce(new Error("Network error"))
@@ -172,18 +173,59 @@ describe("Music Upload Flow Integration", () => {
     );
     await user.click(screen.getByRole("button", { name: /Add Music/i }));
 
-    const retryButton = await screen.findByRole("button", { name: "Retry upload" });
-    await user.click(retryButton);
+    await waitFor(() => expect(mockMutateFinalize).toHaveBeenCalledTimes(1));
+    const uploadedChunkIndexes = mockMutateChunk.mock.calls.map(([form]) =>
+      (form as FormData).get("chunkIndex")
+    );
+    expect(uploadedChunkIndexes.filter((index) => index === "0")).toHaveLength(1);
+    expect(uploadedChunkIndexes.filter((index) => index === "1")).toHaveLength(2);
+    expect(uploadedChunkIndexes.filter((index) => index === "2")).toHaveLength(1);
+  });
+
+  it("pauses after in-flight chunks settle and resumes from the remaining chunk", async () => {
+    const releaseInFlight: Array<() => void> = [];
+    mockMutateChunk.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseInFlight.push(() => resolve({}));
+        })
+    );
+
+    const user = await prepareUpload(
+      new File([new Uint8Array(CHUNK_SIZE * 3 + 16)], "pause.mp3", { type: "audio/mpeg" })
+    );
+    await user.click(screen.getByRole("button", { name: /Add Music/i }));
+    await waitFor(() => expect(mockMutateChunk).toHaveBeenCalledTimes(3));
+    const beforeUnload = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(beforeUnload);
+    expect(beforeUnload.defaultPrevented).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Pause upload" }));
+    mockMutateChunk.mockResolvedValue({});
+    releaseInFlight.forEach((release) => release());
+
+    await screen.findByText("Upload paused");
+    await user.click(screen.getByRole("button", { name: "Resume upload" }));
 
     await waitFor(() => expect(mockMutateFinalize).toHaveBeenCalledTimes(1));
     const uploadedChunkIndexes = mockMutateChunk.mock.calls.map(([form]) =>
       (form as FormData).get("chunkIndex")
     );
-    expect(uploadedChunkIndexes).toEqual(["0", "1", "1", "2"]);
+    expect(uploadedChunkIndexes).toEqual(["0", "1", "2", "3"]);
+  });
+
+  it("limits automatic retries per chunk and leaves the upload resumable", async () => {
+    mockMutateChunk.mockRejectedValue(new Error("Network error"));
+
+    const user = await prepareUpload(new File(["audio"], "offline.mp3", { type: "audio/mpeg" }));
+    await user.click(screen.getByRole("button", { name: /Add Music/i }));
+
+    expect(await screen.findByRole("button", { name: "Retry upload" })).toBeInTheDocument();
+    expect(mockMutateChunk).toHaveBeenCalledTimes(3);
   });
 
   it("shows a terminal error and start-over action after three retries", async () => {
-    mockMutateChunk.mockRejectedValue(new Error("Network error"));
+    mockMutateChunk.mockRejectedValue(Object.assign(new Error("Invalid chunk"), { status: 400 }));
 
     const user = await prepareUpload(
       new File(["audio content"], "retry-limit.mp3", { type: "audio/mpeg" })

@@ -6,11 +6,15 @@ import "slick-carousel/slick/slick-theme.css";
 import Provider from "@/context/provider";
 import ThemeScript from "@/components/ThemeScript";
 import RuntimeConfigScript from "@/components/RuntimeConfigScript";
+import StellarNetworkBanner from "@/components/StellarNetworkBanner";
 import WebVitalsReporter from "@/components/WebVitalsReporter";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import SupportFeedbackModal from "@/components/support/SupportFeedbackModal";
 import { Toaster } from "sonner";
 import { defaultMetadata } from "@/utils/metadata";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import BrandedErrorPage from "@/components/shared/BrandedErrorPage";
+import ApiUnavailableBanner from "@/components/ApiUnavailableBanner";
 
 // PERF-07: next/font self-hosts these at build time, so the browser never
 // waits on a third-party font CDN, and a swap display strategy lets text paint
@@ -39,6 +43,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = defaultMetadata;
+export const dynamic = "force-dynamic";
 
 const REQUIRED_ENV_VARS = ["NEXT_PUBLIC_API_BASE_URL", "NEXT_PUBLIC_API_URL"];
 
@@ -104,6 +109,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RuntimeConfigScript />
         <ThemeScript />
+        <StellarNetworkBanner />
         <WebVitalsReporter />
         <a
           href="#main-content"
@@ -113,7 +119,12 @@ export default function RootLayout({
         </a>
         <Provider>
           <OfflineIndicator />
-          {children}
+          <ApiUnavailableBanner />
+          <ErrorBoundary
+            fallback={({ reset }) => <BrandedErrorPage kind="error" onRetry={reset} />}
+          >
+            {children}
+          </ErrorBoundary>
           <SupportFeedbackModal />
           <Toaster
             position="top-right"

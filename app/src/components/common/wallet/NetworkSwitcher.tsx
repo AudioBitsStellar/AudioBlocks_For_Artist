@@ -21,9 +21,13 @@ export default function NetworkSwitcher() {
 
   useEffect(() => {
     let cancelled = false;
-    getFreighterNetworkDetails().then((details) => {
-      if (!cancelled) setFreighterPassphrase(details?.networkPassphrase ?? null);
-    });
+    getFreighterNetworkDetails()
+      .then((details) => {
+        if (!cancelled) setFreighterPassphrase(details?.networkPassphrase ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setFreighterPassphrase(null);
+      });
     return () => {
       cancelled = true;
     };
