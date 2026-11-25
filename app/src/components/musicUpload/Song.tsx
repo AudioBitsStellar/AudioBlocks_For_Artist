@@ -1,12 +1,13 @@
 import { Trash2, RotateCw, Play } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
-import { UploadSong } from "@/types";
 import { FinalizeSongResponse } from "@/types/api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { songFormSchema, LYRICS_MAX_LENGTH, SONG_LANGUAGES } from "@/types/formValidation";
+import { z } from "zod";
 import { MUSIC_GENRES } from "../shared/music_genre";
+
 import useUploadServices from "@/services/uploadService";
 import {
   describeVisibility,
@@ -32,8 +33,9 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFileDrop } from "@/hooks/useFileDrop";
 import { useLeaveGuard } from "@/hooks/useLeaveGuard";
 import ConfirmationDialog from "@/components/shared/ConfirmationDialog";
-import MintSongButton from "@/components/common/wallet/MintSongButton";
-import TransferSongButton from "@/components/common/wallet/TransferSongButton";
+import UploadedSongActions from "@/components/musicUpload/UploadedSongActions";
+import AiTagSuggestions from "@/components/musicUpload/AiTagSuggestions";
+import { useSongProcessing } from "@/context/SongProcessingContext";
 import { analytics } from "@/lib/analytics";
 import { isRetryableError, getErrorMessage } from "@/utils/errorRecovery";
 import { sanitize } from "@/utils/sanitize";
@@ -47,15 +49,25 @@ import {
   validateFile,
 } from "@/utils/fileValidation";
 
+const SONG_GENRE_CHOICES = MUSIC_GENRES.map((genre) => ({ value: genre, label: genre }));
+
 const MAX_RETRY_ATTEMPTS = 3;
+const MAX_CHUNK_RETRIES = 2;
+const UPLOAD_PAUSED = "UPLOAD_PAUSED";
+
+type UploadStage = "chunks" | "cover" | "finalize";
+type SongFormInput = z.input<typeof songFormSchema>;
+type SongFormOutput = z.output<typeof songFormSchema>;
 
 const Song = () => {
   const toast = useToast();
+  const { track: trackProcessing } = useSongProcessing();
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileId, setFileId] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState<UploadStage>("chunks");
   const [mintableSongId, setMintableSongId] = useState<string | null>(null);
   const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -70,7 +82,7 @@ const Song = () => {
     name: string;
     size: string;
     type: string;
-    status: "uploading" | "success" | "failed" | "cancelled";
+    status: "ready" | "uploading" | "success" | "failed" | "cancelled" | "paused";
   } | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -80,8 +92,9 @@ const Song = () => {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRequestedRef = useRef(false);
-  const uploadedChunksRef = useRef<number[]>([]);
+  const pauseRequestedRef = useRef(false);
   const retryInProgressRef = useRef(false);
+  const uploadedChunksRef = useRef<number[]>([]);
 
   const { useFinalizeUpload, useUploadChunk, useUploadCover, useTranscribeLyrics } =
     useUploadServices();
@@ -99,7 +112,7 @@ const Song = () => {
     trigger,
     getValues,
     formState: { errors, isSubmitting, isValid },
-  } = useForm<UploadSong>({
+  } = useForm<SongFormInput, unknown, SongFormOutput>({
     resolver: zodResolver(songFormSchema),
     mode: "onChange",
   });
@@ -107,14 +120,14 @@ const Song = () => {
   const watchedValues = watch();
   const { restore, clearSavedData } = useAutoSave(
     "upload-song",
-    watchedValues as Record<string, unknown>,
+    watchedValues,
     isUploading || isSubmitting
   );
 
   useEffect(() => {
     const saved = restore();
     if (saved) {
-      reset(saved as UploadSong);
+      reset(saved);
       toast.success("Draft restored");
     }
   }, []);
@@ -186,6 +199,7 @@ const Song = () => {
     }
 
     setValidationError(null);
+    setUploadError(null);
     setAudioFile(file);
     if (resumingSession) {
       setFileId(resumingSession.fileId);
@@ -198,6 +212,7 @@ const Song = () => {
     }
     setRetryCount(0);
     cancelRequestedRef.current = false;
+    pauseRequestedRef.current = false;
     setPreviewUrl(URL.createObjectURL(file));
     setAudioMetadata(null);
     extractAudioMetadata(file).then(setAudioMetadata);
@@ -206,7 +221,7 @@ const Song = () => {
       name: file.name,
       size: formatFileSize(file.size),
       type: formatFileType(file),
-      status: "uploading",
+      status: "ready",
     });
   };
 
@@ -251,16 +266,32 @@ const Song = () => {
         form.append("chunkIndex", String(index));
         form.append("chunk", chunks[index]);
 
-        await uploadChunk.mutateAsync(form);
+        let chunkRetry = 0;
+        while (true) {
+          try {
+            await uploadChunk.mutateAsync(form);
+            break;
+          } catch (error) {
+            if (pauseRequestedRef.current) throw new Error(UPLOAD_PAUSED);
+            if (cancelRequestedRef.current) throw new Error("UPLOAD_CANCELLED");
+            if (!isRetryableError(error) || chunkRetry >= MAX_CHUNK_RETRIES) throw error;
+
+            chunkRetry += 1;
+            await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** (chunkRetry - 1)));
+            if (pauseRequestedRef.current) throw new Error(UPLOAD_PAUSED);
+            if (cancelRequestedRef.current) throw new Error("UPLOAD_CANCELLED");
+          }
+        }
 
         uploadedChunksRef.current = [...uploadedChunksRef.current, index];
         updateProgress();
         await persistUploadSession(file, fileId, totalChunks);
       },
-      { isCancelled: () => cancelRequestedRef.current }
+      { isCancelled: () => cancelRequestedRef.current || pauseRequestedRef.current }
     );
 
     if (cancelRequestedRef.current) throw new Error("UPLOAD_CANCELLED");
+    if (pauseRequestedRef.current) throw new Error(UPLOAD_PAUSED);
 
     return totalChunks;
   };
@@ -295,6 +326,7 @@ const Song = () => {
     setAudioMetadata(null);
     setRetryCount(0);
     setUploadError(null);
+    pauseRequestedRef.current = false;
   };
 
   const handleResumeRequest = () => {
@@ -312,7 +344,7 @@ const Song = () => {
     setValidationError(null);
   };
 
-  const onSubmit = async (data: UploadSong) => {
+  const onSubmit = async (data: SongFormOutput) => {
     if (!audioFile || !fileId || !coverFile) {
       toast.error("Please upload song and cover");
       return;
@@ -329,21 +361,26 @@ const Song = () => {
 
     try {
       setIsUploading(true);
+      setUploadStage("chunks");
       setUploadError(null);
       setUploadedFile((prev) => (prev ? { ...prev, status: "uploading" } : prev));
 
       // 1. Upload the chunks the server does not have yet
       const totalChunks = await uploadChunkIndices(audioFile, fileId);
+      if (pauseRequestedRef.current) throw new Error(UPLOAD_PAUSED);
 
       // 2. Upload cover
+      setUploadStage("cover");
       const coverForm = new FormData();
       coverForm.append("fileId", fileId);
       coverForm.append("cover", coverFile);
 
       const coverRes = await uploadCover.mutateAsync(coverForm);
+      if (pauseRequestedRef.current) throw new Error(UPLOAD_PAUSED);
       const coverArtPath = coverRes.data.cover;
 
       // 3. Finalize
+      setUploadStage("finalize");
       const trimmedLyrics = data.lyrics?.trim();
       const finalizeResult: FinalizeSongResponse = await finalizeUpload.mutateAsync({
         fileId: fileId,
@@ -374,8 +411,9 @@ const Song = () => {
       });
 
       // The song still needs to finish transcoding + IPFS pinning in the
-      // background before it's mintable; the Mint button below will show
-      // a clear backend error if clicked too early.
+      // background before it's mintable (#543): watch it until it is ready
+      // or failed; minting stays locked until then.
+      if (songId) trackProcessing(songId, sanitize(data.title));
       setMintableSongId(songId || null);
 
       setUploadError(null);
@@ -396,6 +434,11 @@ const Song = () => {
       uploadedChunksRef.current = [];
     } catch (err: unknown) {
       const error = err as Error;
+      if (error instanceof Error && error.message === UPLOAD_PAUSED) {
+        setUploadedFile((prev) => (prev ? { ...prev, status: "paused" } : prev));
+        setAnnouncement(`Upload of ${audioFile.name} paused`);
+        return;
+      }
       if (error instanceof Error && error.message === "UPLOAD_CANCELLED") {
         setUploadedFile((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
         setAnnouncement(`Upload of ${audioFile.name} cancelled`);
@@ -429,12 +472,31 @@ const Song = () => {
       if (!(await trigger())) return;
 
       cancelRequestedRef.current = false;
+      pauseRequestedRef.current = false;
       setRetryCount((prev) => prev + 1);
       setAnnouncement(`Retrying upload of ${audioFile.name}`);
-      await onSubmit(getValues());
+      await onSubmit(songFormSchema.parse(getValues()));
     } finally {
       retryInProgressRef.current = false;
     }
+  };
+
+  const handleResume = async () => {
+    if (!audioFile || !fileId || retryInProgressRef.current || !(await trigger())) return;
+
+    retryInProgressRef.current = true;
+    cancelRequestedRef.current = false;
+    pauseRequestedRef.current = false;
+    setAnnouncement(`Resuming upload of ${audioFile.name}`);
+    try {
+      await onSubmit(songFormSchema.parse(getValues()));
+    } finally {
+      retryInProgressRef.current = false;
+    }
+  };
+
+  const handlePause = () => {
+    pauseRequestedRef.current = true;
   };
 
   const handleCancel = () => {
@@ -524,6 +586,18 @@ const Song = () => {
               {errors.genre.message}
             </p>
           )}
+          {/* #542: genre only — this form has no tag field, and the backend
+              stores no song tags yet. */}
+          <AiTagSuggestions
+            title={watchedValues.title ?? ""}
+            description={watchedValues.description ?? ""}
+            genreOptions={SONG_GENRE_CHOICES}
+            currentGenre={watchedValues.genre ?? ""}
+            onAcceptGenre={(value) =>
+              setValue("genre", value, { shouldDirty: true, shouldValidate: true })
+            }
+            disabled={isUploading}
+          />
         </div>
 
         <div className="space-y-2">
@@ -890,6 +964,16 @@ const Song = () => {
                           Upload cancelled
                         </span>
                       )}
+                      {uploadedFile.status === "paused" && (
+                        <span className="text-[10px] text-[#A3A3A3] font-medium">
+                          Upload paused
+                        </span>
+                      )}
+                      {uploadedFile.status === "ready" && (
+                        <span className="text-[10px] text-[#A3A3A3] font-medium">
+                          Ready to upload
+                        </span>
+                      )}
                       {uploadedFile.status === "uploading" && (
                         <span className="text-[10px] text-yellow-500 font-medium">
                           Uploading... {uploadProgress}%
@@ -913,8 +997,29 @@ const Song = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  {uploadedFile.status === "uploading" && uploadStage !== "finalize" && (
+                    <button
+                      onClick={handlePause}
+                      className="px-2 py-1 text-[10px] font-medium text-[#A3A3A3] hover:text-white transition-colors"
+                      title="Pause upload"
+                      aria-label="Pause upload"
+                    >
+                      Pause
+                    </button>
+                  )}
+                  {uploadedFile.status === "paused" && (
+                    <button
+                      type="button"
+                      onClick={handleResume}
+                      className="px-2 py-1 text-[10px] font-medium text-white hover:text-[#D2045B] transition-colors"
+                      aria-label="Resume upload"
+                    >
+                      Resume
+                    </button>
+                  )}
                   {uploadedFile.status === "uploading" && (
                     <button
+                      type="button"
                       onClick={handleCancel}
                       className="px-2 py-1 text-[10px] font-medium text-[#A3A3A3] hover:text-white transition-colors"
                       title="Cancel upload"
@@ -975,20 +1080,7 @@ const Song = () => {
           )}
 
           {mintableSongId && (
-            <div className="mt-3 space-y-3">
-              <div className="bg-[#1a1a1a] rounded-lg p-3 flex items-center justify-between gap-2">
-                <p className="text-xs text-[#A3A3A3]">
-                  Song uploaded. Once it&apos;s finished processing, mint it on-chain:
-                </p>
-                <MintSongButton songId={mintableSongId} onMintingChange={setIsMinting} />
-              </div>
-              <div className="bg-[#1a1a1a] rounded-lg p-3 space-y-2">
-                <p className="text-xs text-[#A3A3A3]">
-                  Already minted? Transfer this song&apos;s token to another wallet:
-                </p>
-                <TransferSongButton songId={mintableSongId} />
-              </div>
-            </div>
+            <UploadedSongActions songId={mintableSongId} onMintingChange={setIsMinting} />
           )}
         </div>
       </div>

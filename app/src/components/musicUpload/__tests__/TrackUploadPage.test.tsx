@@ -3,7 +3,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/services/uploadService", () => ({
-  default: () => ({ useUploadSong: () => ({ mutateAsync: vi.fn(), isPending: false }) }),
+  default: () => ({
+    useUploadSong: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    // AI suggestions (#542) are covered in aiTagSuggestions.test.tsx.
+    useSuggestTags: () => ({
+      mutateAsync: vi.fn().mockResolvedValue({ data: { tags: [], genres: [] } }),
+    }),
+  }),
 }));
 vi.mock("@/components/GenreTagSelector", () => ({
   GenreTagSelector: () => null,
@@ -31,5 +37,18 @@ describe("TrackUploadPage text limits", () => {
 
     fireEvent.change(description, { target: { value: "x".repeat(450) } });
     expect(screen.getByText("450/500")).toHaveClass("text-yellow-500");
+  });
+
+  it("rejects audio files larger than the upload limit", () => {
+    render(<TrackUploadPage />);
+    const oversizedFile = new File(["audio"], "oversized.mp3", { type: "audio/mpeg" });
+    Object.defineProperty(oversizedFile, "size", { value: 201 * 1024 * 1024 });
+
+    fireEvent.change(screen.getByLabelText(/Drag & drop your audio/i), {
+      target: { files: [oversizedFile] },
+    });
+
+    expect(screen.getByText(/File too large.*200 MB/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Publish Track/i })).toBeDisabled();
   });
 });

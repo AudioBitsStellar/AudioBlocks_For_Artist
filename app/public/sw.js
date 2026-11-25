@@ -1,16 +1,17 @@
-/* AudioBlocks service worker – issue #175
+/* AudioBlocks service worker – issues #175, #582
  *
  * Strategies:
- *   - Static assets (JS, CSS, images, fonts):  cache-first
- *   - Navigations (HTML pages):                network-first, fall back to cache (and "/" if nothing else)
- *   - Same-origin GET (incl. API responses):   network-first, fall back to cache for offline reading
- *   - Mutating requests (POST/PUT/PATCH/DELETE): never cached
+ *   - Static assets (JS, CSS, images, fonts) on same-origin or allow-listed CDNs: cache-first
+ *   - Same-origin page navigations (HTML pages): network-first, fall back to cache (and "/" shell)
+ *   - API requests (`/api/*`), cross-origin requests (outside static CDN allow-list),
+ *     requests carrying an `Authorization` header, and non-GET requests: NEVER intercepted or cached
  *
  * Cache invalidation on new deployments is handled by bumping CACHE_VERSION.
  * Old caches are purged in the `activate` handler so users receive the new shell.
+ * Logging out posts `{ type: "CLEAR_RUNTIME_CACHE" }` to purge runtime cached pages.
  */
 
-const CACHE_VERSION = "audioblocks-v1";
+const CACHE_VERSION = "audioblocks-v2";
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `assets-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
@@ -26,7 +27,9 @@ const PRECACHE_URLS = [
   "/icons/icon-512x512.png",
 ];
 
-const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+// Explicit allow-list of static CDN origins that may serve immutable static assets.
+// API hosts, Horizon, Privy, and other third-party origins must NEVER be added here.
+const STATIC_CDN_ORIGINS = new Set([]);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -37,7 +40,7 @@ self.addEventListener("install", (event) => {
         PRECACHE_URLS.map(async (url) => {
           try {
             await cache.add(new Request(url, { cache: "reload" }));
-          } catch (err) {
+          } catch {
             // Ignore individual failures – non-critical, the runtime cache will pick up later.
           }
         })
@@ -68,23 +71,45 @@ self.addEventListener("fetch", (event) => {
   // Only handle http(s); never intercept dev tools/extensions.
   if (!request.url.startsWith("http")) return;
 
-  // Mutating requests bypass the SW entirely.
-  if (MUTATING_METHODS.has(request.method)) return;
+  // Only handle GET requests; mutating requests bypass the SW entirely.
+  if (request.method !== "GET") return;
+
+  // Never intercept requests carrying an Authorization header.
+  if (request.headers.has("authorization")) return;
+
+  const url = new URL(request.url);
+  const isSameOrigin = url.origin === self.location.origin;
+
+  // Never intercept cross-origin requests unless explicitly allow-listed for static assets.
+  if (!isSameOrigin) {
+    if (STATIC_CDN_ORIGINS.has(url.origin) && isStaticAsset(url.pathname)) {
+      event.respondWith(cacheFirst(request, ASSET_CACHE));
+    }
+    return;
+  }
+
+  // Never intercept same-origin API or session proxy routes (/api/*).
+  if (url.pathname.startsWith("/api/")) return;
 
   // Cache-first for static assets.
-  if (isStaticAsset(request.url)) {
+  if (isStaticAsset(url.pathname)) {
     event.respondWith(cacheFirst(request, ASSET_CACHE));
     return;
   }
 
-  // Network-first for everything else (navigations + API GETs).
+  // Network-first for same-origin page navigations and non-API documents.
   event.respondWith(networkFirst(request, RUNTIME_CACHE));
 });
 
-function isStaticAsset(url) {
-  return /\.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|map)(?:\?.*)?$/i.test(
-    new URL(url).pathname
-  );
+function isStaticAsset(pathname) {
+  return /\.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|map)$/i.test(pathname);
+}
+
+function isCacheableResponse(response) {
+  if (!response || !response.ok || response.type !== "basic") return false;
+  const cacheControl = response.headers?.get("cache-control") || "";
+  if (/\b(?:no-store|private)\b/i.test(cacheControl)) return false;
+  return true;
 }
 
 async function cacheFirst(request, cacheName) {
@@ -92,12 +117,12 @@ async function cacheFirst(request, cacheName) {
   if (cached) return cached;
   try {
     const response = await fetch(request);
-    if (response && response.status === 200 && response.type === "basic") {
+    if (isCacheableResponse(response)) {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
     return response;
-  } catch (err) {
+  } catch {
     if (cached) return cached;
     return Response.error();
   }
@@ -106,12 +131,12 @@ async function cacheFirst(request, cacheName) {
 async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
-    if (response && response.status === 200 && response.type === "basic") {
+    if (isCacheableResponse(response)) {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
     return response;
-  } catch (err) {
+  } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
     // Last-resort fallback for page navigations: return the precached "/" shell.
@@ -127,5 +152,14 @@ self.addEventListener("message", (event) => {
   // Allow the page to trigger an immediate skip + activation.
   if (event.data === "SKIP_WAITING") {
     self.skipWaiting();
+    return;
+  }
+
+  // Clear runtime cache on logout so cached pages cannot leak across accounts (#582).
+  if (event.data && typeof event.data === "object" && event.data.type === "CLEAR_RUNTIME_CACHE") {
+    const clearPromise = caches.delete(RUNTIME_CACHE);
+    if (typeof event.waitUntil === "function") {
+      event.waitUntil(clearPromise);
+    }
   }
 });

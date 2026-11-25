@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useStellarWallet } from "./useStellarWallet";
 import FreighterRecoveryNotice from "./FreighterRecoveryNotice";
 
@@ -9,23 +8,7 @@ function truncate(address: string) {
 }
 
 export default function ConnectStellarWalletButton() {
-  const {
-    address,
-    isConnecting,
-    connect,
-    restore,
-    disconnect,
-    connectionFailure,
-    connectionFailureMessage,
-  } = useStellarWallet();
-
-  const handleConnect = () => {
-    void connect().catch(() => undefined);
-  };
-
-  useEffect(() => {
-    restore();
-  }, [restore]);
+  const { address, isConnecting, connect, disconnect } = useStellarWallet();
 
   if (address) {
     return (

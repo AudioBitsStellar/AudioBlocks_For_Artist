@@ -64,7 +64,7 @@ jobs:
           echo "base_url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium

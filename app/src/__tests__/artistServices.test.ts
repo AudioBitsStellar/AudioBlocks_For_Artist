@@ -99,6 +99,18 @@ describe("artistServices — error handling (issue #104)", () => {
       );
     });
 
+    it("uses server-prefetched profile data without an immediate client refetch", () => {
+      const wrapper = makeWrapper();
+      const initialData = { user: { id: "artist-1", email: "artist@example.com" } };
+      renderHook(() => useArtistServices().useGetArtistProfile(true, initialData), { wrapper });
+
+      expect(useGet).toHaveBeenCalledWith(
+        ["get-artist-profile"],
+        USER_ENDPOINTS.PROFILE,
+        expect.objectContaining({ enabled: true, staleTime: 30_000, initialData })
+      );
+    });
+
     it("calls usePut with the update-profile endpoint", async () => {
       const wrapper = makeWrapper();
       renderHook(() => useArtistServices().useUpdateArtistProfile(), { wrapper });

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nProvider, useI18n } from "@/context/I18nContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import Provider from "@/context/provider";
 import en from "@/locales/en";
 import es from "@/locales/es";
 
@@ -12,6 +13,11 @@ import es from "@/locales/es";
  * feature was unreachable. These tests cover the wiring as well as the
  * behaviour, because every piece passing in isolation is exactly what hid it.
  */
+
+// Privy needs a real app id and network; the i18n wiring does not.
+vi.mock("@/context/PrivyProvider", () => ({
+  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 const STORAGE_KEY = "audioblocks_locale";
 
@@ -134,6 +140,36 @@ describe("LanguageSwitcher", () => {
     await user.selectOptions(await screen.findByRole("combobox"), "es");
 
     await waitFor(() => expect(screen.getByTestId("locale")).toHaveTextContent("es"));
+  });
+});
+
+describe("app Provider (#588)", () => {
+  it("mounts I18nProvider so the switcher renders and translates", async () => {
+    const user = userEvent.setup();
+    render(
+      <Provider>
+        <LanguageSwitcher />
+      </Provider>
+    );
+
+    const select = await screen.findByRole("combobox", { name: en.language.label });
+    await user.selectOptions(select, "es");
+
+    expect(await screen.findByRole("combobox", { name: es.language.label })).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("es");
+    expect(localStorage.getItem(STORAGE_KEY)).toBe("es");
+  });
+
+  it("restores the stored locale and html lang after a reload", async () => {
+    localStorage.setItem(STORAGE_KEY, "es");
+    render(
+      <Provider>
+        <LanguageSwitcher />
+      </Provider>
+    );
+
+    expect(await screen.findByRole("combobox", { name: es.language.label })).toHaveValue("es");
+    await waitFor(() => expect(document.documentElement.lang).toBe("es"));
   });
 });
 

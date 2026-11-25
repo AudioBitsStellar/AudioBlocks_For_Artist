@@ -64,41 +64,4 @@ describe("ConnectStellarWalletButton", () => {
 
     expect(disconnect).toHaveBeenCalledTimes(1);
   });
-
-  it("calls restore() on mount", () => {
-    const restore = vi.fn();
-    mockUseStellarWallet.mockReturnValue({
-      address: null,
-      isConnecting: false,
-      connect: vi.fn(),
-      restore,
-      disconnect: vi.fn(),
-      signAndSubmit: vi.fn(),
-    });
-
-    render(<ConnectStellarWalletButton />);
-
-    expect(restore).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows locked-wallet recovery guidance and retries connection", () => {
-    const connect = vi.fn().mockResolvedValue("GADDRESS");
-    mockUseStellarWallet.mockReturnValue({
-      address: null,
-      isConnecting: false,
-      connect,
-      restore: vi.fn().mockResolvedValue(null),
-      disconnect: vi.fn(),
-      signAndSubmit: vi.fn(),
-      connectionFailure: "locked",
-      connectionFailureMessage: "Freighter is locked.",
-    });
-
-    render(<ConnectStellarWalletButton />);
-
-    expect(screen.getByRole("alert")).toHaveTextContent("Freighter is locked");
-    expect(screen.getByRole("alert")).toHaveTextContent(/unlock your wallet/i);
-    fireEvent.click(screen.getByRole("button", { name: /retry/i }));
-    expect(connect).toHaveBeenCalledTimes(1);
-  });
 });

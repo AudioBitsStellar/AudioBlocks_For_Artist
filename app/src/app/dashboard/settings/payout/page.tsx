@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import { DollarSign, CheckCircle, AlertCircle, AlertTriangle, ShieldCheck, Info } from "lucide-react";
 import { toast } from "sonner";
+import {
+  isStellarSecretKey,
+  STELLAR_SECRET_KEY_WARNING,
+  validateStellarPublicKey,
+} from "@/utils/stellarAddress";
 
 interface PayoutMethod {
   id: string;
@@ -18,12 +23,10 @@ const DEFAULT_METHODS: PayoutMethod[] = [];
 // Feature flag: set to true when backend endpoint is ready
 const BACKEND_PERSISTENCE_ENABLED = false;
 
-// Stellar public key validation: Starts with 'G', 56 characters, alphanumeric
-const STELLAR_PUBLIC_KEY_REGEX = /^G[A-Z0-9]{55}$/;
-
 export default function PayoutSettingsPage() {
   const [methods, setMethods] = useState<PayoutMethod[]>(DEFAULT_METHODS);
   const [isEditing, setIsEditing] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
   const [newMethod, setNewMethod] = useState<{
     type: "stellar" | "bank";
     address: string;
@@ -50,27 +53,56 @@ export default function PayoutSettingsPage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
-  const handleAdd = () => {
-    const trimmedAddress = newMethod.address.trim();
-    if (!trimmedAddress) {
-      toast.error("Please enter a payout address");
+  const handleAddressChange = (value: string) => {
+    if (newMethod.type === "stellar" && isStellarSecretKey(value)) {
+      setAddressError(STELLAR_SECRET_KEY_WARNING);
+      // Never retain a pasted secret key in component state or storage.
+      setNewMethod((prev) => ({ ...prev, address: "" }));
       return;
     }
 
-    if (newMethod.type === "stellar" && !STELLAR_PUBLIC_KEY_REGEX.test(trimmedAddress)) {
-      toast.error("Invalid Stellar address. A valid address begins with 'G' and contains 56 characters.");
+    setNewMethod((prev) => ({ ...prev, address: value }));
+    if (newMethod.type === "stellar" && value.trim()) {
+      const check = validateStellarPublicKey(value);
+      setAddressError(check.valid ? null : check.error);
+    } else {
+      setAddressError(null);
+    }
+  };
+
+  const handleAdd = () => {
+    const trimmedAddress = newMethod.address.trim();
+    if (!trimmedAddress) {
+      const msg = "Please enter a payout address";
+      setAddressError(msg);
+      toast.error(msg);
       return;
+    }
+
+    let finalAddress = trimmedAddress;
+    if (newMethod.type === "stellar") {
+      const check = validateStellarPublicKey(trimmedAddress);
+      if (!check.valid) {
+        setAddressError(check.error);
+        if (check.code === "secret_key") {
+          setNewMethod((prev) => ({ ...prev, address: "" }));
+        }
+        toast.error(check.error);
+        return;
+      }
+      finalAddress = check.normalized;
     }
 
     const method: PayoutMethod = {
       id: Date.now().toString(),
       type: newMethod.type,
       label: newMethod.label.trim() || (newMethod.type === "stellar" ? "Stellar Wallet" : "Bank Account"),
-      address: trimmedAddress,
+      address: finalAddress,
       isDefault: methods.length === 0,
     };
     saveMethods([...methods, method]);
     setNewMethod({ type: "stellar", address: "", label: "" });
+    setAddressError(null);
     setIsEditing(false);
     toast.success("Payout method added successfully");
   };
@@ -264,7 +296,10 @@ export default function PayoutSettingsPage() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setNewMethod({ ...newMethod, type: "stellar" })}
+                  onClick={() => {
+                    setNewMethod({ ...newMethod, type: "stellar" });
+                    setAddressError(null);
+                  }}
                   className={`flex-1 p-3 rounded-xl border text-sm font-medium transition-colors ${
                     newMethod.type === "stellar"
                       ? "border-primary bg-primary/10 text-primary"
@@ -275,7 +310,10 @@ export default function PayoutSettingsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setNewMethod({ ...newMethod, type: "bank" })}
+                  onClick={() => {
+                    setNewMethod({ ...newMethod, type: "bank" });
+                    setAddressError(null);
+                  }}
                   className={`flex-1 p-3 rounded-xl border text-sm font-medium transition-colors ${
                     newMethod.type === "bank"
                       ? "border-primary bg-primary/10 text-primary"
@@ -294,19 +332,32 @@ export default function PayoutSettingsPage() {
               />
               <input
                 type="text"
+                aria-label="Payout address"
+                aria-invalid={addressError ? "true" : "false"}
+                aria-describedby={addressError ? "payout-address-error" : undefined}
                 placeholder={
                   newMethod.type === "stellar"
                     ? "Stellar public key (starts with G, 56 characters)"
                     : "IBAN or routing/account details"
                 }
                 value={newMethod.address}
-                onChange={(e) => setNewMethod({ ...newMethod, address: e.target.value })}
-                className="w-full rounded-lg border border-border-subtle bg-surface-raised px-4 py-3 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none font-mono"
+                onChange={(e) => handleAddressChange(e.target.value)}
+                className={`w-full rounded-lg border bg-surface-raised px-4 py-3 text-sm text-text placeholder:text-text-muted focus:outline-none font-mono ${
+                  addressError ? "border-red-500 focus:border-red-500" : "border-border-subtle focus:border-primary"
+                }`}
               />
+              {addressError && (
+                <p id="payout-address-error" role="alert" className="text-xs text-red-500">
+                  {addressError}
+                </p>
+              )}
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => {
+                    setIsEditing(false);
+                    setAddressError(null);
+                  }}
                   className="flex-1 rounded-full border border-border px-4 py-2 text-sm font-semibold text-text-muted hover:text-text transition-colors"
                 >
                   Cancel

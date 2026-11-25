@@ -15,6 +15,8 @@ export const ARTIST_UPLOAD_ENDPOINTS = {
   UPLOAD_CHUNK: "/song/upload/chunk",
   UPLOAD_SONG: "/song/upload/finalize",
   TRANSCRIBE_LYRICS: "/song/upload/transcribe-lyrics",
+  /** AI-suggested tags and genres for a draft (#542). */
+  SUGGEST_TAGS: "/song/upload/suggest-tags",
 };
 
 // Soroban on-chain endpoints: the backend only builds/relays transactions,
