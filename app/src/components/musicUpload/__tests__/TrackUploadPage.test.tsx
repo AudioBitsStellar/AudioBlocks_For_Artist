@@ -3,7 +3,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/services/uploadService", () => ({
-  default: () => ({ useUploadSong: () => ({ mutateAsync: vi.fn(), isPending: false }) }),
+  default: () => ({
+    useUploadSong: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    // AI suggestions (#542) are covered in aiTagSuggestions.test.tsx.
+    useSuggestTags: () => ({
+      mutateAsync: vi.fn().mockResolvedValue({ data: { tags: [], genres: [] } }),
+    }),
+  }),
 }));
 vi.mock("@/components/GenreTagSelector", () => ({
   GenreTagSelector: () => null,

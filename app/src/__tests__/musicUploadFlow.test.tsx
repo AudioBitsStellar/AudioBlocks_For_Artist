@@ -16,6 +16,9 @@ vi.mock("@/services/uploadService", () => ({
     useUploadCover: () => ({ mutateAsync: mockMutateCover, isPending: false }),
     useFinalizeUpload: () => ({ mutateAsync: mockMutateFinalize, isPending: false }),
     useTranscribeLyrics: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useSuggestTags: () => ({
+      mutateAsync: vi.fn().mockResolvedValue({ data: { tags: [], genres: [] } }),
+    }),
   }),
 }));
 
@@ -139,8 +142,10 @@ describe("Music Upload Flow Integration", () => {
       coverArtPath: "ipfs://cover_hash",
     });
 
-    // Check that mint button is displayed
-    expect(screen.getByTestId("mint-song-btn")).toBeInTheDocument();
+    // The song is still processing on the backend, so minting stays locked
+    // until it is ready (#543); songProcessing.test.tsx covers the unlock.
+    expect(screen.queryByTestId("mint-song-btn")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mint on-chain" })).toBeDisabled();
   });
 
   it("shows validation error for oversized files", async () => {

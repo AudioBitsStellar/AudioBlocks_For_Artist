@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { UploadCloud, Music, CheckCircle2, AlertCircle } from "lucide-react";
 import { GenreTagSelector } from "@/components/GenreTagSelector";
+import AiTagSuggestions from "@/components/musicUpload/AiTagSuggestions";
+import { PRESET_GENRES } from "@/types/genre";
 import CharacterCount from "@/components/common/CharacterCount";
 import useUploadServices from "@/services/uploadService";
 import { useRouter } from "next/navigation";
@@ -205,6 +207,24 @@ export const TrackUploadPage: React.FC = () => {
               onGenreChange={setGenre}
               onTagsChange={setTags}
             />
+            <div className="mt-4">
+              <AiTagSuggestions
+                title={title}
+                description={description}
+                genreOptions={PRESET_GENRES.map((option) => ({
+                  value: option.id,
+                  label: option.label,
+                }))}
+                currentGenre={genre}
+                onAcceptGenre={setGenre}
+                acceptedTags={tags}
+                onAcceptTag={(tag) =>
+                  setTags((current) =>
+                    current.includes(tag) || current.length >= 10 ? current : [...current, tag]
+                  )
+                }
+              />
+            </div>
           </div>
         </div>
 
