@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applyThemeToDocument,
   DARK_SCHEME_QUERY,
@@ -12,6 +12,11 @@ import {
   THEME_STORAGE_KEY,
   themeInitScript,
 } from "./theme";
+
+/** The init script calls `localStorage.getItem`, so a bare record won't do. */
+function asStorage(values: Record<string, string>): Pick<Storage, "getItem"> {
+  return { getItem: (key: string) => values[key] ?? null };
+}
 
 afterEach(() => {
   localStorage.clear();
@@ -113,7 +118,7 @@ describe("themeInitScript", () => {
         classList: {
           toggle: vi.fn(),
         },
-        dataset: {},
+        dataset: {} as Record<string, string>,
         style: {
           setProperty: vi.fn(),
         },
@@ -133,7 +138,7 @@ describe("themeInitScript", () => {
     `
     );
 
-    scriptFn(fakeStorage, { matchMedia: () => ({ matches: false }) }, fakeDoc);
+    scriptFn(asStorage(fakeStorage), { matchMedia: () => ({ matches: false }) }, fakeDoc);
 
     expect(fakeDoc.documentElement.classList.toggle).toHaveBeenCalledWith("dark", true);
     expect(fakeDoc.documentElement.dataset.theme).toBe("dark");
@@ -146,7 +151,7 @@ describe("themeInitScript", () => {
         classList: {
           toggle: vi.fn(),
         },
-        dataset: {},
+        dataset: {} as Record<string, string>,
         style: {
           setProperty: vi.fn(),
         },
@@ -165,14 +170,11 @@ describe("themeInitScript", () => {
     `
     );
 
-    scriptFn(fakeStorage, { matchMedia: () => ({ matches: false }) }, fakeDoc);
+    scriptFn(asStorage(fakeStorage), { matchMedia: () => ({ matches: false }) }, fakeDoc);
 
     expect(fakeDoc.documentElement.classList.toggle).toHaveBeenCalledWith("dark", false);
     expect(fakeDoc.documentElement.dataset.theme).toBe("light");
-    expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith(
-      "color-scheme",
-      "light"
-    );
+    expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith("color-scheme", "light");
   });
 
   it("applies dark class when OS prefers dark and localStorage is empty or 'system'", () => {
@@ -181,7 +183,7 @@ describe("themeInitScript", () => {
         classList: {
           toggle: vi.fn(),
         },
-        dataset: {},
+        dataset: {} as Record<string, string>,
         style: {
           setProperty: vi.fn(),
         },
@@ -199,7 +201,7 @@ describe("themeInitScript", () => {
     `
     );
 
-    scriptFn(fakeStorage, { matchMedia: () => ({ matches: true }) }, fakeDoc);
+    scriptFn(asStorage(fakeStorage), { matchMedia: () => ({ matches: true }) }, fakeDoc);
 
     expect(fakeDoc.documentElement.classList.toggle).toHaveBeenCalledWith("dark", true);
     expect(fakeDoc.documentElement.dataset.theme).toBe("dark");
@@ -212,7 +214,7 @@ describe("themeInitScript", () => {
         classList: {
           toggle: vi.fn(),
         },
-        dataset: {},
+        dataset: {} as Record<string, string>,
         style: {
           setProperty: vi.fn(),
         },
@@ -230,14 +232,11 @@ describe("themeInitScript", () => {
     `
     );
 
-    scriptFn(fakeStorage, { matchMedia: () => ({ matches: false }) }, fakeDoc);
+    scriptFn(asStorage(fakeStorage), { matchMedia: () => ({ matches: false }) }, fakeDoc);
 
     expect(fakeDoc.documentElement.classList.toggle).toHaveBeenCalledWith("dark", false);
     expect(fakeDoc.documentElement.dataset.theme).toBe("light");
-    expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith(
-      "color-scheme",
-      "light"
-    );
+    expect(fakeDoc.documentElement.style.setProperty).toHaveBeenCalledWith("color-scheme", "light");
   });
 
   it("agrees with utils/theme for all light/dark/system scenarios", () => {
@@ -260,7 +259,7 @@ describe("themeInitScript", () => {
           classList: {
             toggle: vi.fn(),
           },
-          dataset: {},
+          dataset: {} as Record<string, string>,
           style: {
             setProperty: vi.fn(),
           },
@@ -281,7 +280,7 @@ describe("themeInitScript", () => {
       `
       );
 
-      scriptFn(fakeStorage, { matchMedia: () => ({ matches: osIsDark }) }, fakeDoc);
+      scriptFn(asStorage(fakeStorage), { matchMedia: () => ({ matches: osIsDark }) }, fakeDoc);
 
       const isDark = expected === "dark";
       expect(
