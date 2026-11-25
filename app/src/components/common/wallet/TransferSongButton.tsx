@@ -32,6 +32,7 @@ import { transactionStorageKey } from "@/lib/transactionStatus";
 import { getActiveNetworkId } from "@/lib/stellarNetwork";
 import { explorerTxUrl } from "@/lib/horizon";
 import FreighterRecoveryNotice from "./FreighterRecoveryNotice";
+import { validateStellarPublicKey } from "@/utils/stellarAddress";
 
 interface TransferSongButtonProps {
   songId: string;
@@ -50,7 +51,6 @@ type TransferStatus =
   | "failed";
 
 const COOLDOWN_DURATION = 5;
-const STELLAR_ADDRESS_RE = /^G[A-Z2-7]{55}$/;
 
 interface TransferSubmission {
   signedXdr: string;
@@ -81,8 +81,9 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
   const submitLock = useRef(false);
   const pendingSubmission = useRef<TransferSubmission | null>(null);
 
-  const trimmedAddress = toAddress.trim();
-  const isValidAddress = STELLAR_ADDRESS_RE.test(trimmedAddress);
+  const addressValidation = validateStellarPublicKey(toAddress);
+  const trimmedAddress = addressValidation.valid ? addressValidation.normalized : toAddress.trim();
+  const isValidAddress = addressValidation.valid;
   const isSelfTransfer = isValidAddress && trimmedAddress === address;
 
   const isBusy =
@@ -514,9 +515,9 @@ export default function TransferSongButton({ songId }: TransferSongButtonProps) 
         className="text-white placeholder:text-[#6F6F6F] focus:outline-none px-4 h-10 rounded-lg text-sm"
         style={{ background: "#FFFFFF0A", border: "1px solid #2A2A2A" }}
       />
-      {toAddress.length > 0 && !isValidAddress && (
+      {toAddress.length > 0 && !addressValidation.valid && (
         <p id={`transfer-to-${songId}-error`} className="text-[10px] text-red-500" role="alert">
-          Enter a valid Stellar address (starts with G, 56 characters).
+          {addressValidation.error}
         </p>
       )}
       {isSelfTransfer && (

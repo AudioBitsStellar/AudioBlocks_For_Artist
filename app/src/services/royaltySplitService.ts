@@ -7,16 +7,15 @@
  * `docs/ROYALTY_CONTRACT_DESIGN.md` does not change the shape of this module.
  */
 
-import { validateRoyaltySplit } from "@/lib/royaltySplit";
 import { TOTAL_BASIS_POINTS } from "@/types/royalty";
 import {
   basisPointsToPercent,
   rebalanceToTotal,
-  toBasisPointEntries,
   validateSplitDraft,
   type SplitDraftErrors,
   type SplitParticipant,
 } from "@/utils/royaltySplits";
+import { normalizeStellarAddress } from "@/utils/stellarAddress";
 
 const STORAGE_KEY = "audioblocks:royalty-splits:v1";
 
@@ -41,12 +40,12 @@ const RELEASES: CollabRelease[] = [
       {
         id: "collab_jaden",
         name: "Jaden Cole",
-        address: "GAB2CDEFGHIJKLMNOPQRSTUVWXYZ34567AB2CDEFGHIJKLMNOPQRSTUV",
+        address: "GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR",
       },
       {
         id: "collab_mara",
         name: "Mara Voss",
-        address: "G76543ZYXWVUTSRQPONMLKJIHGFEDC2BAAB2CDEFGHIJKLMNOPQRSTUV",
+        address: "GCATS5YOVB6ROX2WUNKGNQ2MP3GMXDMKSG2O4N5CLX3A6W4PZGZZI55U",
       },
     ],
   },
@@ -158,9 +157,9 @@ export type SaveSplitResult =
   { ok: true; split: SavedSplit } | { ok: false; errors: SplitDraftErrors };
 
 /**
- * Validates against both the artist-facing rules and the contract invariants
- * before anything is stored, so a config that reaches the chain is always
- * a legal one.
+ * Validates through the single unified validator in `utils/royaltySplits.ts`
+ * before anything is stored, so the draft UI and persistence layer always
+ * agree on validity and error messages (#591).
  */
 export function saveSplit(releaseId: string, rows: SplitParticipant[]): SaveSplitResult {
   const errors = validateSplitDraft(rows);
@@ -168,15 +167,15 @@ export function saveSplit(releaseId: string, rows: SplitParticipant[]): SaveSpli
     return { ok: false, errors };
   }
 
-  const contract = validateRoyaltySplit(toBasisPointEntries(rows));
-  if (!contract.valid) {
-    return {
-      ok: false,
-      errors: { rows: { [rows[0]?.id ?? "row"]: contract.errors[0] } },
-    };
-  }
-
-  const split: SavedSplit = { releaseId, rows, savedAt: new Date().toISOString() };
+  const normalizedRows = rows.map((row) => ({
+    ...row,
+    address: normalizeStellarAddress(row.address),
+  }));
+  const split: SavedSplit = {
+    releaseId,
+    rows: normalizedRows,
+    savedAt: new Date().toISOString(),
+  };
   const existing = load();
   const index = existing.findIndex((entry) => entry.releaseId === releaseId);
   if (index >= 0) existing[index] = split;

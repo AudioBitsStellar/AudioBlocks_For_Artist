@@ -79,7 +79,7 @@ describe("linkedAccounts utilities", () => {
 
   describe("isStellarAddress", () => {
     it("accepts valid Stellar addresses", () => {
-      const valid = "GAB2CDEFGHIJKLMNOPQRSTUVWXYZ34567AB2CDEFGHIJKLMNOPQRSTUV";
+      const valid = "GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR";
       expect(isStellarAddress(valid)).toBe(true);
     });
 
