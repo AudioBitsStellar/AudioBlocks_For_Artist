@@ -55,7 +55,6 @@ Create a `.env.local` file in the `app` directory:
 ```env
 # API Configuration
 NEXT_PUBLIC_API_BASE_URL=https://api.audioblocks.com
-NEXT_PUBLIC_API_URL=https://api.audioblocks.com
 
 # Sentry Configuration (optional for error tracking)
 SENTRY_DSN=your-sentry-dsn

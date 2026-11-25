@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getEnvProblems } from "@/lib/env";
 import "./globals.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -45,26 +46,12 @@ export const viewport: Viewport = {
 export const metadata: Metadata = defaultMetadata;
 export const dynamic = "force-dynamic";
 
-const REQUIRED_ENV_VARS = ["NEXT_PUBLIC_API_BASE_URL", "NEXT_PUBLIC_API_URL"];
-
-function validateEnv() {
-  const missing: string[] = [];
-  if (typeof window === "undefined") {
-    // Only validate server-side during rendering or build to avoid client-side mismatch
-    for (const name of REQUIRED_ENV_VARS) {
-      const val = process.env[name];
-      if (!val) {
-        missing.push(name);
-      } else if (
-        name.includes("API") &&
-        !val.startsWith("http://") &&
-        !val.startsWith("https://")
-      ) {
-        missing.push(`${name} (must start with http:// or https://)`);
-      }
-    }
-  }
-  return missing;
+/**
+ * One validator for the whole app (#578): the schema in `src/lib/env.ts`.
+ * Checked on the server only, so the client never renders a different tree.
+ */
+function validateEnv(): string[] {
+  return typeof window === "undefined" ? getEnvProblems() : [];
 }
 
 export default function RootLayout({
