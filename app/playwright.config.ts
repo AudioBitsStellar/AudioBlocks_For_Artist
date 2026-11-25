@@ -1,13 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3000";
 
 /**
  * Critical-journey specs run on every browser/device profile (#747).
  * `smoke.spec.ts` is intentionally excluded: it has its own project so the
  * staging workflow (#746) can target a deployed URL with a small, fast suite.
  */
-const REGULAR_TEST_IGNORE = /smoke\.spec\.ts/;
+const REGULAR_TEST_IGNORE = /smoke\.spec\.ts|performance\.spec\.ts/;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -50,6 +50,11 @@ export default defineConfig({
       use: { ...devices["iPhone 14"] },
     },
     {
+      name: "performance",
+      testMatch: /performance\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "smoke",
       testMatch: /smoke\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
@@ -59,8 +64,8 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: process.env.CI ? "npm run start" : "npm run dev",
-        url: "http://localhost:3000",
+        command: process.env.CI ? "node .next/standalone/server.js" : "npm run dev",
+        url: "http://127.0.0.1:3000/terms",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
       },

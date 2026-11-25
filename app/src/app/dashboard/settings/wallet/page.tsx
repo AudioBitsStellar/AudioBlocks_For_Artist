@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Wallet, RefreshCw, ExternalLink, AlertCircle } from "lucide-react";
-import { useFreighter } from "@/lib/freighter";
-import { useStellarNetwork } from "@/components/contexts/StellarNetworkContext";
+import { useStellarWallet } from "@/components/common/wallet/useStellarWallet";
+import { useStellarNetwork } from "@/context/StellarNetworkContext";
 import { fetchAccountBalances, explorerAccountUrl } from "@/lib/horizon";
-import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
 export default function WalletSettingsPage() {
-  const { address, isConnected, connect, disconnect } = useFreighter();
+  const { address, connect, disconnect } = useStellarWallet();
+  const isConnected = Boolean(address);
   const { network } = useStellarNetwork();
 
   const {
@@ -36,9 +35,8 @@ export default function WalletSettingsPage() {
     refetch();
   };
 
-  const friendbotUrl = network.id === "testnet" && address
-    ? `https://friendbot.stellar.org?addr=${address}`
-    : null;
+  const friendbotUrl =
+    network.id === "testnet" && address ? `https://friendbot.stellar.org?addr=${address}` : null;
 
   return (
     <div className="space-y-6">
@@ -106,7 +104,8 @@ export default function WalletSettingsPage() {
                   <div>
                     <p className="text-sm font-semibold text-text">Account Not Funded</p>
                     <p className="text-xs text-text-muted">
-                      This account needs to be funded with at least 1 XLM to be active on the network.
+                      This account needs to be funded with at least 1 XLM to be active on the
+                      network.
                     </p>
                   </div>
                 </div>
@@ -129,12 +128,8 @@ export default function WalletSettingsPage() {
                     <Wallet size={20} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-text">
-                      {xlmAmount.toFixed(4)} XLM
-                    </p>
-                    <p className="text-xs text-text-muted">
-                      Network: {network.label}
-                    </p>
+                    <p className="text-2xl font-bold text-text">{xlmAmount.toFixed(4)} XLM</p>
+                    <p className="text-xs text-text-muted">Network: {network.label}</p>
                   </div>
                 </div>
                 <a

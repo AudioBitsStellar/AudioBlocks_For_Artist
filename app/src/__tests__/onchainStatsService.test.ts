@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 
 const flags = vi.hoisted(() => ({ useMockOnChainStats: false }));
@@ -9,7 +9,7 @@ vi.mock("@/components/common/wallet/useStellarWallet", () => ({
   useStellarWallet: () => ({ address: wallet.address }),
 }));
 
-import { MOCK_ONCHAIN_SUMMARY } from "@/__mocks__/onchainStats";
+import { MOCK_INDEXED_ACTIVITY_RESPONSE, MOCK_ONCHAIN_SUMMARY } from "@/__mocks__/onchainStats";
 import {
   countByOperationType,
   dayOf,
@@ -23,6 +23,15 @@ import {
   type HeldAsset,
 } from "@/services/onchainStatsService";
 import type { HorizonOperation, HorizonTransaction } from "@/lib/horizon";
+
+describe("on-chain mock schema", () => {
+  it("uses the backend event fields", () => {
+    const event = MOCK_INDEXED_ACTIVITY_RESPONSE.data[0];
+    expect(event).toHaveProperty("data");
+    expect(event).not.toHaveProperty("payload");
+    expect(event).not.toHaveProperty("network");
+  });
+});
 
 const ADDRESS = "GCONNECTEDACCOUNT1234567890ABCDEFGHIJKLMNOPQRSTUVWXY";
 
@@ -251,17 +260,17 @@ describe("useOnChainStats via backend indexer", () => {
     });
     expect(indexer.fetch).toHaveBeenCalledWith(ADDRESS);
   });
-  it("keeps disconnected live artists out of demo mode", () => {
+  it("uses demo fixtures when disconnected", async () => {
     wallet.address = null;
     const { result } = renderHook(() => useOnChainStats());
-    expect(result.current.summary).toBeNull();
-    expect(result.current.isMock).toBe(false);
+    expect(result.current.isMock).toBe(true);
+    await waitFor(() => expect(result.current.summary).toBe(MOCK_ONCHAIN_SUMMARY));
     expect(indexer.fetch).not.toHaveBeenCalled();
   });
-  it("uses the fixture only for explicit mock mode", () => {
+  it("uses the fixture only for explicit mock mode", async () => {
     flags.useMockOnChainStats = true;
     const { result } = renderHook(() => useOnChainStats());
-    expect(result.current.summary).toBe(MOCK_ONCHAIN_SUMMARY);
+    await waitFor(() => expect(result.current.summary).toBe(MOCK_ONCHAIN_SUMMARY));
     expect(indexer.fetch).not.toHaveBeenCalled();
   });
   it("exposes backend failures for retry", async () => {

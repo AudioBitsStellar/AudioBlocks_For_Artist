@@ -2,6 +2,7 @@
 
 import { PrivyProvider as Privy } from "@privy-io/react-auth";
 import { ReactNode } from "react";
+import { getRuntimeConfig } from "@/lib/runtimeConfig";
 
 interface PrivyProviderProps {
   children: ReactNode;
@@ -10,7 +11,7 @@ interface PrivyProviderProps {
 export default function PrivyProvider({ children }: PrivyProviderProps) {
   return (
     <Privy
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
+      appId={getRuntimeConfig().privyAppId}
       config={{
         loginMethods: ["email", "wallet", "google"],
         appearance: {

@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "data": {
+    "artistId": "b67f0f73-4f95-4d57-aec1-cf97d5f829a4",
+    "window": "30d",
+    "periodStart": "2026-10-25T00:00:00.000Z",
+    "periodEnd": "2026-11-24T00:00:00.000Z",
+    "songCount": 12,
+    "totals": {
+      "plays": 128450,
+      "saves": 18240,
+      "uniqueListeners": 84520,
+      "revenueStroops": "3250000000",
+      "followers": 5200
+    },
+    "topSongs": [
+      {
+        "songId": "79a7d7de-1ad9-4fcc-8407-379e8a9f6591",
+        "title": "Echoes of the Soul",
+        "plays": 24680
+      },
+      {
+        "songId": "1498b5ee-c0ee-4db4-86a4-8a5e00d6eb2d",
+        "title": "Midnight Vibes",
+        "plays": 19870
+      }
+    ]
+  }
+}

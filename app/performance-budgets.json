@@ -1,0 +1,14 @@
+{
+  "metrics": {
+    "lcpMilliseconds": 2500,
+    "labLcpMilliseconds": 4000,
+    "inpMilliseconds": 200,
+    "cls": 0.1,
+    "totalBlockingTimeMilliseconds": 750
+  },
+  "routes": {
+    "/dashboard/overview": {
+      "initialJavaScriptGzipBytes": 1300000
+    }
+  }
+}
