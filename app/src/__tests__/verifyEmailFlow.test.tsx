@@ -17,7 +17,8 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ token: "link-token" }),
 }));
 
-vi.mock("@tanstack/react-query", () => ({
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-query")>()),
   useQueryClient: () => ({ invalidateQueries }),
 }));
 

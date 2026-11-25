@@ -1,21 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import PathBreadcrumb from "@/components/PathBreadcrumb";
 import { EventTicketQR } from "@/components/events/EventTicketQR";
-import { MockDataBadge } from "@/components/common/MockDataBadge";
+import MockDataBadge from "@/components/MockDataBadge";
 import { Ticket } from "lucide-react";
 import { useMock } from "@/__mocks__/loadMock";
 import { featureFlags } from "@/lib/featureFlags";
 import type { EventTicket } from "@/types";
 
 interface TicketsPageProps {
-  params: {
+  params: Promise<{
     eventId: string;
-  };
+  }>;
 }
 
 export default function TicketsPage({ params }: TicketsPageProps) {
+  const { eventId } = use(params);
   const isMockMode = featureFlags.useMockEvents;
   const eventMocks = useMock("events", isMockMode);
   const tickets: EventTicket[] = isMockMode && eventMocks ? eventMocks.MOCK_TICKETS : [];
@@ -29,15 +30,15 @@ export default function TicketsPage({ params }: TicketsPageProps) {
         <h1 className="text-3xl font-bold text-text">Ticket Management</h1>
       </section>
 
-      {isMockMode && <MockDataBadge />}
-      
+      <MockDataBadge label="Event tickets" active={isMockMode} />
+
       {!isMockMode && tickets.length === 0 && (
         <div
           className="rounded-2xl border border-[#2E2E2E] bg-[#151818] p-6 text-center"
           role="alert"
         >
           <p className="text-sm text-[#A3A3A3]">
-            ⚠️ Ticketing is in preview — ticket data isn't available yet.
+            ⚠️ Ticketing is in preview — ticket data isn&apos;t available yet.
           </p>
           <p className="text-xs text-[#6F6F6F] mt-1">
             Connect your ticketing backend to see real ticket information.
@@ -91,16 +92,18 @@ export default function TicketsPage({ params }: TicketsPageProps) {
         <div className="lg:col-span-2">
           {selectedTicket ? (
             <EventTicketQR
-              eventId={params.eventId}
+              eventId={eventId}
               ticketId={selectedTicket.id}
-              eventTitle={`Event #${params.eventId}`}
+              eventTitle={`Event #${eventId}`}
               attendeeName={selectedTicket.attendeeName}
             />
           ) : (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#2E2E2E] bg-[#111111] py-24">
               <Ticket className="h-12 w-12 text-[#6F6F6F] mb-3" />
               <p className="text-sm text-[#6F6F6F]">
-                {tickets.length > 0 ? "Select a ticket to view its QR code" : "No tickets to display"}
+                {tickets.length > 0
+                  ? "Select a ticket to view its QR code"
+                  : "No tickets to display"}
               </p>
             </div>
           )}

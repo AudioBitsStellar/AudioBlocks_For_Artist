@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { Activity, DollarSign, PlayCircle, ShoppingBag } from "lucide-react";
 import MockDataBadge from "./MockDataBadge";
+import { featureFlags } from "@/lib/featureFlags";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { getFreighterAddress } from "@/lib/freighter";
 import { isIndexerConfigured } from "@/lib/onchainIndexer";
@@ -94,7 +95,7 @@ function OnchainStatsPanel({
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <h3 className="text-white text-lg font-semibold">
           On-chain plays and sales
-          <MockDataBadge label="On-chain analytics" />
+          <MockDataBadge label="On-chain analytics" active={featureFlags.useMockOnChainStats} />
         </h3>
         {isStaleData && data.indexedAt !== null && (
           <span

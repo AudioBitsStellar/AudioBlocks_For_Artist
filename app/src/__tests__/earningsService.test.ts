@@ -15,240 +15,98 @@ vi.mock("@/api/axios", () => ({
 
 import useEarningsServices from "@/services/earningsService";
 import { EARNINGS_ENDPOINTS } from "@/api/api-endpoint";
-import { EarningsDataPoint, EarningsResponse } from "@/types";
-
-function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-    },
-  });
-}
 
 function Wrapper({ children }: { children: React.ReactNode }) {
-  return React.createElement(QueryClientProvider, { client: makeQueryClient() }, children);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return React.createElement(QueryClientProvider, { client }, children);
 }
 
-const manyMonths: EarningsDataPoint[] = [
-  { month: "Jan", earnings: 1000, royalties: 200 },
-  { month: "Feb", earnings: 1200, royalties: 250 },
-  { month: "Mar", earnings: 900, royalties: 180 },
-];
+const CSV = [
+  "ID,SaleEventId,Status,Currency,GrossAmount,CreatedAt",
+  "p1,s1,reconciled,stroops,50000000,2026-06-03T10:00:00.000Z",
+  "p2,s2,pending,USDC,250,2026-06-01T09:00:00.000Z",
+].join("\n");
 
-const singleMonth: EarningsDataPoint[] = [{ month: "Jan", earnings: 500, royalties: 50 }];
-
-const successResponse: EarningsResponse = {
-  success: true,
-  data: {
-    totalEarnings: 3100,
-    comparedToLastMonth: 200,
-    data: manyMonths,
-  },
-};
-
-describe("useEarningsServices", () => {
+describe("useEarningsServices – useGetRoyaltyPayouts (#47)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("useGetEarnings – revenue queries (happy path)", () => {
-    it("fetches and returns the earnings summary", async () => {
-      mockGet.mockResolvedValue({ data: successResponse });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(result.current.data).toEqual(successResponse);
-      expect(mockGet).toHaveBeenCalledWith(EARNINGS_ENDPOINTS.GET_EARNINGS);
-      expect(mockGet).toHaveBeenCalledTimes(1);
+  it("reads the backend's royalty payout export", async () => {
+    mockGet.mockResolvedValue({ data: CSV });
+    const { result } = renderHook(() => useEarningsServices().useGetRoyaltyPayouts(), {
+      wrapper: Wrapper,
     });
 
-    it("passes enabled:true by default and triggers the request", async () => {
-      mockGet.mockResolvedValue({ data: successResponse });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockGet).toHaveBeenCalledWith(EARNINGS_ENDPOINTS.ROYALTY_PAYOUTS_EXPORT);
+    expect(EARNINGS_ENDPOINTS.ROYALTY_PAYOUTS_EXPORT).toBe("/royalty-payouts/export");
+  });
 
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.isFetching).toBe(false);
-      expect(result.current.isLoading).toBe(false);
+  it("parses the CSV into typed records, converting stroops to XLM", async () => {
+    mockGet.mockResolvedValue({ data: CSV });
+    const { result } = renderHook(() => useEarningsServices().useGetRoyaltyPayouts(), {
+      wrapper: Wrapper,
     });
 
-    it("skips fetching when enabled is false", async () => {
-      mockGet.mockResolvedValue({ data: successResponse });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(false), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isLoading || result.current.isFetched).toBe(true));
-
-      expect(mockGet).not.toHaveBeenCalled();
-      expect(result.current.data).toBeUndefined();
+    await waitFor(() => expect(result.current.records).toHaveLength(2));
+    expect(result.current.records[0]).toEqual({
+      id: "p1",
+      saleEventId: "s1",
+      status: "reconciled",
+      asset: "XLM",
+      amount: 5,
+      createdAt: "2026-06-03T10:00:00.000Z",
+    });
+    expect(result.current.records[1]).toMatchObject({
+      asset: "USDC",
+      amount: 250,
+      status: "pending",
     });
   });
 
-  describe("useGetEarnings – royalty calculations / payout history (data shape)", () => {
-    it("reflects total earnings and month-over-month comparison", async () => {
-      mockGet.mockResolvedValue({ data: successResponse });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      const summary = result.current.data?.data;
-      expect(summary?.totalEarnings).toBe(3100);
-      expect(summary?.comparedToLastMonth).toBe(200);
+  it("has no records before the response arrives", () => {
+    mockGet.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useEarningsServices().useGetRoyaltyPayouts(), {
+      wrapper: Wrapper,
     });
 
-    it("returns per-month earnings and royalties in the payout history", async () => {
-      mockGet.mockResolvedValue({ data: successResponse });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      const points = result.current.data?.data.data ?? [];
-      expect(points).toHaveLength(3);
-      expect(points[0]).toEqual({ month: "Jan", earnings: 1000, royalties: 200 });
-      expect(
-        points.every((p) => typeof p.earnings === "number" && typeof p.royalties === "number")
-      ).toBe(true);
-    });
-
-    it("handles a single track/month of history", async () => {
-      mockGet.mockResolvedValue({
-        data: {
-          success: true,
-          data: { totalEarnings: 500, comparedToLastMonth: 0, data: singleMonth },
-        } satisfies EarningsResponse,
-      });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      const summary = result.current.data?.data;
-      expect(summary?.data).toHaveLength(1);
-      expect(summary?.totalEarnings).toBe(500);
-    });
-
-    it("handles many months/tracks of history", async () => {
-      const longHistory: EarningsDataPoint[] = Array.from({ length: 12 }, (_, i) => ({
-        month: `M${i + 1}`,
-        earnings: 100 * (i + 1),
-        royalties: 10 * (i + 1),
-      }));
-
-      mockGet.mockResolvedValue({
-        data: {
-          success: true,
-          data: {
-            totalEarnings: longHistory.reduce((sum, p) => sum + p.earnings, 0),
-            comparedToLastMonth: 50,
-            data: longHistory,
-          },
-        } satisfies EarningsResponse,
-      });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.data?.data.data).toHaveLength(12);
-    });
-
-    it("returns zeroed earnings for an account with no revenue yet", async () => {
-      mockGet.mockResolvedValue({
-        data: {
-          success: true,
-          data: { totalEarnings: 0, comparedToLastMonth: 0, data: [] },
-        } satisfies EarningsResponse,
-      });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      const summary = result.current.data?.data;
-      expect(summary?.totalEarnings).toBe(0);
-      expect(summary?.data).toEqual([]);
-    });
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.records).toEqual([]);
   });
 
-  describe("useGetEarnings – error paths", () => {
-    it("surfaces a network failure", async () => {
-      mockGet.mockRejectedValue(new Error("Network error"));
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isError).toBe(true));
-      expect((result.current.error as Error).message).toBe("Network error");
+  it("does not fetch when disabled", () => {
+    const { result } = renderHook(() => useEarningsServices().useGetRoyaltyPayouts(false), {
+      wrapper: Wrapper,
     });
 
-    it("surfaces a 401 unauthorized error", async () => {
-      mockGet.mockRejectedValue({ status: 401, message: "Unauthorized" });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isError).toBe(true));
-      expect(result.current.error).toBeDefined();
-    });
-
-    it("surfaces a 500 server error", async () => {
-      mockGet.mockRejectedValue({ status: 500, message: "Server error" });
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      await waitFor(() => expect(result.current.isError).toBe(true));
-      expect(result.current.error).toBeDefined();
-    });
-
-    it("exposes isLoading while in flight and clears it on completion", async () => {
-      let resolvePromise!: (v: unknown) => void;
-      mockGet.mockImplementation(
-        () =>
-          new Promise((res) => {
-            resolvePromise = res;
-          })
-      );
-
-      const { result } = renderHook(() => useEarningsServices().useGetEarnings(), {
-        wrapper: Wrapper,
-      });
-
-      expect(result.current.isLoading).toBe(true);
-
-      await waitFor(() => {
-        resolvePromise({ data: successResponse });
-        expect(result.current.isSuccess).toBe(true);
-      });
-      expect(result.current.isLoading).toBe(false);
-    });
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(mockGet).not.toHaveBeenCalled();
   });
 
-  describe("useGetEarnings – shape", () => {
-    it("exposes the expected return shape", () => {
-      const services = useEarningsServices();
-      expect(services).toHaveProperty("useGetEarnings");
-      expect(typeof services.useGetEarnings).toBe("function");
+  it("surfaces request failures through isError", async () => {
+    mockGet.mockRejectedValue(new Error("Network Error"));
+    const { result } = renderHook(() => useEarningsServices().useGetRoyaltyPayouts(), {
+      wrapper: Wrapper,
     });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.records).toEqual([]);
+  });
+});
+
+describe("useEarningsServices – useGetPlatformRevenue", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("is still available to PlatformRevenueBreakdown", async () => {
+    mockGet.mockResolvedValue({ data: { success: true, data: [] } });
+    const { result } = renderHook(() => useEarningsServices().useGetPlatformRevenue(), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockGet).toHaveBeenCalledWith(EARNINGS_ENDPOINTS.GET_PLATFORM_REVENUE);
   });
 });

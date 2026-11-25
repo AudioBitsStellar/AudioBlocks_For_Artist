@@ -44,6 +44,7 @@ import {
   visibilityPermissions,
 } from "@/services/trackVisibilityService";
 import { featureFlags } from "@/lib/featureFlags";
+import ProcessingTracksPanel from "@/components/musicUpload/ProcessingTracksPanel";
 
 const SONG_ORDER_STORAGE_KEY = "my-music-track-order";
 
@@ -657,6 +658,9 @@ export default function MyMusicContent({ onAlbumSelect }: MyMusicContentProps) {
           </ErrorBoundary>
         )}
       </section>
+
+      {/* Uploads still processing, or just finished, sit above the list (#543). */}
+      <ProcessingTracksPanel />
 
       <section>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4">

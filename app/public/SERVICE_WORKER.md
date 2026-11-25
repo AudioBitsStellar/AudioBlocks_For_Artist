@@ -8,32 +8,31 @@ surfaced to users by `src/components/OfflineIndicator.tsx`.
 ## Caches
 
 Three named caches, all suffixed with a shared `CACHE_VERSION`
-(`audioblocks-v1`):
+(`audioblocks-v2`):
 
 | Cache               | Purpose                                                                               |
 | ------------------- | ------------------------------------------------------------------------------------- |
 | `shell-<version>`   | Precached app shell — populated on `install`, see below.                              |
 | `assets-<version>`  | Static assets (JS/CSS/images/fonts) cached as they're requested.                      |
-| `runtime-<version>` | Everything else (page navigations, same-origin API GETs) cached as they're requested. |
+| `runtime-<version>` | Same-origin HTML page navigations cached for offline access (never API responses).    |
 
 ## Caching strategy by request type
 
-| Request                                                                                    | Strategy                                                                                                                                                                       |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Static asset (`.js .css .png .jpg .jpeg .gif .svg .webp .ico .woff .woff2 .ttf .eot .map`) | **Cache-first** (`ASSET_CACHE`) — serve from cache if present, otherwise fetch and populate the cache.                                                                         |
-| Page navigation or any other same-origin GET (incl. API responses)                         | **Network-first** (`RUNTIME_CACHE`) — try the network, fall back to cache on failure; a failed _navigation_ with nothing cached falls back further to the precached `/` shell. |
-| `POST` / `PUT` / `PATCH` / `DELETE`                                                        | **Never intercepted** — the service worker returns early and lets the request go straight to the network, so mutating requests are never served stale or cached.               |
-| Non-`http(s)` requests (e.g. browser extension URLs)                                       | **Ignored** — the fetch handler returns without calling `respondWith`.                                                                                                         |
+| Request                                                                                    | Strategy                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static asset (`.js .css .png .jpg .jpeg .gif .svg .webp .ico .woff .woff2 .ttf .eot .map`) | **Cache-first** (`ASSET_CACHE`) — serve from cache if present, otherwise fetch and populate the cache (same-origin or explicit static CDN allow-list only).                  |
+| Same-origin page navigation (non-API GET)                                                  | **Network-first** (`RUNTIME_CACHE`) — try the network, fall back to cache on failure; a failed _navigation_ with nothing cached falls back further to the precached `/` shell. |
+| API requests (`/api/*`), requests with an `Authorization` header, or cross-origin requests | **Never intercepted** — bypassed so authenticated API data (earnings, payouts, messages, Horizon, Privy) never enters Cache Storage.                                         |
+| Non-`GET` requests (`POST` / `PUT` / `PATCH` / `DELETE`)                                   | **Never intercepted** — the service worker returns early and lets the request go straight to the network, so mutating requests are never served stale or cached.             |
+| Non-`http(s)` requests (e.g. browser extension URLs)                                       | **Ignored** — the fetch handler returns without calling `respondWith`.                                                                                                       |
 
-Only responses with `status === 200 && type === "basic"` are cached (i.e.
-successful, same-origin responses) — opaque cross-origin responses and error
-responses are never written to a cache.
+Only responses with `response.ok && response.type === "basic"` (and without `Cache-Control: no-store` or `private`) are cached — opaque cross-origin responses, authenticated API responses, and error responses are never written to Cache Storage.
 
 ## Lifecycle
 
 1. **`install`** — opens `shell-<version>` and precaches a fixed list of
    routes/assets (`/`, `/login`, `/signup`, `/dashboard`, `favicon.ico`,
-   `logo.png`, `logo2.png`, `next.svg`, `vercel.svg`) using
+   `logo.png`, `logo2.png`, `icons/icon-192x192.png`, `icons/icon-512x512.png`) using
    `{ cache: "reload" }` so the precache itself isn't served from the HTTP
    cache. A failure to precache any single URL is swallowed (non-critical —
    the runtime cache picks it up on first real visit). `self.skipWaiting()`
@@ -42,9 +41,10 @@ responses are never written to a cache.
    current `-${CACHE_VERSION}` suffix, then calls `self.clients.claim()` so
    the new worker takes control of already-open tabs immediately.
 3. **`fetch`** — routes each request per the table above.
-4. **`message`** — listens for a `"SKIP_WAITING"` message from the page to
-   force an installed-but-waiting worker to activate immediately (see
-   below).
+4. **`message`** — listens for `"SKIP_WAITING"` to force an installed-but-waiting
+   worker to activate immediately, and `{ type: "CLEAR_RUNTIME_CACHE" }` (posted
+   by `clearSession()` in `src/api/axios.ts` on logout / 401) to delete
+   `runtime-<version>`.
 
 ## Cache invalidation on deploy
 

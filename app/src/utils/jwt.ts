@@ -5,6 +5,7 @@ interface DecodedTokenClaims {
   name?: string;
   username?: string;
   email?: string;
+  exp?: number;
   role?: unknown;
   user_role?: unknown;
   user?: unknown;
@@ -102,4 +103,38 @@ export function getAccountRoleFromToken(): AccountRole | null {
 /** Whether the signed-in session carries the platform `admin` role. */
 export function isAdminSession(): boolean {
   return getAccountRoleFromToken() === "admin";
+}
+
+/**
+ * Epoch milliseconds when the current session expires, or `null` when unknown.
+ *
+ * Reads the JWT `exp` claim (seconds since epoch) from the session claims
+ * cookie first, falling back to `localStorage.token_expiry` for legacy
+ * token-storage sessions (#589).
+ */
+export function getSessionExpiryMs(): number | null {
+  if (typeof window === "undefined") return null;
+
+  const claims = readTokenClaims();
+  if (typeof claims?.exp === "number" && Number.isFinite(claims.exp) && claims.exp > 0) {
+    return claims.exp * 1000;
+  }
+
+  try {
+    const raw = window.localStorage.getItem("token_expiry");
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    const numeric = Number(trimmed);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      // Treat values under 1e12 as Unix seconds and convert to ms.
+      return numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
+    }
+
+    const parsedDate = Date.parse(trimmed);
+    return Number.isFinite(parsedDate) ? parsedDate : null;
+  } catch {
+    return null;
+  }
 }

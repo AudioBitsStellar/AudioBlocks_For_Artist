@@ -177,6 +177,33 @@ describe("TopHeader – theme toggle", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(false);
     expect(localStorage.getItem("theme")).toBe("light");
   });
+
+  it("keeps the chosen theme across a reload (#13)", () => {
+    const first = renderTopHeader(<TopHeader onMenuClick={() => {}} />);
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: /switch to dark mode/i }));
+    });
+    first.unmount();
+
+    // A reload starts from a light <html> and only localStorage survives.
+    document.documentElement.classList.remove("dark");
+    renderTopHeader(<TopHeader onMenuClick={() => {}} />);
+
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(screen.getByRole("button", { name: /switch to light mode/i })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+  });
+
+  it("has a visible keyboard focus style (#13)", () => {
+    renderTopHeader(<TopHeader onMenuClick={() => {}} />);
+    const toggle = screen.getByRole("button", { name: /switch to dark mode/i });
+
+    toggle.focus();
+    expect(toggle).toHaveFocus();
+    expect(toggle.className).toMatch(/focus-visible:ring-2/);
+  });
 });
 
 // ---------- Hamburger menu ----------

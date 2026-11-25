@@ -134,16 +134,21 @@ describe("cache behaviour in services", () => {
   });
 
   it("serves a second mount from the cache while the data is still fresh", async () => {
-    mockGet.mockResolvedValue({ data: { data: { totalEarnings: 100 } } });
+    const csv = "ID,SaleEventId,Status,Currency,GrossAmount,CreatedAt\n";
+    mockGet.mockResolvedValue({ data: csv });
     const { Wrapper } = makeWrapper();
 
-    const first = renderHook(() => useEarningsServices().useGetEarnings(), { wrapper: Wrapper });
+    const first = renderHook(() => useEarningsServices().useGetRoyaltyPayouts(), {
+      wrapper: Wrapper,
+    });
     await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
     expect(mockGet).toHaveBeenCalledTimes(1);
 
     // A second consumer of the same query (e.g. revisiting the tab) reads the cache instantly.
-    const second = renderHook(() => useEarningsServices().useGetEarnings(), { wrapper: Wrapper });
-    expect(second.result.current.data).toEqual({ data: { totalEarnings: 100 } });
+    const second = renderHook(() => useEarningsServices().useGetRoyaltyPayouts(), {
+      wrapper: Wrapper,
+    });
+    expect(second.result.current.data).toBe(csv);
     expect(second.result.current.isFetching).toBe(false);
     expect(mockGet).toHaveBeenCalledTimes(1);
   });

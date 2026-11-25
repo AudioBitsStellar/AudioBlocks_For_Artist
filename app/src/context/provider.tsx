@@ -8,6 +8,8 @@ import { StellarNetworkProvider } from "./StellarNetworkContext";
 import { PlaybackProvider } from "./PlaybackContext";
 import { ThemeProvider } from "./ThemeContext";
 import { CurrencyPreferenceProvider } from "./CurrencyPreferenceContext";
+import { I18nProvider } from "./I18nContext";
+import { SongProcessingProvider } from "./SongProcessingContext";
 
 const Provider = ({ children }: { children: ReactNode }) => {
   return (

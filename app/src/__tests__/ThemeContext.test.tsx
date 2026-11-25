@@ -2,7 +2,24 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import { useTheme, ThemeProvider } from "@/context/ThemeContext";
 import { THEME_STORAGE_KEY, DARK_SCHEME_QUERY } from "@/utils/theme";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TopHeader from "@/components/TopHeader";
+
+// TopHeader needs the app router, React Query and notifications; none is under test here.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+}));
+vi.mock("@/services/notificationService", () => ({
+  useNotifications: () => ({
+    notifications: [],
+    unreadCount: 0,
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+    markAsRead: vi.fn(),
+    markAllAsRead: vi.fn(),
+  }),
+}));
 
 // Mock matchMedia for system preference testing.
 function mockMatchMedia(isDark: boolean) {
@@ -276,10 +293,7 @@ describe("ThemeContext (#423)", () => {
       // Simulate OS changing to dark preference.
       act(() => {
         mockQuery.matches = true;
-        const event = new MediaQueryListEvent("change", {
-          matches: true,
-          media: DARK_SCHEME_QUERY,
-        });
+        const event = { matches: true, media: DARK_SCHEME_QUERY } as MediaQueryListEvent;
         mockQuery.addEventListener.mock.calls[0]?.[1](event);
       });
 
@@ -309,10 +323,7 @@ describe("ThemeContext (#423)", () => {
       // Simulate OS changing to light preference.
       act(() => {
         mockQuery.matches = false;
-        const event = new MediaQueryListEvent("change", {
-          matches: false,
-          media: DARK_SCHEME_QUERY,
-        });
+        const event = { matches: false, media: DARK_SCHEME_QUERY } as MediaQueryListEvent;
         mockQuery.addEventListener.mock.calls[0]?.[1](event);
       });
 
@@ -463,10 +474,7 @@ describe("ThemeContext (#423)", () => {
       // Change OS preference and verify it tracks.
       act(() => {
         mockQuery.matches = false;
-        const event = new MediaQueryListEvent("change", {
-          matches: false,
-          media: DARK_SCHEME_QUERY,
-        });
+        const event = { matches: false, media: DARK_SCHEME_QUERY } as MediaQueryListEvent;
         mockQuery.addEventListener.mock.calls[0]?.[1](event);
       });
 
@@ -481,10 +489,13 @@ describe("ThemeContext (#423)", () => {
       localStorage.setItem(THEME_STORAGE_KEY, "light");
       mockMatchMedia(false);
 
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
       render(
-        <ThemeProvider>
-          <TopHeader onMenuClick={() => {}} />
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <TopHeader onMenuClick={() => {}} />
+          </ThemeProvider>
+        </QueryClientProvider>
       );
 
       const toggleButton = await screen.findByRole("button", {

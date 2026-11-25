@@ -19,7 +19,8 @@ vi.mock("@/__mocks__/overview", () => ({
 }));
 
 vi.mock("@/components/MockDataBadge", () => ({
-  default: ({ label }: { label: string }) => <span data-testid="mock-badge">{label}</span>,
+  default: ({ label, active }: { label: string; active: boolean }) =>
+    active ? <span data-testid="mock-badge">{label}</span> : null,
 }));
 
 describe("OverviewCards", () => {

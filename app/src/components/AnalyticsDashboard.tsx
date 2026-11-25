@@ -7,6 +7,7 @@ import AnalyticsOnchainStats from "@/components/AnalyticsOnchainStats";
 import useAnalyticsServices from "@/services/analyticsService";
 import { useInView } from "@/hooks/useInView";
 import { Skeleton } from "@/components/shared/Skeleton";
+import type { AnalyticsResponse } from "@/types/api";
 
 const AnalyticsSummaryCards = dynamic(() => import("@/components/AnalyticsSummaryCards"), {
   loading: () => (
@@ -89,11 +90,16 @@ const LazyChartSection = ({ children }: ChartSectionProps) => {
 
 export type AnalyticsPeriod = "last30days" | "last90days";
 
-export default function AnalyticsDashboard() {
+export default function AnalyticsDashboard({ initialData }: { initialData?: AnalyticsResponse }) {
   // The selected period drives the query, so the 30/90-day toggle refetches
   // real data for that window instead of re-slicing the 30-day response (#401).
   const [period, setPeriod] = useState<AnalyticsPeriod>("last30days");
-  const { data, isLoading, isError, refetch } = useAnalyticsServices().useGetAnalyticsData(period);
+  const queryInitialData = initialData?.data.period === period ? initialData : undefined;
+  const { data, isLoading, isError, refetch } = useAnalyticsServices().useGetAnalyticsData(
+    period,
+    true,
+    queryInitialData
+  );
   const analyticsData = data?.data;
   // Only show insights the API actually computed. Previously a hard-coded
   // "peak hours" string and made-up retention/top-track figures were shown

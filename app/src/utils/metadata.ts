@@ -331,9 +331,12 @@ export function generateAlbumMetadata(params: {
 /**
  * Default metadata for the root application
  */
-export const defaultMetadata: Metadata = generateMetadata({
-  title: "Artist Dashboard",
-  description: DEFAULT_DESCRIPTION,
-  image: DEFAULT_OG_IMAGE,
-  url: "/",
-});
+export const defaultMetadata: Metadata = {
+  ...generateMetadata({
+    title: "Artist Dashboard",
+    description: DEFAULT_DESCRIPTION,
+    image: DEFAULT_OG_IMAGE,
+    url: "/",
+  }),
+  manifest: "/manifest.webmanifest",
+};

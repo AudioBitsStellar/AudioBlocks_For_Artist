@@ -5,7 +5,7 @@ import { ScanLine, CheckCircle2, XCircle, Loader2, Users, UserCheck, UserX } fro
 import { toast } from "sonner";
 import { featureFlags } from "@/lib/featureFlags";
 import { loadMock, useMock } from "@/__mocks__/loadMock";
-import { MockDataBadge } from "@/components/common/MockDataBadge";
+import MockDataBadge from "@/components/MockDataBadge";
 import type { CheckInResult, CheckInStats } from "@/types";
 
 const EMPTY_STATS: CheckInStats = { total: 0, checkedIn: 0, remaining: 0 };
@@ -15,7 +15,7 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
   const [lastResult, setLastResult] = useState<CheckInResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [localCheckedIn, setLocalCheckedIn] = useState(0);
-  
+
   const isMockMode = featureFlags.useMockEvents;
   const eventMocks = useMock("events", isMockMode);
   const stats = isMockMode && eventMocks ? eventMocks.MOCK_CHECK_IN_STATS : EMPTY_STATS;
@@ -29,10 +29,9 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
       await new Promise((r) => setTimeout(r, 800));
     }
 
-    const knownResults: Record<string, CheckInResult> = isMockMode && eventMocks
-      ? (await loadMock("events")).MOCK_CHECK_IN_RESULTS
-      : {};
-    
+    const knownResults: Record<string, CheckInResult> =
+      isMockMode && eventMocks ? (await loadMock("events")).MOCK_CHECK_IN_RESULTS : {};
+
     const result = knownResults[ticketId] ?? {
       ticketId,
       status: "invalid" as const,
@@ -60,8 +59,8 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
   };
 
   // Adjust stats to show local check-ins in non-mock mode
-  const displayStats = isMockMode 
-    ? stats 
+  const displayStats = isMockMode
+    ? stats
     : {
         total: stats.total,
         checkedIn: localCheckedIn,
@@ -70,15 +69,15 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
 
   return (
     <div className="space-y-8">
-      {isMockMode && <MockDataBadge />}
-      
+      <MockDataBadge label="Check-in" active={isMockMode} />
+
       {!isMockMode && stats.total === 0 && (
         <div
           className="rounded-2xl border border-[#2E2E2E] bg-[#151818] p-4 text-center"
           role="alert"
         >
           <p className="text-sm text-[#A3A3A3]">
-            ⚠️ Ticketing is in preview — check-ins aren't saved yet.
+            ⚠️ Ticketing is in preview — check-ins aren&apos;t saved yet.
           </p>
           <p className="text-xs text-[#6F6F6F] mt-1">
             Check-in counts are tracked locally for this session only.
@@ -90,8 +89,18 @@ export default function CheckInScanner({ eventId }: { eventId: string | number }
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { label: "Total Tickets", value: displayStats.total, icon: Users, color: "text-white" },
-          { label: "Checked In", value: displayStats.checkedIn, icon: UserCheck, color: "text-green-400" },
-          { label: "Remaining", value: displayStats.remaining, icon: UserX, color: "text-[#A3A3A3]" },
+          {
+            label: "Checked In",
+            value: displayStats.checkedIn,
+            icon: UserCheck,
+            color: "text-green-400",
+          },
+          {
+            label: "Remaining",
+            value: displayStats.remaining,
+            icon: UserX,
+            color: "text-[#A3A3A3]",
+          },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-[#1F1F1F] bg-[#151818] p-5">
             <div className="flex items-center justify-between mb-2">

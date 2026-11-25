@@ -105,7 +105,7 @@ export default function MerchInventory() {
           <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Inventory</p>
           <h1 className="text-3xl font-bold text-text flex items-center gap-3">
             Merch Inventory
-            {featureFlags.useMockMerches && <MockDataBadge label="inventory" />}
+            <MockDataBadge label="Merch inventory" active={featureFlags.useMockMerches} />
           </h1>
         </div>
       </div>

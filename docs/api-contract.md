@@ -61,6 +61,7 @@ either the generated types or the snapshot fails the build.
 | `ARTIST_UPLOAD_ENDPOINTS.UPLOAD_CHUNK` | `/song/upload/chunk` | `POST /api/song/upload/chunk` | ok | — |
 | `ARTIST_UPLOAD_ENDPOINTS.UPLOAD_SONG` | `/song/upload/finalize` | `POST /api/song/upload/finalize` | ok | — |
 | `ARTIST_UPLOAD_ENDPOINTS.TRANSCRIBE_LYRICS` | `/song/upload/transcribe-lyrics` | — | missing on backend | none yet |
+| `ARTIST_UPLOAD_ENDPOINTS.SUGGEST_TAGS` | `/song/upload/suggest-tags` | `POST /api/song/upload/suggest-tags` | ok — upload form AI suggestions (#542) | — |
 | `SONG_ENDPOINTS.UPDATE` | `/song/:id` | `PATCH /api/song/:id` | ok | — |
 | `SONG_ENDPOINTS.TAGS` | `/song/:id/tags` | — (`TagRoutes.ts` is not mounted) | missing on backend | [#819](https://github.com/AudioBitsStellar/AudioBlock_Backend/issues/819), [#744](https://github.com/AudioBitsStellar/AudioBlock_Backend/issues/744) |
 | `SONG_ENDPOINTS.TRANSCRIBE_LYRICS` | `/song/:id/lyrics/transcribe` | — (only `GET /api/song/:id/lyrics` exists) | missing on backend | none yet |
@@ -97,7 +98,7 @@ either the generated types or the snapshot fails the build.
 
 | Constant | Client path | Backend route | Status | Linked issue |
 |---|---|---|---|---|
-| `EARNINGS_ENDPOINTS.GET_EARNINGS` | `/artist/earnings` | — (`GET /api/royalty-payouts/export` only) | missing on backend | none yet |
+| `EARNINGS_ENDPOINTS.ROYALTY_PAYOUTS_EXPORT` | `/royalty-payouts/export` | `GET /api/royalty-payouts/export` (CSV) | live — overview earnings chart (#47) | — |
 | `EARNINGS_ENDPOINTS.GET_PLATFORM_REVENUE` | `/artist/earnings/platforms` | — | missing on backend | none yet |
 | `EARNINGS_ENDPOINTS.GET_PAYOUTS` | `/artist/earnings/payouts` | — (`GET /api/royalty-payouts/export` is export-only) | missing on backend | none yet |
 | `OVERVIEW_ENDPOINTS.GET_OVERVIEW` | `/artist/overview` | — | missing on backend | [#846](https://github.com/AudioBitsStellar/AudioBlock_Backend/issues/846) |

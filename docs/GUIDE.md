@@ -36,7 +36,26 @@ browser bundle — never put a secret behind that prefix.
 | `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE` | For on-chain features | Stellar network passphrase used when building/signing Soroban transactions. Must match the network your backend and Freighter are pointed at. | `"Test SDF Network ; September 2015"` (testnet) or `"Public Global Stellar Network ; September 2015"` (mainnet) |
 | `NEXT_PUBLIC_STELLAR_RPC_URL` | For on-chain features | Stellar Horizon / RPC endpoint for reading chain state. | `https://horizon-testnet.stellar.org` (testnet), `https://horizon.stellar.org` (mainnet), or a self-hosted RPC URL |
 | `NEXT_PUBLIC_ANALYTICS_WRITE_KEY` | No | Write key for the analytics pipeline (see `src/lib/ANALYTICS.md`). When empty, analytics calls are no-ops. | Provider write-key string, or empty to disable |
-| `NEXT_PUBLIC_USE_MOCK_DATA` | No | Serve bundled mock fixtures instead of calling the real API — useful for UI work without a backend. | `"true"` or `"false"` (default `false`) |
+| `NEXT_PUBLIC_USE_MOCK_DATA` | No | Serve bundled mock fixtures instead of calling the real API — useful for UI work without a backend. Read only through `featureFlags` (see [Sample data](#sample-data)). | `"true"` or `"false"` (default `false`) |
+
+### Sample data
+
+While surfaces move to real APIs one at a time (#52), each has its own
+`featureFlags.useMock*` flag in `app/src/lib/featureFlags.ts`. For now they all
+follow `NEXT_PUBLIC_USE_MOCK_DATA`.
+
+- **Flags are the only switch.** Components never read the variable directly.
+  They load fixtures with `useMock(domain, featureFlags.useMockX)`, and render
+  `<MockDataBadge label="…" active={featureFlags.useMockX} />` next to the data.
+- **It is always visible.** The badge reads "Sample data" in every build,
+  including production builds of demo or staging deploys. The dashboard also
+  shows a `MockDataNotice` line naming every surface on sample data, and the
+  dev console lists them once.
+- **Retiring a surface's mocks.** Delete its flag and its `MOCK_DATA_SURFACES`
+  entry. The badge and fixture loading go with the flag, and the component's
+  real-data path is unchanged. `src/__tests__/mockDataSurfaces.test.tsx` fails
+  if a component reads the variable directly, or renders a badge without its
+  flag.
 
 ### Additional variables recognised by the code
 

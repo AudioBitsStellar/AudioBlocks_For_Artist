@@ -28,7 +28,7 @@ function FansEngagementGrid({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white text-xl font-semibold flex items-center">
           Fans Engagement
-          {isMock && <MockDataBadge label="fans-engagement" />}
+          <MockDataBadge label="Fans engagement" active={isMock} />
         </h2>
         <div className="relative">
           <select className="bg-[#161616] border border-gray-700 rounded-lg px-4 pr-8 py-2 text-white text-sm appearance-none cursor-pointer hover:border-gray-600 transition-colors">

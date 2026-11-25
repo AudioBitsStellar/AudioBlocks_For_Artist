@@ -40,7 +40,7 @@ function CardGrid({ cards, isMock }: { cards: KpiCard[]; isMock: boolean }) {
     <div>
       <h2 className="text-white text-lg font-semibold mb-4 flex items-center">
         Overview
-        {isMock && <MockDataBadge label="overview" />}
+        <MockDataBadge label="Overview statistics" active={isMock} />
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card, index) => (

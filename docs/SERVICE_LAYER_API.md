@@ -182,25 +182,32 @@ Handles authentication authentication operations: signup, login, session termina
 
 ### 5. Earnings Service (`earningsService.ts`)
 
-Retrieves revenue, royalty metrics, and monthly payout history.
+Royalty earnings for the overview chart, and platform revenue.
 
 #### Hooks & Endpoints
 
-##### `useGetEarnings(enabled?: boolean)`
-- **Endpoint**: `GET /api/v1/artist/earnings`
-- **Response Shape**: `EarningsData`
+##### `useGetRoyaltyPayouts(enabled?: boolean)`
+- **Endpoint**: `GET /api/royalty-payouts/export` (artist-authenticated CSV, #47)
+- **Returns**: the React Query state plus `records: RoyaltyPayoutRecord[]`, parsed from the CSV
   ```typescript
-  interface EarningsData {
-    totalEarnings: number;
-    monthOverMonthChange: number;
-    payoutHistory: {
-      id: string;
-      month: string;
-      amount: number;
-      status: "completed" | "pending";
-    }[];
+  interface RoyaltyPayoutRecord {
+    id: string;
+    saleEventId: string;
+    status: "pending" | "reconciled" | "discrepancy" | string;
+    asset: string;     // "XLM" for the backend's default `stroops`
+    amount: number;    // gross sale amount in whole units of `asset`
+    createdAt: string; // ISO timestamp
   }
   ```
+- Aggregate with `summarizeEarnings(records, asset, months)` from
+  `src/utils/royaltyEarnings.ts`: monthly reconciled and pending totals for one
+  asset. Discrepancy records are excluded, and assets are never summed together.
+- Amounts are gross sale amounts before collaborator splits, matching the
+  backend's `revenueStroops`.
+
+##### `useGetPlatformRevenue(enabled?: boolean)`
+- **Endpoint**: `GET /api/artist/earnings/platforms` (not yet on the backend)
+- **Response Shape**: `PlatformRevenueResponse`
 
 ---
 
@@ -404,6 +411,24 @@ Handles chunked audio file uploads, cover image processing, and IPFS metadata as
 - **Visibility (#458)**: the upload form sends `private` unless the artist picks otherwise — a track nobody has heard yet has no reason to be discoverable. See [Track Visibility](#track-visibility-trackvisibilityservicets).
 - **Response**: `FinalizeSongResponse` `{ data: { id: string; ipfsHash?: string } }`
 - **Cache invalidation**: overview, statistics and recent-activity queries (`SONG_PUBLISHED_INVALIDATIONS`).
+
+##### `useSuggestTags()` (#542)
+- **Endpoint**: `POST /api/song/upload/suggest-tags` with `{ title, description }`.
+- **Response**: `{ success, data: { tags: string[]; genres: string[] } }`. The lists are empty when the backend's AI feature is off.
+- **Silent**: there is no success or error toast. Use it through `useTagSuggestions(title, description)` (`src/hooks/useTagSuggestions.ts`):
+  - requests are debounced by 800 ms;
+  - it asks once per distinct input;
+  - a 429 or 503 (budget or kill switch) hides suggestions for the rest of the session.
+- **`AiTagSuggestions`** renders the results as chips that are accept-only, and each can be dismissed. The live upload form offers genres only: it has no tag field, and the backend stores no song tags yet (`SONG_ENDPOINTS.TAGS` is missing on the backend).
+
+##### Processing after finalize (#543)
+`finalize` only queues the song. `SongProcessingProvider` (`src/context/SongProcessingContext.tsx`, mounted in the app provider) then polls `GET /api/song/:id` until `status` becomes `ready` or `failed`:
+
+- The first poll is at 5 s, then each wait is ×1.5, capped at 30 s. Polling stops after 10 minutes, and the song is shown as "taking longer than usual" with a "Check again" action.
+- Watched songs are kept in `localStorage` (`audioblocks:song-processing:v1`), so a reload keeps polling.
+- `UploadedSongActions` keeps Mint and Transfer locked until the song is `ready`.
+- `ProcessingTracksPanel` on My Music shows each song's state. For a failure, it gives `errorReason` in plain language, plus a "Re-upload" link.
+- "Retry processing" is not offered: the backend has no endpoint for it yet.
 
 ##### Client-side file validation
 

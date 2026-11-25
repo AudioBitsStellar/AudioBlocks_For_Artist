@@ -7,6 +7,7 @@ import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import DashboardShortcuts from "@/components/DashboardShortcuts";
 import EmailVerificationGate from "@/components/EmailVerificationGate";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
+import MockDataNotice from "@/components/MockDataNotice";
 import RoleProvider from "@/context/RoleContext";
 import { DashboardCustomizationProvider } from "@/context/DashboardCustomizationContext";
 import PrivyProvider from "@/context/PrivyProvider";

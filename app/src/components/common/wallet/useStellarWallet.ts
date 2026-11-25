@@ -7,14 +7,8 @@ import {
   useTransactionSignReview,
   type TransactionSignSummary,
 } from "./TransactionSignReview";
+import { validateStellarPublicKey } from "@/utils/stellarAddress";
 
-/**
- * Connects Freighter, persists the address on the backend, and exposes a
- * `signAndSubmit` helper that any mint/setup flow can reuse: it takes the
- * `{ xdr, networkPassphrase }` the backend's prepare-* endpoint returns,
- * gets it signed in the Freighter popup, and POSTs the signed XDR to the
- * given submit-* mutation.
- */
 export function useStellarWallet() {
   const [address, setAddress] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -29,8 +23,11 @@ export function useStellarWallet() {
 
   const restore = useCallback(async () => {
     const existing = await getFreighterAddress();
-    if (existing) setAddress(existing);
-    return existing;
+    if (!existing) return null;
+    const check = validateStellarPublicKey(existing);
+    if (!check.valid) return null;
+    setAddress(check.normalized);
+    return check.normalized;
   }, []);
 
   const connect = useCallback(async () => {
@@ -38,7 +35,12 @@ export function useStellarWallet() {
     setConnectionFailure(null);
     setConnectionFailureMessage("");
     try {
-      const stellarPublicKey = await connectFreighter();
+      const rawKey = await connectFreighter();
+      const check = validateStellarPublicKey(rawKey);
+      if (!check.valid) {
+        throw new Error(check.error);
+      }
+      const stellarPublicKey = check.normalized;
       await connectWalletMutation.mutateAsync({ stellarPublicKey });
       setAddress(stellarPublicKey);
       handleSuccess("Stellar wallet connected!");

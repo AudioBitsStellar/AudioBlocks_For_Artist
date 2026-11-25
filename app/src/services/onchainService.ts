@@ -61,6 +61,8 @@ interface SubmitArtistSetupResponse {
   tokenId: string;
 }
 
+type IdempotentSubmitRequest<T> = T & { idempotencyKey?: string };
+
 // ── Song minting types ────────────────────────────────────────────────────────
 
 /**
@@ -164,13 +166,17 @@ const useOnchainServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useSubmitArtistSetup = () =>
-    usePost<ApiEnvelope<SubmitArtistSetupResponse>, SubmitArtistSetupRequest>(
-      ARTIST_ONCHAIN_ENDPOINTS.SUBMIT_SETUP,
-      {
-        onSuccess: () => handleSuccess("Artist profile set up on-chain!"),
-        onError: (error) => handleError(error.message || "Failed to submit on-chain artist setup."),
-      }
-    );
+    usePost<
+      ApiEnvelope<SubmitArtistSetupResponse>,
+      IdempotentSubmitRequest<SubmitArtistSetupRequest>
+    >(ARTIST_ONCHAIN_ENDPOINTS.SUBMIT_SETUP, {
+      requestBody: ({ signedXdr }) => ({ signedXdr }),
+      requestHeaders: ({ idempotencyKey }) => ({
+        "Idempotency-Key": idempotencyKey ?? crypto.randomUUID(),
+      }),
+      onSuccess: () => handleSuccess("Artist profile set up on-chain!"),
+      onError: (error) => handleError(error.message || "Failed to submit on-chain artist setup."),
+    });
 
   /**
    * Builds the `mint_song` Soroban transaction XDR for the artist to sign with Freighter.
@@ -196,9 +202,13 @@ const useOnchainServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useSubmitSongMint = (songId: string) =>
-    usePost<ApiEnvelope<SubmitSongMintResponse>, SubmitSongMintRequest>(
+    usePost<ApiEnvelope<SubmitSongMintResponse>, IdempotentSubmitRequest<SubmitSongMintRequest>>(
       SONG_ONCHAIN_ENDPOINTS.submitMint(songId),
       {
+        requestBody: ({ signedXdr }) => ({ signedXdr }),
+        requestHeaders: ({ idempotencyKey }) => ({
+          "Idempotency-Key": idempotencyKey ?? crypto.randomUUID(),
+        }),
         onSuccess: () => handleSuccess("Song minted on-chain!"),
         onError: (error) => handleError(error.message || "Failed to submit song minting."),
       }
@@ -227,13 +237,17 @@ const useOnchainServices = () => {
    * @throws Never throws directly — failures surface via the `onError` toast and the mutation's `error`/`isError` fields.
    */
   const useSubmitSongTransfer = (songId: string) =>
-    usePost<ApiEnvelope<SubmitSongTransferResponse>, SubmitSongTransferRequest>(
-      SONG_ONCHAIN_ENDPOINTS.submitTransfer(songId),
-      {
-        onSuccess: () => handleSuccess("Song transferred on-chain!"),
-        onError: (error) => handleError(error.message || "Failed to submit song transfer."),
-      }
-    );
+    usePost<
+      ApiEnvelope<SubmitSongTransferResponse>,
+      IdempotentSubmitRequest<SubmitSongTransferRequest>
+    >(SONG_ONCHAIN_ENDPOINTS.submitTransfer(songId), {
+      requestBody: ({ signedXdr }) => ({ signedXdr }),
+      requestHeaders: ({ idempotencyKey }) => ({
+        "Idempotency-Key": idempotencyKey ?? crypto.randomUUID(),
+      }),
+      onSuccess: () => handleSuccess("Song transferred on-chain!"),
+      onError: (error) => handleError(error.message || "Failed to submit song transfer."),
+    });
 
   return {
     useConnectWallet,

@@ -24,11 +24,18 @@ An immediate rollback MUST be initiated if any of the following Service Level In
 Because every deployment uses an immutable tag (`audioblocks-artist:<git_sha>`), rolling back consists of updating the service definition to point to the preceding known-good tag.
 
 ### Strategy B: Feature Flag / Config Killswitch (Instant, MTTR < 10s)
-If the degradation is isolated to a newly rolled-out feature, toggle the feature flag via runtime configuration without redeploying:
+If the degradation is isolated to a newly rolled-out feature, set the runtime
+flag in the service/container environment (not as a build argument). Restart or
+redeploy the same image with the updated environment so new page responses use
+the new runtime config; no image rebuild is required:
+
 ```bash
-# Disable specific feature in runtime environment
+# Disable specific feature in the service's runtime environment
 NEXT_PUBLIC_FEATURE_FLAGS="artistOnchainAnalytics=false"
 ```
+
+Reload the dashboard to receive the updated runtime configuration. An explicit
+runtime `false` cannot be bypassed by a browser-local feature override.
 
 ### Strategy C: CDN Edge Cache Purge
 Following any deployment rollback, invalidate edge caches to purge stale HTML or runtime responses:
