@@ -52,4 +52,10 @@ export const colorTokens = {
   info: "var(--color-info)",
 } as const;
 
+/** Concrete hex brand values used where CSS custom properties cannot be evaluated (e.g. PWA manifest). */
+export const brandColors = {
+  primary: "#d2045b",
+  background: "#000000",
+} as const;
+
 export type ColorTokenKey = keyof typeof colorTokens;

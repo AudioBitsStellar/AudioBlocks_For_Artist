@@ -32,7 +32,7 @@ Only responses with `response.ok && response.type === "basic"` (and without `Cac
 
 1. **`install`** — opens `shell-<version>` and precaches a fixed list of
    routes/assets (`/`, `/login`, `/signup`, `/dashboard`, `favicon.ico`,
-   `logo.png`, `logo2.png`, `next.svg`, `vercel.svg`) using
+   `logo.png`, `logo2.png`, `icons/icon-192x192.png`, `icons/icon-512x512.png`) using
    `{ cache: "reload" }` so the precache itself isn't served from the HTTP
    cache. A failure to precache any single URL is swallowed (non-critical —
    the runtime cache picks it up on first real visit). `self.skipWaiting()`
