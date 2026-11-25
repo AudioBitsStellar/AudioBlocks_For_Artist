@@ -8,12 +8,11 @@ import ThemeScript from "@/components/ThemeScript";
 import RuntimeConfigScript from "@/components/RuntimeConfigScript";
 import StellarNetworkBanner from "@/components/StellarNetworkBanner";
 import WebVitalsReporter from "@/components/WebVitalsReporter";
+import RootErrorBoundary from "@/components/RootErrorBoundary";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import SupportFeedbackModal from "@/components/support/SupportFeedbackModal";
 import { Toaster } from "sonner";
 import { defaultMetadata } from "@/utils/metadata";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import BrandedErrorPage from "@/components/shared/BrandedErrorPage";
 import ApiUnavailableBanner from "@/components/ApiUnavailableBanner";
 
 // PERF-07: next/font self-hosts these at build time, so the browser never
@@ -120,11 +119,7 @@ export default function RootLayout({
         <Provider>
           <OfflineIndicator />
           <ApiUnavailableBanner />
-          <ErrorBoundary
-            fallback={({ reset }) => <BrandedErrorPage kind="error" onRetry={reset} />}
-          >
-            {children}
-          </ErrorBoundary>
+          <RootErrorBoundary>{children}</RootErrorBoundary>
           <SupportFeedbackModal />
           <Toaster
             position="top-right"

@@ -82,7 +82,6 @@ const Song = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [coverError, setCoverError] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [audioMetadata, setAudioMetadata] = useState<AudioMetadata | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -91,7 +90,6 @@ const Song = () => {
   const pauseRequestedRef = useRef(false);
   const retryInProgressRef = useRef(false);
   const uploadedChunksRef = useRef<number[]>([]);
-  const retryInProgressRef = useRef(false);
 
   const { useFinalizeUpload, useUploadChunk, useUploadCover, useTranscribeLyrics } =
     useUploadServices();

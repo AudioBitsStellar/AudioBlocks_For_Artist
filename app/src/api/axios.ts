@@ -4,6 +4,8 @@ import { isRetryableError, calculateBackoff } from "@/utils/retry";
 import { apiMonitor } from "@/utils/apiPerformanceMonitor";
 import { API_PROXY_BASE_URL, endSession } from "@/api/session";
 import { reportApiAvailable, reportApiUnavailable } from "@/lib/apiAvailability";
+import { clearQueryCache } from "@/api/queryClientInstance";
+import { newRequestId, REQUEST_ID_HEADER } from "@/api/requestId";
 
 /**
  * Ends the browser session. The access token lives in an httpOnly cookie that
