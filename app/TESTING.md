@@ -33,8 +33,21 @@ npm run test:e2e:smoke # Playwright smoke project only (staging #746)
 npm run test:ui        # Vitest's interactive UI
 ```
 
-E2E tests need Playwright's browser binaries installed once:
-`npx playwright install chromium firefox webkit` (see the header comment in
+### Coverage thresholds
+
+The Vitest coverage gate instruments all application TypeScript and TSX files,
+excluding tests, stories, mocks, and setup files. Its initial global minimums
+are 45% statements, 45% lines, 70% functions, and 75% branches. They sit just
+below the measured baseline (46.24%, 46.24%, 72.64%, and 79.50% respectively)
+and can be raised as coverage improves. Thresholds are configured in
+`vitest.config.ts`; `reportOnFailure` keeps the coverage summary visible even
+when tests fail.
+
+The CI unit-test job runs `npm run test:coverage -- --reporter=verbose`, so
+either a failing test or a coverage regression fails the job.
+
+E2E tests need Playwright's browser binary installed once:
+`npx playwright install chromium` (see the header comment in
 `e2e/auth.spec.ts`).
 
 ## File location
